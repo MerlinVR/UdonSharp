@@ -1,0 +1,589 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using UnityEngine;
+using VRC.Udon.Editor;
+using VRC.Udon.Graph;
+
+namespace UdonSharp
+{
+    public enum UdonReferenceType
+    {
+        None,
+        Variable,
+        Const,
+        Type,
+    }
+
+    public enum FieldAccessorType
+    {
+        Get,
+        Set,
+    }
+
+    public class ResolverContext
+    {
+        public HashSet<string> usingNamespaces { get; private set; }
+
+        private static readonly IReadOnlyDictionary<string, string> builtinTypeAliasMap = new Dictionary<string, string>()
+        {
+            { "string", "System.String" },
+            { "int", "System.Int32" },
+            { "uint", "System.UInt32" },
+            { "long", "System.Int64" },
+            { "ulong", "System.UInt64" },
+            { "short", "System.Int16" },
+            { "ushort", "System.UInt16" },
+            { "char", "System.Char" },
+            { "bool", "System.Boolean" },
+            { "byte", "System.Byte" },
+            { "sbyte", "System.SByte" },
+            { "float", "System.Single" },
+            { "double", "System.Double" },
+            { "decimal", "System.Decimal" },
+            { "object", "System.Object" },
+            { "void", "System.Void" } // void might need to be revisited since it could mess with something
+        };
+
+        private Dictionary<string, System.Type> typeLookupCache;
+
+        private HashSet<string> nodeDefinitionLookup;
+
+        private Dictionary<string, string> builtinEventLookup;
+
+        public ResolverContext()
+        {
+            usingNamespaces = new HashSet<string>();
+            usingNamespaces.Add(""); // Add a blank namespace in case the type is already fully qualified, this is used in ResolveExternType() and ResolveExternMethod()
+
+            typeLookupCache = new Dictionary<string, System.Type>();
+            nodeDefinitionLookup = new HashSet<string>();
+
+            foreach (UdonNodeDefinition nodeDefinition in UdonEditorManager.Instance.GetNodeDefinitions())
+            {
+                nodeDefinitionLookup.Add(nodeDefinition.fullName);
+            }
+
+            builtinEventLookup = new Dictionary<string, string>();
+
+            foreach (UdonNodeDefinition nodeDefinition in UdonEditorManager.Instance.GetNodeDefinitions("Event_"))
+            {
+                if (nodeDefinition.fullName == "Event_Custom")
+                    continue;
+
+                string eventNameStr = nodeDefinition.fullName.Substring(6);
+                char[] eventName = eventNameStr.ToCharArray();
+                eventName[0] = char.ToLowerInvariant(eventName[0]);
+
+                builtinEventLookup.Add(eventNameStr, "_" + new string(eventName));
+            }
+        }
+
+        public void AddNamespace(string namespaceToAdd)
+        {
+            usingNamespaces.Add(namespaceToAdd);
+        }
+
+        public void AddLocalFunction()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public bool ReplaceInternalEventName(ref string eventName)
+        {
+            if (builtinEventLookup.ContainsKey(eventName))
+            {
+                eventName = builtinEventLookup[eventName];
+                return true;
+            }
+
+            return false;
+        }
+
+        public MethodInfo ResolveStaticMethod(string qualifiedMethodName, string[] argTypeNames)
+        {
+            System.Type[] types = argTypeNames.Select(e => ResolveExternType(e)).ToArray();
+
+            return ResolveStaticMethod(qualifiedMethodName, types);
+        }
+
+        // This will fall down in situations with stuff like StaticManager.instance.DoThing() where instance is a accessor, not a type.
+        // I need to handle this better by traversing each transition from the lhs type/value to the rhs type/value
+        public MethodInfo ResolveStaticMethod(string qualifiedMethodName, System.Type[] argTypes)
+        {
+            string[] tokQualifiedMethod = qualifiedMethodName.Split('.');
+
+            string qualifiedType = string.Join(".", tokQualifiedMethod.Take(tokQualifiedMethod.Length - 1));
+            string memberMethodName = tokQualifiedMethod[tokQualifiedMethod.Length - 1];
+
+            return ResolveMemberMethod(ResolveExternType(qualifiedType), memberMethodName, argTypes);
+        }
+
+        public MethodInfo ResolveMemberMethod(System.Type lhsType, string methodName, System.Type[] argTypes)
+        {
+            foreach (MemberInfo info in ResolveMemberMethods(lhsType, methodName))
+            {
+                if (info is MethodInfo)
+                {
+                    MethodInfo methodInfo = info as MethodInfo;
+
+                    if (methodInfo.Name == methodName)
+                    {
+                        ParameterInfo[] parameters = methodInfo.GetParameters();
+                        bool isValidMethod = true;
+
+                        if (parameters.Length == (argTypes.Length - 1)) // Ignore default args for now...
+                        {
+                            for (int i = 0; i < parameters.Length; ++i)
+                            {
+                                if (!parameters[i].ParameterType.IsAssignableFrom(argTypes[i]))
+                                {
+                                    isValidMethod = false;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (isValidMethod)
+                            return methodInfo;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public IEnumerable<MethodInfo> ResolveMemberMethods(System.Type type, string methodName)
+        {
+            return type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static).Where(e => e.Name == methodName);
+        }
+
+        public string ParseBuiltinTypeAlias(string typeName)
+        {
+            string newTypeName;
+            if (builtinTypeAliasMap.TryGetValue(typeName, out newTypeName))
+                return newTypeName;
+
+            return typeName;
+        }
+
+        public System.Type ResolveExternType(string qualifiedTypeName)
+        {
+            qualifiedTypeName = ParseBuiltinTypeAlias(qualifiedTypeName);
+
+            System.Type foundType;
+
+            // If we've already used this type then it's a simple cache lookup
+            if (typeLookupCache.TryGetValue(qualifiedTypeName, out foundType))
+            {
+                return foundType;
+            }
+
+            // We haven't used this type yet, look through all of the loaded assemblies for the type. This can be quite expensive so we cache the results.
+            // todo: look at optimizing the lookup for real
+            foreach (string includedNamespace in usingNamespaces)
+            {
+                string testFullyQualifiedType = includedNamespace.Length > 0 ? $"{includedNamespace}.{qualifiedTypeName}" : qualifiedTypeName;
+
+                foundType = System.Type.GetType(testFullyQualifiedType);
+
+                if (foundType != null)
+                {
+                    return foundType;
+                }
+                else // Type wasn't found in current assembly, look through all loaded assemblies
+                {
+                    foreach (Assembly assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        foundType = assembly.GetType(testFullyQualifiedType);
+
+                        if (foundType != null)
+                            return foundType;
+                    }
+                }
+            }
+
+            // We didn't find a valid type
+            //throw new System.ArgumentException($"Could not resolve type {qualifiedTypeName}");
+            return null;
+        }
+
+        /// <summary>
+        /// Verifies that Udon supports the given type and resolves the type name used to reference it in Udon
+        /// </summary>
+        /// <param name="externType">The found type</param>
+        /// <returns>The Udon type name string if it is a valid Udon type, 
+        ///     or null if it is not a valid Udon type.</returns>
+        public string GetUdonTypeName(System.Type externType)
+        {
+            string externTypeName = externType.GetNameWithoutGenericArity();
+            string typeNamespace = externType.Namespace;
+
+            if (externTypeName == "T" || externTypeName == "T[]")
+                typeNamespace = "";
+            
+            string fullTypeName = $"{typeNamespace}.{externTypeName}".Replace(".", "").Replace("[]", "Array").Replace("&", "Ref");
+
+            foreach (System.Type genericType in externType.GetGenericArguments())
+            {
+                fullTypeName += GetUdonTypeName(genericType);
+            }
+
+            // Seems like Udon does shortening for this specific type somewhere
+            if (fullTypeName == "SystemCollectionsGenericListT")
+            {
+                fullTypeName = "ListT";
+            }
+
+            return fullTypeName;
+        }
+
+        /// <summary>
+        /// Verifies that Udon supports the given method and resolves the name used to reference it in Udon EXTERN calls
+        /// </summary>
+        /// <param name="externMethod"></param>
+        /// <returns></returns>
+        public string GetUdonMethodName(MethodInfo externMethod, bool validate = true)
+        {
+            string functionNamespace = externMethod.DeclaringType.FullName.Replace(".", "");
+            string methodName = $"__{externMethod.Name.Trim('_')}";
+            ParameterInfo[] methodParams = externMethod.GetParameters();
+
+            string paramStr = "";
+
+            if (methodParams.Length > 0)
+            {
+                paramStr += "_"; // Arg separator
+
+                foreach (ParameterInfo parameterInfo in methodParams)
+                {
+                    paramStr += $"_{GetUdonTypeName(parameterInfo.ParameterType)}";
+                }
+            }
+
+            string returnStr = $"__{GetUdonTypeName(externMethod.ReturnType)}";
+
+            string finalFunctionSig = $"{functionNamespace}.{methodName}{paramStr}{returnStr}";
+
+            if (validate && !nodeDefinitionLookup.Contains(finalFunctionSig))
+            {
+                throw new System.Exception($"Could not find Udon function {finalFunctionSig}");
+            }
+
+            return finalFunctionSig;
+        }
+
+        public bool IsValidUdonMethod(string udonMethodStr)
+        {
+            return nodeDefinitionLookup.Contains(udonMethodStr);
+        }
+        
+        private int ScoreMethodParamArgPair(ParameterInfo methodParam, System.Type argType)
+        {
+            // This doesn't yet handle implicit user defined casts... there are probably other things this should handle too.
+            int score = 1000000;
+            
+            if (methodParam.ParameterType == argType)
+            {
+                score = 0;
+            }
+            else if (methodParam.HasDefaultValue && argType == null)
+            {
+                score = 5; // Avoid unused default args
+            }
+            else if (methodParam.ParameterType.IsValidNumericImplicitCastTargetType() && argType.IsValidNumericImplictCastSourceType())
+            {
+                score = UdonSharpUtils.GetImplicitNumericCastDistance(methodParam.ParameterType, argType);
+            }
+            else if (methodParam.ParameterType == typeof(object))
+            {
+                score = 30; // We want to avoid object args as much as possible
+            }
+            else if (argType.IsSubclassOf(methodParam.ParameterType) )
+            {
+                // Count the distance in the inheritance
+
+                System.Type currentType = argType;
+
+                score = 0;
+                while (currentType != methodParam.ParameterType && score < 20)
+                {
+                    score++;
+                    currentType = currentType.BaseType;
+                }
+            }
+
+            return score;
+        }
+
+        public MethodInfo FindBestOverloadFunction(MethodInfo[] methods, List<System.Type> methodArgs)
+        {
+            if (methods.Length == 0)
+                throw new System.ArgumentException("");
+
+            List<MethodInfo> validMethods = new List<MethodInfo>();
+
+            foreach (MethodInfo method in methods)
+            {
+                ParameterInfo[] methodParams = method.GetParameters();
+
+                bool isMethodValid = true;
+
+                for (int i = 0; i < methodParams.Length; ++i)
+                {
+                    ParameterInfo currentParam = methodParams[i];
+
+                    // Check method arg count
+                    if (i >= methodArgs.Count && !currentParam.HasDefaultValue)
+                    {
+                        isMethodValid = false;
+                        break;
+                    }
+                    else if (currentParam.HasDefaultValue)
+                    {
+                        continue;
+                    }
+
+                    System.Type argType = methodArgs[i];
+
+                    if (!currentParam.ParameterType.IsImplicitlyAssignableFrom(argType) && 
+                        (methodParams.Last().GetCustomAttributes(typeof(System.ParamArrayAttribute), false).Length == 0 ||
+                        currentParam.ParameterType.IsImplicitlyAssignableFrom(argType.MakeArrayType())))
+                    {
+                        isMethodValid = false;
+                        break;
+                    }
+
+                    // ref/out params need to be exactly the same since they are passing in the actual variable
+                    if (currentParam.ParameterType.IsByRef && currentParam.ParameterType != argType)
+                    {
+                        isMethodValid = false;
+                        break;
+                    }
+                }
+
+                // If we passed in more arguments than a normal function can take, and the last param isn't a `params` arg then the arguments can't fit into the method call
+                if (methodParams.Length < methodArgs.Count && methodParams.Length > 0 && !methodParams.Last().HasParamsParameter())
+                {
+                    isMethodValid = false;
+                }
+
+                if (isMethodValid && IsValidUdonMethod(GetUdonMethodName(method, false))) // Only add methods that exist in Udon's context
+                {
+                    validMethods.Add(method);
+                }
+            }
+
+            if (validMethods.Count == 0)
+                return null;
+            else if (validMethods.Count == 1) // There's only one option so just return it ez
+                return validMethods.First();
+
+            // We found multiple potential overloads so we need to find the best one
+            // See section 7.5.3.2 of the C# 5.0 language specification for the outline this search roughly follows, 
+            //  there are some things it doesn't handle, and the "better" type checking is probably not quite the same.
+            // Also the specification indicates that we need to do these checks on a function vs function basis until 1 remains.
+            // This does not do that at the moment, it considers all remaining functions and classifies them as groups. 
+            // There may be some cases where considering all functions vs all other functions would work better.
+            // Roslyn does this more complex pair-based quadratic time check if you look at their PerformMemberOverloadResolution function in `OverloadResolution.cs` of the github
+
+            // If there are non-generic forms of the method that match, use those
+            int genericCount = 0, nonGenericCount = 0;
+            foreach (MethodInfo methodInfo in validMethods)
+            {
+                if (methodInfo.IsGenericMethod)
+                    genericCount++;
+                else
+                    nonGenericCount++;
+            }
+
+            if (nonGenericCount > 0 && genericCount > 0)
+                validMethods = validMethods.Where(e => !e.IsGenericMethod).ToList();
+
+            if (validMethods.Count == 1)
+                return validMethods.First();
+
+            // Count the params using methods in this pass
+            int paramsArgCount = 0, nonParamsArgCount = 0;
+            foreach (MethodInfo methodInfo in validMethods)
+            {
+                ParameterInfo[] methodParameters = methodInfo.GetParameters();
+
+                if (methodParameters.Length > 0 && methodParameters.Last().GetCustomAttributes(typeof(System.ParamArrayAttribute), false).Length > 0)
+                    paramsArgCount++;
+                else
+                    nonParamsArgCount++;
+            }
+
+            // If we have variants with `params` arguments and variants with normal arguments that fit requirements, then use the ones without the params
+            if (paramsArgCount > 0 && nonParamsArgCount > 0)
+            {
+                validMethods = validMethods.Where(e => {
+                    ParameterInfo[] parameters = e.GetParameters();
+                    return parameters.Length == 0 || !parameters.Last().HasParamsParameter();
+                }).ToList();
+            }
+
+            if (validMethods.Count == 1)
+                return validMethods.First();
+
+            // Prefer methods that can be fully satisfied without default arguments
+            int defaultArgMethodCount = 0, fullySatisfiedArgMethodCount = 0;
+            foreach (MethodInfo methodInfo in validMethods)
+            {
+                ParameterInfo[] methodParams = methodInfo.GetParameters();
+                
+                if (methodParams.Length > 0 && methodParams.Length > methodArgs.Count && methodParams.Last().HasDefaultValue)
+                    defaultArgMethodCount++;
+                else
+                    fullySatisfiedArgMethodCount++;
+            }
+
+            if (defaultArgMethodCount > 0 && fullySatisfiedArgMethodCount > 0)
+            {
+                validMethods = validMethods.Where(e => {
+                    ParameterInfo[] methodParams = e.GetParameters();
+                    return methodParams.Length == 0 || !methodParams.Last().HasDefaultValue;
+                }).ToList();
+            }
+
+            if (validMethods.Count == 1)
+                return validMethods.First();
+
+            // Now finally we try to find what has more specific types for the arguments
+            List<MethodInfo> exactTypeMatches = new List<MethodInfo>();
+            int nonExactTypeMatchCount = 0;
+
+            foreach (MethodInfo methodInfo in validMethods)
+            {
+                ParameterInfo[] methodParams = methodInfo.GetParameters();
+
+                bool hasExactMatch = false;
+
+                for (int i = 0; i < methodParams.Length; ++i)
+                {
+                    if (i > methodArgs.Count) // Can happen with default arguments, don't consider them as exact matches
+                    {
+                        break;
+                    }
+
+                    if (methodParams[i].ParameterType == methodArgs[i])
+                    {
+                        hasExactMatch = true;
+                        break;
+                    }
+                }
+
+                if (hasExactMatch)
+                    exactTypeMatches.Add(methodInfo);
+                else
+                    nonExactTypeMatchCount++;
+            }
+
+            if (exactTypeMatches.Count > 0 && nonExactTypeMatchCount > 0)
+                validMethods = exactTypeMatches;
+
+            if (validMethods.Count == 1)
+                return validMethods.First();
+
+            // Now start scoring which overrides are the "best"
+            // A 0 score is the best, meaning it's a perfect match for all types
+            // We will count how 'far' away a cast is if it's an implicit numeric cast. This is defined by the order of the cast types in implicitBuiltinConversions
+            // For non-numeric conversions we count how far away a type is from the method parameter type in the given function.
+            // For example, If we have BaseClassA -> InheretedClassB -> InheretedClassC, with an input argument type of InheretedClassC going to a method that takes a BaseClassA argument
+            //  then we would score the type difference as 2 since it'd be 0 for an arg of BaseClassA and 1 for an arg of InheretedClassB
+            // I don't think this is particularly great, but it should hopefully cover the majority of cases that Udon runs into
+            // Using Roslyn to find the correct overload is an option since they have the function PerformMemberOverloadResolution, but it's all internal and built on internal types, 
+            //  so it's a non-trivial thing to call into.
+
+            List<System.Tuple<MethodInfo, float>> scoredMethods = new List<System.Tuple<MethodInfo, float>>();
+
+            foreach (MethodInfo methodInfo in validMethods)
+            {
+                ParameterInfo[] methodParams = methodInfo.GetParameters();
+
+                int totalScore = 0;
+
+                for (int i = 0; i < methodParams.Length; ++i)
+                {
+                    System.Type argType = i < methodArgs.Count ? methodArgs[i] : null;
+                    totalScore += ScoreMethodParamArgPair(methodParams[i], argType);
+                }
+
+                float finalScore = totalScore / (1f + methodParams.Length);
+
+                scoredMethods.Add(new System.Tuple<MethodInfo, float>(methodInfo, finalScore));
+            }
+
+            scoredMethods.OrderBy(e => e.Item1);
+
+            //foreach (var scoredMethod in scoredMethods)
+            //    Debug.Log($"Score: {scoredMethod.Item2},{scoredMethod.Item1}");
+
+            float minimumScore = scoredMethods.First().Item2;
+
+            List<MethodInfo> ambiguousMethods = new List<MethodInfo>();
+
+            for (int i = 1; i < scoredMethods.Count; ++i)
+            {
+                if (scoredMethods[i].Item2 == minimumScore) // Oh no there's still ambiguity! Gather the ambiguous functions and throw an exception.
+                {
+                    ambiguousMethods.Add(scoredMethods[i].Item1);
+                }
+            }
+
+            if (ambiguousMethods.Count > 0)
+            {
+                ambiguousMethods.Add(scoredMethods.First().Item1);
+
+                string methodListString = "";
+
+                foreach (MethodInfo methodInfo in ambiguousMethods)
+                    methodListString += $"{methodInfo}\n";
+
+                throw new System.Exception("Ambiguous method overload reference, candidate methods:\n" + methodListString);
+            }
+
+            return scoredMethods.First().Item1;
+        }
+
+        public string GetUdonFieldAccessorName(FieldInfo externField, FieldAccessorType accessorType, bool validate = true)
+        {
+            string functionNamespace = externField.DeclaringType.FullName.Replace(".", "");
+            string methodName = $"__{(accessorType == FieldAccessorType.Get ? "get" : "set")}_{externField.Name.Trim('_')}";
+            
+            string paramStr = $"__{GetUdonTypeName(externField.FieldType)}";
+
+            string finalFunctionSig = $"{functionNamespace}.{methodName}{paramStr}";
+
+            if (validate && !nodeDefinitionLookup.Contains(finalFunctionSig))
+            {
+                throw new System.Exception($"Could not find Udon field accessor {finalFunctionSig}");
+            }
+
+            return finalFunctionSig;
+        }
+
+        public bool ValidateUdonTypeName(string typeName, UdonReferenceType referenceType)
+        {
+            switch (referenceType)
+            {
+                case UdonReferenceType.Const:
+                    typeName = $"Const_{typeName}";
+                    break;
+                case UdonReferenceType.Type:
+                    typeName = $"Type_{typeName}";
+                    break;
+                case UdonReferenceType.Variable:
+                    typeName = $"Variable_{typeName}";
+                    break;
+                default:
+                    return true;
+            }
+
+            return nodeDefinitionLookup.Contains(typeName);
+        }
+    }
+}
