@@ -933,12 +933,17 @@ namespace UdonSharp
 
             JumpLabel rhsEnd = visitorContext.labelTable.GetNewJumpLabel("conditionalShortCircuitEnd");
 
-            SymbolDefinition resultValue = null;
+            SymbolDefinition resultValue = visitorContext.topTable.CreateUnnamedSymbol(typeof(bool), SymbolDeclTypeFlags.Internal);
 
             using (ExpressionCaptureScope lhsCaptureScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 Visit(node.Left);
-                resultValue = lhsCaptureScope.ExecuteGet();
+
+                using (ExpressionCaptureScope resultSetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    resultSetScope.SetToLocalSymbol(resultValue);
+                    resultSetScope.ExecuteSet(lhsCaptureScope.ExecuteGet());
+                }
             }
 
             if (node.Kind() == SyntaxKind.LogicalAndExpression)
