@@ -291,6 +291,8 @@ namespace UdonSharp
         public string GetUdonMethodName(MethodBase externMethod, bool validate = true)
         {
             string functionNamespace = externMethod.ReflectedType.FullName.Replace(".", "").Replace("[]", "Array")/*.Replace("&", "Ref")*/;
+            functionNamespace = functionNamespace.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
+
             string methodName = $"__{externMethod.Name.Trim('_').TrimStart('.')}";
             ParameterInfo[] methodParams = externMethod.GetParameters();
 
