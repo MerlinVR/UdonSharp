@@ -1,4 +1,4 @@
-# UdonSharp
+# UdonSharp [![Discord](https://img.shields.io/badge/Discord-My%20Discord%20Server-blueviolet?logo=discord)](https://discord.gg/Ub2n8ZA)
 ## An experimental compiler for compiling C#-like syntax to Udon assembly
 
 UdonSharp is a compiler that compiles C#-like syntax to Udon assembly. UdonSharp is not currently conformant to any version of the C# language specification, so there are many things that are not implemented or will not work. If you want to learn C#, I don't recommend you use UdonSharp for learning as it is right now, since there may be language features tutorials assume exist that don't yet exist in U#. 
@@ -15,7 +15,7 @@ This compiler is in a very early state with only about two weeks of work on it s
 - Flow control
   - Supports: `if` `else` `while` `for` `do` `foreach` `return` `break` `continue` `ternary operator (condition ? true : false)`
   - `switch` is currently not supported, but is planned
-  - `goto`: https://xkcd.com/292/ I may add it in the future anyways
+  - `goto` is not currently supported: https://xkcd.com/292/ I may add it in the future anyways
 - Extern method overload resolution with support for default arguments and `params` argument lists
 - Implicit and explicit type conversions
 - Arrays and array indexers
@@ -32,3 +32,6 @@ This compiler is in a very early state with only about two weeks of work on it s
 - The template variants of functions like `GetComponent<Transform>()` do not work currently, this is high priority. But you can use the type argument versions of them for now by calling `(Transform)GetComponent(typeof(Transform))`, it's just a little more verbose.
 - Udon currently only supports array `[]` collections and by extension UdonSharp only supports arrays at the moment. It looks like they might support `List<T>` at some point, but it is not there yet. 
 - User defined methods currently cannot be recursive. They will technically compile, but will likely break because all invocations of a function currently share the same "stack" variables. Support for this is planned as an optional attribute since implementing recursion with Udon's primitives makes it very performance heavy.
+
+## Setup
+
