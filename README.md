@@ -1,5 +1,5 @@
 # UdonSharp
-## An experimental compiler for compiling C#-like sytax to Udon assembly
+## An experimental compiler for compiling C#-like syntax to Udon assembly
 
 UdonSharp is a compiler that compiles C#-like syntax to Udon assembly. UdonSharp is not currently conformant to any version of the C# language specification, so there are many things that are not implemented or will not work. If you want to learn C#, I don't recommend you use UdonSharp for learning as it is right now, since there may be language features tutorials assume exist that don't yet exist in U#. 
 
@@ -25,7 +25,8 @@ This compiler is in a very early state with only about two weeks of work on it s
 - User defined methods with parameters and return values. (This does not currently support method overloads, default parameter values, or `ref`/`params` parameters)
 
 ## Differences from regular Unity C# to note
-- For the best experience making UdonSharp scripts, make your scripts inheret from `UdonSharpBehavior` instead of `MonoBehaviour`
+- For the best experience making UdonSharp scripts, make your scripts inherit from `UdonSharpBehavior` instead of `MonoBehaviour`
 - `Instantiate()` uses a method named `VRCInstantiate()` currently since VRC handles instantiate differently.
 - The template variants of functions like `GetComponent<Transform>()` do not work currently, this is high priority. But you can use the type argument versions of them for now by calling `(Transform)GetComponent(typeof(Transform))`, it's just a little more verbose.
 - Udon currently only supports array `[]` collections and by extension UdonSharp only supports arrays at the moment. It looks like they might support `List<T>` at some point, but it is not there yet. 
+- User defined methods currently cannot be recursive. They will technically compile, but will likely break because all invocations of a function currently share the same "stack" variables. Support for this is planned as an optional attribute since implementing recursion with Udon's primitives makes it very performance heavy.
