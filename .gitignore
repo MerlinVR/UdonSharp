@@ -61,4 +61,5 @@ crashlytics-build.properties
 # VRC stuff
 /Assets/[Uu]don/
 /Assets/VRCSDK/
+/Assets/UdonSharp/Scripts/Editor/
 Assets/VRCSDK.meta
