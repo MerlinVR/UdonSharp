@@ -14,7 +14,7 @@ namespace UdonSharp
 
         public bool IsResolved { get { return resolvedAddress != (uint.MaxValue - 1); } }
 
-        public string AddresStr() { return string.Format("{0:X6}", resolvedAddress); }
+        public string AddresStr() { return string.Format("0x{0:X8}", resolvedAddress); }
     }
 
     public class LabelTable
@@ -38,7 +38,7 @@ namespace UdonSharp
             }
             else
             {
-                labelCounter++;
+                labelCounter = ++nameCounter[labelName];
             }
 
             JumpLabel newLabel = new JumpLabel();
@@ -60,11 +60,6 @@ namespace UdonSharp
             }
 
             return null;
-        }
-
-        public void ResolveLabelAddresses(string udonAssembly)
-        {
-
         }
     }
 

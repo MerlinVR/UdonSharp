@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 
+[AddComponentMenu("")]
 public class Test01_DebugLog : MonoBehaviour
 {
     void Start()

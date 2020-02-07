@@ -49,9 +49,9 @@ namespace UdonSharp
 
         private Dictionary<string, System.Type> typeLookupCache;
 
-        private HashSet<string> nodeDefinitionLookup;
+        private static HashSet<string> nodeDefinitionLookup;
 
-        private Dictionary<string, string> builtinEventLookup;
+        private static Dictionary<string, string> builtinEventLookup;
 
         public ResolverContext()
         {
@@ -59,31 +59,41 @@ namespace UdonSharp
             usingNamespaces.Add(""); // Add a blank namespace in case the type is already fully qualified, this is used in ResolveExternType() and ResolveExternMethod()
 
             typeLookupCache = new Dictionary<string, System.Type>();
-            nodeDefinitionLookup = new HashSet<string>();
 
-            foreach (UdonNodeDefinition nodeDefinition in UdonEditorManager.Instance.GetNodeDefinitions())
+            if (nodeDefinitionLookup == null)
             {
-                nodeDefinitionLookup.Add(nodeDefinition.fullName);
+                nodeDefinitionLookup = new HashSet<string>();
+
+                foreach (UdonNodeDefinition nodeDefinition in UdonEditorManager.Instance.GetNodeDefinitions())
+                {
+                    nodeDefinitionLookup.Add(nodeDefinition.fullName);
+                }
+
+                //nodeDefinitionLookup.UnionWith(UdonEditorManager.Instance.GetNodeDefinitions().Select(e => e.fullName));
             }
 
-            builtinEventLookup = new Dictionary<string, string>();
-
-            foreach (UdonNodeDefinition nodeDefinition in UdonEditorManager.Instance.GetNodeDefinitions("Event_"))
+            if (builtinEventLookup == null)
             {
-                if (nodeDefinition.fullName == "Event_Custom")
-                    continue;
+                builtinEventLookup = new Dictionary<string, string>();
 
-                string eventNameStr = nodeDefinition.fullName.Substring(6);
-                char[] eventName = eventNameStr.ToCharArray();
-                eventName[0] = char.ToLowerInvariant(eventName[0]);
+                foreach (UdonNodeDefinition nodeDefinition in UdonEditorManager.Instance.GetNodeDefinitions("Event_"))
+                {
+                    if (nodeDefinition.fullName == "Event_Custom")
+                        continue;
 
-                builtinEventLookup.Add(eventNameStr, "_" + new string(eventName));
+                    string eventNameStr = nodeDefinition.fullName.Substring(6);
+                    char[] eventName = eventNameStr.ToCharArray();
+                    eventName[0] = char.ToLowerInvariant(eventName[0]);
+
+                    builtinEventLookup.Add(eventNameStr, "_" + new string(eventName));
+                }
             }
         }
 
         public void AddNamespace(string namespaceToAdd)
         {
-            usingNamespaces.Add(namespaceToAdd);
+            if (!usingNamespaces.Contains(namespaceToAdd))
+                usingNamespaces.Add(namespaceToAdd);
         }
 
         public void AddLocalFunction()
@@ -100,6 +110,39 @@ namespace UdonSharp
             }
 
             return false;
+        }
+
+        private readonly Dictionary<string, System.Tuple<System.Type, string>[]> internalMethodCustomArgs = new Dictionary<string, System.Tuple<System.Type, string>[]>()
+        {
+            { "_onAnimatorIK", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(int), "onAnimatorIkLayerIndex") } },
+            { "_onAudioFilterRead", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(float[]), "onAudioFilterReadData"), new System.Tuple<System.Type, string>(typeof(int), "onAudioFilterReadChannels") } },
+            { "_onCollisionEnter", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(Collision), "onCollisionEnterOther") } },
+            { "_onCollisionEnter2D", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(Collision2D), "onCollisionEnter2DOther") } },
+            { "_onCollisionExit", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(Collision), "onCollisionExitOther") } },
+            { "_onCollisionExit2D", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(Collision2D), "onCollisionExit2DOther") } },
+            { "_onCollisionStay", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(Collision), "onCollisionStayOther") } },
+            { "_onCollisionStay2D", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(Collision2D), "onCollisionStay2DOther") } },
+            { "_onControllerColliderHit", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(ControllerColliderHit), "onControllerColliderHitHit") } },
+            { "_onJointBreak", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(float), "onJointBreakBreakForce") } },
+            { "_onJointBreak2D", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(Joint2D), "onJointBreak2DBrokenJoint") } },
+            { "_onParticleCollision", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(GameObject), "onParticleCollisionOther") } },
+            { "_onRenderImage", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(RenderTexture), "onRenderImageSrc"), new System.Tuple<System.Type, string>(typeof(RenderTexture), "onRenderImageDest") } },
+            { "_onTriggerEnter", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(Collider), "onTriggerEnterOther") } },
+            { "_onTriggerEnter2D", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(Collider2D), "onTriggerEnter2DOther") } },
+            { "_onTriggerExit", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(Collider), "onTriggerExitOther") } },
+            { "_onTriggerExit2D", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(Collider2D), "onTriggerExit2DOther") } },
+            { "_onTriggerStay", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(Collider), "onTriggerStayOther") } },
+            { "_onTriggerStay2D", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(Collider2D), "onTriggerStay2DOther") } },
+            { "_onPlayerJoined", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerJoinedPlayer") } },
+            { "_onPlayerLeft", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerLeftPlayer") } },
+        };
+
+        public System.Tuple<System.Type, string>[] GetMethodCustomArgs(string methodName)
+        {
+            if (internalMethodCustomArgs.ContainsKey(methodName))
+                return internalMethodCustomArgs[methodName];
+
+            return null;
         }
 
         public MethodInfo ResolveStaticMethod(string qualifiedMethodName, string[] argTypeNames)
@@ -245,11 +288,18 @@ namespace UdonSharp
         /// </summary>
         /// <param name="externMethod"></param>
         /// <returns></returns>
-        public string GetUdonMethodName(MethodInfo externMethod, bool validate = true)
+        public string GetUdonMethodName(MethodBase externMethod, bool validate = true)
         {
-            string functionNamespace = externMethod.DeclaringType.FullName.Replace(".", "");
-            string methodName = $"__{externMethod.Name.Trim('_')}";
+            string functionNamespace = externMethod.ReflectedType.FullName.Replace(".", "").Replace("[]", "Array")/*.Replace("&", "Ref")*/;
+            string methodName = $"__{externMethod.Name.Trim('_').TrimStart('.')}";
             ParameterInfo[] methodParams = externMethod.GetParameters();
+
+            if ((functionNamespace == "UdonSharpUdonSharpBehavior")
+                && methodName == "__VRCInstantiate")
+            {
+                functionNamespace = "VRCInstantiate";
+                methodName = "__Instantiate";
+            }
 
             string paramStr = "";
 
@@ -263,7 +313,18 @@ namespace UdonSharp
                 }
             }
 
-            string returnStr = $"__{GetUdonTypeName(externMethod.ReturnType)}";
+            string returnStr = "";
+
+            if (externMethod is MethodInfo)
+            {
+                returnStr = $"__{GetUdonTypeName(((MethodInfo)externMethod).ReturnType)}";
+            }
+            else if (externMethod is ConstructorInfo)
+            {
+                returnStr = $"__{GetUdonTypeName(((ConstructorInfo)externMethod).DeclaringType)}";
+            }
+            else
+                throw new System.Exception("Invalid extern method type for getting Udon name");
 
             string finalFunctionSig = $"{functionNamespace}.{methodName}{paramStr}{returnStr}";
 
@@ -318,14 +379,49 @@ namespace UdonSharp
             return score;
         }
 
-        public MethodInfo FindBestOverloadFunction(MethodInfo[] methods, List<System.Type> methodArgs)
+        // Mostly copy paste of above adapted for just checking the types in `params` args
+        private int ScoreMethodParamArgPair(System.Type methodParam, System.Type argType)
+        {
+            // This doesn't yet handle implicit user defined casts... there are probably other things this should handle too.
+            int score = 1000000;
+
+            if (methodParam == argType)
+            {
+                score = 0;
+            }
+            else if (methodParam.IsValidNumericImplicitCastTargetType() && argType.IsValidNumericImplictCastSourceType())
+            {
+                score = UdonSharpUtils.GetImplicitNumericCastDistance(methodParam, argType);
+            }
+            else if (methodParam == typeof(object))
+            {
+                score = 30; // We want to avoid object args as much as possible
+            }
+            else if (argType.IsSubclassOf(methodParam))
+            {
+                // Count the distance in the inheritance
+
+                System.Type currentType = argType;
+
+                score = 0;
+                while (currentType != methodParam && score < 20)
+                {
+                    score++;
+                    currentType = currentType.BaseType;
+                }
+            }
+
+            return score;
+        }
+
+        public MethodBase FindBestOverloadFunction(MethodBase[] methods, List<System.Type> methodArgs, bool checkIfInUdon = true)
         {
             if (methods.Length == 0)
-                throw new System.ArgumentException("");
+                throw new System.ArgumentException("Cannot find overload from 0 length method array");
 
-            List<MethodInfo> validMethods = new List<MethodInfo>();
+            List<MethodBase> validMethods = new List<MethodBase>();
 
-            foreach (MethodInfo method in methods)
+            foreach (MethodBase method in methods)
             {
                 ParameterInfo[] methodParams = method.GetParameters();
 
@@ -348,19 +444,33 @@ namespace UdonSharp
 
                     System.Type argType = methodArgs[i];
 
-                    if (!currentParam.ParameterType.IsImplicitlyAssignableFrom(argType) && 
-                        (methodParams.Last().GetCustomAttributes(typeof(System.ParamArrayAttribute), false).Length == 0 ||
-                        currentParam.ParameterType.IsImplicitlyAssignableFrom(argType.MakeArrayType())))
+                    if (!currentParam.ParameterType.IsImplicitlyAssignableFrom(argType) && !currentParam.HasParamsParameter() && !currentParam.ParameterType.IsByRef)
                     {
                         isMethodValid = false;
                         break;
                     }
-
-                    // ref/out params need to be exactly the same since they are passing in the actual variable
-                    if (currentParam.ParameterType.IsByRef && currentParam.ParameterType != argType)
+                    else if (currentParam.HasParamsParameter()) // Make sure all params args can be assigned to the param type
                     {
-                        isMethodValid = false;
+                        System.Type paramType = currentParam.ParameterType.GetElementType();
+
+                        for (int j = i; j < methodArgs.Count; ++j)
+                        {
+                            if (!paramType.IsImplicitlyAssignableFrom(methodArgs[j]))
+                            {
+                                isMethodValid = false;
+                                break;
+                            }
+                        }
+
                         break;
+                    }
+                    else if (currentParam.ParameterType.IsByRef) // ref/out params need to be exactly the same since they are passing in the actual variable
+                    {
+                        if (!currentParam.ParameterType.GetElementType().IsAssignableFrom(argType))
+                        {
+                            isMethodValid = false;
+                            break;
+                        }
                     }
                 }
 
@@ -370,7 +480,7 @@ namespace UdonSharp
                     isMethodValid = false;
                 }
 
-                if (isMethodValid && IsValidUdonMethod(GetUdonMethodName(method, false))) // Only add methods that exist in Udon's context
+                if (isMethodValid && (!checkIfInUdon || IsValidUdonMethod(GetUdonMethodName(method, false)))) // Only add methods that exist in Udon's context
                 {
                     validMethods.Add(method);
                 }
@@ -391,7 +501,7 @@ namespace UdonSharp
 
             // If there are non-generic forms of the method that match, use those
             int genericCount = 0, nonGenericCount = 0;
-            foreach (MethodInfo methodInfo in validMethods)
+            foreach (MethodBase methodInfo in validMethods)
             {
                 if (methodInfo.IsGenericMethod)
                     genericCount++;
@@ -405,9 +515,22 @@ namespace UdonSharp
             if (validMethods.Count == 1)
                 return validMethods.First();
 
+            // Special case for UsonSharp operators. If we found a valid operator that's defined by the type, and an operator defined by UdonSharp, then use the operator defined on the type
+            int normalOperatorCount = 0, udonSharpOperatorCount = 0;
+            foreach (MethodBase methodInfo in validMethods)
+            {
+                if (methodInfo is OperatorMethodInfo)
+                    udonSharpOperatorCount++;
+                else
+                    normalOperatorCount++;
+            }
+
+            if (normalOperatorCount > 0 && udonSharpOperatorCount > 0)
+                validMethods = validMethods.Where(e => !(e is OperatorMethodInfo)).ToList();
+
             // Count the params using methods in this pass
             int paramsArgCount = 0, nonParamsArgCount = 0;
-            foreach (MethodInfo methodInfo in validMethods)
+            foreach (MethodBase methodInfo in validMethods)
             {
                 ParameterInfo[] methodParameters = methodInfo.GetParameters();
 
@@ -431,7 +554,7 @@ namespace UdonSharp
 
             // Prefer methods that can be fully satisfied without default arguments
             int defaultArgMethodCount = 0, fullySatisfiedArgMethodCount = 0;
-            foreach (MethodInfo methodInfo in validMethods)
+            foreach (MethodBase methodInfo in validMethods)
             {
                 ParameterInfo[] methodParams = methodInfo.GetParameters();
                 
@@ -453,10 +576,10 @@ namespace UdonSharp
                 return validMethods.First();
 
             // Now finally we try to find what has more specific types for the arguments
-            List<MethodInfo> exactTypeMatches = new List<MethodInfo>();
+            List<MethodBase> exactTypeMatches = new List<MethodBase>();
             int nonExactTypeMatchCount = 0;
 
-            foreach (MethodInfo methodInfo in validMethods)
+            foreach (MethodBase methodInfo in validMethods)
             {
                 ParameterInfo[] methodParams = methodInfo.GetParameters();
 
@@ -498,9 +621,9 @@ namespace UdonSharp
             // Using Roslyn to find the correct overload is an option since they have the function PerformMemberOverloadResolution, but it's all internal and built on internal types, 
             //  so it's a non-trivial thing to call into.
 
-            List<System.Tuple<MethodInfo, float>> scoredMethods = new List<System.Tuple<MethodInfo, float>>();
+            List<System.Tuple<MethodBase, float>> scoredMethods = new List<System.Tuple<MethodBase, float>>();
 
-            foreach (MethodInfo methodInfo in validMethods)
+            foreach (MethodBase methodInfo in validMethods)
             {
                 ParameterInfo[] methodParams = methodInfo.GetParameters();
 
@@ -509,12 +632,25 @@ namespace UdonSharp
                 for (int i = 0; i < methodParams.Length; ++i)
                 {
                     System.Type argType = i < methodArgs.Count ? methodArgs[i] : null;
-                    totalScore += ScoreMethodParamArgPair(methodParams[i], argType);
+
+                    if (!methodParams[i].HasParamsParameter())
+                    {
+                        totalScore += ScoreMethodParamArgPair(methodParams[i], argType);
+                    }
+                    else
+                    {
+                        System.Type paramsArg = methodParams[i].ParameterType.GetElementType();
+
+                        for (int j = i; j < methodArgs.Count; ++j)
+                        {
+                            totalScore += ScoreMethodParamArgPair(paramsArg, methodArgs[j]);
+                        }
+                    }
                 }
 
                 float finalScore = totalScore / (1f + methodParams.Length);
 
-                scoredMethods.Add(new System.Tuple<MethodInfo, float>(methodInfo, finalScore));
+                scoredMethods.Add(new System.Tuple<MethodBase, float>(methodInfo, finalScore));
             }
 
             scoredMethods.OrderBy(e => e.Item1);
@@ -524,7 +660,7 @@ namespace UdonSharp
 
             float minimumScore = scoredMethods.First().Item2;
 
-            List<MethodInfo> ambiguousMethods = new List<MethodInfo>();
+            List<MethodBase> ambiguousMethods = new List<MethodBase>();
 
             for (int i = 1; i < scoredMethods.Count; ++i)
             {
@@ -540,7 +676,7 @@ namespace UdonSharp
 
                 string methodListString = "";
 
-                foreach (MethodInfo methodInfo in ambiguousMethods)
+                foreach (MethodBase methodInfo in ambiguousMethods)
                     methodListString += $"{methodInfo}\n";
 
                 throw new System.Exception("Ambiguous method overload reference, candidate methods:\n" + methodListString);

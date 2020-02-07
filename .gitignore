@@ -58,3 +58,7 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+# VRC stuff
+/Assets/[Uu]don/
+/Assets/VRCSDK/
+Assets/VRCSDK.meta

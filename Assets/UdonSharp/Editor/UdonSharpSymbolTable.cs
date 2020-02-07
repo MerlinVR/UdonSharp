@@ -15,6 +15,7 @@ namespace UdonSharp
         Internal = 8, // Generated as an intermediate variable that stores intermediate calculations
         Constant = 16, // Used to represent a constant value that does not change. This can either be statically defined constants 
         Array = 32, // If this symbol is an array type
+        This = 64, // defines one of the 3 builtin `this` assignments for UdonBehaviour, GameObject, and Transform
     }
 
     public class SymbolDefinition
@@ -214,8 +215,8 @@ namespace UdonSharp
                 if (definition.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) &&
                     definition.declarationType.HasFlag(SymbolDeclTypeFlags.Internal) &&
                     definition.symbolCsType == type &&
-                    definition.symbolDefaultValue != null &&
-                    definition.symbolDefaultValue == value)
+                    definition.symbolDefaultValue.Equals(value))
+                    //definition.symbolDefaultValue != null &&
                 {
                     foundSymbol = definition;
                     return true;
@@ -228,7 +229,7 @@ namespace UdonSharp
 
         public SymbolDefinition CreateConstSymbol(System.Type type, object value)
         {
-            if (!type.IsAssignableFrom(value.GetType()))
+            if (value != null && !type.IsAssignableFrom(value.GetType()))
                 throw new ArgumentException($"Non-compatible value given for type {type.FullName}");
 
             SymbolDefinition symbolDefinition;
@@ -240,6 +241,19 @@ namespace UdonSharp
             }
 
             return symbolDefinition;
+        }
+
+        public SymbolDefinition CreateThisSymbol(System.Type type)
+        {
+            SymbolTable globalSymTable = GetGlobalSymbolTable();
+
+            foreach (SymbolDefinition definition in globalSymTable.symbolDefinitions)
+            {
+                if (definition.declarationType.HasFlag(SymbolDeclTypeFlags.This) && definition.symbolCsType == type)
+                    return definition;
+            }
+
+            return CreateUnnamedSymbol(type, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.This);
         }
 
         /// <summary>
@@ -314,26 +328,29 @@ namespace UdonSharp
 
             string uniqueSymbolName = symbolName;
 
-            // Only increment internal symbols at the moment
+            bool hasGlobalDeclaration = false;
+            
             if (declType.HasFlag(SymbolDeclTypeFlags.Internal))
             {
-                uniqueSymbolName += "_intnl";
-
-                if (declType.HasFlag(SymbolDeclTypeFlags.Constant)) // Internal constants can be shared across everything without any issues
-                {
-                    uniqueSymbolName += "_const";
-                    uniqueSymbolName = $"__{IncrementGlobalNameCounter(uniqueSymbolName)}{uniqueSymbolName}";
-                }
-                else
-                {
-                    uniqueSymbolName = $"__{IncrementUniqueNameCounter(uniqueSymbolName)}{uniqueSymbolName}";
-                }
+                uniqueSymbolName = $"intnl_{uniqueSymbolName}";
             }
-            // Non-internal constants need to be globally allocated since you could have two constants named the same thing in two different functions, but with different default values.
-            else if (declType.HasFlag(SymbolDeclTypeFlags.Constant))
+            if (declType.HasFlag(SymbolDeclTypeFlags.Constant))
             {
-                uniqueSymbolName += "_const";
-                uniqueSymbolName = $"__{IncrementGlobalNameCounter(uniqueSymbolName)}{uniqueSymbolName}";
+                uniqueSymbolName = $"const_{uniqueSymbolName}";
+                hasGlobalDeclaration = true;
+            }
+            if (declType.HasFlag(SymbolDeclTypeFlags.This))
+            {
+                uniqueSymbolName = $"this_{uniqueSymbolName}";
+                hasGlobalDeclaration = true;
+            }
+
+            if (!declType.HasFlag(SymbolDeclTypeFlags.Public) && !declType.HasFlag(SymbolDeclTypeFlags.Private))
+            {
+                if (hasGlobalDeclaration)
+                    uniqueSymbolName = $"__{IncrementGlobalNameCounter(uniqueSymbolName)}_{uniqueSymbolName}";
+                else
+                    uniqueSymbolName = $"__{IncrementUniqueNameCounter(uniqueSymbolName)}_{uniqueSymbolName}";
             }
 
             string udonTypeName = resolver.GetUdonTypeName(resolvedSymbolType);
@@ -348,7 +365,14 @@ namespace UdonSharp
             symbolDefinition.symbolResolvedTypeName = udonTypeName;
             symbolDefinition.symbolUniqueName = uniqueSymbolName;
 
-            symbolDefinitions.Add(symbolDefinition);
+            if (hasGlobalDeclaration)
+            {
+                GetGlobalSymbolTable().symbolDefinitions.Add(symbolDefinition);
+            }
+            else
+            {
+                symbolDefinitions.Add(symbolDefinition);
+            }
 
             return symbolDefinition;
         }
@@ -375,8 +399,11 @@ namespace UdonSharp
 
             while (currentTable != null)
             {
-                foreach (SymbolDefinition symbolDefinition in currentTable.symbolDefinitions)
+                //foreach (SymbolDefinition symbolDefinition in currentTable.symbolDefinitions)
+                for (int i = currentTable.symbolDefinitions.Count - 1; i >= 0; --i)
                 {
+                    SymbolDefinition symbolDefinition = currentTable.symbolDefinitions[i];
+
                     if (!symbolDefinition.declarationType.HasFlag(SymbolDeclTypeFlags.Internal) &&
                         symbolDefinition.symbolOriginalName == symbolName)
                     {
@@ -414,6 +441,44 @@ namespace UdonSharp
                 return null;
 
             return CreateNamedSymbolInternal(typeName, type, declType | SymbolDeclTypeFlags.Internal | (IsGlobalSymbolTable ? 0 : SymbolDeclTypeFlags.Local));
+        }
+
+        public List<SymbolTable> GetAllChildSymbolTables()
+        {
+            List<SymbolTable> childTables = new List<SymbolTable>();
+
+            foreach (SymbolTable childTable in childSymbolTables)
+            {
+                childTables.AddRange(childTable.GetAllChildSymbolTables());
+            }
+
+            return childTables;
+        }
+
+        public void FlattenTableCountersToGlobal()
+        {
+            Dictionary<string, int> namedSymbolMaxCount = new Dictionary<string, int>();
+
+            foreach (SymbolTable childTable in GetAllChildSymbolTables())
+            {
+                foreach (var childSymbolCounter in childTable.namedSymbolCounters)
+                {
+                    if (namedSymbolMaxCount.ContainsKey(childSymbolCounter.Key))
+                        namedSymbolMaxCount[childSymbolCounter.Key] = Mathf.Max(namedSymbolMaxCount[childSymbolCounter.Key], childSymbolCounter.Value);
+                    else
+                        namedSymbolMaxCount.Add(childSymbolCounter.Key, childSymbolCounter.Value);
+                }
+            }
+
+            SymbolTable globalTable = GetGlobalSymbolTable();
+
+            foreach (var childSymbolNameCount in namedSymbolMaxCount)
+            {
+                if (globalTable.namedSymbolCounters.ContainsKey(childSymbolNameCount.Key))
+                    globalTable.namedSymbolCounters[childSymbolNameCount.Key] = Mathf.Max(globalTable.namedSymbolCounters[childSymbolNameCount.Key], childSymbolNameCount.Value);
+                else
+                    globalTable.namedSymbolCounters.Add(childSymbolNameCount.Key, childSymbolNameCount.Value);
+            }
         }
     }
 

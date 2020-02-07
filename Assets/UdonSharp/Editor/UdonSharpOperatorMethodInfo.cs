@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 
 namespace UdonSharp
@@ -24,7 +25,7 @@ namespace UdonSharp
         Subtraction,
         Multiplication,
         Division,
-        Remainder, // Not implemented in Udon yet
+        Remainder,
         LeftShift,
         RightShift,
         // UnaryPlus // This should be discarded before it gets to this point. I don't think there are any types that are relevant in Udon where this would matter
@@ -94,7 +95,7 @@ namespace UdonSharp
             }
         }
 
-        public override Type ReflectedType => throw new NotImplementedException();
+        public override Type ReflectedType { get { return operatorSourceType; } }
 
         private Type operatorSourceType;
         private BuiltinOperatorType operatorType;
@@ -103,9 +104,6 @@ namespace UdonSharp
         {
             operatorSourceType = type;
             operatorType = operatorTypeIn;
-
-            if (operatorTypeIn == BuiltinOperatorType.Remainder)
-                throw new ArgumentException("Udon does not yet support the % operator on builtin types");
         }
 
         public override MethodInfo GetBaseDefinition()
@@ -121,6 +119,11 @@ namespace UdonSharp
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             return null;
+        }
+
+        public override string ToString()
+        {
+            return $"UdonSharp Operator {ReturnType} {Name}({string.Join(", ", GetParameters().Select(e => e.Name))})";
         }
 
         public override bool Equals(object obj)

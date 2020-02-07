@@ -25,13 +25,16 @@ namespace UdonSharp
 
         public void AssignHeapConstants(IUdonProgram program)
         {
-            foreach (SymbolDefinition symbol in module.moduleSymbols.GetAllUniqueChildSymbols())
+            if (program != null)
             {
-                if (symbol.symbolDefaultValue != null)
+                foreach (SymbolDefinition symbol in module.moduleSymbols.GetAllUniqueChildSymbols())
                 {
-                    uint symbolAddress = program.SymbolTable.GetAddressFromSymbol(symbol.symbolUniqueName);
+                    if (symbol.symbolDefaultValue != null)
+                    {
+                        uint symbolAddress = program.SymbolTable.GetAddressFromSymbol(symbol.symbolUniqueName);
 
-                    program.Heap.SetHeapVariable(symbolAddress, symbol.symbolDefaultValue, symbol.symbolCsType);
+                        program.Heap.SetHeapVariable(symbolAddress, symbol.symbolDefaultValue, symbol.symbolCsType);
+                    }
                 }
             }
         }

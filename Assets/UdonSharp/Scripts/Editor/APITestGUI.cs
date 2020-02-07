@@ -53,6 +53,16 @@ public class APITestGUI : EditorWindow
         {
             LookupFunction(); 
         }
+
+        if (GUILayout.Button("Lock Assembly"))
+        {
+            EditorApplication.LockReloadAssemblies();
+        }
+
+        if (GUILayout.Button("Unlock assembly"))
+        {
+            EditorApplication.UnlockReloadAssemblies();
+        }
     }
 
     private void OnSearchNodeDefinitions()
@@ -94,8 +104,8 @@ public class APITestGUI : EditorWindow
 
     private void ProbeCILOutput()
     {
-        Debug.Log(UdonSharpUtils.GetNumericConversionMethod(typeof(uint), typeof(Vector2)));
-        
+        //Debug.Log(UdonSharpUtils.GetNumericConversionMethod(typeof(uint), typeof(Vector2)));
+
 
         //ResolverContext resolverContext = new ResolverContext();
 
@@ -121,15 +131,24 @@ public class APITestGUI : EditorWindow
         //Debug.Log(typeof(float).IsAssignableFrom(typeof(int)));
 
 
-        foreach (MemberInfo methodInfo in typeof(string).GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)/*.Where(e => e.Name.Contains("op_"))*/)
-        {
-            Debug.Log(methodInfo);
-        }
+        //foreach (MemberInfo methodInfo in typeof(Vector3).GetConstructors(BindingFlags.Static | BindingFlags.Public).Where(e => e.Name.Contains("ctor")))
+        //{
+        //    Debug.Log(methodInfo);
+        //}
 
         //foreach (MemberInfo methodInfo in typeof(System.Convert).GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.FlattenHierarchy))
         //{
         //    Debug.Log(methodInfo.Name);
         //}
+
+        //foreach (MemberInfo methodInfo in typeof(float[]).GetMembers(BindingFlags.Instance | BindingFlags.Public))
+        //{
+        //    Debug.Log(methodInfo);
+        //}
+
+        //Debug.Log(typeof(FFTWindow));
+
+        //Debug.Log(typeof(float[]).GetElementType());
     }
 
     private void LookupFunction()

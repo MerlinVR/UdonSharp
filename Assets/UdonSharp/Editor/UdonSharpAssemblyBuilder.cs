@@ -1,6 +1,5 @@
-﻿
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Text;
+using System.Text.RegularExpressions;
 
 namespace UdonSharp
 {
@@ -8,14 +7,65 @@ namespace UdonSharp
     {
         StringBuilder assemblyTextBuilder = new StringBuilder();
         int programCounter = 0;
-        
+
+        static LabelTable currentLabelTable = null;
+
         public AssemblyBuilder()
         {
         }
 
-        public string GetAssemblyStr()
+        public void ResetProgramCounter()
         {
-            return assemblyTextBuilder.ToString();
+            programCounter = 0;
+        }
+
+        // Resolve any labels that didn't have addresses at the time of creation
+        public string GetAssemblyStr(LabelTable labelTable = null)
+        {
+            if (labelTable == null)
+                return assemblyTextBuilder.ToString();
+
+            string assemblyString = assemblyTextBuilder.ToString();
+
+            currentLabelTable = labelTable;
+
+            assemblyString = Regex.Replace(assemblyString, @"(?<whitespace>\s*)(?<labeltype>JUMP_LABEL,|JUMP_IF_FALSE_LABEL,)\s*[[](?<label>[a-zA-Z_\d]+)[\]](?<commentwhitespace>\s*)(?<comment>[#]+\s*[a-zA-Z#\s]+)*", MatchEval);
+
+            currentLabelTable = null;
+
+            return assemblyString;
+        }
+
+        private static string MatchEval(Match match)
+        {
+            GroupCollection groupCollection = match.Groups;
+
+            string replaceStr = "";
+            
+            replaceStr += groupCollection["whitespace"].Value; // Whitespace
+
+            if (groupCollection["labeltype"].Value == "JUMP_LABEL,")
+            {
+                replaceStr += "JUMP, ";
+            }
+            else if (groupCollection["labeltype"].Value == "JUMP_IF_FALSE_LABEL,")
+            {
+                replaceStr += "JUMP_IF_FALSE, ";
+            }
+
+            string labelName = groupCollection["label"].Value;
+
+            JumpLabel targetLabel = currentLabelTable.GetLabel(labelName);
+
+            replaceStr += targetLabel.AddresStr();
+
+            replaceStr += groupCollection["commentwhitespace"];
+
+            // optional comment
+            if (groupCollection.Count > 4)
+                replaceStr += groupCollection["comment"].Value;
+
+            return replaceStr;
         }
 
         public void AppendCommentedLine(string line, string comment, int indent = 2)
@@ -23,6 +73,9 @@ namespace UdonSharp
             // Make sure the comment stays on the same line
             comment.Replace('\n', ' ');
             comment.Replace('\r', ' ');
+
+            //if (programCounter > 0)
+            //    assemblyTextBuilder.AppendFormat("        # {0:X8}\n", programCounter);
 
             assemblyTextBuilder.Append($"{new string(' ', indent * 4)}{line}");
             if (comment.Length > 0)
@@ -72,6 +125,12 @@ namespace UdonSharp
             programCounter += UdonSharpUtils.GetUdonInstructionSize("JUMP");
         }
 
+        public void AddJumpToExit()
+        {
+            AppendCommentedLine($"JUMP, 0xFFFFFFFF", "");
+            programCounter += UdonSharpUtils.GetUdonInstructionSize("JUMP");
+        }
+
         public void AddJumpIfFalse(JumpLabel jumpTarget, string comment = "")
         {
             if (jumpTarget.IsResolved)
@@ -94,7 +153,9 @@ namespace UdonSharp
 
         public void AddJumpIndirect(SymbolDefinition addressSymbol, string comment = "")
         {
-            throw new System.NotImplementedException("Jump indirect instruction is not implemented in UdonSharp yet."); // I'm not sure why JUMP_INDIRECT both takes an address and pops an address from the stack
+            //throw new System.NotImplementedException("Jump indirect instruction is not implemented in UdonSharp yet."); // I'm not sure why JUMP_INDIRECT both takes an address and pops an address from the stack
+            AppendCommentedLine($"JUMP_INDIRECT, {addressSymbol.symbolUniqueName}", comment);
+            programCounter += UdonSharpUtils.GetUdonInstructionSize("JUMP_INDIRECT");
         }
 
         public void AddJumpLabel(JumpLabel jumpLabel, string comment = "")
@@ -103,8 +164,8 @@ namespace UdonSharp
                 throw new System.Exception($"Target jump label {jumpLabel.uniqueName} has already been used!");
 
             jumpLabel.resolvedAddress = (uint)programCounter;
-            AppendCommentedLine("NOP", comment);
-            programCounter += UdonSharpUtils.GetUdonInstructionSize("NOP");
+            //AppendCommentedLine("NOP", comment);
+            //programCounter += UdonSharpUtils.GetUdonInstructionSize("NOP");
         }
 
         public void AddCopy(string comment = "")
