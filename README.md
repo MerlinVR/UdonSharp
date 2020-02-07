@@ -1,4 +1,4 @@
-# UdonSharp [![Discord](https://img.shields.io/badge/Discord-My%20Discord%20Server-blueviolet?logo=discord)](https://discord.gg/Ub2n8ZA)
+# UdonSharp
 ## An experimental compiler for compiling C#-like syntax to Udon assembly
 
 UdonSharp is a compiler that compiles C#-like syntax to Udon assembly. UdonSharp is not currently conformant to any version of the C# language specification, so there are many things that are not implemented or will not work. If you want to learn C#, I don't recommend you use UdonSharp for learning as it is right now, since there may be language features tutorials assume exist that don't yet exist in U#. 
@@ -35,3 +35,5 @@ This compiler is in a very early state with only about two weeks of work on it s
 
 ## Setup
 
+## Links
+ [![Discord](https://img.shields.io/badge/Discord-My%20Discord%20Server-blueviolet?logo=discord)](https://discord.gg/Ub2n8ZA)
