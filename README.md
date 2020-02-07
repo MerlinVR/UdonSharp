@@ -7,7 +7,8 @@ This compiler is in a very early state with only about two weeks of work on it s
 
 ## Features that Udon supports which are currently not supported by U#
 - Marking variables as network synced
-- That's all as far as I know
+- Setting default values on class fields
+- That's all as far as I know, these are high on the list of priorities to be implemented.
 
 ## C# features supported
 - Automatic property and field accessor handling for getting and setting
@@ -15,7 +16,7 @@ This compiler is in a very early state with only about two weeks of work on it s
   - Supports: `if` `else` `while` `for` `do` `foreach` `return` `break` `continue` `ternary operator (condition ? true : false)`
   - `switch` is currently not supported, but is planned
   - `goto`: https://xkcd.com/292/ I may add it in the future anyways
-- Extern method overload resolution
+- Extern method overload resolution with support for default arguments and `params` argument lists
 - Implicit and explicit type conversions
 - Arrays and array indexers
 - All builtin arithmetic operators that Udon exposes (BitwiseNot is not implemented on Udon's side yet and I don't feel like making a special condition for it)
@@ -23,6 +24,7 @@ This compiler is in a very early state with only about two weeks of work on it s
 - `typeof()`
 - Extern methods with out or ref parameters (such as many variants of `Physics.Raycast()`)
 - User defined methods with parameters and return values. (This does not currently support method overloads, default parameter values, or `ref`/`params` parameters)
+- Unity/Udon event callbacks with arguments. For instance, registering a OnPlayerJoined event with a VRCPlayerApi argument is valid.
 
 ## Differences from regular Unity C# to note
 - For the best experience making UdonSharp scripts, make your scripts inherit from `UdonSharpBehavior` instead of `MonoBehaviour`
