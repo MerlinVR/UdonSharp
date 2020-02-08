@@ -84,7 +84,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         public void AssembleCsProgram()
         {
-            Undo.RecordObject(this, "Compile C# program");
+            //Undo.RecordObject(this, "Compile C# program");
 
             UdonSharpCompiler compiler = new UdonSharpCompiler(sourceCsScript);
             udonAssembly = compiler.Compile(); 
