@@ -296,7 +296,7 @@ namespace UdonSharp
             string methodName = $"__{externMethod.Name.Trim('_').TrimStart('.')}";
             ParameterInfo[] methodParams = externMethod.GetParameters();
 
-            if ((functionNamespace == "UdonSharpUdonSharpBehavior")
+            if ((functionNamespace == "UdonSharpUdonSharpBehaviour")
                 && methodName == "__VRCInstantiate")
             {
                 functionNamespace = "VRCInstantiate";

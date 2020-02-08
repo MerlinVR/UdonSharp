@@ -799,7 +799,7 @@ namespace UdonSharp
             foundMethods = foundMethods.Concat(typeof(Component).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy).Where(e => e.Name == localUdonMethodName)).ToArray();
 
             if (localUdonMethodName == "VRCInstantiate")
-                foundMethods = foundMethods.Concat(typeof(UdonSharpBehavior).GetMethods(BindingFlags.Static | BindingFlags.Public).Where(e => e.Name == localUdonMethodName)).ToArray();
+                foundMethods = foundMethods.Concat(typeof(UdonSharpBehaviour).GetMethods(BindingFlags.Static | BindingFlags.Public).Where(e => e.Name == localUdonMethodName)).ToArray();
 
             if (foundMethods.Length == 0)
                 return false;

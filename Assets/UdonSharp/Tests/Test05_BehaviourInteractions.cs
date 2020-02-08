@@ -3,12 +3,17 @@ using UnityEngine;
 using UnityEngine.UI;
 
 [AddComponentMenu("")]
-public class Test05_BehaviourInteractions : UdonSharpBehavior
+public class Test05_BehaviourInteractions : UdonSharpBehaviour
 {
     private float[] spectrumData;
 
     private AudioSource audioSource;
     private Text textComponent;
+
+    GameObject GetTestObject()
+    {
+        return null;
+    }
 
     void Start()
     {

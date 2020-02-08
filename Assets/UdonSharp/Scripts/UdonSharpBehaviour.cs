@@ -3,7 +3,7 @@ using VRC.Udon.Common.Interfaces;
 
 namespace UdonSharp
 {
-    public abstract class UdonSharpBehavior : MonoBehaviour
+    public abstract class UdonSharpBehaviour : MonoBehaviour
     {
         // Stubs for the UdonBehaviour functions
         public object GetProgramVariable(string name) { return null; }

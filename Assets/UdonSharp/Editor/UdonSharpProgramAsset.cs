@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,6 +12,20 @@ namespace UdonSharp
 
     public class UdonSharpProgramAsset : UdonAssemblyProgramAsset
     {
+        private readonly string programCsTemplate = @"
+using UnityEngine;
+using UdonSharp;
+
+[AddComponentMenu("""")]
+public class <TemplateClassName> : UdonSharpBehaviour
+{
+    void Start()
+    {
+        
+    }
+}
+";
+
         [SerializeField]
         public MonoScript sourceCsScript;
 
@@ -25,6 +40,12 @@ namespace UdonSharp
                 Undo.RecordObject(this, "Changed source C# script");
                 sourceCsScript = newSourceCsScript;
                 dirty = true;
+            }
+
+            if (sourceCsScript == null)
+            {
+                DrawCreateScriptButton();
+                return;
             }
 
             DrawPublicVariables(publicVariables, ref dirty);
@@ -79,6 +100,33 @@ namespace UdonSharp
             compiler.AssignHeapConstants(program);
 
             EditorUtility.SetDirty(this);
+        }
+
+        private void DrawCreateScriptButton()
+        {
+            if (GUILayout.Button("Create Script"))
+            {
+                string thisPath = AssetDatabase.GetAssetPath(this);
+                //string initialPath = Path.GetDirectoryName(thisPath);
+                string fileName = Path.GetFileNameWithoutExtension(thisPath).Replace(" Udon C# Program Asset", "").Replace(" ", "").Replace("#", "Sharp");
+
+                string chosenFilePath = EditorUtility.SaveFilePanelInProject("Save UdonScript File", fileName, "cs", "Save UdonScript file");
+                Debug.Log(chosenFilePath);
+
+                string chosenFileName = Path.GetFileNameWithoutExtension(chosenFilePath).Replace(" ", "").Replace("#", "Sharp");
+
+                if (chosenFilePath.Length > 0)
+                {
+                    string fileContents = programCsTemplate.Replace("<TemplateClassName>", chosenFileName);
+
+                    File.WriteAllText(chosenFilePath, fileContents);
+
+                    AssetDatabase.ImportAsset(chosenFilePath, ImportAssetOptions.ForceSynchronousImport);
+                    AssetDatabase.Refresh();
+
+                    sourceCsScript = AssetDatabase.LoadAssetAtPath<MonoScript>(chosenFilePath);
+                }
+            }
         }
     }
     

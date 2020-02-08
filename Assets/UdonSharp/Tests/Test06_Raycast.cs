@@ -2,7 +2,7 @@
 using UnityEngine;
 
 [AddComponentMenu("")]
-public class Test06_Raycast : UdonSharpBehavior
+public class Test06_Raycast : UdonSharpBehaviour
 {
     private void Start()
     {

@@ -2,7 +2,7 @@
 using UnityEngine;
 
 [AddComponentMenu("")]
-public class Test04_Constructors : UdonSharpBehavior
+public class Test04_Constructors : UdonSharpBehaviour
 {
     float[] floatArr;
 
