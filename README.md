@@ -35,6 +35,25 @@ This compiler is in a very early state with only about two weeks of work on it s
 
 ## Setup
 
+### Requirements
+- Unity 2018.4.15 or greater
+- VRCSDK3
+- UdonSDK
+- The latest [release](https://github.com/Merlin-san/UdonSharp/releases/latest) of UdonSharp
+
+### Installation
+1. Read the getting started with Udon official thread https://ask.vrchat.com/t/getting-started-with-udon/80 this has basic installation instructions for Udon.
+2. Install the latest version of the VRCSDK3 and UdonSDK linked on the getting started thread. Make sure to install VRCSDK3 first.
+3. Get the latest release of UdonSharp from [here](https://github.com/Merlin-san/UdonSharp/releases/latest) and install it to your project.
+
+### Getting started
+1. Make a new object in your scene
+2. Add an `Udon Behaviour` component to your object
+3. Below the "New Program" button click the dropdown and select "Udon C# Program Asset"
+4. Now click the New Program button, this will create a new UdonSharp program asset for you
+5. Select the C# script that you want to compile into an Udon program
+
+
 ## Credits
 [**Toocanzs**](https://github.com/Toocanzs) - For helping with miscellaneous things
 
