@@ -1158,9 +1158,6 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
-            // todo: handle user defined functions that may return things
-            //visitorContext.uasmBuilder.AddJump(visitorContext.returnLabel);
-
             if (visitorContext.returnSymbol != null)
             {
                 using (ExpressionCaptureScope returnCaptureScope = new ExpressionCaptureScope(visitorContext, null))
