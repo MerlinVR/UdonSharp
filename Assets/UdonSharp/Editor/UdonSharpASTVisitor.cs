@@ -1348,7 +1348,7 @@ namespace UdonSharp
                 valueSymbolType = symbolTypeCapture.captureType;
             }
 
-            SymbolDefinition valueSymbol = visitorContext.topTable.CreateNamedSymbol(node.Identifier.Text, valueSymbolType, SymbolDeclTypeFlags.Local);
+            SymbolDefinition valueSymbol = null;
 
             SymbolDefinition indexSymbol = visitorContext.topTable.CreateUnnamedSymbol(typeof(int), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
 
@@ -1362,6 +1362,11 @@ namespace UdonSharp
                 if (!arraySymbol.symbolCsType.IsArray)
                     throw new System.Exception("foreach loop must iterate an array type");
             }
+
+            if (node.Type.IsVar)
+                valueSymbol = visitorContext.topTable.CreateNamedSymbol(node.Identifier.Text, arraySymbol.symbolCsType.GetElementType(), SymbolDeclTypeFlags.Local);
+            else
+                valueSymbol = visitorContext.topTable.CreateNamedSymbol(node.Identifier.Text, valueSymbolType, SymbolDeclTypeFlags.Local);
 
             using (ExpressionCaptureScope indexResetterScope = new ExpressionCaptureScope(visitorContext, null))
             {
