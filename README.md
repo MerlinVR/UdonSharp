@@ -51,7 +51,8 @@ This compiler is in a very early state with only about two weeks of work on it s
 2. Add an `Udon Behaviour` component to your object
 3. Below the "New Program" button click the dropdown and select "Udon C# Program Asset"
 4. Now click the New Program button, this will create a new UdonSharp program asset for you
-5. Select the C# script that you want to compile into an Udon program
+5. Click the Create Script button and choose a save destination and name for the script.
+6. This will create a template script that's ready for you to start working on, open the script in your editor of choice and start programming
 
 
 ## Credits
