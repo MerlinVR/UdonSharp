@@ -41,6 +41,6 @@ This compiler is in a very early state with only about two weeks of work on it s
 [**UdonPie Compiler**](https://github.com/zz-roba/UdonPieCompiler) - For demonstrating how straightforward it can be to write a compiler for Udon
 
 ## Links
- [![Discord](https://img.shields.io/badge/Discord-My%20Discord%20Server-blueviolet?logo=discord)](https://discord.gg/Ub2n8ZA)
+ [![Discord](https://img.shields.io/badge/Discord-My%20Discord%20Server-blueviolet?logo=discord)](https://discord.gg/Ub2n8ZA) - For support and bug reports
  
- [![Trello](https://img.shields.io/badge/Trello-Udon%20Sharp%20Trello-blueviolet?logo=trello)](https://trello.com/b/EkIGQBy2/udonsharp)
+ [![Trello](https://img.shields.io/badge/Trello-Udon%20Sharp%20Trello-blueviolet?logo=trello)](https://trello.com/b/EkIGQBy2/udonsharp) - Look at what's planned and in progress
