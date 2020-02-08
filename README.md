@@ -27,7 +27,7 @@ This compiler is in a very early state with only about two weeks of work on it s
 - Unity/Udon event callbacks with arguments. For instance, registering a OnPlayerJoined event with a VRCPlayerApi argument is valid.
 
 ## Differences from regular Unity C# to note
-- For the best experience making UdonSharp scripts, make your scripts inherit from `UdonSharpBehavior` instead of `MonoBehaviour`
+- For the best experience making UdonSharp scripts, make your scripts inherit from `UdonSharpBehaviour` instead of `MonoBehaviour`
 - `Instantiate()` uses a method named `VRCInstantiate()` currently since VRC handles instantiate differently.
 - The template variants of functions like `GetComponent<Transform>()` do not work currently, this is high priority. But you can use the type argument versions of them for now by calling `(Transform)GetComponent(typeof(Transform))`, it's just a little more verbose.
 - Udon currently only supports array `[]` collections and by extension UdonSharp only supports arrays at the moment. It looks like they might support `List<T>` at some point, but it is not there yet. 
