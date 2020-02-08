@@ -54,6 +54,24 @@ This compiler is in a very early state with only about two weeks of work on it s
 5. Click the Create Script button and choose a save destination and name for the script.
 6. This will create a template script that's ready for you to start working on, open the script in your editor of choice and start programming
 
+### Example scripts
+
+#### The rotating cube demo
+
+This rotates the object that it's attached to by 90 degrees every second
+
+```cs
+using UnityEngine;
+using UdonSharp;
+
+public class RotatingCubeBehaviour : UdonSharpBehaviour
+{
+    private void Update()
+    {
+        transform.Rotate(Vector3.up, 90f * Time.deltaTime);
+    }
+}
+```
 
 ## Credits
 [**Toocanzs**](https://github.com/Toocanzs) - For helping with miscellaneous things
