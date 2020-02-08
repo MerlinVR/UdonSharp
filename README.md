@@ -35,6 +35,11 @@ This compiler is in a very early state with only about two weeks of work on it s
 
 ## Setup
 
+## Credits
+[**Toocanzs**](https://github.com/Toocanzs) - For helping with miscellaneous things
+
+[**UdonPie Compiler**](https://github.com/zz-roba/UdonPieCompiler) - For demonstrating how straightforward it can be to write a compiler for Udon
+
 ## Links
  [![Discord](https://img.shields.io/badge/Discord-My%20Discord%20Server-blueviolet?logo=discord)](https://discord.gg/Ub2n8ZA)
  
