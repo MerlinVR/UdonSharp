@@ -37,3 +37,5 @@ This compiler is in a very early state with only about two weeks of work on it s
 
 ## Links
  [![Discord](https://img.shields.io/badge/Discord-My%20Discord%20Server-blueviolet?logo=discord)](https://discord.gg/Ub2n8ZA)
+ 
+ [![Trello](https://img.shields.io/badge/Trello-Udon%20Sharp%20Trello-blueviolet?logo=trello)](https://trello.com/b/EkIGQBy2/udonsharp)
