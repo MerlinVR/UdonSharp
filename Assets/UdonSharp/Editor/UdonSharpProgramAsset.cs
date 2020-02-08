@@ -111,7 +111,6 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 string fileName = Path.GetFileNameWithoutExtension(thisPath).Replace(" Udon C# Program Asset", "").Replace(" ", "").Replace("#", "Sharp");
 
                 string chosenFilePath = EditorUtility.SaveFilePanelInProject("Save UdonScript File", fileName, "cs", "Save UdonScript file");
-                Debug.Log(chosenFilePath);
 
                 string chosenFileName = Path.GetFileNameWithoutExtension(chosenFilePath).Replace(" ", "").Replace("#", "Sharp");
 
