@@ -131,5 +131,22 @@ public class <TemplateClassName> : UdonSharpBehaviour
     
     [CustomEditor(typeof(UdonSharpProgramAsset))]
     public class UdonSharpProgramAssetEditor : UdonAssemblyProgramAssetEditor
-    { }
+    {
+        //static Texture2D udonSharpIcon;
+        
+        //public override Texture2D RenderStaticPreview(string assetPath, UnityEngine.Object[] subAssets, int width, int height)
+        //{
+        //    base.RenderStaticPreview(assetPath, subAssets, width, height);
+
+        //    return (Texture2D)EditorGUIUtility.IconContent("ScriptableObject Icon").image;
+
+        //    if (udonSharpIcon == null)
+        //        udonSharpIcon = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/UdonSharp/Editor/Resources/UdonsharpIcon.png");
+
+        //    if (udonSharpIcon != null)
+        //        return udonSharpIcon;
+
+        //    return base.RenderStaticPreview(assetPath, subAssets, width, height);
+        //}
+    }
 }
