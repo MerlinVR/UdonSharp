@@ -117,10 +117,10 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
-            Debug.Log(node.Kind().ToString());
-            base.DefaultVisit(node);
+            //Debug.Log(node.Kind().ToString());
+            //base.DefaultVisit(node);
 
-            //throw new System.NotSupportedException($"UdonSharp does not currently support node type {node.Kind().ToString()}");
+            throw new System.NotSupportedException($"UdonSharp does not currently support node type {node.Kind().ToString()}");
         }
 
         public override void VisitExpressionStatement(ExpressionStatementSyntax node)
