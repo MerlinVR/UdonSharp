@@ -44,9 +44,10 @@ public class Test05_BehaviourInteractions : UdonSharpBehaviour
         foreach (float val in spectrumData)
         {
             totalSpectrumData += val;
-        }
+        }  
 
-        textComponent.text = string.Format("{0:0.###}", totalSpectrumData * 10f);
+        //textComponent.text = string.Format("{0:0.###}", totalSpectrumData * 10f);
+        textComponent.text = $"Test: {totalSpectrumData * 10f:0.###}";
 
         //transform.Rotate(Vector3.up, Time.deltaTime * degreesPerSecond);
     }

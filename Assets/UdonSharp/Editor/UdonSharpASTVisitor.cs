@@ -117,10 +117,10 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
-            //Debug.Log(node.Kind().ToString());
-            //base.DefaultVisit(node);
+            Debug.Log(node.Kind().ToString());
+            base.DefaultVisit(node);
 
-            throw new System.NotSupportedException($"UdonSharp does not currently support node type {node.Kind().ToString()}");
+            //throw new System.NotSupportedException($"UdonSharp does not currently support node type {node.Kind().ToString()}");
         }
 
         public override void VisitExpressionStatement(ExpressionStatementSyntax node)
@@ -1154,6 +1154,13 @@ namespace UdonSharp
             }
         }
 
+        public override void VisitIsPatternExpression(IsPatternExpressionSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            throw new System.NotSupportedException("UdonSharp does not currently support type checking with the \"is\" keyword since Udon does not yet expose the proper functionality for type checking.");
+        }
+
         public override void VisitReturnStatement(ReturnStatementSyntax node)
         {
             UpdateSyntaxNode(node);
@@ -1604,6 +1611,156 @@ namespace UdonSharp
             UpdateSyntaxNode(node);
 
             Visit(node.Expression);
+        }
+
+        public override void VisitInterpolatedStringExpression(InterpolatedStringExpressionSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            SymbolDefinition interpolatedString = visitorContext.topTable.CreateNamedSymbol("interpolatedStr", typeof(string), SymbolDeclTypeFlags.Internal);
+
+            using (ExpressionCaptureScope stringConcatMethodScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                stringConcatMethodScope.SetToMethods(GetOperators(typeof(string), BuiltinOperatorType.Addition));
+
+                for (int i = 0; i < node.Contents.Count; ++i)
+                {
+                    var interpolatedContents = node.Contents[i];
+
+                    using (ExpressionCaptureScope stringExpressionCapture = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        Visit(interpolatedContents);
+
+                        using (ExpressionCaptureScope setInterpolatedStringScope = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            setInterpolatedStringScope.SetToLocalSymbol(interpolatedString);
+
+                            // This needs to be moved to direct set as well when we have support
+
+                            if (i == 0)
+                                setInterpolatedStringScope.ExecuteSet(stringExpressionCapture.ExecuteGet());
+                            else
+                                setInterpolatedStringScope.ExecuteSet(stringConcatMethodScope.Invoke(new SymbolDefinition[] { interpolatedString, stringExpressionCapture.ExecuteGet() }));
+                        }
+                    }
+                }
+            }
+
+            using (ExpressionCaptureScope interpolatedStringCapture = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
+            {
+                interpolatedStringCapture.SetToLocalSymbol(interpolatedString);
+            }
+        }
+
+        public override void VisitInterpolation(InterpolationSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            SymbolDefinition interpolationResultSymbol = null;
+            
+            using (ExpressionCaptureScope interpolatedExpressionCapture = new ExpressionCaptureScope(visitorContext, null))
+            {
+                Visit(node.Expression);
+
+                interpolationResultSymbol = interpolatedExpressionCapture.ExecuteGet();
+            }
+
+            // We can evaluate the statement like usual and just return a string
+            if (node.FormatClause == null && node.AlignmentClause == null)
+            {
+                if (interpolationResultSymbol.symbolCsType != typeof(string))
+                {
+                    using (ExpressionCaptureScope toStringScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        toStringScope.SetToLocalSymbol(interpolationResultSymbol);
+                        toStringScope.ResolveAccessToken("ToString");
+
+                        interpolationResultSymbol = toStringScope.Invoke(new SymbolDefinition[] { interpolationResultSymbol });
+                    }
+                }
+            }
+            else
+            {
+                SymbolDefinition stringFormatSymbol = null;
+                
+                if (node.AlignmentClause == null) // If the alignment clause is null then we can just construct the format string in place
+                {
+                    stringFormatSymbol = visitorContext.topTable.CreateConstSymbol(typeof(string), "{0:" + node.FormatClause.FormatStringToken.ValueText + "}");
+                }
+                else // Otherwise, we need to concat the strings together which will have a decent cost until constant expressions are handled
+                {
+                    stringFormatSymbol = visitorContext.topTable.CreateNamedSymbol("formatStr", typeof(string), SymbolDeclTypeFlags.Internal);
+
+                    using (ExpressionCaptureScope alignmentCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        Visit(node.AlignmentClause);
+
+                        if (alignmentCaptureScope.GetReturnType() != typeof(int))
+                            throw new System.ArgumentException("String interpolation alignment must be a signed integer");
+
+                        SymbolDefinition alignmentStringSymbol = visitorContext.topTable.CreateUnnamedSymbol(typeof(string), SymbolDeclTypeFlags.Internal);
+
+                        using (ExpressionCaptureScope alignmentToStringScope = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            alignmentToStringScope.SetToLocalSymbol(alignmentCaptureScope.ExecuteGet());
+                            alignmentToStringScope.ResolveAccessToken("ToString");
+
+                            using (ExpressionCaptureScope alignmentSetterScope = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                alignmentSetterScope.SetToLocalSymbol(alignmentStringSymbol);
+                                alignmentSetterScope.ExecuteSet(alignmentToStringScope.Invoke(new SymbolDefinition[] { }));
+                            }
+                        }
+
+                        using (ExpressionCaptureScope stringFormatSetScope = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            stringFormatSetScope.SetToLocalSymbol(stringFormatSymbol);
+                            stringFormatSetScope.ExecuteSet(visitorContext.topTable.CreateConstSymbol(typeof(string), "{0,"));
+
+                            using (ExpressionCaptureScope stringConcatMethodScope = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                stringConcatMethodScope.SetToMethods(GetOperators(typeof(string), BuiltinOperatorType.Addition));
+
+                                stringFormatSetScope.ExecuteSet(stringConcatMethodScope.Invoke(new SymbolDefinition[] { stringFormatSymbol, alignmentStringSymbol }));
+
+                                if (node.FormatClause != null)
+                                {
+                                    stringFormatSetScope.ExecuteSet(stringConcatMethodScope.Invoke(new SymbolDefinition[] {
+                                        stringFormatSymbol,
+                                        visitorContext.topTable.CreateConstSymbol(typeof(string), ":" + node.FormatClause.FormatStringToken.ValueText) }));
+                                }
+
+                                stringFormatSetScope.ExecuteSet(stringConcatMethodScope.Invoke(new SymbolDefinition[] {
+                                    stringFormatSymbol,
+                                    visitorContext.topTable.CreateConstSymbol(typeof(string), "}") }));
+                            }
+                        }
+                    }
+                }
+
+                using (ExpressionCaptureScope stringFormatExpression = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    stringFormatExpression.SetToType(typeof(string));
+                    stringFormatExpression.ResolveAccessToken("Format");
+
+                    interpolationResultSymbol = stringFormatExpression.Invoke(new SymbolDefinition[] { stringFormatSymbol, interpolationResultSymbol });
+                }
+            }
+
+            using (ExpressionCaptureScope interpolationResultCapture = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
+            {
+                interpolationResultCapture.SetToLocalSymbol(interpolationResultSymbol);
+            }
+        }
+
+        public override void VisitInterpolatedStringText(InterpolatedStringTextSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            using (ExpressionCaptureScope stringGenScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
+            {
+                stringGenScope.SetToLocalSymbol(visitorContext.topTable.CreateConstSymbol(typeof(string), node.TextToken.ValueText));
+            }
         }
     }
 }
