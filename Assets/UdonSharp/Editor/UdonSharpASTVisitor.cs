@@ -117,10 +117,10 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
-            Debug.Log(node.Kind().ToString());
-            base.DefaultVisit(node);
+            //Debug.Log(node.Kind().ToString());
+            //base.DefaultVisit(node);
 
-            //throw new System.NotSupportedException($"UdonSharp does not currently support node type {node.Kind().ToString()}");
+            throw new System.NotSupportedException($"UdonSharp does not currently support node type {node.Kind().ToString()}");
         }
 
         public override void VisitExpressionStatement(ExpressionStatementSyntax node)
@@ -457,6 +457,31 @@ namespace UdonSharp
 
             if (visitorContext.topCaptureScope != null)
                 visitorContext.topCaptureScope.ResolveAccessToken("this");
+        }
+
+        public override void VisitConditionalAccessExpression(ConditionalAccessExpressionSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            throw new System.NotSupportedException("UdonSharp does not currently support null conditional operators");
+
+            // Todo: actually handle if we add support for nullable types
+            //using (ExpressionCaptureScope conditionalExpressionScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
+            //{
+            //    Visit(node.Expression);
+
+            //    SymbolDefinition expressionReturnValue = conditionalExpressionScope.ExecuteGet();
+
+            //    JumpLabel notNullEndLabel = visitorContext.labelTable.GetNewJumpLabel("conditionNotNullEnd");
+
+            //    using (ExpressionCaptureScope whenNotNullScope = new ExpressionCaptureScope(visitorContext, conditionalExpressionScope))
+            //    {
+            //        Visit(node.WhenNotNull);
+            //    }
+
+            //    visitorContext.uasmBuilder.AddJumpLabel(notNullEndLabel);
+            //}
+
         }
 
         public override void VisitTypeOfExpression(TypeOfExpressionSyntax node)
