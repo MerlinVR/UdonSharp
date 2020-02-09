@@ -13,7 +13,7 @@ This compiler is in a very early state with only about two weeks of work on it s
 ## C# features supported
 - Automatic property and field accessor handling for getting and setting
 - Flow control
-  - Supports: `if` `else` `while` `for` `do` `foreach` `return` `break` `continue` `ternary operator (condition ? true : false)`
+  - Supports: `if` `else` `while` `for` `do` `foreach` `return` `break` `continue` `ternary operator (condition ? true : false)` `??`
   - `switch` is currently not supported, but is planned
   - `goto` is not currently supported: https://xkcd.com/292/ I may add it in the future anyways
 - Extern method overload resolution with support for default arguments and `params` argument lists
@@ -25,6 +25,7 @@ This compiler is in a very early state with only about two weeks of work on it s
 - Extern methods with out or ref parameters (such as many variants of `Physics.Raycast()`)
 - User defined methods with parameters and return values. (This does not currently support method overloads, default parameter values, or `ref`/`params` parameters)
 - Unity/Udon event callbacks with arguments. For instance, registering a OnPlayerJoined event with a VRCPlayerApi argument is valid.
+- String interpolation
 
 ## Differences from regular Unity C# to note
 - For the best experience making UdonSharp scripts, make your scripts inherit from `UdonSharpBehaviour` instead of `MonoBehaviour`
