@@ -10,8 +10,11 @@ public class Test05_BehaviourInteractions : UdonSharpBehaviour
     private AudioSource audioSource;
     private Text textComponent;
 
-    GameObject GetTestObject()
+    public Transform referenceTransform;
+
+    Transform GetTestObject()
     {
+        Debug.Log("On noooo");
         return null;
     }
 
@@ -33,6 +36,8 @@ public class Test05_BehaviourInteractions : UdonSharpBehaviour
 
         audioSource = (AudioSource)GetComponentInChildren(typeof(AudioSource));
         textComponent = (Text)GetComponentInChildren(typeof(Text));
+        
+
     }
 
     private void Update()
@@ -48,6 +53,10 @@ public class Test05_BehaviourInteractions : UdonSharpBehaviour
 
         //textComponent.text = string.Format("{0:0.###}", totalSpectrumData * 10f);
         textComponent.text = $"Test: {totalSpectrumData * 10f:0.###}";
+
+        Transform testTransform = null; 
+
+        Debug.Log(referenceTransform ?? GetTestObject()); 
 
         //transform.Rotate(Vector3.up, Time.deltaTime * degreesPerSecond);
     }

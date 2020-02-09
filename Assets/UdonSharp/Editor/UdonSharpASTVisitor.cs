@@ -117,10 +117,10 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
-            //Debug.Log(node.Kind().ToString());
-            //base.DefaultVisit(node);
+            Debug.Log(node.Kind().ToString());
+            base.DefaultVisit(node);
 
-            throw new System.NotSupportedException($"UdonSharp does not currently support node type {node.Kind().ToString()}");
+            //throw new System.NotSupportedException($"UdonSharp does not currently support node type {node.Kind().ToString()}");
         }
 
         public override void VisitExpressionStatement(ExpressionStatementSyntax node)
@@ -988,6 +988,55 @@ namespace UdonSharp
                 visitorContext.topCaptureScope.SetToLocalSymbol(resultValue);
         }
 
+        // This doesn't yet support type handling for A ?? B that is conformant to the C# spec. At the moment the output type will always be A's type, which isn't right.
+        private void HandleCoalesceExpression(BinaryExpressionSyntax node)
+        {
+            JumpLabel rhsEnd = visitorContext.labelTable.GetNewJumpLabel("coalesceExpressionEnd");
+
+            SymbolDefinition resultValue = null;
+
+            using (ExpressionCaptureScope lhsScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                Visit(node.Left);
+
+                resultValue = visitorContext.topTable.CreateUnnamedSymbol(lhsScope.GetReturnType(), SymbolDeclTypeFlags.Internal);
+
+                using (ExpressionCaptureScope lhsSetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    lhsSetScope.SetToLocalSymbol(resultValue);
+                    lhsSetScope.ExecuteSet(lhsScope.ExecuteGet());
+                }
+
+                using (ExpressionCaptureScope conditonMethodScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    conditonMethodScope.SetToMethods(GetOperators(typeof(object), BuiltinOperatorType.Equality));
+
+                    SymbolDefinition lhsIsNotNullCondition = conditonMethodScope.Invoke(new SymbolDefinition[] { resultValue, visitorContext.topTable.CreateConstSymbol(typeof(object), null) });
+
+                    visitorContext.uasmBuilder.AddPush(lhsIsNotNullCondition);
+                    visitorContext.uasmBuilder.AddJumpIfFalse(rhsEnd);
+                }
+            }
+
+            using (ExpressionCaptureScope rhsScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                Visit(node.Right);
+
+                using (ExpressionCaptureScope rhsSetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    rhsSetScope.SetToLocalSymbol(resultValue);
+                    rhsSetScope.ExecuteSet(rhsScope.ExecuteGet());
+                }
+            }
+
+            visitorContext.uasmBuilder.AddJumpLabel(rhsEnd);
+
+            using (ExpressionCaptureScope resultCapture = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
+            {
+                resultCapture.SetToLocalSymbol(resultValue);
+            }
+        }
+
         public override void VisitBinaryExpression(BinaryExpressionSyntax node)
         {
             UpdateSyntaxNode(node);
@@ -995,6 +1044,12 @@ namespace UdonSharp
             if (node.Kind() == SyntaxKind.LogicalAndExpression || node.Kind() == SyntaxKind.LogicalOrExpression)
             {
                 HandleBinaryShortCircuitConditional(node);
+                return;
+            }
+
+            if (node.Kind() == SyntaxKind.CoalesceExpression || node.Kind() == SyntaxKind.QuestionQuestionToken)
+            {
+                HandleCoalesceExpression(node);
                 return;
             }
 

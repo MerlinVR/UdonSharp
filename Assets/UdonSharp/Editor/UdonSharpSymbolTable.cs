@@ -215,8 +215,8 @@ namespace UdonSharp
                 if (definition.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) &&
                     definition.declarationType.HasFlag(SymbolDeclTypeFlags.Internal) &&
                     definition.symbolCsType == type &&
-                    definition.symbolDefaultValue.Equals(value))
-                    //definition.symbolDefaultValue != null &&
+                    ((value == null && definition.symbolDefaultValue == null) ||
+                    (definition.symbolDefaultValue != null && definition.symbolDefaultValue.Equals(value))))
                 {
                     foundSymbol = definition;
                     return true;
