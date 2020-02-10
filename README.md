@@ -7,7 +7,6 @@ This compiler is in a very early state with only about two weeks of work on it s
 
 ## Features that Udon supports which are currently not supported by U#
 - Marking variables as network synced
-- Setting default values on class fields
 - That's all as far as I know, these are high on the list of priorities to be implemented.
 
 ## C# features supported
@@ -26,6 +25,7 @@ This compiler is in a very early state with only about two weeks of work on it s
 - User defined methods with parameters and return values. (This does not currently support method overloads, default parameter values, or `ref`/`params` parameters)
 - Unity/Udon event callbacks with arguments. For instance, registering a OnPlayerJoined event with a VRCPlayerApi argument is valid.
 - String interpolation
+- Field initilizers
 
 ## Differences from regular Unity C# to note
 - For the best experience making UdonSharp scripts, make your scripts inherit from `UdonSharpBehaviour` instead of `MonoBehaviour`
@@ -33,6 +33,7 @@ This compiler is in a very early state with only about two weeks of work on it s
 - The template variants of functions like `GetComponent<Transform>()` do not work currently, this is high priority. But you can use the type argument versions of them for now by calling `(Transform)GetComponent(typeof(Transform))`, it's just a little more verbose.
 - Udon currently only supports array `[]` collections and by extension UdonSharp only supports arrays at the moment. It looks like they might support `List<T>` at some point, but it is not there yet. 
 - User defined methods currently cannot be recursive. They will technically compile, but will likely break because all invocations of a function currently share the same "stack" variables. Support for this is planned as an optional attribute since implementing recursion with Udon's primitives makes it very performance heavy.
+- Field initilizers are evaluated at compile time, if you have any init logic that depends on other objects in the scene you should use Awake or Start for this.
 
 ## Setup
 
@@ -75,7 +76,7 @@ public class RotatingCubeBehaviour : UdonSharpBehaviour
 ```
 
 ## Credits
-[**Toocanzs**](https://github.com/Toocanzs) - For helping with miscellaneous things
+[**Toocanzs**](https://github.com/Toocanzs) - Implementing field initializers and helping with miscellaneous things
 
 [**UdonPie Compiler**](https://github.com/zz-roba/UdonPieCompiler) - For demonstrating how straightforward it can be to write a compiler for Udon
 
