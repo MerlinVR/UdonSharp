@@ -24,6 +24,8 @@ namespace UdonSharp
         private MonoScript source;
         private CompilationModule module;
 
+        private static int initAssemblyCounter = 0;
+
         public UdonSharpCompiler(MonoScript sourceScript)
         {
             source = sourceScript ?? throw new System.ArgumentException("No valid C# source file specified!");
@@ -100,12 +102,12 @@ namespace UdonSharp
             var references = new List<MetadataReference>();
             for (int i = 0; i < assemblies.Length; i++)
             {
-                if (!assemblies[i].IsDynamic)
+                if (!assemblies[i].IsDynamic && assemblies[i].Location.Length > 0)
                     references.Add(MetadataReference.CreateFromFile(assemblies[i].Location));
             }
 
             CSharpCompilation compilation = CSharpCompilation.Create(
-                "init",
+                $"init{initAssemblyCounter++}",
                 syntaxTrees: new[] {syntaxTree},
                 references: references,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
@@ -131,6 +133,7 @@ namespace UdonSharp
                 else
                 {
                     memoryStream.Seek(0, SeekOrigin.Begin);
+                    
                     Assembly assembly = Assembly.Load(memoryStream.ToArray());
                     var cls = assembly.GetType("FieldInitialzers.Initializer");
                     MethodInfo methodInfo = cls.GetMethod("DoInit", BindingFlags.Public | BindingFlags.Static);
