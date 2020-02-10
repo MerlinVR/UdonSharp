@@ -2,7 +2,7 @@
 using UnityEngine;
 
 [AddComponentMenu("")]
-public class Test07_Functions : UdonSharpBehavior
+public class Test07_Functions : UdonSharpBehaviour
 {
     public void PrintTest()
     {
@@ -30,16 +30,24 @@ public class Test07_Functions : UdonSharpBehavior
         return 45;
     }
 
+    private bool CheckIfTrue()
+    {
+        Debug.Log("CheckIfTrue");
+        return false;
+    }
+
     private void Start()
     {
-        PrintTest();
-        LogTestVar("Hello 2");
+        Debug.Log(true && CheckIfTrue() && CheckIfTrue());
+
+        //PrintTest();
+        //LogTestVar("Hello 2");
         
 
-        Debug.Log(GetComponent(typeof(Transform)));
-        Debug.Log(GetName());
+        //Debug.Log(GetComponent(typeof(Transform)));
+        //Debug.Log(GetName());
 
-        Debug.Log(6 * Vector3.up);
-        Debug.Log(GetInt());
+        //Debug.Log(6 * Vector3.up);
+        //Debug.Log(GetInt());
     }
 }

@@ -1,11 +1,12 @@
 ﻿using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
+using VRC.Udon;
 
 namespace UdonSharpTests
 {
     [AddComponentMenu("")]
-    public class Test08_Instantiation : UdonSharpBehavior
+    public class Test08_Instantiation : UdonSharpBehaviour
     {
         public GameObject sourcePrefab;
 
@@ -16,9 +17,13 @@ namespace UdonSharpTests
         public float rotationSpeed;
 
         private GameObject[] spawnedObjects;
+
+        public UdonBehaviour otherBehaviour;
         
         private void Start()
         {
+            otherBehaviour.SendCustomEvent("PrintTest"); 
+
             spawnedObjects = new GameObject[objectCount];
 
             for (int i = 0; i < objectCount; ++i)
