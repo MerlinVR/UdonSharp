@@ -348,6 +348,9 @@ namespace UdonSharp
             // todo: make attributes for syncing and handle them here
             bool isPublic = node.Modifiers.HasModifier("public");
 
+            if (node.Modifiers.HasModifier("static"))
+                throw new System.NotSupportedException("Static fields are not yet supported by UdonSharp");
+
             HandleVariableDeclaration(node.Declaration, isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private);
         }
 
@@ -734,6 +737,9 @@ namespace UdonSharp
 
             string functionName = node.Identifier.ValueText;
             bool isBuiltinEvent = visitorContext.resolverContext.ReplaceInternalEventName(ref functionName);
+
+            if (node.Modifiers.HasModifier("static"))
+                throw new System.NotSupportedException("UdonSharp does not currently support static method declarations");
 
             // Export the method if it's public or builtin
             if (isBuiltinEvent || node.Modifiers.HasModifier("public"))
