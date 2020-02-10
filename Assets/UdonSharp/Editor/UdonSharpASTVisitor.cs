@@ -416,10 +416,6 @@ namespace UdonSharp
                             symbolCreationScope.ExecuteSet(initializerCapture.ExecuteGet());
                         }
                     }
-                    else if (variableDeclarator.Initializer != null)
-                    {
-                        throw new System.NotImplementedException("UdonSharp does not yet support initializers on fields.");
-                    }
                 }
 
                 if (!createdSymbol)
