@@ -613,6 +613,37 @@ namespace UdonSharp
             if (validMethods.Count == 1)
                 return validMethods.First();
 
+            // Remove methods if they have a more specific reflected type
+            // This is mostly to remove ambiguity when we have multiple methods added manually from base types in places like HandleLocalUdonBehaviourMethodLookup()
+            List<MethodBase> reflectedTypeMatches = new List<MethodBase>();
+
+            foreach (MethodBase methodInfo in validMethods)
+            {
+                bool skipMethod = false;
+
+                foreach (MethodBase checkedInfo in validMethods)
+                {
+                    if (methodInfo == checkedInfo)
+                        continue;
+
+                    if (methodInfo.AreMethodsEqualForDeclaringType(checkedInfo))
+                    {
+                        if (checkedInfo.ReflectedType.IsSubclassOf(methodInfo.ReflectedType))
+                        {
+                            skipMethod = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (skipMethod)
+                    continue;
+
+                reflectedTypeMatches.Add(methodInfo);
+            }
+
+            validMethods = reflectedTypeMatches;
+
             // Now start scoring which overrides are the "best"
             // A 0 score is the best, meaning it's a perfect match for all types
             // We will count how 'far' away a cast is if it's an implicit numeric cast. This is defined by the order of the cast types in implicitBuiltinConversions

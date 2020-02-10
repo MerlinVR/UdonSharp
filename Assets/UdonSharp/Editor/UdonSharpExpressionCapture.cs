@@ -797,6 +797,8 @@ namespace UdonSharp
         {
             MethodInfo[] foundMethods = typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver).GetMethods(BindingFlags.Instance | BindingFlags.Public).Where(e => e.Name == localUdonMethodName).ToArray();
             foundMethods = foundMethods.Concat(typeof(Component).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy).Where(e => e.Name == localUdonMethodName)).ToArray();
+            foundMethods = foundMethods.Concat(typeof(Object).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy).Where(e => e.Name == localUdonMethodName)).ToArray();
+            foundMethods = foundMethods.Distinct().ToArray();
 
             if (localUdonMethodName == "VRCInstantiate")
                 foundMethods = foundMethods.Concat(typeof(UdonSharpBehaviour).GetMethods(BindingFlags.Static | BindingFlags.Public).Where(e => e.Name == localUdonMethodName)).ToArray();
@@ -814,6 +816,11 @@ namespace UdonSharp
         private bool HandleLocalUdonBehaviourPropertyLookup(string localUdonPropertyName)
         {
             PropertyInfo[] foundProperties = typeof(Component).GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(e => e.Name == localUdonPropertyName).ToArray();
+
+            if (localUdonPropertyName == "enabled")
+            {
+                throw new System.NotSupportedException("Udon does not expose the `enabled` property on UdonBehaviours try using gameObject.active instead and find my post on the canny complaining about it");
+            }
 
             if (foundProperties.Length == 0)
                 return false;

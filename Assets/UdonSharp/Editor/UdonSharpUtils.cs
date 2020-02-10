@@ -185,5 +185,13 @@ namespace UdonSharp
         {
             return parameterInfo.GetCustomAttributes(typeof(System.ParamArrayAttribute), false).Length > 0;
         }
+        
+        // https://stackoverflow.com/questions/4168489/methodinfo-equality-for-declaring-type
+        public static bool AreMethodsEqualForDeclaringType(this MethodBase first, MethodBase second)
+        {
+            first = first.ReflectedType == first.DeclaringType ? first : first.DeclaringType.GetMethod(first.Name, first.GetParameters().Select(p => p.ParameterType).ToArray());
+            second = second.ReflectedType == second.DeclaringType ? second : second.DeclaringType.GetMethod(second.Name, second.GetParameters().Select(p => p.ParameterType).ToArray());
+            return first == second;
+        }
     }
 }
