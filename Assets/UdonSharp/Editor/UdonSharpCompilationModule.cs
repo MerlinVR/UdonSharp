@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using UnityEditor;
 using UnityEngine;
 
@@ -22,6 +23,8 @@ namespace UdonSharp
         public ResolverContext resolver { get; private set; }
         public SymbolTable moduleSymbols { get; private set; }
         public LabelTable moduleLabels { get; private set; }
+        
+        public HashSet<FieldDeclarationSyntax> fieldsWithInitializers;
 
         public CompilationModule(MonoScript sourceScript)
         {
@@ -29,6 +32,7 @@ namespace UdonSharp
             resolver = new ResolverContext();
             moduleSymbols = new SymbolTable(resolver, null);
             moduleLabels = new LabelTable();
+            fieldsWithInitializers = new HashSet<FieldDeclarationSyntax>();
         }
 
         private void LogBuildError(string message, string filePath, int line, int character)
@@ -50,7 +54,6 @@ namespace UdonSharp
             sourceCode = File.ReadAllText(AssetDatabase.GetAssetPath(source));
 
             SyntaxTree tree = CSharpSyntaxTree.ParseText(sourceCode);
-
             int errorCount = 0;
 
             foreach (Diagnostic diagnostic in tree.GetDiagnostics())
@@ -73,18 +76,21 @@ namespace UdonSharp
                     return "error";
                 }
             }
+            
+            var rewriter = new UdonSharpFieldRewriter(fieldsWithInitializers);
+            var result = rewriter.Visit(tree.GetRoot());
 
             NamespaceVisitor namespaceVisitor = new NamespaceVisitor(resolver);
-            namespaceVisitor.Visit(tree.GetRoot());
+            namespaceVisitor.Visit(result);
 
             MethodVisitor methodVisitor = new MethodVisitor(resolver, moduleSymbols, moduleLabels);
-            methodVisitor.Visit(tree.GetRoot());
+            methodVisitor.Visit(result);
 
             ASTVisitor visitor = new ASTVisitor(resolver, moduleSymbols, moduleLabels, methodVisitor.definedMethods);
 
             try
             {
-                visitor.Visit(tree.GetRoot());
+                visitor.Visit(result);
                 visitor.VerifyIntegrity();
             }
             catch (System.Exception e)
