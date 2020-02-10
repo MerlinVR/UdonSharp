@@ -81,11 +81,14 @@ namespace UdonSharp
                 int count = 0;
                 foreach (var variable in fieldDeclarationSyntax.Declaration.Variables)
                 {
-                    var name = $"temp_{count}_{variable.Identifier}";
-                    method.Statements.Add(new CodeSnippetStatement($"{type} {name} {variable.Initializer};"));
-                    method.Statements.Add(new CodeSnippetStatement(
-                        $"program.Heap.SetHeapVariable(program.SymbolTable.GetAddressFromSymbol(\"{variable.Identifier}\"), {name});"));
-                    count++;
+                    if (variable.Initializer != null)
+                    {
+                        var name = $"temp_{count}_{variable.Identifier}";
+                        method.Statements.Add(new CodeSnippetStatement($"{type} {name} {variable.Initializer};"));
+                        method.Statements.Add(new CodeSnippetStatement(
+                            $"program.Heap.SetHeapVariable(program.SymbolTable.GetAddressFromSymbol(\"{variable.Identifier}\"), {name});"));
+                        count++;
+                    }
                 }
             }
 

@@ -1,10 +1,7 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using UnityEngine;
 
 public class UdonSharpFieldRewriter : CSharpSyntaxRewriter
 {
@@ -18,8 +15,10 @@ public class UdonSharpFieldRewriter : CSharpSyntaxRewriter
     public override SyntaxNode VisitFieldDeclaration(FieldDeclarationSyntax node)
     {
         var variables = node.Declaration.Variables;
-        foreach (var variable in node.Declaration.Variables)
+        for (int i = 0; i < variables.Count; ++i)
         {
+            VariableDeclaratorSyntax variable = variables[i];
+
             if (variable.Initializer != null)
             {
                 variables = variables.Replace(variable, variable.WithInitializer(null));
