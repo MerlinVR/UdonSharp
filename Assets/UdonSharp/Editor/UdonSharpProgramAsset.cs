@@ -82,6 +82,11 @@ public class <TemplateClassName> : UdonSharpBehaviour
             Debug.Log("Assembled program!");
         }
 
+        protected override (object value, Type declaredType) InitializePublicVariable(Type type, string symbol)
+        {
+            return (program.Heap.GetHeapVariable(program.SymbolTable.GetAddressFromSymbol(symbol)), type);
+        }
+
         public void AssembleCsProgram()
         {
             //Undo.RecordObject(this, "Compile C# program");
