@@ -468,7 +468,7 @@ namespace UdonSharp
             for (int i = 0; i < methodParams.Length; ++i)
             {
                 // Handle default args
-                if (invokeParams.Length < i)
+                if (invokeParams.Length <= i)
                 {
                     if (!methodParams[i].HasDefaultValue)
                         throw new System.Exception("Overran valid parameters without default default value to use");
