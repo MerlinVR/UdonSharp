@@ -1726,28 +1726,34 @@ namespace UdonSharp
             using (ExpressionCaptureScope creationCaptureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
             {
                 // Use the default constructor by just making a constant of the correct type in Udon
-                if (node.ArgumentList.Arguments.Count == 0)
-                {
-                    creationCaptureScope.SetToLocalSymbol(visitorContext.topTable.CreateConstSymbol(newType, null));
-                }
-                else
-                {
-                    SymbolDefinition[] argSymbols = new SymbolDefinition[node.ArgumentList.Arguments.Count];
+                
+                SymbolDefinition[] argSymbols = new SymbolDefinition[node.ArgumentList.Arguments.Count];
 
-                    for (int i = 0; i < argSymbols.Length; ++i)
+                for (int i = 0; i < argSymbols.Length; ++i)
+                {
+                    using (ExpressionCaptureScope argCaptureScope = new ExpressionCaptureScope(visitorContext, null))
                     {
-                        using (ExpressionCaptureScope argCaptureScope = new ExpressionCaptureScope(visitorContext, null))
-                        {
-                            Visit(node.ArgumentList.Arguments[i]);
-                            argSymbols[i] = argCaptureScope.ExecuteGet();
-                        }
+                        Visit(node.ArgumentList.Arguments[i]);
+                        argSymbols[i] = argCaptureScope.ExecuteGet();
                     }
+                }
 
-                    using (ExpressionCaptureScope constructorMethodScope = new ExpressionCaptureScope(visitorContext, null))
+                using (ExpressionCaptureScope constructorMethodScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    MethodBase[] constructors = newType.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+
+                    try
                     {
-                        constructorMethodScope.SetToMethods(newType.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
-
+                        constructorMethodScope.SetToMethods(constructors);
                         creationCaptureScope.SetToLocalSymbol(constructorMethodScope.Invoke(argSymbols));
+                    }
+                    catch (System.Exception e)
+                    {
+                        // Udon will default initialize structs and such so it doesn't expose default constructors for stuff like Vector3
+                        if (System.Activator.CreateInstance(newType) == null)
+                            throw e;
+
+                        creationCaptureScope.SetToLocalSymbol(visitorContext.topTable.CreateConstSymbol(newType, null));
                     }
                 }
             }
