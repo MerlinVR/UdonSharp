@@ -687,7 +687,9 @@ namespace UdonSharp
                     if (operatorType == BuiltinOperatorType.UnaryNegation ||
                         operatorType == BuiltinOperatorType.UnaryMinus)
                     {
-                        resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandCapture.ExecuteGet() });
+                        SymbolDefinition operandResult = operandCapture.ExecuteGet();
+
+                        resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandResult });
 
                         if (topScope != null)
                             topScope.SetToLocalSymbol(resultSymbol);

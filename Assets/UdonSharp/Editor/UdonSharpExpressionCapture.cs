@@ -352,8 +352,11 @@ namespace UdonSharp
             if (targetType.IsByRef) // Convert ref and out args to their main types.
                 targetType = targetType.GetElementType();
 
+            bool isNumericCastValid = UdonSharpUtils.IsNumericImplicitCastValid(targetType, sourceSymbol.symbolCsType) ||
+                 (sourceSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) && sourceSymbol.symbolCsType == typeof(int)); // Handle Roslyn giving us ints constant expressions
+
             if ((!isExplicit && !targetType.IsImplicitlyAssignableFrom(sourceSymbol.symbolCsType)) &&
-                !isObjectAssignable)
+                !isObjectAssignable && !isNumericCastValid)
                 throw new System.ArgumentException($"Cannot implicitly cast from {sourceSymbol.symbolCsType} to {targetType}");
 
             // Exact type match, just return the symbol, this is what will happen a majority of the time.
@@ -367,7 +370,9 @@ namespace UdonSharp
 
             // Numeric conversion handling
             MethodInfo conversionFunction = UdonSharpUtils.GetNumericConversionMethod(targetType, sourceSymbol.symbolCsType);
-            if (conversionFunction != null && (isExplicit || UdonSharpUtils.IsNumericImplicitCastValid(targetType, sourceSymbol.symbolCsType)))
+            
+            
+            if (conversionFunction != null && (isExplicit || isNumericCastValid))
             {
                 // This code is copied 3 times, todo: find a decent way to refactor it
                 SymbolDefinition castOutput = visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
