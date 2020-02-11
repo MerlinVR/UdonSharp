@@ -83,14 +83,24 @@ namespace UdonSharp
             {
                 var type = fieldDeclarationSyntax.Declaration.Type;
                 int count = 0;
+                bool isConst = fieldDeclarationSyntax.Modifiers.Any(t => t.ToString() == "const");
                 foreach (var variable in fieldDeclarationSyntax.Declaration.Variables)
                 {
                     if (variable.Initializer != null)
                     {
-                        var name = $"temp_{count}_{variable.Identifier}";
-                        method.Statements.Add(new CodeSnippetStatement($"{type} {name} {variable.Initializer};"));
+                        string name = variable.Identifier.ToString();
+                        if (isConst)
+                        {
+                            _class.Members.Add(new CodeSnippetTypeMember($"const {type} {name} {variable.Initializer};"));
+                        }
+                        else
+                        {
+                            method.Statements.Add(new CodeSnippetStatement($"{type} {name} {variable.Initializer};"));
+                        }
+                        
                         method.Statements.Add(new CodeSnippetStatement(
                             $"program.Heap.SetHeapVariable(program.SymbolTable.GetAddressFromSymbol(\"{variable.Identifier}\"), {name});"));
+
                         count++;
                     }
                 }
@@ -140,7 +150,7 @@ namespace UdonSharp
                 else
                 {
                     memoryStream.Seek(0, SeekOrigin.Begin);
-                    
+
                     Assembly assembly = Assembly.Load(memoryStream.ToArray());
                     var cls = assembly.GetType("FieldInitialzers.Initializer");
                     MethodInfo methodInfo = cls.GetMethod("DoInit", BindingFlags.Public | BindingFlags.Static);
