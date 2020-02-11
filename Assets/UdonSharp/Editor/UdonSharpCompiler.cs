@@ -32,7 +32,7 @@ namespace UdonSharp
             module = new CompilationModule(source);
         }
 
-        public string Compile()
+        public (string, int) Compile()
         {
             return module.Compile();
         }

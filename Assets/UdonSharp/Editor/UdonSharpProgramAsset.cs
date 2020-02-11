@@ -91,8 +91,12 @@ public class <TemplateClassName> : UdonSharpBehaviour
         {
             //Undo.RecordObject(this, "Compile C# program");
 
+            System.Diagnostics.Stopwatch compileTimer = new System.Diagnostics.Stopwatch();
+            compileTimer.Start();
+            
             UdonSharpCompiler compiler = new UdonSharpCompiler(sourceCsScript);
-            udonAssembly = compiler.Compile(); 
+            int errorCount;
+            (udonAssembly, errorCount) = compiler.Compile(); 
 
             // After the assembly is compiled, we need to perform linking, for this we iterate all of the UdonAssemblyProgramAssets
             //  and find external functions that this behavior calls, 
@@ -103,6 +107,10 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
             // After the program is assembled, we need to resolve the constant symbols and assign their default values
             compiler.AssignHeapConstants(program);
+            
+            compileTimer.Stop();
+            if(errorCount == 0) 
+                Debug.Log($"[UdonSharp] Compile of script {Path.GetFileName(AssetDatabase.GetAssetPath(sourceCsScript))} finished in {compileTimer.Elapsed.ToString("mm\\:ss\\.fff")}");
 
             EditorUtility.SetDirty(this);
         }
