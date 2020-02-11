@@ -341,27 +341,84 @@ namespace UdonSharp
             }
         }
 
+        private UdonSyncMode GetSyncAttributeValue(FieldDeclarationSyntax node)
+        {
+            UdonSyncMode syncMode = UdonSyncMode.NotSynced;
+
+            if (node.AttributeLists != null)
+            {
+                foreach (AttributeListSyntax attributeList in node.AttributeLists)
+                {
+                    foreach (AttributeSyntax attribute in attributeList.Attributes)
+                    {
+                        using (ExpressionCaptureScope attributeTypeCapture = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            attributeTypeCapture.isAttributeCaptureScope = true;
+                            Visit(attribute.Name);
+
+                            if (attributeTypeCapture.captureType != typeof(UdonSyncedAttribute))
+                                continue;
+
+                            if (attribute.ArgumentList.Arguments.Count == 0)
+                            {
+                                syncMode = UdonSyncMode.None;
+                            }
+                            else
+                            {
+                                using (ExpressionCaptureScope attributeCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+                                {
+                                    Visit(attribute.ArgumentList.Arguments[0].Expression);
+
+                                    if (!attributeCaptureScope.IsEnum())
+                                        throw new System.Exception("Invalid attribute argument provided for sync");
+
+                                    syncMode = (UdonSyncMode)attributeCaptureScope.GetEnumValue();
+                                }
+                            }
+
+                            break;
+                        }
+                    }
+
+                    if (syncMode != UdonSyncMode.NotSynced)
+                        break;
+                }
+            }
+
+            return syncMode;
+        }
+
+        void VerifySyncValidForType(System.Type typeToSync, UdonSyncMode syncMode)
+        {
+            if (syncMode == UdonSyncMode.NotSynced)
+                return;
+
+            if (!UdonSharpUtils.IsUdonSyncedType(typeToSync))
+                throw new System.NotSupportedException($"Udon does not currently support syncing of the type {typeToSync}");
+        }
+
         public override void VisitFieldDeclaration(FieldDeclarationSyntax node)
         {
             UpdateSyntaxNode(node);
 
-            // todo: make attributes for syncing and handle them here
-            bool isPublic = node.Modifiers.HasModifier("public");
-
             if (node.Modifiers.HasModifier("static"))
                 throw new System.NotSupportedException("Static fields are not yet supported by UdonSharp");
+            
+            bool isPublic = node.Modifiers.HasModifier("public");
 
-            HandleVariableDeclaration(node.Declaration, isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private);
+            UdonSyncMode fieldSyncMode = GetSyncAttributeValue(node);
+
+            HandleVariableDeclaration(node.Declaration, isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private, fieldSyncMode);
         }
 
         public override void VisitVariableDeclaration(VariableDeclarationSyntax node)
         {
             UpdateSyntaxNode(node);
 
-            HandleVariableDeclaration(node, SymbolDeclTypeFlags.Local);
+            HandleVariableDeclaration(node, SymbolDeclTypeFlags.Local, UdonSyncMode.NotSynced);
         }
 
-        public void HandleVariableDeclaration(VariableDeclarationSyntax node, SymbolDeclTypeFlags symbolType)
+        public void HandleVariableDeclaration(VariableDeclarationSyntax node, SymbolDeclTypeFlags symbolType, UdonSyncMode syncMode)
         {
             UpdateSyntaxNode(node);
 
@@ -419,6 +476,12 @@ namespace UdonSharp
                             symbolCreationScope.ExecuteSet(initializerCapture.ExecuteGet());
                         }
                     }
+
+                    if (newSymbol != null)
+                    {
+                        newSymbol.syncMode = syncMode;
+                        VerifySyncValidForType(newSymbol.symbolCsType, syncMode);
+                    }
                 }
 
                 if (!createdSymbol)
@@ -426,6 +489,8 @@ namespace UdonSharp
                     using (ExpressionCaptureScope symbolCreationScope = new ExpressionCaptureScope(visitorContext, null))
                     {
                         SymbolDefinition newSymbol = visitorContext.topTable.CreateNamedSymbol(variableDeclarator.Identifier.ValueText, variableType, symbolType);
+                        newSymbol.syncMode = syncMode;
+                        VerifySyncValidForType(newSymbol.symbolCsType, syncMode);
 
                         symbolCreationScope.SetToLocalSymbol(newSymbol);
                     }

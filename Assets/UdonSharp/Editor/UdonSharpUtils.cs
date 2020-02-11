@@ -193,5 +193,21 @@ namespace UdonSharp
             second = second.ReflectedType == second.DeclaringType ? second : second.DeclaringType.GetMethod(second.Name, second.GetParameters().Select(p => p.ParameterType).ToArray());
             return first == second;
         }
+
+        private static readonly HashSet<System.Type> udonSyncTypes = new HashSet<System.Type>()
+        {
+            typeof(bool), // bool is apparently broken despite being listed as supported, not sure if it has been fixed yet.
+            typeof(char),
+            typeof(byte), typeof(sbyte),
+            typeof(int), typeof(uint),
+            typeof(long),
+            typeof(float), typeof(double),
+            typeof(short), typeof(ushort),
+        };
+
+        public static bool IsUdonSyncedType(System.Type type)
+        {
+            return udonSyncTypes.Contains(type);
+        }
     }
 }

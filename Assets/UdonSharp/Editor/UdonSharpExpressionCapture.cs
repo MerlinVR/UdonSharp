@@ -37,6 +37,8 @@ namespace UdonSharp
         string unresolvedAccessChain = "";
         public ExpressionCaptureArchetype captureArchetype { get; private set; } = ExpressionCaptureArchetype.Unknown;
 
+        public bool isAttributeCaptureScope { get; set; } = false;
+
         // Only the parameters corresponding with the current captureArchetype are guaranteed to be valid
         public string captureNamespace { get; private set; } = "";
         public PropertyInfo captureProperty { get; private set; } = null;
@@ -211,6 +213,14 @@ namespace UdonSharp
         }
         #endregion
 
+        public object GetEnumValue()
+        {
+            if (!IsEnum())
+                throw new System.Exception("Cannot get enum value from non-enum capture");
+
+            return System.Enum.Parse(captureType, captureEnum);
+        }
+
         // Inserts uasm instructions to get the value stored in the current localSymbol, property, or field
         public SymbolDefinition ExecuteGet()
         {
@@ -270,7 +280,7 @@ namespace UdonSharp
             else if (captureArchetype == ExpressionCaptureArchetype.Enum)
             {
                 // Capture type should still be valid from the last transition
-                outSymbol = visitorContext.topTable.CreateConstSymbol(captureType, System.Enum.Parse(captureType, captureEnum));
+                outSymbol = visitorContext.topTable.CreateConstSymbol(captureType, GetEnumValue());
             }
             else
             {
@@ -860,6 +870,9 @@ namespace UdonSharp
             }
 
             System.Type foundType = visitorContext.resolverContext.ResolveExternType(typeQualifiedName);
+
+            if (foundType == null && isAttributeCaptureScope)
+                foundType = visitorContext.resolverContext.ResolveExternType(typeQualifiedName + "Attribute");
 
             if (foundType == null)
                 return false;

@@ -26,6 +26,8 @@ namespace UdonSharp
         // How the symbol was created
         public SymbolDeclTypeFlags declarationType;
 
+        public UdonSyncMode syncMode = UdonSyncMode.NotSynced;
+
         // The name of the type used by Udon
         public string symbolResolvedTypeName;
 

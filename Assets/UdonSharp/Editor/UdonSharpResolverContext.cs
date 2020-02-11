@@ -230,10 +230,16 @@ namespace UdonSharp
             {
                 string testFullyQualifiedType = includedNamespace.Length > 0 ? $"{includedNamespace}.{qualifiedTypeName}" : qualifiedTypeName;
 
+                if (typeLookupCache.TryGetValue(testFullyQualifiedType, out foundType))
+                {
+                    return foundType;
+                }
+
                 foundType = System.Type.GetType(testFullyQualifiedType);
 
                 if (foundType != null)
                 {
+                    typeLookupCache.Add(testFullyQualifiedType, foundType);
                     return foundType;
                 }
                 else // Type wasn't found in current assembly, look through all loaded assemblies
@@ -243,7 +249,10 @@ namespace UdonSharp
                         foundType = assembly.GetType(testFullyQualifiedType);
 
                         if (foundType != null)
+                        {
+                            typeLookupCache.Add(testFullyQualifiedType, foundType);
                             return foundType;
+                        }
                     }
                 }
             }

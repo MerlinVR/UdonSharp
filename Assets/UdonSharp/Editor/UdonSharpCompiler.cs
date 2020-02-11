@@ -57,6 +57,10 @@ namespace UdonSharp
 
         private void RunFieldInitalizers(IUdonProgram program)
         {
+            // We don't need to run the costly compilation if the user hasn't defined any fields with initializers
+            if (module.fieldsWithInitializers.Count == 0)
+                return;
+
             CodeCompileUnit compileUnit = new CodeCompileUnit();
             CodeNamespace ns = new CodeNamespace("FieldInitialzers");
             compileUnit.Namespaces.Add(ns);

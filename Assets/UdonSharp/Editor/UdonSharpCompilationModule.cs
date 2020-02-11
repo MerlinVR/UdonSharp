@@ -135,10 +135,18 @@ namespace UdonSharp
             builder.AppendLine(".data_start", 0);
             builder.AppendLine("", 0);
 
-            foreach (SymbolDefinition symbol in moduleSymbols.GetAllUniqueChildSymbols())
+            List<SymbolDefinition> allSymbols = moduleSymbols.GetAllUniqueChildSymbols();
+
+            foreach (SymbolDefinition symbol in allSymbols)
             {
                 if (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public))
                     builder.AppendLine($".export {symbol.symbolUniqueName}", 1);
+            }
+
+            foreach (SymbolDefinition symbol in allSymbols)
+            {
+                if (symbol.syncMode != UdonSyncMode.NotSynced)
+                    builder.AppendLine($".sync {symbol.symbolUniqueName}, {System.Enum.GetName(typeof(UdonSyncMode), symbol.syncMode).ToLowerInvariant()}", 1);
             }
 
             builder.AppendLine("", 0);
