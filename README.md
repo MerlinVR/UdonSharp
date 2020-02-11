@@ -6,8 +6,7 @@ UdonSharp is a compiler that compiles C#-like syntax to Udon assembly. UdonSharp
 This compiler is in a very early state with only about two weeks of work on it so far. There has been very little work done on optimizations. Despite that, programs compiled by this generally perform similarly to their graph-compiled counterparts. Though due to how Udon currently handles copying structs, UdonSharp scripts can generate more garbage than the graph counterparts at the moment. 
 
 ## Features that Udon supports which are currently not supported by U#
-- Marking variables as network synced
-- That's all as far as I know, these are high on the list of priorities to be implemented.
+- UdonSharp is currently at feature parity with the Udon graph as far as I am aware. Please message me or make an issue if you find something that should be supported, but is not.
 
 ## C# features supported
 - Automatic property and field accessor handling for getting and setting
@@ -34,6 +33,7 @@ This compiler is in a very early state with only about two weeks of work on it s
 - Udon currently only supports array `[]` collections and by extension UdonSharp only supports arrays at the moment. It looks like they might support `List<T>` at some point, but it is not there yet. 
 - User defined methods currently cannot be recursive. They will technically compile, but will likely break because all invocations of a function currently share the same "stack" variables. Support for this is planned as an optional attribute since implementing recursion with Udon's primitives makes it very performance heavy.
 - Field initilizers are evaluated at compile time, if you have any init logic that depends on other objects in the scene you should use Awake or Start for this.
+- Use the `UdonSynced` attribute on fields that you want to sync.  
 
 ## Setup
 
