@@ -931,6 +931,11 @@ namespace UdonSharp
 
             foundOperators.AddRange(type.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == operatorName));
 
+            // Add the object equality and inequality operators if we haven't already found better matches
+            if (foundOperators.Count == 0 && type != typeof(object) && !type.IsValueType &&
+                (builtinOperatorType == BuiltinOperatorType.Equality || builtinOperatorType == BuiltinOperatorType.Inequality))
+                foundOperators.AddRange(GetOperators(typeof(object), builtinOperatorType));
+
             return foundOperators.ToArray();
         }
 
@@ -1214,7 +1219,7 @@ namespace UdonSharp
                     default:
                         throw new System.NotImplementedException($"Binary expression {node.Kind()} is not implemented");
                 }
-
+                
                 using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
                 {
                     operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
