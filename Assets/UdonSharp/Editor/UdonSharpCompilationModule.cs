@@ -46,11 +46,8 @@ namespace UdonSharp
                         character });
         }
 
-        public string Compile()
+        public (string, int) Compile()
         {
-            System.Diagnostics.Stopwatch compileTimer = new System.Diagnostics.Stopwatch();
-            compileTimer.Start();
-
             sourceCode = File.ReadAllText(AssetDatabase.GetAssetPath(source));
 
             SyntaxTree tree = CSharpSyntaxTree.ParseText(sourceCode);
@@ -73,7 +70,7 @@ namespace UdonSharp
                 if (errorCount > 0)
                 {
                     //Debug.LogError("Udon Sharp script has errors, compilation aborted.");
-                    return "error";
+                    return ("error", errorCount);
                 }
             }
             
@@ -117,14 +114,7 @@ namespace UdonSharp
             string dataBlock = BuildHeapDataBlock();
             string codeBlock = visitor.GetCompiledUasm();
 
-            compileTimer.Stop();
-
-            if (errorCount == 0)
-            {
-                Debug.Log($"[UdonSharp] Compile of script {Path.GetFileName(AssetDatabase.GetAssetPath(source))} finished in {compileTimer.Elapsed.ToString("mm\\:ss\\.fff")}");
-            }
-
-            return dataBlock + codeBlock;
+            return (dataBlock + codeBlock, errorCount);
         }
 
         private string BuildHeapDataBlock()
