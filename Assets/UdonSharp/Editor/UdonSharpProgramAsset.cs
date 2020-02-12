@@ -13,8 +13,10 @@ namespace UdonSharp
     public class UdonSharpProgramAsset : UdonAssemblyProgramAsset
     {
         private readonly string programCsTemplate = @"
-using UnityEngine;
 using UdonSharp;
+using UnityEngine;
+using VRC.SDKBase;
+using VRC.Udon;
 
 [AddComponentMenu("""")]
 public class <TemplateClassName> : UdonSharpBehaviour
