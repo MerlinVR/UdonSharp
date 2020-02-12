@@ -70,10 +70,18 @@ namespace UdonSharp
                 }
             }
 
+            int assetCount = 0;
+
             foreach (UdonSharpProgramAsset programToUpdate in assetsToUpdate)
             {
+                EditorUtility.DisplayProgressBar("UdonSharp Compile", 
+                                                $"Compiling {AssetDatabase.GetAssetPath(programToUpdate.sourceCsScript)}...", 
+                                                Mathf.Clamp01((assetCount++ / (float)assetsToUpdate.Count) + Random.Range(0.01f, 0.2f))); // Make it look like we're doing work :D
+
                 programToUpdate.AssembleCsProgram();
             }
+
+            EditorUtility.ClearProgressBar();
         }
 
         static void OnEditorUpdate()
