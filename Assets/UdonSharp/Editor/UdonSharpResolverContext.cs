@@ -313,7 +313,7 @@ namespace UdonSharp
         /// <returns></returns>
         public string GetUdonMethodName(MethodBase externMethod, bool validate = true)
         {
-            string functionNamespace = externMethod.ReflectedType.FullName.Replace(".", "").Replace("[]", "Array")/*.Replace("&", "Ref")*/;
+            string functionNamespace = externMethod.ReflectedType.FullName.Replace(".", "").Replace("[]", "Array").Replace("+", "")/*.Replace("&", "Ref")*/;
             functionNamespace = functionNamespace.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
 
             string methodName = $"__{externMethod.Name.Trim('_').TrimStart('.')}";
@@ -743,7 +743,7 @@ namespace UdonSharp
 
         public string GetUdonFieldAccessorName(FieldInfo externField, FieldAccessorType accessorType, bool validate = true)
         {
-            string functionNamespace = externField.DeclaringType.FullName.Replace(".", "");
+            string functionNamespace = externField.DeclaringType.FullName.Replace(".", "").Replace("+", "");
             string methodName = $"__{(accessorType == FieldAccessorType.Get ? "get" : "set")}_{externField.Name.Trim('_')}";
             
             string paramStr = $"__{GetUdonTypeName(externField.FieldType)}";
