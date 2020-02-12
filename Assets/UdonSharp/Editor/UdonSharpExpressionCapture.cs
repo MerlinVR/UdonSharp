@@ -306,6 +306,9 @@ namespace UdonSharp
             {
                 MethodInfo setMethod = captureProperty.GetSetMethod();
 
+                if (setMethod == null)
+                    throw new System.MemberAccessException($"Property or indexer '{captureProperty.DeclaringType.Name}.{captureProperty.Name}' cannot be assigned to -- it is read only");
+
                 string udonMethodString = visitorContext.resolverContext.GetUdonMethodName(setMethod);
 
                 if (!setMethod.IsStatic)
