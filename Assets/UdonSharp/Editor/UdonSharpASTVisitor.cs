@@ -676,35 +676,42 @@ namespace UdonSharp
                         throw new System.NotImplementedException($"Handling for prefix token {node.OperatorToken.Kind()} is not implemented");
                 }
 
-                using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
+                try
                 {
-                    operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
-
-                    BuiltinOperatorType operatorType = SyntaxKindToBuiltinOperator(node.OperatorToken.Kind());
-
-                    SymbolDefinition resultSymbol = null;
-
-                    if (operatorType == BuiltinOperatorType.UnaryNegation ||
-                        operatorType == BuiltinOperatorType.UnaryMinus)
+                    using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
                     {
-                        SymbolDefinition operandResult = operandCapture.ExecuteGet();
+                        operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
 
-                        resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandResult });
+                        BuiltinOperatorType operatorType = SyntaxKindToBuiltinOperator(node.OperatorToken.Kind());
 
-                        if (topScope != null)
-                            topScope.SetToLocalSymbol(resultSymbol);
+                        SymbolDefinition resultSymbol = null;
+
+                        if (operatorType == BuiltinOperatorType.UnaryNegation ||
+                            operatorType == BuiltinOperatorType.UnaryMinus)
+                        {
+                            SymbolDefinition operandResult = operandCapture.ExecuteGet();
+
+                            resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandResult });
+
+                            if (topScope != null)
+                                topScope.SetToLocalSymbol(resultSymbol);
+                        }
+                        else
+                        {
+                            SymbolDefinition valueConstant = visitorContext.topTable.CreateConstSymbol(operandCapture.GetReturnType(), System.Convert.ChangeType(1, operandCapture.GetReturnType()));
+
+                            resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandCapture.ExecuteGet(), valueConstant });
+
+                            operandCapture.ExecuteSet(resultSymbol);
+
+                            if (topScope != null)
+                                topScope.SetToLocalSymbol(operandCapture.ExecuteGet());
+                        }
                     }
-                    else
-                    {
-                        SymbolDefinition valueConstant = visitorContext.topTable.CreateConstSymbol(operandCapture.GetReturnType(), System.Convert.ChangeType(1, operandCapture.GetReturnType()));
-
-                        resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandCapture.ExecuteGet(), valueConstant });
-
-                        operandCapture.ExecuteSet(resultSymbol);
-
-                        if (topScope != null)
-                            topScope.SetToLocalSymbol(operandCapture.ExecuteGet());
-                    }
+                }
+                catch (System.Exception)
+                {
+                    throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operand of type '{operandCapture.GetReturnType().Name}'");
                 }
             }
         }
@@ -735,23 +742,30 @@ namespace UdonSharp
                         throw new System.NotImplementedException($"Handling for prefix token {node.OperatorToken.Kind()} is not implemented");
                 }
 
-                using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
+                try
                 {
-                    operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
-
-                    using (ExpressionCaptureScope preIncrementValueReturn = new ExpressionCaptureScope(visitorContext, topScope))
+                    using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
                     {
-                        SymbolDefinition preIncrementStore = visitorContext.topTable.CreateUnnamedSymbol(operandCapture.GetReturnType(), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
-                        preIncrementValueReturn.SetToLocalSymbol(preIncrementStore);
+                        operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
 
-                        preIncrementValueReturn.ExecuteSet(operandCapture.ExecuteGet());
+                        using (ExpressionCaptureScope preIncrementValueReturn = new ExpressionCaptureScope(visitorContext, topScope))
+                        {
+                            SymbolDefinition preIncrementStore = visitorContext.topTable.CreateUnnamedSymbol(operandCapture.GetReturnType(), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
+                            preIncrementValueReturn.SetToLocalSymbol(preIncrementStore);
+
+                            preIncrementValueReturn.ExecuteSet(operandCapture.ExecuteGet());
+                        }
+
+                        SymbolDefinition valueConstant = visitorContext.topTable.CreateConstSymbol(operandCapture.GetReturnType(), System.Convert.ChangeType(1, operandCapture.GetReturnType()));
+
+                        SymbolDefinition resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandCapture.ExecuteGet(), valueConstant });
+
+                        operandCapture.ExecuteSet(resultSymbol);
                     }
-
-                    SymbolDefinition valueConstant = visitorContext.topTable.CreateConstSymbol(operandCapture.GetReturnType(), System.Convert.ChangeType(1, operandCapture.GetReturnType()));
-
-                    SymbolDefinition resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandCapture.ExecuteGet(), valueConstant });
-
-                    operandCapture.ExecuteSet(resultSymbol);
+                }
+                catch (System.Exception)
+                {
+                    throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operand of type '{operandCapture.GetReturnType().Name}'");
                 }
             }
         }
@@ -1223,6 +1237,9 @@ namespace UdonSharp
                     default:
                         throw new System.NotImplementedException($"Binary expression {node.Kind()} is not implemented");
                 }
+
+                if (operatorMethods.Count == 0)
+                    throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operands of type '{lhsType.Name}' and '{rhsType.Name}'");
                 
                 using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
                 {
@@ -1234,10 +1251,10 @@ namespace UdonSharp
                     {
                         resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { lhsValue, rhsValue });
                     }
-                    catch (System.Exception e)
+                    catch (System.Exception)
                     {
                         // If the left or right hand side are string types then we have a special exception where we can call ToString() on the operands
-                        if (SyntaxKindToBuiltinOperator(node.Kind()) == BuiltinOperatorType.Addition && 
+                        if (SyntaxKindToBuiltinOperator(node.Kind()) == BuiltinOperatorType.Addition &&
                             (lhsValue.symbolCsType == typeof(string) || rhsValue.symbolCsType == typeof(string)))
                         {
                             if (lhsValue.symbolCsType != typeof(string))
@@ -1262,7 +1279,9 @@ namespace UdonSharp
                             resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { lhsValue, rhsValue });
                         }
                         else
-                            throw e; // rethrow
+                        {
+                            throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operands of type '{lhsType.Name}' and '{rhsType.Name}'");
+                        }
                     }
 
                     if (isAssignment)
