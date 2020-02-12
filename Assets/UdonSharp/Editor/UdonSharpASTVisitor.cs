@@ -928,6 +928,8 @@ namespace UdonSharp
             string operatorName = System.Enum.GetName(typeof(BuiltinOperatorType), builtinOperatorType);
             if (builtinOperatorType == BuiltinOperatorType.Multiplication)
                 operatorName = "Multiply"; // Udon breaks standard naming with its multiplication overrides on base types
+            else if (builtinOperatorType == BuiltinOperatorType.UnaryMinus)
+                operatorName = "UnaryNegation";
 
             operatorName = $"op_{operatorName}";
 
