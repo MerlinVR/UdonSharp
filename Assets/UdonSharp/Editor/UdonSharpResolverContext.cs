@@ -272,6 +272,20 @@ namespace UdonSharp
         {
             string externTypeName = externType.GetNameWithoutGenericArity();
             string typeNamespace = externType.Namespace;
+            if (externType.DeclaringType != null)
+            {
+                string declaringTypeNamespace = "";
+
+                System.Type declaringType = externType.DeclaringType;
+
+                while (declaringType != null)
+                {
+                    declaringTypeNamespace = $"{externType.DeclaringType.Name}.{declaringTypeNamespace}";
+                    declaringType = declaringType.DeclaringType;
+                }
+
+                typeNamespace += $".{declaringTypeNamespace}";
+            }
 
             if (externTypeName == "T" || externTypeName == "T[]")
                 typeNamespace = "";
