@@ -465,9 +465,9 @@ namespace UdonSharp
                             if (newSymbol == null)
                             {
                                 if (isVar)
-                                    newSymbol = visitorContext.topTable.CreateNamedSymbol(variableName, initializerCapture.GetReturnType(), symbolType);
-                                else
-                                    newSymbol = visitorContext.topTable.CreateNamedSymbol(variableName, variableType, symbolType);
+                                    variableType = initializerCapture.GetReturnType();
+
+                                newSymbol = visitorContext.topTable.CreateNamedSymbol(variableName, variableType, symbolType);
                                 
                                 symbolCreationScope.SetToLocalSymbol(newSymbol);
                                 createdSymbol = true;
@@ -496,6 +496,12 @@ namespace UdonSharp
                     }
                 }
             }
+            
+            string udonTypeName = visitorContext.resolverContext.GetUdonTypeName(variableType);
+
+            if (!visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Variable) &&
+                !visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Type))
+                throw new System.NotSupportedException($"Udon does not support variables of type '{variableType.Name}' yet");
         }
 
         public override void VisitIdentifierName(IdentifierNameSyntax node)
@@ -1778,7 +1784,9 @@ namespace UdonSharp
                     catch (System.Exception e)
                     {
                         // Udon will default initialize structs and such so it doesn't expose default constructors for stuff like Vector3
-                        if (System.Activator.CreateInstance(newType) == null)
+                        // This is a weird case, we could technically check if the type exists in Udon here, 
+                        //   but it's totally valid to store a type that's undefined by Udon on the heap since they are all object.
+                        if (argSymbols.Length > 0 || System.Activator.CreateInstance(newType) == null)
                             throw e;
 
                         creationCaptureScope.SetToLocalSymbol(visitorContext.topTable.CreateConstSymbol(newType, null));

@@ -272,6 +272,8 @@ namespace UdonSharp
         {
             string externTypeName = externType.GetNameWithoutGenericArity();
             string typeNamespace = externType.Namespace;
+
+            // Handle nested type names (+ sign in names)
             if (externType.DeclaringType != null)
             {
                 string declaringTypeNamespace = "";
@@ -760,6 +762,8 @@ namespace UdonSharp
 
         public bool ValidateUdonTypeName(string typeName, UdonReferenceType referenceType)
         {
+            typeName = typeName.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
+
             switch (referenceType)
             {
                 case UdonReferenceType.Const:
