@@ -269,7 +269,12 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
-            Visit(node.ElementType);
+            using (ExpressionCaptureScope arrayTypeCaptureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
+            {
+                Visit(node.ElementType);
+
+                arrayTypeCaptureScope.MakeArrayType();
+            }
         }
 
         public override void VisitArrayRankSpecifier(ArrayRankSpecifierSyntax node)
@@ -292,7 +297,7 @@ namespace UdonSharp
             using (ExpressionCaptureScope arrayTypeScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 Visit(node.Type);
-                arrayType = arrayTypeScope.captureType.MakeArrayType();
+                arrayType = arrayTypeScope.captureType;
             }
 
             using (ExpressionCaptureScope varCaptureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
@@ -423,7 +428,6 @@ namespace UdonSharp
             UpdateSyntaxNode(node);
 
             bool isVar = node.Type.IsVar;
-            bool isArray = node.Type is ArrayTypeSyntax;
 
             System.Type variableType = null;
 
@@ -437,11 +441,6 @@ namespace UdonSharp
                         throw new System.Exception("Type could not be parsed from variable declaration!");
 
                     variableType = typeCapture.captureType;
-
-                    if (isArray)
-                    {
-                        variableType = variableType.MakeArrayType();
-                    }
                 }
             }
 

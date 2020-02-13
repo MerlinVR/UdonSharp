@@ -342,6 +342,8 @@ namespace UdonSharp
 
             if (udonTypeName == null)
                 throw new System.ArgumentException($"Could not locate Udon type for system type {resolvedSymbolType.FullName}");
+            
+            udonTypeName = udonTypeName.Replace("VRCUdonCommonInterfacesIUdonEventReceiver", "VRCUdonUdonBehaviour");
 
             SymbolDefinition symbolDefinition = new SymbolDefinition();
             symbolDefinition.declarationType = declType;

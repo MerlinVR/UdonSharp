@@ -156,6 +156,14 @@ namespace UdonSharp
             captureMethods = methods;
         }
 
+        public void MakeArrayType()
+        {
+            if (captureArchetype != ExpressionCaptureArchetype.Type)
+                throw new System.Exception("Capture scope must have the 'Type' archetype to convert to an array");
+
+            captureType = captureType.MakeArrayType();
+        }
+
         #region Archetype check functions
         public bool HasBeenAssigned()
         {
@@ -221,6 +229,28 @@ namespace UdonSharp
             return System.Enum.Parse(captureType, captureEnum);
         }
 
+        private MethodInfo GetUdonGetMethodInfo()
+        {
+            if (!IsProperty())
+                throw new System.Exception("Cannot get property get method on non-properties");
+
+            if (captureProperty.ReflectedType == typeof(VRC.Udon.UdonBehaviour))
+                return typeof(Component).GetProperty(captureProperty.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static).GetGetMethod();
+
+            return captureProperty.GetGetMethod();
+        }
+
+        private MethodInfo GetUdonSetMethodInfo()
+        {
+            if (!IsProperty())
+                throw new System.Exception("Cannot get property get method on non-properties");
+
+            if (captureProperty.ReflectedType == typeof(VRC.Udon.UdonBehaviour))
+                return typeof(Component).GetProperty(captureProperty.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static).GetGetMethod();
+
+            return captureProperty.GetSetMethod();
+        }
+
         // Inserts uasm instructions to get the value stored in the current localSymbol, property, or field
         public SymbolDefinition ExecuteGet()
         {
@@ -231,7 +261,7 @@ namespace UdonSharp
 
             if (captureArchetype == ExpressionCaptureArchetype.Property)
             {
-                MethodInfo getMethod = captureProperty.GetGetMethod();
+                MethodInfo getMethod = GetUdonGetMethodInfo();
 
                 if (getMethod.ReturnType == typeof(void))
                     throw new System.TypeLoadException("Cannot return type of void from a get statement");
@@ -304,7 +334,7 @@ namespace UdonSharp
             }
             else if (captureArchetype == ExpressionCaptureArchetype.Property)
             {
-                MethodInfo setMethod = captureProperty.GetSetMethod();
+                MethodInfo setMethod = GetUdonSetMethodInfo();
 
                 if (setMethod == null)
                     throw new System.MemberAccessException($"Property or indexer '{captureProperty.DeclaringType.Name}.{captureProperty.Name}' cannot be assigned to -- it is read only");

@@ -305,6 +305,8 @@ namespace UdonSharp
                 fullTypeName = "ListT";
             }
 
+            fullTypeName = fullTypeName.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
+
             return fullTypeName;
         }
 
