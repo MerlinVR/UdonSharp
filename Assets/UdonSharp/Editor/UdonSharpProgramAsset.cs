@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using VRC.Udon.Common.Interfaces;
 
 [assembly: UdonProgramSourceNewMenu(typeof(UdonSharp.UdonSharpProgramAsset), "Udon C# Program Asset")]
 
@@ -58,7 +58,12 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
             if (GUILayout.Button("Force Compile Script"))
             {
-                AssembleCsProgram();
+                CompileCsProgram();
+            }
+
+            if (GUILayout.Button("Compile All UdonSharp Programs"))
+            {
+                CompileAllCsPrograms();
             }
 
             EditorGUILayout.Space();
@@ -79,9 +84,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         protected override void DoRefreshProgramActions()
         {
-            AssembleCsProgram();
-
-            Debug.Log("Assembled program!");
+            CompileCsProgram();
         }
 
         protected override (object value, Type declaredType) InitializePublicVariable(Type type, string symbol)
@@ -89,32 +92,42 @@ public class <TemplateClassName> : UdonSharpBehaviour
             return (program.Heap.GetHeapVariable(program.SymbolTable.GetAddressFromSymbol(symbol)), type);
         }
 
-        public void AssembleCsProgram()
+        public void CompileCsProgram()
         {
-            //Undo.RecordObject(this, "Compile C# program");
-
-            System.Diagnostics.Stopwatch compileTimer = new System.Diagnostics.Stopwatch();
-            compileTimer.Start();
-            
-            UdonSharpCompiler compiler = new UdonSharpCompiler(sourceCsScript);
-            int errorCount;
-            (udonAssembly, errorCount) = compiler.Compile(); 
-
-            // After the assembly is compiled, we need to perform linking, for this we iterate all of the UdonAssemblyProgramAssets
-            //  and find external functions that this behavior calls, 
-            //  then we add calls to the appropriate functions with SendCustomEvent and SetProgramVariable for args
-
-            // Call to base to assemble from the assembly
-            AssembleProgram();
-
-            // After the program is assembled, we need to resolve the constant symbols and assign their default values
-            compiler.AssignHeapConstants(program);
-            
-            compileTimer.Stop();
-            if(errorCount == 0) 
-                Debug.Log($"[UdonSharp] Compile of script {Path.GetFileName(AssetDatabase.GetAssetPath(sourceCsScript))} finished in {compileTimer.Elapsed.ToString("mm\\:ss\\.fff")}");
+            UdonSharpCompiler compiler = new UdonSharpCompiler(this);
+            compiler.Compile();
 
             EditorUtility.SetDirty(this);
+        }
+
+        private void CompileAllCsPrograms()
+        {
+            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
+
+            List<UdonSharpProgramAsset> udonSharpPrograms = new List<UdonSharpProgramAsset>();
+
+            foreach (string dataGuid in udonSharpDataAssets)
+            {
+                udonSharpPrograms.Add(AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid)));
+            }
+
+            UdonSharpCompiler compiler = new UdonSharpCompiler(udonSharpPrograms.ToArray());
+            compiler.Compile();
+        }
+
+        public void AssembleCsProgram()
+        {
+            AssembleProgram();
+        }
+
+        public void SetUdonAssembly(string assembly)
+        {
+            udonAssembly = assembly;
+        }
+        
+        public IUdonProgram GetRealProgram()
+        {
+            return program;
         }
 
         private void DrawCreateScriptButton()

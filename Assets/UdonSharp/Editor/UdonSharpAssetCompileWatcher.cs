@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -55,7 +56,6 @@ namespace UdonSharp
 
             foreach (string dataGuid in udonSharpDataAssets)
             {
-                //Debug.Log(AssetDatabase.GUIDToAssetPath(dataGuid));
                 udonSharpPrograms.Add(AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid)));
             }
 
@@ -70,18 +70,11 @@ namespace UdonSharp
                 }
             }
 
-            int assetCount = 0;
-
-            foreach (UdonSharpProgramAsset programToUpdate in assetsToUpdate)
+            if (assetsToUpdate.Count > 0)
             {
-                EditorUtility.DisplayProgressBar("UdonSharp Compile", 
-                                                $"Compiling {AssetDatabase.GetAssetPath(programToUpdate.sourceCsScript)}...", 
-                                                Mathf.Clamp01((assetCount++ / (float)assetsToUpdate.Count) + Random.Range(0.01f, 0.2f))); // Make it look like we're doing work :D
-
-                programToUpdate.AssembleCsProgram();
+                UdonSharpCompiler compiler = new UdonSharpCompiler(assetsToUpdate.ToArray());
+                compiler.Compile();
             }
-
-            EditorUtility.ClearProgressBar();
         }
 
         static void OnEditorUpdate()

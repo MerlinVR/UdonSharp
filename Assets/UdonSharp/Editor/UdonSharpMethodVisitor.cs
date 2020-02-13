@@ -18,6 +18,19 @@ namespace UdonSharp
             visitorContext = new ASTVisitorContext(resolver, rootTable, labelTable);
         }
 
+        public override void VisitUsingDirective(UsingDirectiveSyntax node)
+        {
+            using (ExpressionCaptureScope namespaceCapture = new ExpressionCaptureScope(visitorContext, null))
+            {
+                Visit(node.Name);
+
+                if (!namespaceCapture.IsNamespace())
+                    throw new System.Exception("Did not capture a valid namespace");
+
+                visitorContext.resolverContext.AddNamespace(namespaceCapture.captureNamespace);
+            }
+        }
+
         public override void VisitIdentifierName(IdentifierNameSyntax node)
         {
             if (visitorContext.topCaptureScope != null)

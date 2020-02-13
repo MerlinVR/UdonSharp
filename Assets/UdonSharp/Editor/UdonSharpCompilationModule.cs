@@ -17,7 +17,7 @@ namespace UdonSharp
     /// </summary>
     public class CompilationModule
     {
-        private MonoScript source;
+        public UdonSharpProgramAsset programAsset { get; private set; }
         private string sourceCode;
 
         public ResolverContext resolver { get; private set; }
@@ -26,9 +26,9 @@ namespace UdonSharp
         
         public HashSet<FieldDeclarationSyntax> fieldsWithInitializers;
 
-        public CompilationModule(MonoScript sourceScript)
+        public CompilationModule(UdonSharpProgramAsset sourceAsset)
         {
-            source = sourceScript;
+            programAsset = sourceAsset;
             resolver = new ResolverContext();
             moduleSymbols = new SymbolTable(resolver, null);
             moduleLabels = new LabelTable();
@@ -46,9 +46,9 @@ namespace UdonSharp
                         character });
         }
 
-        public (string, int) Compile()
+        public int Compile()
         {
-            sourceCode = File.ReadAllText(AssetDatabase.GetAssetPath(source));
+            sourceCode = File.ReadAllText(AssetDatabase.GetAssetPath(programAsset.sourceCsScript));
 
             SyntaxTree tree = CSharpSyntaxTree.ParseText(sourceCode);
             int errorCount = 0;
@@ -62,23 +62,19 @@ namespace UdonSharp
                     LinePosition linePosition = diagnostic.Location.GetLineSpan().StartLinePosition;
 
                     LogBuildError($"[UdonSharp] error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}",
-                                    AssetDatabase.GetAssetPath(source).Replace("/", "\\"),
+                                    AssetDatabase.GetAssetPath(programAsset.sourceCsScript).Replace("/", "\\"),
                                     linePosition.Line,
                                     linePosition.Character);
                 }
 
                 if (errorCount > 0)
                 {
-                    //Debug.LogError("Udon Sharp script has errors, compilation aborted.");
-                    return ("error", errorCount);
+                    return errorCount;
                 }
             }
             
             var rewriter = new UdonSharpFieldRewriter(fieldsWithInitializers);
             var result = rewriter.Visit(tree.GetRoot());
-
-            NamespaceVisitor namespaceVisitor = new NamespaceVisitor(resolver);
-            namespaceVisitor.Visit(result);
 
             MethodVisitor methodVisitor = new MethodVisitor(resolver, moduleSymbols, moduleLabels);
             methodVisitor.Visit(result);
@@ -99,7 +95,7 @@ namespace UdonSharp
                     FileLinePositionSpan lineSpan = currentNode.GetLocation().GetLineSpan();
 
                     LogBuildError($"[UdonSharp] {e.GetType()}: {e.Message}",
-                                    AssetDatabase.GetAssetPath(source).Replace("/", "\\"),
+                                    AssetDatabase.GetAssetPath(programAsset.sourceCsScript).Replace("/", "\\"),
                                     lineSpan.StartLinePosition.Line,
                                     lineSpan.StartLinePosition.Character);
                 }
@@ -114,7 +110,10 @@ namespace UdonSharp
             string dataBlock = BuildHeapDataBlock();
             string codeBlock = visitor.GetCompiledUasm();
 
-            return (dataBlock + codeBlock, errorCount);
+            programAsset.SetUdonAssembly(dataBlock + codeBlock);
+            programAsset.AssembleCsProgram();
+
+            return errorCount;
         }
 
         private string BuildHeapDataBlock()

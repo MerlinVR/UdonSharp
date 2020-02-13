@@ -47,23 +47,6 @@ namespace UdonSharp
         public int declarationSpanEnd = -1;
     }
 
-    public class MethodSymbolDefinition
-    {
-        public string originalMethodName;
-
-        public string methodName;
-
-        // If this is a builtin Unity event like Update(), Start(), OnEnable(), etc
-        public bool isBuiltinEvent;
-
-        public System.Type returnType;
-
-        public List<System.Type> argumentTypes = new List<Type>();
-
-        public JumpLabel entryPoint;
-        public JumpLabel returnPoint;
-    }
-
     /// <summary>
     /// Symbol tables keep track of all variables in the given context
     /// Symbol tables can be nested, the normal use case is if you have a function define variables in its local context,

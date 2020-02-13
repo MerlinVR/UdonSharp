@@ -1,11 +1,8 @@
-﻿using System;
-using System.CodeDom;
+﻿using System.CodeDom;
 using System.CodeDom.Compiler;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -14,31 +11,70 @@ using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CSharp;
 using UnityEditor;
 using UnityEngine;
-using VRC.Udon.Common;
 using VRC.Udon.Common.Interfaces;
 
 namespace UdonSharp
 {
     public class UdonSharpCompiler
     {
-        private MonoScript source;
-        private CompilationModule module;
+        private CompilationModule[] modules;
 
         private static int initAssemblyCounter = 0;
 
-        public UdonSharpCompiler(MonoScript sourceScript)
+        public UdonSharpCompiler(UdonSharpProgramAsset programAsset)
         {
-            source = sourceScript ?? throw new System.ArgumentException("No valid C# source file specified!");
-            module = new CompilationModule(source);
+            modules = new CompilationModule[] { new CompilationModule(programAsset) };
         }
 
-        public (string, int) Compile()
+        public UdonSharpCompiler(UdonSharpProgramAsset[] programAssets)
         {
-            return module.Compile();
+            modules = programAssets.Select(e => new CompilationModule(e)).ToArray();
         }
 
-        public void AssignHeapConstants(IUdonProgram program)
+        public void Compile()
         {
+            System.Diagnostics.Stopwatch compileTimer = new System.Diagnostics.Stopwatch();
+            compileTimer.Start();
+
+            int totalErrorCount = 0;
+            int moduleCounter = 0;
+
+            try
+            {
+                foreach (CompilationModule module in modules)
+                {
+                    EditorUtility.DisplayProgressBar("UdonSharp Compile",
+                                                    $"Compiling {AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript)}...",
+                                                    Mathf.Clamp01((moduleCounter++ / (float)modules.Length) + Random.Range(0.01f, 0.2f))); // Make it look like we're doing work :D
+
+                    int moduleErrorCount = module.Compile();
+                    totalErrorCount += moduleErrorCount;
+
+                    if (moduleErrorCount == 0)
+                    {
+                        AssignHeapConstants(module);
+
+                        EditorUtility.SetDirty(module.programAsset);
+                    }
+                }
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+
+            compileTimer.Stop();
+
+            EditorUtility.ClearProgressBar();
+
+            if (totalErrorCount == 0)
+                Debug.Log($"[UdonSharp] Compile of script{(modules.Length > 1 ? "s" : "")} {string.Join(", ", modules.Select(e => Path.GetFileName(AssetDatabase.GetAssetPath(e.programAsset.sourceCsScript))))} finished in {compileTimer.Elapsed.ToString("mm\\:ss\\.fff")}");
+        }
+
+        public void AssignHeapConstants(CompilationModule module)
+        {
+            IUdonProgram program = module.programAsset.GetRealProgram();
+
             if (program != null)
             {
                 foreach (SymbolDefinition symbol in module.moduleSymbols.GetAllUniqueChildSymbols())
@@ -51,12 +87,14 @@ namespace UdonSharp
                     }
                 }
 
-                RunFieldInitalizers(program);
+                RunFieldInitalizers(module);
             }
         }
 
-        private void RunFieldInitalizers(IUdonProgram program)
+        private void RunFieldInitalizers(CompilationModule module)
         {
+            IUdonProgram program = module.programAsset.GetRealProgram();
+
             // We don't need to run the costly compilation if the user hasn't defined any fields with initializers
             if (module.fieldsWithInitializers.Count == 0)
                 return;
@@ -115,7 +153,7 @@ namespace UdonSharp
 
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(sb.ToString());
 
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
             var references = new List<MetadataReference>();
             for (int i = 0; i < assemblies.Length; i++)
             {
