@@ -1546,6 +1546,16 @@ namespace UdonSharp
                 Visit(node.Expression);
                 arraySymbol = arrayCaptureScope.ExecuteGet();
 
+                if (arraySymbol.symbolCsType == typeof(string))
+                {
+                    using (ExpressionCaptureScope charArrayMethodCapture = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        charArrayMethodCapture.SetToLocalSymbol(arraySymbol);
+                        charArrayMethodCapture.ResolveAccessToken("ToCharArray");
+                        arraySymbol = charArrayMethodCapture.Invoke(new SymbolDefinition[] { });
+                    }
+                }
+
                 if (!arraySymbol.symbolCsType.IsArray)
                     throw new System.Exception("foreach loop must iterate an array type");
             }
