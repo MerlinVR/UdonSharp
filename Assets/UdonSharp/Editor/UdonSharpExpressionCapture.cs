@@ -294,9 +294,21 @@ namespace UdonSharp
             }
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
             {
-                outSymbol = visitorContext.topTable.CreateUnnamedSymbol(accessSymbol.symbolCsType.GetElementType(), SymbolDeclTypeFlags.Internal);
+                System.Type elementType = null;
 
-                string getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(accessSymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Get").First());
+                string getIndexerUdonName;
+                if (accessSymbol.symbolCsType == typeof(string))
+                {
+                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(accessSymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "get_Chars").First());
+                    elementType = typeof(char);
+                }
+                else
+                {
+                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(accessSymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Get").First());
+                    elementType = accessSymbol.symbolCsType.GetElementType();
+                }
+
+                outSymbol = visitorContext.topTable.CreateUnnamedSymbol(elementType, SymbolDeclTypeFlags.Internal);
 
                 visitorContext.uasmBuilder.AddPush(accessSymbol);
                 visitorContext.uasmBuilder.AddPush(arrayIndexerIndexSymbol);
@@ -1131,7 +1143,7 @@ namespace UdonSharp
 
             System.Type returnType = GetReturnType();
 
-            if (!returnType.IsArray)
+            if (!returnType.IsArray/* && returnType != typeof(string)*/) // Uncomment the check for string when VRC has added the actual indexer function to Udon. 
                 throw new System.Exception("Can only run array indexers on array types");
 
             SymbolDefinition newAccessSymbol = ExecuteGet();
