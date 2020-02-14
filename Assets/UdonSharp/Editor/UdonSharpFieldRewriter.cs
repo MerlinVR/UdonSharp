@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -14,6 +15,7 @@ public class UdonSharpFieldRewriter : CSharpSyntaxRewriter
 
     public override SyntaxNode VisitFieldDeclaration(FieldDeclarationSyntax node)
     {
+        StringBuilder s = new StringBuilder();
         var variables = node.Declaration.Variables;
         for (int i = 0; i < variables.Count; ++i)
         {
@@ -23,9 +25,13 @@ public class UdonSharpFieldRewriter : CSharpSyntaxRewriter
             {
                 variables = variables.Replace(variable, variable.WithInitializer(null));
                 fieldsWithInitializers.Add(node);
+                s.Append(variable.Initializer.ToFullString());
             }
         }
 
-        return node.WithDeclaration(node.Declaration.WithVariables(variables)).WithTrailingTrivia(SyntaxFactory.Comment($"/*{node.Declaration.ToFullString()}*/"));
+        var newNode = node.WithDeclaration(node.Declaration.WithVariables(variables));
+        if (s.Length > 0)
+            newNode = newNode.WithTrailingTrivia(SyntaxFactory.Comment($"/*{s}*/"));
+        return newNode;
     }
 }
