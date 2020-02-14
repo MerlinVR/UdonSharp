@@ -26,6 +26,6 @@ public class UdonSharpFieldRewriter : CSharpSyntaxRewriter
             }
         }
 
-        return node.WithDeclaration(node.Declaration.WithVariables(variables));
+        return node.WithDeclaration(node.Declaration.WithVariables(variables)).WithTrailingTrivia(SyntaxFactory.Comment($"/*{node.Declaration.ToFullString()}*/"));
     }
 }
