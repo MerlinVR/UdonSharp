@@ -439,6 +439,8 @@ namespace UdonSharp
                 childTables.AddRange(childTable.GetAllChildSymbolTables());
             }
 
+            childTables.Add(this);
+
             return childTables;
         }
 
