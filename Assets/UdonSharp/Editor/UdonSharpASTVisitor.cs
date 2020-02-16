@@ -578,6 +578,10 @@ namespace UdonSharp
                 Visit(node.Type);
 
                 capturedType = typeCapture.captureType;
+
+                // Just throw a compile error for now instead of letting people get the typeof a type that won't exist in game
+                if (capturedType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+                    throw new System.NotSupportedException("UdonSharp does not currently support using `typeof` on user defined types");
             }
 
             if (visitorContext.topCaptureScope != null)

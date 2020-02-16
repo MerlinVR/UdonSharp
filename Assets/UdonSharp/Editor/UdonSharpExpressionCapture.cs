@@ -732,12 +732,55 @@ namespace UdonSharp
             if (invokeParams.Length != captureExternUserMethod.parameters.Length)
                 throw new System.NotSupportedException("UdonSharp custom methods currently do not support default arguments or params arguments");
 
-            throw new System.NotImplementedException();
+            if (!accessSymbol.IsUserDefinedBehaviour())
+                throw new System.FieldAccessException("Cannot run extern invoke on non-user symbol");
+
+            for (int i = 0; i < captureExternUserMethod.parameters.Length; ++i)
+            {
+                SymbolDefinition convertedArg = CastSymbolToType(invokeParams[i], captureExternUserMethod.parameters[i].type, false);
+
+                using (ExpressionCaptureScope argAssignmentScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    argAssignmentScope.SetToLocalSymbol(accessSymbol);
+                    argAssignmentScope.ResolveAccessToken("SetProgramVariable");
+
+                    argAssignmentScope.Invoke(new SymbolDefinition[] {
+                        visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserMethod.parameters[i].paramSymbol.symbolUniqueName),
+                        convertedArg
+                    });
+                }
+            }
+
+            using (ExpressionCaptureScope externInvokeScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                externInvokeScope.SetToLocalSymbol(accessSymbol);
+                externInvokeScope.ResolveAccessToken("SendCustomEvent");
+                externInvokeScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserMethod.uniqueMethodName) });
+            }
+
+            SymbolDefinition returnSymbol = null;
+
+            if (captureExternUserMethod.returnSymbol != null)
+            {
+                using (ExpressionCaptureScope getReturnScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    getReturnScope.SetToLocalSymbol(accessSymbol);
+                    getReturnScope.ResolveAccessToken("GetProgramVariable");
+                    returnSymbol = getReturnScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserMethod.returnSymbol.symbolUniqueName) });
+                }
+
+                using (ExpressionCaptureScope propagateScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
+                {
+                    propagateScope.SetToLocalSymbol(returnSymbol);
+                }
+            }
+
+            return returnSymbol;
         }
 
         public SymbolDefinition Invoke(SymbolDefinition[] invokeParams)
         {
-            if (captureArchetype != ExpressionCaptureArchetype.Method && captureArchetype != ExpressionCaptureArchetype.LocalMethod)
+            if (!IsMethod())
             {
                 throw new System.Exception("You can only invoke methods!");
             }
@@ -853,6 +896,7 @@ namespace UdonSharp
                      captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
             {
                 resolvedToken = HandleExternUserFieldLookup(accessToken) ||
+                                HandleExternUserMethodLookup(accessToken) ||
                                 HandleMemberPropertyAccess(accessToken) ||
                                 HandleMemberFieldAccess(accessToken) ||
                                 HandleMemberMethodLookup(accessToken);
@@ -1217,6 +1261,30 @@ namespace UdonSharp
             accessSymbol = newAccessSymbol;
             captureArchetype = ExpressionCaptureArchetype.ExternUserField;
             captureExternUserField = foundDefinition;
+
+            return true;
+        }
+
+        private bool HandleExternUserMethodLookup(string methodToken)
+        {
+            if (!accessSymbol.IsUserDefinedBehaviour())
+                return false;
+
+            ClassDefinition externClass = visitorContext.externClassDefinitions.Where(e => e.userClassType == accessSymbol.userCsType).FirstOrDefault();
+
+            if (externClass == null)
+                return false;
+
+            MethodDefinition foundDefinition = externClass.methodDefinitions.Where(e => e.originalMethodName == methodToken).FirstOrDefault();
+
+            if (foundDefinition == null)
+                return false;
+
+            SymbolDefinition newAccessSymbol = ExecuteGet();
+
+            accessSymbol = newAccessSymbol;
+            captureArchetype = ExpressionCaptureArchetype.ExternUserMethod;
+            captureExternUserMethod = foundDefinition;
 
             return true;
         }
