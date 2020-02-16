@@ -778,7 +778,7 @@ namespace UdonSharp
                     typeName = $"Variable_{typeName}";
                     break;
                 default:
-                    return true;
+                    break;
             }
 
             return nodeDefinitionLookup.Contains(typeName);

@@ -16,6 +16,8 @@ namespace UdonSharp
         private Stack<SymbolTable> symbolTableStack;
         public LabelTable labelTable;
         public AssemblyBuilder uasmBuilder;
+        public System.Type behaviourUserType;
+        public List<ClassDefinition> externClassDefinitions;
         public Stack<ExpressionCaptureScope> expressionCaptureStack = new Stack<ExpressionCaptureScope>();
         
         public List<MethodDefinition> definedMethods;
@@ -85,12 +87,13 @@ namespace UdonSharp
     {
         public ASTVisitorContext visitorContext { get; private set; }
 
-        public ASTVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable, List<MethodDefinition> methodDefinitions)
+        public ASTVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable, List<MethodDefinition> methodDefinitions, List<ClassDefinition> externUserClassDefinitions)
             :base(SyntaxWalkerDepth.Node)
         {
             visitorContext = new ASTVisitorContext(resolver, rootTable, labelTable);
             visitorContext.returnJumpTarget = rootTable.CreateNamedSymbol("returnTarget", typeof(uint), SymbolDeclTypeFlags.Internal);
             visitorContext.definedMethods = methodDefinitions;
+            visitorContext.externClassDefinitions = externUserClassDefinitions;
         }
 
         /// <summary>
@@ -167,6 +170,16 @@ namespace UdonSharp
         public override void VisitClassDeclaration(ClassDeclarationSyntax node)
         {
             UpdateSyntaxNode(node);
+
+            using (ExpressionCaptureScope selfTypeCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                selfTypeCaptureScope.ResolveAccessToken(node.Identifier.ValueText);
+
+                if (!selfTypeCaptureScope.IsType())
+                    throw new System.Exception($"Could not get type of class {node.Identifier.ValueText}");
+
+                visitorContext.behaviourUserType = selfTypeCaptureScope.captureType;
+            }
 
             visitorContext.uasmBuilder.AppendLine(".code_start", 0);
 
@@ -499,7 +512,8 @@ namespace UdonSharp
             string udonTypeName = visitorContext.resolverContext.GetUdonTypeName(variableType);
 
             if (!visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Variable) &&
-                !visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Type))
+                !visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Type) &&
+                !variableType.IsSubclassOf(typeof(UdonSharpBehaviour)))
                 throw new System.NotSupportedException($"Udon does not support variables of type '{variableType.Name}' yet");
         }
 

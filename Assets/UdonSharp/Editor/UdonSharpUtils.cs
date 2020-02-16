@@ -209,5 +209,16 @@ namespace UdonSharp
         {
             return udonSyncTypes.Contains(type);
         }
+        
+        public static void LogBuildError(string message, string filePath, int line, int character)
+        {
+            MethodInfo buildErrorLogMethod = typeof(UnityEngine.Debug).GetMethod("LogPlayerBuildError", BindingFlags.NonPublic | BindingFlags.Static);
+
+            buildErrorLogMethod.Invoke(null, new object[] {
+                        $"[UdonSharp] {message}",
+                        filePath,
+                        line + 1,
+                        character });
+        }
     }
 }

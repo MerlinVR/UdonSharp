@@ -35,18 +35,7 @@ namespace UdonSharp
             fieldsWithInitializers = new HashSet<FieldDeclarationSyntax>();
         }
 
-        private void LogBuildError(string message, string filePath, int line, int character)
-        {
-            MethodInfo buildErrorLogMethod = typeof(UnityEngine.Debug).GetMethod("LogPlayerBuildError", BindingFlags.NonPublic | BindingFlags.Static);
-
-            buildErrorLogMethod.Invoke(null, new object[] {
-                        message,
-                        filePath,
-                        line + 1,
-                        character });
-        }
-
-        public int Compile()
+        public int Compile(List<ClassDefinition> classDefinitions)
         {
             sourceCode = File.ReadAllText(AssetDatabase.GetAssetPath(programAsset.sourceCsScript));
 
@@ -61,10 +50,10 @@ namespace UdonSharp
 
                     LinePosition linePosition = diagnostic.Location.GetLineSpan().StartLinePosition;
 
-                    LogBuildError($"[UdonSharp] error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}",
-                                    AssetDatabase.GetAssetPath(programAsset.sourceCsScript).Replace("/", "\\"),
-                                    linePosition.Line,
-                                    linePosition.Character);
+                    UdonSharpUtils.LogBuildError($"error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}",
+                                                    AssetDatabase.GetAssetPath(programAsset.sourceCsScript).Replace("/", "\\"),
+                                                    linePosition.Line,
+                                                    linePosition.Character);
                 }
 
                 if (errorCount > 0)
@@ -79,7 +68,7 @@ namespace UdonSharp
             MethodVisitor methodVisitor = new MethodVisitor(resolver, moduleSymbols, moduleLabels);
             methodVisitor.Visit(result);
 
-            ASTVisitor visitor = new ASTVisitor(resolver, moduleSymbols, moduleLabels, methodVisitor.definedMethods);
+            ASTVisitor visitor = new ASTVisitor(resolver, moduleSymbols, moduleLabels, methodVisitor.definedMethods, classDefinitions);
 
             try
             {
@@ -94,10 +83,10 @@ namespace UdonSharp
                 {
                     FileLinePositionSpan lineSpan = currentNode.GetLocation().GetLineSpan();
 
-                    LogBuildError($"[UdonSharp] {e.GetType()}: {e.Message}",
-                                    AssetDatabase.GetAssetPath(programAsset.sourceCsScript).Replace("/", "\\"),
-                                    lineSpan.StartLinePosition.Line,
-                                    lineSpan.StartLinePosition.Character);
+                    UdonSharpUtils.LogBuildError($"{e.GetType()}: {e.Message}",
+                                                    AssetDatabase.GetAssetPath(programAsset.sourceCsScript).Replace("/", "\\"),
+                                                    lineSpan.StartLinePosition.Line,
+                                                    lineSpan.StartLinePosition.Character);
                 }
                 else
                 {

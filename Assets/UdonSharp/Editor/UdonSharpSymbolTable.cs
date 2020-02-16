@@ -16,12 +16,28 @@ namespace UdonSharp
         Constant = 16, // Used to represent a constant value that does not change. This can either be statically defined constants 
         Array = 32, // If this symbol is an array type
         This = 64, // defines one of the 3 builtin `this` assignments for UdonBehaviour, GameObject, and Transform
+        //UserType = 128, // this symbol is a user defined behaviour that is stored as an UdonBehaviour
     }
 
     public class SymbolDefinition
     {
+        private System.Type internalType; 
+
         // The type of the symbol from the C# side
-        public System.Type symbolCsType;
+        public System.Type symbolCsType
+        {
+            get
+            {
+                if (IsUserDefinedBehaviour())
+                    return typeof(VRC.Udon.UdonBehaviour);
+
+                return internalType;
+            }
+
+            set { internalType = value; }
+        }
+
+        public System.Type userCsType { get { return internalType; } }
 
         // How the symbol was created
         public SymbolDeclTypeFlags declarationType;
@@ -41,10 +57,8 @@ namespace UdonSharp
         // This is only used for global (public/private) symbols with a default value, and constant symbols
         public object symbolDefaultValue = null;
 
-        // Debugging info
-        // The start and end character indices of the declaration of this symbol
-        public int declarationSpanStart = -1;
-        public int declarationSpanEnd = -1;
+        //public bool IsUserDefinedBehaviour() { return declarationType.HasFlag(SymbolDeclTypeFlags.UserType); }
+        public bool IsUserDefinedBehaviour() { return internalType.IsSubclassOf(typeof(UdonSharpBehaviour)); }
     }
 
     /// <summary>
@@ -232,9 +246,11 @@ namespace UdonSharp
         {
             SymbolTable globalSymTable = GetGlobalSymbolTable();
 
+            System.Type udonType = type.IsSubclassOf(typeof(UdonSharpBehaviour)) ? typeof(VRC.Udon.UdonBehaviour) : type;
+
             foreach (SymbolDefinition definition in globalSymTable.symbolDefinitions)
             {
-                if (definition.declarationType.HasFlag(SymbolDeclTypeFlags.This) && definition.symbolCsType == type)
+                if (definition.declarationType.HasFlag(SymbolDeclTypeFlags.This) && (definition.symbolCsType == udonType))
                     return definition;
             }
 
@@ -338,7 +354,7 @@ namespace UdonSharp
                     uniqueSymbolName = $"__{IncrementUniqueNameCounter(uniqueSymbolName)}_{uniqueSymbolName}";
             }
 
-            string udonTypeName = resolver.GetUdonTypeName(resolvedSymbolType);
+            string udonTypeName = resolver.GetUdonTypeName(resolvedSymbolType.IsSubclassOf(typeof(UdonSharpBehaviour)) ? typeof(VRC.Udon.UdonBehaviour) : resolvedSymbolType);
 
             if (udonTypeName == null)
                 throw new System.ArgumentException($"Could not locate Udon type for system type {resolvedSymbolType.FullName}");

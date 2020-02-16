@@ -41,13 +41,17 @@ namespace UdonSharp
 
             try
             {
+                List<ClassDefinition> classDefinitions = BuildClassDefinitions();
+                if (classDefinitions == null)
+                    totalErrorCount++;
+
                 foreach (CompilationModule module in modules)
                 {
                     EditorUtility.DisplayProgressBar("UdonSharp Compile",
                                                     $"Compiling {AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript)}...",
                                                     Mathf.Clamp01((moduleCounter++ / (float)modules.Length) + Random.Range(0.01f, 0.2f))); // Make it look like we're doing work :D
 
-                    int moduleErrorCount = module.Compile();
+                    int moduleErrorCount = module.Compile(classDefinitions);
                     totalErrorCount += moduleErrorCount;
 
                     if (moduleErrorCount == 0)
@@ -195,6 +199,52 @@ namespace UdonSharp
                     methodInfo.Invoke(null, new[] {program});
                 }
             }
+        }
+
+        private List<ClassDefinition> BuildClassDefinitions()
+        {
+            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
+
+            List<UdonSharpProgramAsset> udonSharpPrograms = new List<UdonSharpProgramAsset>();
+
+            foreach (string dataGuid in udonSharpDataAssets)
+            {
+                udonSharpPrograms.Add(AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid)));
+            }
+
+            List<ClassDefinition> classDefinitions = new List<ClassDefinition>();
+
+            foreach (UdonSharpProgramAsset udonSharpProgram in udonSharpPrograms)
+            {
+                if (udonSharpProgram.sourceCsScript == null)
+                    continue;
+
+                string sourcePath = AssetDatabase.GetAssetPath(udonSharpProgram.sourceCsScript);
+                string programSource = File.ReadAllText(sourcePath);
+
+                ResolverContext resolver = new ResolverContext();
+                SymbolTable classSymbols = new SymbolTable(resolver, null);
+                LabelTable classLabels = new LabelTable();
+                
+                SyntaxTree tree = CSharpSyntaxTree.ParseText(programSource);
+
+                ClassVisitor classVisitor = new ClassVisitor(resolver, classSymbols, classLabels);
+
+                try
+                {
+                    classVisitor.Visit(tree.GetRoot());
+                }
+                catch (System.Exception e)
+                {
+                    UdonSharpUtils.LogBuildError($"{e.GetType()}: {e.Message}", sourcePath.Replace("/", "\\"), 0, 0);
+
+                    return null;
+                }
+
+                classDefinitions.Add(classVisitor.classDefinition);
+            }
+
+            return classDefinitions;
         }
     }
 }

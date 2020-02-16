@@ -19,6 +19,8 @@ namespace UdonSharp
         This, // this.<next token> indicates that this must be a local symbol or method
         Enum,
         LocalMethod,
+        ExternUserField,
+        ExternUserMethod,
     }
 
     /// <summary>
@@ -48,6 +50,8 @@ namespace UdonSharp
         public System.Type captureType { get; private set; } = null;
         public string captureEnum { get; private set; } = "";
         public MethodDefinition captureLocalMethod { get; private set; } = null;
+        public FieldDefinition captureExternUserField { get; private set; } = null;
+        public MethodDefinition captureExternUserMethod { get; private set; } = null;
 
         private SymbolDefinition accessSymbol = null;
 
@@ -182,7 +186,9 @@ namespace UdonSharp
 
         public bool IsMethod()
         {
-            return captureArchetype == ExpressionCaptureArchetype.Method || captureArchetype == ExpressionCaptureArchetype.LocalMethod;
+            return captureArchetype == ExpressionCaptureArchetype.Method || 
+                   captureArchetype == ExpressionCaptureArchetype.LocalMethod || 
+                   captureArchetype == ExpressionCaptureArchetype.ExternUserMethod;
         }
 
         public bool IsProperty()
@@ -192,7 +198,8 @@ namespace UdonSharp
 
         public bool IsField()
         {
-            return captureArchetype == ExpressionCaptureArchetype.Field;
+            return captureArchetype == ExpressionCaptureArchetype.Field ||
+                   captureArchetype == ExpressionCaptureArchetype.ExternUserField;
         }
 
         public bool IsType()
@@ -292,6 +299,18 @@ namespace UdonSharp
                 visitorContext.uasmBuilder.AddPush(outSymbol);
                 visitorContext.uasmBuilder.AddExternCall(fieldAccessorUdonName);
             }
+            else if (captureArchetype == ExpressionCaptureArchetype.ExternUserField)
+            {
+                outSymbol = visitorContext.topTable.CreateUnnamedSymbol(captureExternUserField.fieldSymbol.symbolCsType, SymbolDeclTypeFlags.Internal);
+
+                using (ExpressionCaptureScope getVariableMethodScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    getVariableMethodScope.SetToLocalSymbol(accessSymbol);
+                    getVariableMethodScope.ResolveAccessToken("GetProgramVariable");
+
+                    outSymbol = getVariableMethodScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserField.fieldSymbol.symbolUniqueName) });
+                }
+            }
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
             {
                 System.Type elementType = null;
@@ -317,7 +336,7 @@ namespace UdonSharp
             }
             else if (captureArchetype == ExpressionCaptureArchetype.This)
             {
-                outSymbol = visitorContext.topTable.CreateThisSymbol(typeof(VRC.Udon.UdonBehaviour));
+                outSymbol = visitorContext.topTable.CreateThisSymbol(visitorContext.behaviourUserType);
             }
             else if (captureArchetype == ExpressionCaptureArchetype.Enum)
             {
@@ -334,7 +353,7 @@ namespace UdonSharp
 
         public void ExecuteSet(SymbolDefinition value, bool explicitCast = false)
         {
-            SymbolDefinition convertedValue = CastSymbolToType(value, GetReturnType(), explicitCast);
+            SymbolDefinition convertedValue = CastSymbolToType(value, GetReturnType(true), explicitCast);
 
             // If it's a local symbol, it's just a simple COPY
             if (captureArchetype == ExpressionCaptureArchetype.LocalSymbol)
@@ -371,6 +390,19 @@ namespace UdonSharp
                 visitorContext.uasmBuilder.AddPush(convertedValue);
                 visitorContext.uasmBuilder.AddExternCall(fieldSetterUdonName);
             }
+            else if (captureArchetype == ExpressionCaptureArchetype.ExternUserField)
+            {
+                using (ExpressionCaptureScope setVariableMethodScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    setVariableMethodScope.SetToLocalSymbol(accessSymbol);
+                    setVariableMethodScope.ResolveAccessToken("SetProgramVariable");
+
+                    setVariableMethodScope.Invoke(new SymbolDefinition[] {
+                        visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserField.fieldSymbol.symbolUniqueName),
+                        convertedValue
+                    });
+                }
+            }
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
             {
                 string setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(accessSymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Set").First());
@@ -389,20 +421,26 @@ namespace UdonSharp
         // There's probably a better place for this function...
         private SymbolDefinition CastSymbolToType(SymbolDefinition sourceSymbol, System.Type targetType, bool isExplicit)
         {
+            if (targetType.IsByRef) // Convert ref and out args to their main types.
+                targetType = targetType.GetElementType();
+
+            // Special case for passing through user defined classes if they match
+            if (sourceSymbol.IsUserDefinedBehaviour() && 
+                targetType.IsAssignableFrom(sourceSymbol.userCsType))
+                return sourceSymbol;
+            
             // Special case for assigning objects to non-value types so we can assign and the output of things that return a generic object
             // This lets the user potentially break their stuff if they assign an object return value from some function to a heap variable with a non-matching type. 
             // For instance you could assign a Transform component to a Renderer component variable, and you'd only realize the error when you tried to treat the Renderer as a Renderer.
             // This can't be trivially type checked at runtime with what Udon exposes in System.Type at the moment.
             bool isObjectAssignable = !targetType.IsValueType && sourceSymbol.symbolCsType == typeof(object);
-            if (targetType.IsByRef) // Convert ref and out args to their main types.
-                targetType = targetType.GetElementType();
 
             bool isNumericCastValid = UdonSharpUtils.IsNumericImplicitCastValid(targetType, sourceSymbol.symbolCsType) ||
                  (sourceSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) && sourceSymbol.symbolCsType == typeof(int)); // Handle Roslyn giving us ints constant expressions
 
-            if ((!isExplicit && !targetType.IsImplicitlyAssignableFrom(sourceSymbol.symbolCsType)) &&
+            if ((!isExplicit && !targetType.IsImplicitlyAssignableFrom(sourceSymbol.userCsType)) &&
                 !isObjectAssignable && !isNumericCastValid)
-                throw new System.ArgumentException($"Cannot implicitly cast from {sourceSymbol.symbolCsType} to {targetType}");
+                throw new System.ArgumentException($"Cannot implicitly cast from {sourceSymbol.userCsType} to {targetType}");
 
             // Exact type match, just return the symbol, this is what will happen a majority of the time.
             if (targetType == sourceSymbol.symbolCsType || isObjectAssignable)
@@ -689,6 +727,14 @@ namespace UdonSharp
             return captureLocalMethod.returnSymbol;
         }
 
+        private SymbolDefinition InvokeUserExtern(SymbolDefinition[] invokeParams)
+        {
+            if (invokeParams.Length != captureExternUserMethod.parameters.Length)
+                throw new System.NotSupportedException("UdonSharp custom methods currently do not support default arguments or params arguments");
+
+            throw new System.NotImplementedException();
+        }
+
         public SymbolDefinition Invoke(SymbolDefinition[] invokeParams)
         {
             if (captureArchetype != ExpressionCaptureArchetype.Method && captureArchetype != ExpressionCaptureArchetype.LocalMethod)
@@ -700,19 +746,30 @@ namespace UdonSharp
             {
                 return InvokeExtern(invokeParams);
             }
-            else
+            else if (captureArchetype == ExpressionCaptureArchetype.LocalMethod)
             {
                 return InvokeLocalMethod(invokeParams);
             }
+            else if (captureArchetype == ExpressionCaptureArchetype.ExternUserMethod)
+            {
+                return InvokeUserExtern(invokeParams);
+            }
+            else
+            {
+                throw new System.Exception($"Cannot call invoke on archetype {captureArchetype}");
+            }
         }
 
-        public System.Type GetReturnType()
+        public System.Type GetReturnType(bool getUserType = false)
         {
             if (captureArchetype == ExpressionCaptureArchetype.Method)
                 throw new System.Exception("Cannot infer return type from method without function arguments");
 
             if (captureArchetype == ExpressionCaptureArchetype.LocalSymbol)
             {
+                if (getUserType)
+                    return accessSymbol.userCsType;
+
                 return accessSymbol.symbolCsType;
             }
             else if (captureArchetype == ExpressionCaptureArchetype.Property)
@@ -722,6 +779,13 @@ namespace UdonSharp
             else if (captureArchetype == ExpressionCaptureArchetype.Field)
             {
                 return captureField.FieldType;
+            }
+            else if (captureArchetype == ExpressionCaptureArchetype.ExternUserField)
+            {
+                if (getUserType)
+                    return captureExternUserField.fieldSymbol.userCsType;
+
+                return captureExternUserField.fieldSymbol.symbolCsType;
             }
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
             {
@@ -772,7 +836,7 @@ namespace UdonSharp
                                 HandleStaticPropertyLookup(accessToken) ||
                                 HandleStaticFieldLookup(accessToken);
             }
-            else if (captureArchetype == ExpressionCaptureArchetype.Method)
+            else if (IsMethod())
             {
                 throw new System.InvalidOperationException("Cannot run an accessor on a method!");
             }
@@ -785,9 +849,11 @@ namespace UdonSharp
             else if (captureArchetype == ExpressionCaptureArchetype.LocalSymbol || 
                      captureArchetype == ExpressionCaptureArchetype.Property || 
                      captureArchetype == ExpressionCaptureArchetype.Field ||
+                     captureArchetype == ExpressionCaptureArchetype.ExternUserField ||
                      captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
             {
-                resolvedToken = HandleMemberPropertyAccess(accessToken) ||
+                resolvedToken = HandleExternUserFieldLookup(accessToken) ||
+                                HandleMemberPropertyAccess(accessToken) ||
                                 HandleMemberFieldAccess(accessToken) ||
                                 HandleMemberMethodLookup(accessToken);
             }
@@ -1131,11 +1197,35 @@ namespace UdonSharp
             return true;
         }
 
+        private bool HandleExternUserFieldLookup(string fieldToken)
+        {
+            if (!accessSymbol.IsUserDefinedBehaviour())
+                return false;
+
+            ClassDefinition externClass = visitorContext.externClassDefinitions.Where(e => e.userClassType == accessSymbol.userCsType).FirstOrDefault();
+
+            if (externClass == null)
+                return false;
+
+            FieldDefinition foundDefinition = externClass.fieldDefinitions.Where(e => e.fieldSymbol.symbolOriginalName == fieldToken).FirstOrDefault();
+
+            if (foundDefinition == null)
+                return false;
+
+            SymbolDefinition newAccessSymbol = ExecuteGet();
+
+            accessSymbol = newAccessSymbol;
+            captureArchetype = ExpressionCaptureArchetype.ExternUserField;
+            captureExternUserField = foundDefinition;
+
+            return true;
+        }
+
         public void HandleArrayIndexerAccess(SymbolDefinition indexerSymbol)
         {
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
                 captureArchetype != ExpressionCaptureArchetype.Property &&
-                captureArchetype != ExpressionCaptureArchetype.Field &&
+                !IsField() &&
                 captureArchetype != ExpressionCaptureArchetype.ArrayIndexer)
             {
                 throw new System.Exception("Can only run indexers on Local Symbols, Properties, Fields, and other indexers");
