@@ -98,8 +98,6 @@ namespace UdonSharp
             visitorContext.returnJumpTarget = rootTable.CreateNamedSymbol("returnTarget", typeof(uint), SymbolDeclTypeFlags.Internal);
             visitorContext.definedMethods = methodDefinitions;
             visitorContext.externClassDefinitions = externUserClassDefinitions;
-
-            rootTable.visitorContext = visitorContext;
         }
 
         /// <summary>
@@ -224,7 +222,7 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
-            SymbolTable functionSymbolTable = new SymbolTable(visitorContext.resolverContext, visitorContext.topTable, visitorContext);
+            SymbolTable functionSymbolTable = new SymbolTable(visitorContext.resolverContext, visitorContext.topTable);
             visitorContext.PushTable(functionSymbolTable);
 
             foreach (StatementSyntax statement in node.Statements)
@@ -498,6 +496,18 @@ namespace UdonSharp
             SymbolDefinition fieldSymbol = HandleVariableDeclaration(node.Declaration, isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private, fieldSyncMode);
             FieldDefinition fieldDefinition = new FieldDefinition(fieldSymbol);
             fieldDefinition.fieldAttributes = GetFieldAttributes(node);
+
+            if (fieldSymbol.IsUserDefinedBehaviour())
+            {
+                foreach (ClassDefinition classDefinition in visitorContext.externClassDefinitions)
+                {
+                    if (classDefinition.userClassType == fieldSymbol.userCsType)
+                    {
+                        fieldDefinition.userBehaviourSource = classDefinition.classScript;
+                        break;
+                    }
+                }
+            }
 
             visitorContext.localFieldDefinitions.Add(fieldSymbol.symbolUniqueName, fieldDefinition);
         }
@@ -971,7 +981,7 @@ namespace UdonSharp
             if (!visitorContext.topTable.IsGlobalSymbolTable)
                 throw new System.Exception("Parent symbol table for method table must be the global symbol table.");
 
-            SymbolTable functionSymbolTable = new SymbolTable(visitorContext.resolverContext, visitorContext.topTable, visitorContext);
+            SymbolTable functionSymbolTable = new SymbolTable(visitorContext.resolverContext, visitorContext.topTable);
 
             // Setup local symbols for the user to read from, this prevents potential conflicts with other methods that have the same argument names
             foreach (ParameterDefinition paramDef in definition.parameters)
@@ -1618,7 +1628,7 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
-            SymbolTable forEachSymbolTable = new SymbolTable(visitorContext.resolverContext, visitorContext.topTable, visitorContext);
+            SymbolTable forEachSymbolTable = new SymbolTable(visitorContext.resolverContext, visitorContext.topTable);
             visitorContext.PushTable(forEachSymbolTable);
 
             System.Type valueSymbolType = null;

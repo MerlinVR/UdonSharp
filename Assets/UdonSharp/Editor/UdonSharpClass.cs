@@ -16,6 +16,8 @@ namespace UdonSharp
         public SymbolDefinition fieldSymbol;
 
         public List<System.Attribute> fieldAttributes;
+        
+        public UnityEditor.MonoScript userBehaviourSource;
 
         public T GetAttribute<T>() where T : System.Attribute
         {

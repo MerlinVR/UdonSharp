@@ -251,7 +251,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
             objectRect = EditorGUI.PrefixLabel(objectRect, new GUIContent(fieldName));
 
-            currentUserScript = fieldDefinition.fieldSymbol.userBehaviourSource;
+            currentUserScript = fieldDefinition.userBehaviourSource;
 
             UnityEngine.Object objectFieldValue = (UnityEngine.Object)doObjectFieldMethod.Invoke(null, new object[] {
                 objectRect,
