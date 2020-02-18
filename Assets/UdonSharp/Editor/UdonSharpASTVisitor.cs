@@ -89,6 +89,7 @@ namespace UdonSharp
     public class ASTVisitor : CSharpSyntaxWalker
     {
         public ASTVisitorContext visitorContext { get; private set; }
+        private Stack<string> namespaceStack = new Stack<string>();
 
         public ASTVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable, List<MethodDefinition> methodDefinitions, List<ClassDefinition> externUserClassDefinitions)
             :base(SyntaxWalkerDepth.Node)
@@ -165,11 +166,15 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
+            namespaceStack.Push(node.Name.ToFullString().TrimEnd('\r', '\n'));
+
             foreach (UsingDirectiveSyntax usingDirective in node.Usings)
                 Visit(usingDirective);
 
             foreach (MemberDeclarationSyntax memberDeclaration in node.Members)
                 Visit(memberDeclaration);
+
+            namespaceStack.Pop();
         }
 
         public override void VisitClassDeclaration(ClassDeclarationSyntax node)
@@ -178,6 +183,9 @@ namespace UdonSharp
 
             using (ExpressionCaptureScope selfTypeCaptureScope = new ExpressionCaptureScope(visitorContext, null))
             {
+                foreach (string namespaceToken in namespaceStack)
+                    selfTypeCaptureScope.ResolveAccessToken(namespaceToken);
+
                 selfTypeCaptureScope.ResolveAccessToken(node.Identifier.ValueText);
 
                 if (!selfTypeCaptureScope.IsType())

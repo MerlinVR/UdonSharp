@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Collections.Generic;
 
 namespace UdonSharp
 {
@@ -13,6 +14,8 @@ namespace UdonSharp
         private ASTVisitorContext visitorContext;
 
         private int classCount = 0;
+
+        private Stack<string> namespaceStack = new Stack<string>();
 
         public ClassVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable)
             : base(SyntaxWalkerDepth.Node)
@@ -32,6 +35,15 @@ namespace UdonSharp
             classDefinition.methodDefinitions = methodVisitor.definedMethods;
         }
 
+        public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
+        {
+            namespaceStack.Push(node.Name.ToFullString().TrimEnd('\r', '\n'));
+
+            base.VisitNamespaceDeclaration(node);
+
+            namespaceStack.Pop();
+        }
+
         public override void VisitClassDeclaration(ClassDeclarationSyntax node)
         {
             if (++classCount > 1)
@@ -39,6 +51,9 @@ namespace UdonSharp
 
             using (ExpressionCaptureScope classTypeCapture = new ExpressionCaptureScope(visitorContext, null))
             {
+                foreach (string namespaceToken in namespaceStack)
+                    classTypeCapture.ResolveAccessToken(namespaceToken);
+
                 classTypeCapture.ResolveAccessToken(node.Identifier.ValueText);
 
                 if (!classTypeCapture.IsType())
