@@ -36,6 +36,7 @@ namespace UdonSharp
     {
         // Methods and fields should *not* be reflected off of this type, it is not guaranteed to be up to date
         public System.Type userClassType;
+        public UnityEditor.MonoScript classScript;
 
         public List<FieldDefinition> fieldDefinitions = new List<FieldDefinition>();
         public List<MethodDefinition> methodDefinitions = new List<MethodDefinition>();

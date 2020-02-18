@@ -246,6 +246,7 @@ namespace UdonSharp
                     return null;
                 }
 
+                classVisitor.classDefinition.classScript = udonSharpProgram.sourceCsScript;
                 classDefinitions.Add(classVisitor.classDefinition);
             }
 

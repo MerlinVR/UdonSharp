@@ -42,6 +42,8 @@ namespace UdonSharp
 
         public System.Type userCsType { get { return internalType; } }
 
+        public UnityEditor.MonoScript userBehaviourSource;
+
         // How the symbol was created
         public SymbolDeclTypeFlags declarationType;
 
@@ -83,6 +85,8 @@ namespace UdonSharp
 
         private Dictionary<string, int> namedSymbolCounters;
 
+        public ASTVisitorContext visitorContext { get; set; }
+
         public SymbolTable GetGlobalSymbolTable()
         {
             SymbolTable currentTable = this;
@@ -93,7 +97,7 @@ namespace UdonSharp
             return currentTable;
         }
 
-        public SymbolTable(ResolverContext resolverContext, SymbolTable parentTable)
+        public SymbolTable(ResolverContext resolverContext, SymbolTable parentTable, ASTVisitorContext visitorContextIn = null)
         {
             resolver = resolverContext;
             parentSymbolTable = parentTable;
@@ -105,6 +109,8 @@ namespace UdonSharp
 
             symbolDefinitions = new List<SymbolDefinition>();
             namedSymbolCounters = new Dictionary<string, int>();
+
+            visitorContext = visitorContextIn;
         }
 
         protected int IncrementUniqueNameCounter(string symbolName)
@@ -370,6 +376,18 @@ namespace UdonSharp
             symbolDefinition.symbolOriginalName = symbolName;
             symbolDefinition.symbolResolvedTypeName = udonTypeName;
             symbolDefinition.symbolUniqueName = uniqueSymbolName;
+
+            if (symbolDefinition.IsUserDefinedBehaviour() && visitorContext != null)
+            {
+                foreach (ClassDefinition classDefinition in visitorContext.externClassDefinitions)
+                {
+                    if (classDefinition.userClassType == symbolDefinition.userCsType)
+                    {
+                        symbolDefinition.userBehaviourSource = classDefinition.classScript;
+                        break;
+                    }
+                }
+            }
 
             if (hasGlobalDeclaration)
             {

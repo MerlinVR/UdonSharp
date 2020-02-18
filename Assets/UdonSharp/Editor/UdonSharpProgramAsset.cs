@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
+using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Serialization.OdinSerializer;
 
@@ -162,6 +164,111 @@ public class <TemplateClassName> : UdonSharpBehaviour
             }
         }
 
+        private static MonoScript currentUserScript = null;
+        private UnityEngine.Object ValidateObjectReference(UnityEngine.Object[] references, System.Type objType, SerializedProperty property, Enum options)
+        {
+            if (property != null)
+                throw new ArgumentException("Serialized property on validate object reference should be null!");
+
+            if (currentUserScript != null)
+            {
+                foreach (UnityEngine.Object reference in references)
+                {
+                    GameObject referenceObject = reference as GameObject;
+                    UdonBehaviour referenceBehaviour = reference as UdonBehaviour;
+
+                    if (referenceObject != null)
+                    {
+                        UdonBehaviour[] components = referenceObject.GetComponents<UdonBehaviour>();
+
+                        UdonBehaviour foundComponent = null;
+
+                        foreach (UdonBehaviour component in components)
+                        {
+                            foundComponent = ValidateObjectReference(new UnityEngine.Object[] { component }, objType, null, UdonSyncMode.NotSynced /* just any enum, we don't care */) as UdonBehaviour;
+
+                            if (foundComponent != null)
+                            {
+                                return foundComponent;
+                            }
+                        }
+                    }
+                    else if (referenceBehaviour != null)
+                    {
+                        if (referenceBehaviour.programSource != null &&
+                            referenceBehaviour.programSource is UdonSharpProgramAsset udonSharpProgram &&
+                            udonSharpProgram.sourceCsScript != null)
+                        {
+                            if (udonSharpProgram.sourceCsScript == currentUserScript)
+                                return referenceBehaviour;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Fallback to default handling if the user has not compiled with the new info
+                if (references[0] != null && references[0] is GameObject && typeof(Component).IsAssignableFrom(objType))
+                {
+                    GameObject gameObject = (GameObject)references[0];
+                    references = gameObject.GetComponents(typeof(Component));
+                }
+                foreach (UnityEngine.Object component in references)
+                {
+                    if (component != null && objType.IsAssignableFrom(component.GetType()))
+                    {
+                        return component;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private object DrawUnityObjectField(string fieldName, string symbol, (object value, Type declaredType) publicVariable, ref bool dirty)
+        {
+            (object value, Type declaredType) = publicVariable;
+
+            FieldDefinition fieldDefinition = null;
+            if (fieldDefinitions != null)
+                fieldDefinitions.TryGetValue(symbol, out fieldDefinition);
+
+            bool isNormalUnityObject = fieldDefinition == null || !fieldDefinition.fieldSymbol.IsUserDefinedBehaviour();
+
+            if (isNormalUnityObject)
+                return EditorGUILayout.ObjectField(fieldName, (UnityEngine.Object)value, declaredType, true);
+
+            MethodInfo doObjectFieldMethod = typeof(EditorGUI).GetMethods(BindingFlags.Static | BindingFlags.NonPublic).Where(e => e.Name == "DoObjectField" && e.GetParameters().Length == 8).FirstOrDefault();
+
+            if (doObjectFieldMethod == null)
+                throw new Exception("Could not find DoObjectField() method");
+
+            Rect objectRect = EditorGUILayout.GetControlRect();
+            int id = GUIUtility.GetControlID(typeof(UnityEngine.Object).GetHashCode(), FocusType.Keyboard, objectRect);
+
+            System.Type validatorDelegateType = typeof(EditorGUI).GetNestedType("ObjectFieldValidator", BindingFlags.Static | BindingFlags.NonPublic);
+            MethodInfo validateMethodInfo = typeof(UdonSharpProgramAsset).GetMethod("ValidateObjectReference", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            objectRect = EditorGUI.PrefixLabel(objectRect, new GUIContent(fieldName));
+
+            currentUserScript = fieldDefinition.fieldSymbol.userBehaviourSource;
+
+            UnityEngine.Object objectFieldValue = (UnityEngine.Object)doObjectFieldMethod.Invoke(null, new object[] {
+                objectRect,
+                objectRect,
+                id,
+                (UnityEngine.Object)value,
+                fieldDefinition.fieldSymbol.symbolCsType,
+                null,
+                Delegate.CreateDelegate(validatorDelegateType, this, validateMethodInfo),
+                true
+            });
+
+            currentUserScript = null;
+
+            return objectFieldValue;
+        }
+
         [NonSerialized]
         private Dictionary<string, bool> foldoutStates = new Dictionary<string, bool>();
 
@@ -240,7 +347,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
             }
             else if (typeof(UnityEngine.Object).IsAssignableFrom(declaredType))
             {
-                return EditorGUILayout.ObjectField(fieldName, (UnityEngine.Object)value, declaredType, true);
+                return DrawUnityObjectField(fieldName, symbol, publicVariable, ref dirty);
             }
             else if (declaredType == typeof(string))
             {
