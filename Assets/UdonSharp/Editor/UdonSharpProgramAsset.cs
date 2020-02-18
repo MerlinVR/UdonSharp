@@ -168,8 +168,9 @@ public class <TemplateClassName> : UdonSharpBehaviour
         private object DrawFieldForType(string fieldName, string symbol, (object value, Type declaredType) publicVariable, ref bool dirty, bool enabled)
         {
             bool isArrayElement = fieldName != null;
-            FieldDefinition fieldDefinition;
-            fieldDefinitions.TryGetValue(symbol, out fieldDefinition);
+            FieldDefinition fieldDefinition = null;
+            if (fieldDefinitions != null)
+                fieldDefinitions.TryGetValue(symbol, out fieldDefinition);
 
             if (fieldName == null)
                 fieldName = ObjectNames.NicifyVariableName(symbol);
@@ -348,7 +349,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
             bool isArray = publicVariable.declaredType.IsArray;
 
             FieldDefinition symbolField;
-            if (fieldDefinitions.TryGetValue(symbol, out symbolField))
+            if (fieldDefinitions != null && fieldDefinitions.TryGetValue(symbol, out symbolField))
             {
                 HideInInspector hideAttribute = symbolField.GetAttribute<HideInInspector>();
 
