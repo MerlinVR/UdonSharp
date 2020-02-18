@@ -102,6 +102,8 @@ namespace UdonSharp
             programAsset.SetUdonAssembly(dataBlock + codeBlock);
             programAsset.AssembleCsProgram();
 
+            programAsset.fieldDefinitions = visitor.visitorContext.localFieldDefinitions;
+
             return errorCount;
         }
 

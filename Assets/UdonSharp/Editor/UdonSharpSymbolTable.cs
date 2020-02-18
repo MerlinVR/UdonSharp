@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using VRC.Udon.Serialization.OdinSerializer;
 
 namespace UdonSharp
 {
@@ -19,8 +20,10 @@ namespace UdonSharp
         //UserType = 128, // this symbol is a user defined behaviour that is stored as an UdonBehaviour
     }
 
+    [Serializable]
     public class SymbolDefinition
     {
+        [OdinSerialize]
         private System.Type internalType; 
 
         // The type of the symbol from the C# side

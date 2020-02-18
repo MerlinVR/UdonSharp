@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using VRC.Udon.Common.Interfaces;
+using VRC.Udon.Serialization.OdinSerializer;
 
 [assembly: UdonProgramSourceNewMenu(typeof(UdonSharp.UdonSharpProgramAsset), "Udon C# Program Asset")]
 
@@ -32,6 +33,9 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         [SerializeField]
         public MonoScript sourceCsScript;
+
+        [NonSerialized, OdinSerialize]
+        public Dictionary<string, FieldDefinition> fieldDefinitions;
 
         private static bool showProgramUasm = false;
 
@@ -163,6 +167,10 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         private object DrawFieldForType(string fieldName, string symbol, (object value, Type declaredType) publicVariable, ref bool dirty, bool enabled)
         {
+            bool isArrayElement = fieldName != null;
+            FieldDefinition fieldDefinition;
+            fieldDefinitions.TryGetValue(symbol, out fieldDefinition);
+
             if (fieldName == null)
                 fieldName = ObjectNames.NicifyVariableName(symbol);
 
@@ -186,44 +194,47 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
                     Array valueArray = value as Array;
 
-                    EditorGUI.BeginChangeCheck();
-                    int newLength = EditorGUILayout.IntField("Size", valueArray.Length);
-
-                    // We need to resize the array
-                    if (EditorGUI.EndChangeCheck())
+                    using (EditorGUILayout.VerticalScope verticalScope = new EditorGUILayout.VerticalScope())
                     {
-                        Array newArray = Activator.CreateInstance(declaredType, new object[] { newLength }) as Array;
-
-                        for (int i = 0; i < newLength && i < valueArray.Length; ++i)
-                        {
-                            newArray.SetValue(valueArray.GetValue(i), i);
-                        }
-
-                        dirty = true;
-
-                        EditorGUI.indentLevel--;
-                        return newArray;
-                    }
-
-                    Type elementType = declaredType.GetElementType();
-
-                    for (int i = 0; i < valueArray.Length; ++i)
-                    {
-                        var elementData = (valueArray.GetValue(i), elementType);
-
                         EditorGUI.BeginChangeCheck();
-                        object newArrayVal = DrawFieldForType($"Element {i}", $"{symbol}_element{i}", elementData, ref dirty, enabled);
+                        int newLength = EditorGUILayout.IntField("Size", valueArray.Length);
 
+                        // We need to resize the array
                         if (EditorGUI.EndChangeCheck())
                         {
-                            valueArray.SetValue(newArrayVal, i);
+                            Array newArray = Activator.CreateInstance(declaredType, new object[] { newLength }) as Array;
+
+                            for (int i = 0; i < newLength && i < valueArray.Length; ++i)
+                            {
+                                newArray.SetValue(valueArray.GetValue(i), i);
+                            }
+
                             dirty = true;
+
+                            EditorGUI.indentLevel--;
+                            return newArray;
                         }
+
+                        Type elementType = declaredType.GetElementType();
+
+                        for (int i = 0; i < valueArray.Length; ++i)
+                        {
+                            var elementData = (valueArray.GetValue(i), elementType);
+
+                            EditorGUI.BeginChangeCheck();
+                            object newArrayVal = DrawFieldForType($"Element {i}", $"{symbol}_element{i}", elementData, ref dirty, enabled);
+
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                valueArray.SetValue(newArrayVal, i);
+                                dirty = true;
+                            }
+                        }
+
+                        EditorGUI.indentLevel--;
+
+                        return valueArray;
                     }
-
-                    EditorGUI.indentLevel--;
-
-                    return valueArray;
                 }
             }
             else if (typeof(UnityEngine.Object).IsAssignableFrom(declaredType))
@@ -333,13 +344,48 @@ public class <TemplateClassName> : UdonSharpBehaviour
         {
             EditorGUI.BeginDisabledGroup(!enabled);
 
-            EditorGUI.BeginChangeCheck();
-            object newValue = DrawFieldForType(null, symbol, publicVariable, ref dirty, enabled);
+            bool shouldDraw = true;
+            bool isArray = publicVariable.declaredType.IsArray;
 
-            if (EditorGUI.EndChangeCheck())
+            FieldDefinition symbolField;
+            if (fieldDefinitions.TryGetValue(symbol, out symbolField))
             {
-                dirty = true;
-                publicVariable.value = newValue;
+                HideInInspector hideAttribute = symbolField.GetAttribute<HideInInspector>();
+
+                if (hideAttribute != null)
+                {
+                    shouldDraw = false;
+                }
+            }
+            else
+            {
+                symbolField = new FieldDefinition(null);
+            }
+
+            if (shouldDraw)
+            {
+                if (!isArray) // Drawing horizontal groups on arrays screws them up, there's probably better handling for this using a manual rect
+                    EditorGUILayout.BeginHorizontal();
+
+                EditorGUI.BeginChangeCheck();
+                object newValue = DrawFieldForType(null, symbol, publicVariable, ref dirty, enabled);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    dirty = true;
+                    publicVariable.value = newValue;
+                }
+                
+                if (symbolField.fieldSymbol != null && symbolField.fieldSymbol.syncMode != UdonSyncMode.NotSynced)
+                {
+                    if (symbolField.fieldSymbol.syncMode == UdonSyncMode.None)
+                        GUILayout.Label("synced", GUILayout.Width(55f));
+                    else
+                        GUILayout.Label($"sync: {Enum.GetName(typeof(UdonSyncMode), symbolField.fieldSymbol.syncMode)}", GUILayout.Width(85f));
+                }
+
+                if (!isArray)
+                    EditorGUILayout.EndHorizontal();
             }
 
             EditorGUI.EndDisabledGroup();
@@ -349,21 +395,5 @@ public class <TemplateClassName> : UdonSharpBehaviour
     [CustomEditor(typeof(UdonSharpProgramAsset))]
     public class UdonSharpProgramAssetEditor : UdonAssemblyProgramAssetEditor
     {
-        //static Texture2D udonSharpIcon;
-        
-        //public override Texture2D RenderStaticPreview(string assetPath, UnityEngine.Object[] subAssets, int width, int height)
-        //{
-        //    base.RenderStaticPreview(assetPath, subAssets, width, height);
-
-        //    return (Texture2D)EditorGUIUtility.IconContent("ScriptableObject Icon").image;
-
-        //    if (udonSharpIcon == null)
-        //        udonSharpIcon = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/UdonSharp/Editor/Resources/UdonsharpIcon.png");
-
-        //    if (udonSharpIcon != null)
-        //        return udonSharpIcon;
-
-        //    return base.RenderStaticPreview(assetPath, subAssets, width, height);
-        //}
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace UdonSharp
 {
+    [System.Serializable]
     public class FieldDefinition
     {
         public FieldDefinition(SymbolDefinition symbol)
@@ -15,6 +16,20 @@ namespace UdonSharp
         public SymbolDefinition fieldSymbol;
 
         public List<System.Attribute> fieldAttributes;
+
+        public T GetAttribute<T>() where T : System.Attribute
+        {
+            System.Type attributeType = typeof(T);
+
+            foreach (var attribute in fieldAttributes)
+            {
+                if (attribute.GetType() == attributeType)
+                    return attribute as T;
+            }
+
+            return null;
+        }
+
     }
 
     public class ClassDefinition

@@ -18,6 +18,8 @@ namespace UdonSharp
         public AssemblyBuilder uasmBuilder;
         public System.Type behaviourUserType;
         public List<ClassDefinition> externClassDefinitions;
+        public Dictionary<string, FieldDefinition> localFieldDefinitions;
+
         public Stack<ExpressionCaptureScope> expressionCaptureStack = new Stack<ExpressionCaptureScope>();
         
         public List<MethodDefinition> definedMethods;
@@ -40,6 +42,7 @@ namespace UdonSharp
         {
             resolverContext = resolver;
 
+            localFieldDefinitions = new Dictionary<string, FieldDefinition>();
             symbolTableStack = new Stack<SymbolTable>();
             symbolTableStack.Push(rootTable);
 
@@ -377,7 +380,9 @@ namespace UdonSharp
                             if (attributeTypeCapture.captureType != typeof(UdonSyncedAttribute))
                                 continue;
 
-                            if (attribute.ArgumentList.Arguments.Count == 0)
+                            if (attribute.ArgumentList == null || 
+                                attribute.ArgumentList.Arguments == null || 
+                                attribute.ArgumentList.Arguments.Count == 0)
                             {
                                 syncMode = UdonSyncMode.None;
                             }
@@ -406,6 +411,60 @@ namespace UdonSharp
             return syncMode;
         }
 
+        // This could potentially be turned into constructing the attributes using Roslyn's scripting API
+        private List<System.Attribute> GetFieldAttributes(FieldDeclarationSyntax node)
+        {
+            List<System.Attribute> attributes = new List<System.Attribute>();
+
+            if (node.AttributeLists != null)
+            {
+                foreach (AttributeListSyntax attributeList in node.AttributeLists)
+                {
+                    foreach (AttributeSyntax attribute in attributeList.Attributes)
+                    {
+                        using (ExpressionCaptureScope attributeTypeCapture = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            attributeTypeCapture.isAttributeCaptureScope = true;
+                            Visit(attribute.Name);
+
+                            System.Type captureType = attributeTypeCapture.captureType;
+
+                            if (captureType == typeof(HideInInspector))
+                            {
+                                attributes.Add(new HideInInspector());
+                            }
+                            else if (captureType == typeof(UdonSyncedAttribute))
+                            {
+                                UdonSyncMode syncMode = UdonSyncMode.NotSynced;
+
+                                if (attribute.ArgumentList == null ||
+                                    attribute.ArgumentList.Arguments == null ||
+                                    attribute.ArgumentList.Arguments.Count == 0)
+                                {
+                                    syncMode = UdonSyncMode.None;
+                                }
+                                else
+                                {
+                                    using (ExpressionCaptureScope attributeCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+                                    {
+                                        Visit(attribute.ArgumentList.Arguments[0].Expression);
+
+                                        if (!attributeCaptureScope.IsEnum())
+                                            throw new System.Exception("Invalid attribute argument provided for sync");
+
+                                        syncMode = (UdonSyncMode)attributeCaptureScope.GetEnumValue();
+                                    }
+                                }
+                                attributes.Add(new UdonSyncedAttribute(syncMode));
+                            }
+                        }
+                    }
+                }
+            }
+
+            return attributes;
+        }
+
         void VerifySyncValidForType(System.Type typeToSync, UdonSyncMode syncMode)
         {
             if (syncMode == UdonSyncMode.NotSynced)
@@ -426,7 +485,11 @@ namespace UdonSharp
 
             UdonSyncMode fieldSyncMode = GetSyncAttributeValue(node);
 
-            HandleVariableDeclaration(node.Declaration, isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private, fieldSyncMode);
+            SymbolDefinition fieldSymbol = HandleVariableDeclaration(node.Declaration, isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private, fieldSyncMode);
+            FieldDefinition fieldDefinition = new FieldDefinition(fieldSymbol);
+            fieldDefinition.fieldAttributes = GetFieldAttributes(node);
+
+            visitorContext.localFieldDefinitions.Add(fieldSymbol.symbolUniqueName, fieldDefinition);
         }
 
         public override void VisitVariableDeclaration(VariableDeclarationSyntax node)
@@ -436,7 +499,7 @@ namespace UdonSharp
             HandleVariableDeclaration(node, SymbolDeclTypeFlags.Local, UdonSyncMode.NotSynced);
         }
 
-        public void HandleVariableDeclaration(VariableDeclarationSyntax node, SymbolDeclTypeFlags symbolType, UdonSyncMode syncMode)
+        public SymbolDefinition HandleVariableDeclaration(VariableDeclarationSyntax node, SymbolDeclTypeFlags symbolType, UdonSyncMode syncMode)
         {
             UpdateSyntaxNode(node);
 
@@ -457,6 +520,8 @@ namespace UdonSharp
                 }
             }
 
+            SymbolDefinition newSymbol = null;
+
             foreach (VariableDeclaratorSyntax variableDeclarator in node.Variables)
             {
                 string variableName = variableDeclarator.Identifier.ValueText;
@@ -464,8 +529,6 @@ namespace UdonSharp
 
                 using (ExpressionCaptureScope symbolCreationScope = new ExpressionCaptureScope(visitorContext, null))
                 {
-                    SymbolDefinition newSymbol = null;
-
                     // Run the initializer if it exists
                     // Todo: Run the set on the new symbol scope from within the initializer scope for direct setting
                     if (variableDeclarator.Initializer != null && symbolType == SymbolDeclTypeFlags.Local)
@@ -492,7 +555,6 @@ namespace UdonSharp
                     if (newSymbol != null)
                     {
                         newSymbol.syncMode = syncMode;
-                        VerifySyncValidForType(newSymbol.symbolCsType, syncMode);
                     }
                 }
 
@@ -500,9 +562,8 @@ namespace UdonSharp
                 {
                     using (ExpressionCaptureScope symbolCreationScope = new ExpressionCaptureScope(visitorContext, null))
                     {
-                        SymbolDefinition newSymbol = visitorContext.topTable.CreateNamedSymbol(variableDeclarator.Identifier.ValueText, variableType, symbolType);
+                        newSymbol = visitorContext.topTable.CreateNamedSymbol(variableDeclarator.Identifier.ValueText, variableType, symbolType);
                         newSymbol.syncMode = syncMode;
-                        VerifySyncValidForType(newSymbol.symbolCsType, syncMode);
 
                         symbolCreationScope.SetToLocalSymbol(newSymbol);
                     }
@@ -511,10 +572,15 @@ namespace UdonSharp
             
             string udonTypeName = visitorContext.resolverContext.GetUdonTypeName(variableType);
 
+            if (newSymbol != null)
+                VerifySyncValidForType(newSymbol.symbolCsType, syncMode);
+
             if (!visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Variable) &&
                 !visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Type) &&
                 !variableType.IsSubclassOf(typeof(UdonSharpBehaviour)))
                 throw new System.NotSupportedException($"Udon does not support variables of type '{variableType.Name}' yet");
+
+            return newSymbol;
         }
 
         public override void VisitIdentifierName(IdentifierNameSyntax node)
