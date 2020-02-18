@@ -1251,7 +1251,7 @@ namespace UdonSharp
             if (externClass == null)
                 return false;
 
-            FieldDefinition foundDefinition = externClass.fieldDefinitions.Where(e => e.fieldSymbol.symbolOriginalName == fieldToken).FirstOrDefault();
+            FieldDefinition foundDefinition = externClass.fieldDefinitions.Where(e => e.fieldSymbol.symbolOriginalName == fieldToken && e.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public)).FirstOrDefault();
 
             if (foundDefinition == null)
                 return false;
@@ -1275,7 +1275,7 @@ namespace UdonSharp
             if (externClass == null)
                 return false;
 
-            MethodDefinition foundDefinition = externClass.methodDefinitions.Where(e => e.originalMethodName == methodToken).FirstOrDefault();
+            MethodDefinition foundDefinition = externClass.methodDefinitions.Where(e => e.originalMethodName == methodToken && e.declarationFlags.HasFlag(MethodDeclFlags.Public)).FirstOrDefault();
 
             if (foundDefinition == null)
                 return false;

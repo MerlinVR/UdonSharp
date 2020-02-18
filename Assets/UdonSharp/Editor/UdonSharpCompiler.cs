@@ -83,11 +83,16 @@ namespace UdonSharp
             {
                 foreach (SymbolDefinition symbol in module.moduleSymbols.GetAllUniqueChildSymbols())
                 {
+                    uint symbolAddress = program.SymbolTable.GetAddressFromSymbol(symbol.symbolUniqueName);
+
                     if (symbol.symbolDefaultValue != null)
                     {
-                        uint symbolAddress = program.SymbolTable.GetAddressFromSymbol(symbol.symbolUniqueName);
-
                         program.Heap.SetHeapVariable(symbolAddress, symbol.symbolDefaultValue, symbol.symbolCsType);
+                    }
+                    else if (symbol.symbolCsType.IsArray && 
+                            (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public) || symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Private))) // Initialize null array fields to a 0-length array like Unity does
+                    {
+                        program.Heap.SetHeapVariable(symbolAddress, System.Activator.CreateInstance(symbol.symbolCsType, new object[] { 0 }), symbol.symbolCsType);
                     }
                 }
 
@@ -139,7 +144,7 @@ namespace UdonSharp
                         {
                             method.Statements.Add(new CodeSnippetStatement($"{type} {name} {variable.Initializer};"));
                         }
-                        
+
                         method.Statements.Add(new CodeSnippetStatement(
                             $"program.Heap.SetHeapVariable(program.SymbolTable.GetAddressFromSymbol(\"{variable.Identifier}\"), {name});"));
 

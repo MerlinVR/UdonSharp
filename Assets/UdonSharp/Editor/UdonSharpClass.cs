@@ -9,9 +9,12 @@ namespace UdonSharp
         public FieldDefinition(SymbolDefinition symbol)
         {
             fieldSymbol = symbol;
+            fieldAttributes = new List<System.Attribute>();
         }
 
         public SymbolDefinition fieldSymbol;
+
+        public List<System.Attribute> fieldAttributes;
     }
 
     public class ClassDefinition
