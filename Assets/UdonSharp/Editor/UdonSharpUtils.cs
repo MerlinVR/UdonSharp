@@ -200,9 +200,13 @@ namespace UdonSharp
             typeof(char),
             typeof(byte), typeof(sbyte),
             typeof(int), typeof(uint),
-            typeof(long),
+            typeof(long), typeof(ulong),
             typeof(float), typeof(double),
             typeof(short), typeof(ushort),
+            typeof(string),
+            typeof(UnityEngine.Vector2), typeof(UnityEngine.Vector3), typeof(UnityEngine.Vector4),
+            typeof(UnityEngine.Quaternion),
+            typeof(UnityEngine.Color32), typeof(UnityEngine.Color),
         };
 
         public static bool IsUdonSyncedType(System.Type type)
