@@ -1686,6 +1686,7 @@ namespace UdonSharp
 
             JumpLabel loopExitLabel = visitorContext.labelTable.GetNewJumpLabel("foreachLoopExit");
             JumpLabel loopStartLabel = visitorContext.labelTable.GetNewJumpLabel("foreachLoopStart");
+            JumpLabel loopContinueLabel = visitorContext.labelTable.GetNewJumpLabel("foreachLoopContinue");
             visitorContext.uasmBuilder.AddJumpLabel(loopStartLabel);
 
             SymbolDefinition conditionSymbol = null;
@@ -1711,13 +1712,15 @@ namespace UdonSharp
                 }
             }
 
-            visitorContext.continueLabelStack.Push(loopStartLabel);
+            visitorContext.continueLabelStack.Push(loopContinueLabel);
             visitorContext.breakLabelStack.Push(loopExitLabel);
 
             Visit(node.Statement);
 
             visitorContext.continueLabelStack.Pop();
             visitorContext.breakLabelStack.Pop();
+
+            visitorContext.uasmBuilder.AddJumpLabel(loopContinueLabel);
 
             using (ExpressionCaptureScope incrementExecuteScope = new ExpressionCaptureScope(visitorContext, null))
             {
