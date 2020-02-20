@@ -326,7 +326,8 @@ namespace UdonSharp
 
             using (ExpressionCaptureScope varCaptureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
             {
-                varCaptureScope.SetToLocalSymbol(visitorContext.topTable.CreateUnnamedSymbol(arrayType, SymbolDeclTypeFlags.Internal));
+                SymbolDefinition arraySymbol = visitorContext.topTable.CreateUnnamedSymbol(arrayType, SymbolDeclTypeFlags.Internal);
+                varCaptureScope.SetToLocalSymbol(arraySymbol);
                 
                 if (node.Type.RankSpecifiers.Count != 1)
                     throw new System.NotSupportedException("UdonSharp does not support multidimensional or jagged arrays at the moment");
@@ -341,8 +342,13 @@ namespace UdonSharp
 
                 using (ExpressionCaptureScope constructorCaptureScope = new ExpressionCaptureScope(visitorContext, null))
                 {
-                    constructorCaptureScope.SetToMethods(arrayType.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
-                    varCaptureScope.ExecuteSet(constructorCaptureScope.Invoke(new SymbolDefinition[] { arrayRankSymbol }));
+                    constructorCaptureScope.SetToMethods(arraySymbol.symbolCsType.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
+
+                    SymbolDefinition newArraySymbol = constructorCaptureScope.Invoke(new SymbolDefinition[] { arrayRankSymbol });
+                    if (arraySymbol.IsUserDefinedBehaviour())
+                        newArraySymbol.symbolCsType = arraySymbol.userCsType;
+
+                    varCaptureScope.ExecuteSet(newArraySymbol);
                 }
             }
         }
@@ -595,9 +601,11 @@ namespace UdonSharp
             if (newSymbol != null)
                 VerifySyncValidForType(newSymbol.symbolCsType, syncMode);
 
+            bool isUserDefinedType = variableType.IsSubclassOf(typeof(UdonSharpBehaviour)) || (variableType.IsArray && variableType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)));
+
             if (!visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Variable) &&
                 !visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Type) &&
-                !variableType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+                !isUserDefinedType)
                 throw new System.NotSupportedException($"Udon does not support variables of type '{variableType.Name}' yet");
 
             return newSymbol;
@@ -1665,7 +1673,7 @@ namespace UdonSharp
             }
 
             if (node.Type.IsVar)
-                valueSymbol = visitorContext.topTable.CreateNamedSymbol(node.Identifier.Text, arraySymbol.symbolCsType.GetElementType(), SymbolDeclTypeFlags.Local);
+                valueSymbol = visitorContext.topTable.CreateNamedSymbol(node.Identifier.Text, arraySymbol.userCsType.GetElementType(), SymbolDeclTypeFlags.Local);
             else
                 valueSymbol = visitorContext.topTable.CreateNamedSymbol(node.Identifier.Text, valueSymbolType, SymbolDeclTypeFlags.Local);
 
@@ -1902,7 +1910,7 @@ namespace UdonSharp
                         // Udon will default initialize structs and such so it doesn't expose default constructors for stuff like Vector3
                         // This is a weird case, we could technically check if the type exists in Udon here, 
                         //   but it's totally valid to store a type that's undefined by Udon on the heap since they are all object.
-                        if (argSymbols.Length > 0 || System.Activator.CreateInstance(newType) == null)
+                        if (argSymbols.Length > 0 || !newType.IsValueType)
                             throw e;
 
                         creationCaptureScope.SetToLocalSymbol(visitorContext.topTable.CreateConstSymbol(newType, null));

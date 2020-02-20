@@ -32,7 +32,12 @@ namespace UdonSharp
             get
             {
                 if (IsUserDefinedBehaviour())
+                {
+                    if (internalType.IsArray)
+                        return typeof(Component[]); // Hack because VRC doesn't expose the array type of UdonBehaviour
+
                     return typeof(VRC.Udon.UdonBehaviour);
+                }
 
                 return internalType;
             }
@@ -61,7 +66,10 @@ namespace UdonSharp
         public object symbolDefaultValue = null;
 
         //public bool IsUserDefinedBehaviour() { return declarationType.HasFlag(SymbolDeclTypeFlags.UserType); }
-        public bool IsUserDefinedBehaviour() { return internalType.IsSubclassOf(typeof(UdonSharpBehaviour)); }
+        public bool IsUserDefinedBehaviour()
+        {
+            return internalType.IsSubclassOf(typeof(UdonSharpBehaviour)) || (internalType.IsArray && internalType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)));
+        }
     }
 
     /// <summary>
@@ -357,7 +365,13 @@ namespace UdonSharp
                     uniqueSymbolName = $"__{IncrementUniqueNameCounter(uniqueSymbolName)}_{uniqueSymbolName}";
             }
 
-            string udonTypeName = resolver.GetUdonTypeName(resolvedSymbolType.IsSubclassOf(typeof(UdonSharpBehaviour)) ? typeof(VRC.Udon.UdonBehaviour) : resolvedSymbolType);
+            System.Type typeForName = resolvedSymbolType;
+            if (resolvedSymbolType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+                typeForName = typeof(VRC.Udon.UdonBehaviour);
+            else if (resolvedSymbolType.IsArray && resolvedSymbolType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)))
+                typeForName = typeof(Component[]); // Hack because VRC doesn't expose UdonBehaviour array type
+
+            string udonTypeName = resolver.GetUdonTypeName(typeForName);
 
             if (udonTypeName == null)
                 throw new System.ArgumentException($"Could not locate Udon type for system type {resolvedSymbolType.FullName}");

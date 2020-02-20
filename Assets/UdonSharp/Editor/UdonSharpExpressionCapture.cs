@@ -324,7 +324,7 @@ namespace UdonSharp
                 else
                 {
                     getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(accessSymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Get").First());
-                    elementType = accessSymbol.symbolCsType.GetElementType();
+                    elementType = accessSymbol.userCsType.GetElementType();
                 }
 
                 outSymbol = visitorContext.topTable.CreateUnnamedSymbol(elementType, SymbolDeclTypeFlags.Internal);
@@ -426,7 +426,7 @@ namespace UdonSharp
 
             // Special case for passing through user defined classes if they match
             if (sourceSymbol.IsUserDefinedBehaviour() && 
-                targetType.IsAssignableFrom(sourceSymbol.userCsType))
+                (targetType.IsAssignableFrom(sourceSymbol.userCsType) || (targetType.IsArray && targetType == sourceSymbol.userCsType)))
                 return sourceSymbol;
             
             // Special case for assigning objects to non-value types so we can assign and the output of things that return a generic object

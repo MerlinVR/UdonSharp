@@ -49,7 +49,7 @@ namespace UdonSharp
                 {
                     EditorUtility.DisplayProgressBar("UdonSharp Compile",
                                                     $"Compiling {AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript)}...",
-                                                    Mathf.Clamp01((moduleCounter++ / (float)modules.Length) + Random.Range(0.01f, 0.2f))); // Make it look like we're doing work :D
+                                                    Mathf.Clamp01((moduleCounter++ / (float)modules.Length) + Random.Range(0.01f, 1f / modules.Length))); // Make it look like we're doing work :D
 
                     int moduleErrorCount = module.Compile(classDefinitions);
                     totalErrorCount += moduleErrorCount;
