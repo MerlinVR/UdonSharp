@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using VRC.Udon.Serialization.OdinSerializer;
 
 namespace UdonSharp
 {
@@ -16,12 +17,35 @@ namespace UdonSharp
         Constant = 16, // Used to represent a constant value that does not change. This can either be statically defined constants 
         Array = 32, // If this symbol is an array type
         This = 64, // defines one of the 3 builtin `this` assignments for UdonBehaviour, GameObject, and Transform
+        //UserType = 128, // this symbol is a user defined behaviour that is stored as an UdonBehaviour
     }
 
+    [Serializable]
     public class SymbolDefinition
     {
+        [OdinSerialize]
+        private System.Type internalType; 
+
         // The type of the symbol from the C# side
-        public System.Type symbolCsType;
+        public System.Type symbolCsType
+        {
+            get
+            {
+                if (IsUserDefinedBehaviour())
+                {
+                    if (internalType.IsArray)
+                        return typeof(Component[]); // Hack because VRC doesn't expose the array type of UdonBehaviour
+
+                    return typeof(VRC.Udon.UdonBehaviour);
+                }
+
+                return internalType;
+            }
+
+            set { internalType = value; }
+        }
+
+        public System.Type userCsType { get { return internalType; } }
 
         // How the symbol was created
         public SymbolDeclTypeFlags declarationType;
@@ -41,10 +65,13 @@ namespace UdonSharp
         // This is only used for global (public/private) symbols with a default value, and constant symbols
         public object symbolDefaultValue = null;
 
-        // Debugging info
-        // The start and end character indices of the declaration of this symbol
-        public int declarationSpanStart = -1;
-        public int declarationSpanEnd = -1;
+        //public bool IsUserDefinedBehaviour() { return declarationType.HasFlag(SymbolDeclTypeFlags.UserType); }
+        public bool IsUserDefinedBehaviour()
+        {
+            return internalType == typeof(UdonSharpBehaviour) ||
+                   internalType.IsSubclassOf(typeof(UdonSharpBehaviour)) || 
+                  (internalType.IsArray && (internalType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)) || internalType.GetElementType() == typeof(UdonSharpBehaviour)));
+        }
     }
 
     /// <summary>
@@ -232,9 +259,11 @@ namespace UdonSharp
         {
             SymbolTable globalSymTable = GetGlobalSymbolTable();
 
+            System.Type udonType = type.IsSubclassOf(typeof(UdonSharpBehaviour)) ? typeof(VRC.Udon.UdonBehaviour) : type;
+
             foreach (SymbolDefinition definition in globalSymTable.symbolDefinitions)
             {
-                if (definition.declarationType.HasFlag(SymbolDeclTypeFlags.This) && definition.symbolCsType == type)
+                if (definition.declarationType.HasFlag(SymbolDeclTypeFlags.This) && (definition.symbolCsType == udonType))
                     return definition;
             }
 
@@ -300,8 +329,9 @@ namespace UdonSharp
         /// <param name="symbolName"></param>
         /// <param name="resolvedSymbolType"></param>
         /// <param name="declType"></param>
+        /// <param name="appendType">Used to disable redundant type append from unnamed variable allocations</param>
         /// <returns></returns>
-        private SymbolDefinition CreateNamedSymbolInternal(string symbolName, System.Type resolvedSymbolType, SymbolDeclTypeFlags declType)
+        private SymbolDefinition CreateNamedSymbolInternal(string symbolName, System.Type resolvedSymbolType, SymbolDeclTypeFlags declType, bool appendType = true)
         {
             if (resolvedSymbolType == null || symbolName == null)
                 throw new System.ArgumentNullException();
@@ -332,13 +362,25 @@ namespace UdonSharp
 
             if (!declType.HasFlag(SymbolDeclTypeFlags.Public) && !declType.HasFlag(SymbolDeclTypeFlags.Private))
             {
+                if (appendType)
+                {
+                    string sanitizedName = resolver.SanitizeTypeName(resolvedSymbolType.Name);
+                    uniqueSymbolName += $"_{sanitizedName}";
+                }
+
                 if (hasGlobalDeclaration)
                     uniqueSymbolName = $"__{IncrementGlobalNameCounter(uniqueSymbolName)}_{uniqueSymbolName}";
                 else
                     uniqueSymbolName = $"__{IncrementUniqueNameCounter(uniqueSymbolName)}_{uniqueSymbolName}";
             }
 
-            string udonTypeName = resolver.GetUdonTypeName(resolvedSymbolType);
+            System.Type typeForName = resolvedSymbolType;
+            if (resolvedSymbolType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+                typeForName = typeof(VRC.Udon.UdonBehaviour);
+            else if (resolvedSymbolType.IsArray && (resolvedSymbolType.GetElementType() == typeof(UdonSharpBehaviour) || resolvedSymbolType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour))))
+                typeForName = typeof(Component[]); // Hack because VRC doesn't expose UdonBehaviour array type
+
+            string udonTypeName = resolver.GetUdonTypeName(typeForName);
 
             if (udonTypeName == null)
                 throw new System.ArgumentException($"Could not locate Udon type for system type {resolvedSymbolType.FullName}");
@@ -427,7 +469,7 @@ namespace UdonSharp
             if (typeName == null)
                 return null;
 
-            return CreateNamedSymbolInternal(typeName, type, declType | SymbolDeclTypeFlags.Internal | (IsGlobalSymbolTable ? 0 : SymbolDeclTypeFlags.Local));
+            return CreateNamedSymbolInternal(typeName, type, declType | SymbolDeclTypeFlags.Internal | (IsGlobalSymbolTable ? 0 : SymbolDeclTypeFlags.Local), false);
         }
 
         public List<SymbolTable> GetAllChildSymbolTables()

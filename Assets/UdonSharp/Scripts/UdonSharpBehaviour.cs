@@ -10,7 +10,7 @@ namespace UdonSharp
         public void SetProgramVariable(string name, object value) { }
         public void SendCustomEvent(string eventName) { }
         public void SendCustomNetworkEvent(NetworkEventTarget target, string eventName) { }
-        public static GameObject VRCInstantiate(GameObject original) { return null; }
+        public static GameObject VRCInstantiate(GameObject original) { return Instantiate(original); }
 
         // Method stubs for auto completion
         public virtual void Interact() { }

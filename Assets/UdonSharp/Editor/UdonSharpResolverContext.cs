@@ -262,6 +262,15 @@ namespace UdonSharp
             return null;
         }
 
+        public string SanitizeTypeName(string typeName)
+        {
+            return typeName.Replace(",", "")
+                           .Replace(".", "")
+                           .Replace("[]", "Array")
+                           .Replace("&", "Ref")
+                           .Replace("+", "");
+        }
+
         /// <summary>
         /// Verifies that Udon supports the given type and resolves the type name used to reference it in Udon
         /// </summary>
@@ -778,7 +787,7 @@ namespace UdonSharp
                     typeName = $"Variable_{typeName}";
                     break;
                 default:
-                    return true;
+                    break;
             }
 
             return nodeDefinitionLookup.Contains(typeName);
