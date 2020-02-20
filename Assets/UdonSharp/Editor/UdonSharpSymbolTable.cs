@@ -327,8 +327,9 @@ namespace UdonSharp
         /// <param name="symbolName"></param>
         /// <param name="resolvedSymbolType"></param>
         /// <param name="declType"></param>
+        /// <param name="appendType">Used to disable redundant type append from unnamed variable allocations</param>
         /// <returns></returns>
-        private SymbolDefinition CreateNamedSymbolInternal(string symbolName, System.Type resolvedSymbolType, SymbolDeclTypeFlags declType)
+        private SymbolDefinition CreateNamedSymbolInternal(string symbolName, System.Type resolvedSymbolType, SymbolDeclTypeFlags declType, bool appendType = true)
         {
             if (resolvedSymbolType == null || symbolName == null)
                 throw new System.ArgumentNullException();
@@ -359,6 +360,12 @@ namespace UdonSharp
 
             if (!declType.HasFlag(SymbolDeclTypeFlags.Public) && !declType.HasFlag(SymbolDeclTypeFlags.Private))
             {
+                if (appendType)
+                {
+                    string sanitizedName = resolver.SanitizeTypeName(resolvedSymbolType.Name);
+                    uniqueSymbolName += $"_{sanitizedName}";
+                }
+
                 if (hasGlobalDeclaration)
                     uniqueSymbolName = $"__{IncrementGlobalNameCounter(uniqueSymbolName)}_{uniqueSymbolName}";
                 else
@@ -460,7 +467,7 @@ namespace UdonSharp
             if (typeName == null)
                 return null;
 
-            return CreateNamedSymbolInternal(typeName, type, declType | SymbolDeclTypeFlags.Internal | (IsGlobalSymbolTable ? 0 : SymbolDeclTypeFlags.Local));
+            return CreateNamedSymbolInternal(typeName, type, declType | SymbolDeclTypeFlags.Internal | (IsGlobalSymbolTable ? 0 : SymbolDeclTypeFlags.Local), false);
         }
 
         public List<SymbolTable> GetAllChildSymbolTables()
