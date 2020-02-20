@@ -983,7 +983,7 @@ namespace UdonSharp
             if (foundMethods.Length == 0)
                 return false;
 
-            accessSymbol = visitorContext.topTable.CreateThisSymbol(typeof(VRC.Udon.UdonBehaviour));
+            accessSymbol = visitorContext.topTable.CreateThisSymbol(visitorContext.behaviourUserType);
             captureMethods = foundMethods;
             captureArchetype = ExpressionCaptureArchetype.Method;
 
@@ -1002,7 +1002,7 @@ namespace UdonSharp
             if (foundProperties.Length == 0)
                 return false;
 
-            accessSymbol = visitorContext.topTable.CreateThisSymbol(typeof(VRC.Udon.UdonBehaviour));
+            accessSymbol = visitorContext.topTable.CreateThisSymbol(visitorContext.behaviourUserType);
             captureProperty = foundProperties.First();
             captureArchetype = ExpressionCaptureArchetype.Property;
 
