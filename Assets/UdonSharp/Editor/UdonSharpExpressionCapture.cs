@@ -308,7 +308,8 @@ namespace UdonSharp
                     getVariableMethodScope.SetToLocalSymbol(accessSymbol);
                     getVariableMethodScope.ResolveAccessToken("GetProgramVariable");
 
-                    outSymbol = getVariableMethodScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserField.fieldSymbol.symbolUniqueName) });
+                    SymbolDefinition externVarReturn = getVariableMethodScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserField.fieldSymbol.symbolUniqueName) });
+                    outSymbol = CastSymbolToType(externVarReturn, captureExternUserField.fieldSymbol.userCsType, true, true);
                 }
             }
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
@@ -419,7 +420,7 @@ namespace UdonSharp
         }
 
         // There's probably a better place for this function...
-        private SymbolDefinition CastSymbolToType(SymbolDefinition sourceSymbol, System.Type targetType, bool isExplicit)
+        private SymbolDefinition CastSymbolToType(SymbolDefinition sourceSymbol, System.Type targetType, bool isExplicit, bool needsNewSymbol = false)
         {
             if (targetType.IsByRef) // Convert ref and out args to their main types.
                 targetType = targetType.GetElementType();
@@ -540,12 +541,17 @@ namespace UdonSharp
                 }
 
                 // All other casts have failed, just try to straight assign it to a new symbol
-                //SymbolDefinition copyCastOutput = visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
-                //visitorContext.uasmBuilder.AddCopy(copyCastOutput, sourceSymbol);
-                //return copyCastOutput;
-
-                // Copying to an invalid type won't throw exceptions sadly so just return the symbol...
-                return sourceSymbol;
+                if (needsNewSymbol)
+                {
+                    SymbolDefinition copyCastOutput = visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
+                    visitorContext.uasmBuilder.AddCopy(copyCastOutput, sourceSymbol);
+                    return copyCastOutput;
+                }
+                else
+                {
+                    // Copying to an invalid type won't throw exceptions sadly so just return the symbol...
+                    return sourceSymbol;
+                }
             }
 
             throw new System.Exception($"Cannot find cast for {sourceSymbol.symbolCsType} to {targetType}");
@@ -767,6 +773,7 @@ namespace UdonSharp
                     getReturnScope.SetToLocalSymbol(accessSymbol);
                     getReturnScope.ResolveAccessToken("GetProgramVariable");
                     returnSymbol = getReturnScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserMethod.returnSymbol.symbolUniqueName) });
+                    returnSymbol = CastSymbolToType(returnSymbol, captureExternUserMethod.returnSymbol.userCsType, true, true);
                 }
 
                 using (ExpressionCaptureScope propagateScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
