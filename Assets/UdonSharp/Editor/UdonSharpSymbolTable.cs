@@ -68,7 +68,9 @@ namespace UdonSharp
         //public bool IsUserDefinedBehaviour() { return declarationType.HasFlag(SymbolDeclTypeFlags.UserType); }
         public bool IsUserDefinedBehaviour()
         {
-            return internalType.IsSubclassOf(typeof(UdonSharpBehaviour)) || (internalType.IsArray && internalType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)));
+            return internalType == typeof(UdonSharpBehaviour) ||
+                   internalType.IsSubclassOf(typeof(UdonSharpBehaviour)) || 
+                  (internalType.IsArray && (internalType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)) || internalType.GetElementType() == typeof(UdonSharpBehaviour)));
         }
     }
 
@@ -375,7 +377,7 @@ namespace UdonSharp
             System.Type typeForName = resolvedSymbolType;
             if (resolvedSymbolType.IsSubclassOf(typeof(UdonSharpBehaviour)))
                 typeForName = typeof(VRC.Udon.UdonBehaviour);
-            else if (resolvedSymbolType.IsArray && resolvedSymbolType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)))
+            else if (resolvedSymbolType.IsArray && (resolvedSymbolType.GetElementType() == typeof(UdonSharpBehaviour) || resolvedSymbolType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour))))
                 typeForName = typeof(Component[]); // Hack because VRC doesn't expose UdonBehaviour array type
 
             string udonTypeName = resolver.GetUdonTypeName(typeForName);

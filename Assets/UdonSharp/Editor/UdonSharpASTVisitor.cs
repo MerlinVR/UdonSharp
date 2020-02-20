@@ -601,7 +601,9 @@ namespace UdonSharp
             if (newSymbol != null)
                 VerifySyncValidForType(newSymbol.symbolCsType, syncMode);
 
-            bool isUserDefinedType = variableType.IsSubclassOf(typeof(UdonSharpBehaviour)) || (variableType.IsArray && variableType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)));
+            bool isUserDefinedType = variableType == typeof(UdonSharpBehaviour) || 
+                                     variableType.IsSubclassOf(typeof(UdonSharpBehaviour)) || 
+                                     (variableType.IsArray && (variableType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)) || variableType.GetElementType() == typeof(UdonSharpBehaviour)));
 
             if (!visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Variable) &&
                 !visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Type) &&
@@ -1827,8 +1829,6 @@ namespace UdonSharp
             UpdateSyntaxNode(node);
 
             List<SymbolDefinition> invocationArgs = new List<SymbolDefinition>();
-            
-            //visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
 
             foreach (ArgumentSyntax argument in node.ArgumentList.Arguments)
             {
@@ -1839,8 +1839,6 @@ namespace UdonSharp
                     invocationArgs.Add(captureScope.ExecuteGet());
                 }
             }
-
-            //visitorContext.PopTable();
             
             // Grab the external scope so that the method call can propagate its output upwards
             ExpressionCaptureScope externalScope = visitorContext.PopCaptureScope();
