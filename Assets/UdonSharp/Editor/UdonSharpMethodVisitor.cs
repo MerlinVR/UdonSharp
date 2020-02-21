@@ -73,6 +73,22 @@ namespace UdonSharp
                 visitorContext.topCaptureScope.ResolveAccessToken(node.Keyword.ValueText);
         }
 
+        public override void VisitArrayType(ArrayTypeSyntax node)
+        {
+            using (ExpressionCaptureScope arrayTypeCaptureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
+            {
+                Visit(node.ElementType);
+
+                arrayTypeCaptureScope.MakeArrayType();
+            }
+        }
+
+        public override void VisitArrayRankSpecifier(ArrayRankSpecifierSyntax node)
+        {
+            foreach (ExpressionSyntax size in node.Sizes)
+                Visit(size);
+        }
+
         public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
             MethodDefinition methodDefinition = new MethodDefinition();
