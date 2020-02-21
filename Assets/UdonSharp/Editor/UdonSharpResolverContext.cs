@@ -484,8 +484,20 @@ namespace UdonSharp
 
                     if (!currentParam.ParameterType.IsImplicitlyAssignableFrom(argType) && !currentParam.HasParamsParameter() && !currentParam.ParameterType.IsByRef)
                     {
-                        isMethodValid = false;
-                        break;
+                        if (method is OperatorMethodInfo operatorParam && 
+                            (operatorParam.operatorType == BuiltinOperatorType.LeftShift || operatorParam.operatorType == BuiltinOperatorType.RightShift))
+                        {
+                            if (UdonSharpUtils.GetNumericConversionMethod(currentParam.ParameterType, argType) == null)
+                            {
+                                isMethodValid = false;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            isMethodValid = false;
+                            break;
+                        }
                     }
                     else if (currentParam.HasParamsParameter()) // Make sure all params args can be assigned to the param type
                     {

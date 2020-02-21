@@ -91,14 +91,26 @@ namespace UdonSharp
                     operatorType == BuiltinOperatorType.Inequality)
                     return typeof(bool);
 
+                if (operatorType == BuiltinOperatorType.LeftShift || operatorType == BuiltinOperatorType.RightShift)
+                {
+                    if (operatorSourceType == typeof(byte) ||
+                        operatorSourceType == typeof(sbyte) ||
+                        operatorSourceType == typeof(char) ||
+                        operatorSourceType == typeof(short) ||
+                        operatorSourceType == typeof(ushort))
+                    {
+                        return typeof(int);
+                    }
+                }
+
                 return operatorSourceType;
             }
         }
 
         public override Type ReflectedType { get { return operatorSourceType; } }
 
-        private Type operatorSourceType;
-        private BuiltinOperatorType operatorType;
+        public Type operatorSourceType { get; private set; }
+        public BuiltinOperatorType operatorType { get; private set; }
 
         public OperatorMethodInfo(Type type, BuiltinOperatorType operatorTypeIn)
         {

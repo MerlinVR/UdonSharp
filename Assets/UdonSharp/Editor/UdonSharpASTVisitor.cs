@@ -761,7 +761,10 @@ namespace UdonSharp
 
                         SymbolDefinition resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { lhsCapture.ExecuteGet(), rhsValue });
 
-                        lhsCapture.ExecuteSet(resultSymbol);
+                        BuiltinOperatorType operatorType = SyntaxKindToBuiltinOperator(node.Kind());
+                        bool explicitSet = operatorType == BuiltinOperatorType.LeftShift || operatorType == BuiltinOperatorType.RightShift;
+
+                        lhsCapture.ExecuteSet(resultSymbol, explicitSet);
                     }
                 }
             }
