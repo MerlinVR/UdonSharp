@@ -87,15 +87,19 @@ namespace UdonSharp
 
         public static MethodInfo GetNumericConversionMethod(System.Type targetType, System.Type sourceType)
         {
-            MethodInfo[] foundMethods = typeof(System.Convert)
+            IEnumerable<MethodInfo> foundMethods = typeof(System.Convert)
                 .GetMethods(BindingFlags.Static | BindingFlags.Public)
                 .Where(e => e.Name == $"To{targetType.Name}")
-                .Where(e => e.GetParameters().FirstOrDefault().ParameterType == sourceType).ToArray();
+                .Where(e => e.GetParameters().FirstOrDefault().ParameterType == sourceType);
 
-            if (foundMethods.Length > 0)
-                return foundMethods[0];
+            if (sourceType.IsEnum)
+            {
+                foundMethods = typeof(System.Convert).GetMethods(BindingFlags.Static | BindingFlags.Public)
+                                                     .Where(e => e.Name == $"To{targetType.Name}")
+                                                     .Where(e => e.GetParameters().FirstOrDefault().ParameterType == typeof(object));
+            }
 
-            return null;
+            return foundMethods.FirstOrDefault();
         }
 
         public static bool IsImplicitlyAssignableFrom(this System.Type targetType, System.Type assignee)
