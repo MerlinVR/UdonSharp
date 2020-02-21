@@ -154,6 +154,16 @@ namespace UdonSharp
             }
             else
             {
+                if (operatorType == BuiltinOperatorType.LeftShift || operatorType == BuiltinOperatorType.RightShift)
+                {
+                    if (operatorSourceType == typeof(uint))
+                        return new ParameterInfo[] { new OperatorParameterInfo(operatorSourceType), new OperatorParameterInfo(typeof(int)) };
+                    else if (operatorSourceType == typeof(ulong))
+                        return new ParameterInfo[] { new OperatorParameterInfo(operatorSourceType), new OperatorParameterInfo(typeof(int)) };
+                    else if (operatorSourceType == typeof(long))
+                        return new ParameterInfo[] { new OperatorParameterInfo(operatorSourceType), new OperatorParameterInfo(typeof(int)) };
+                }
+
                 return new ParameterInfo[] { new OperatorParameterInfo(operatorSourceType), new OperatorParameterInfo(operatorSourceType) };
             }
         }
