@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace UdonSharp
@@ -12,6 +13,8 @@ namespace UdonSharp
         public List<MethodDefinition> definedMethods = new List<MethodDefinition>();
         private ASTVisitorContext visitorContext;
         
+        private Stack<string> namespaceStack = new Stack<string>();
+
         public MethodVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable)
             : base(SyntaxWalkerDepth.Node)
         {
@@ -29,6 +32,33 @@ namespace UdonSharp
 
                 visitorContext.resolverContext.AddNamespace(namespaceCapture.captureNamespace);
             }
+        }
+
+        public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
+        {
+            namespaceStack.Push(node.Name.ToFullString().TrimEnd('\r', '\n'));
+
+            base.VisitNamespaceDeclaration(node);
+
+            namespaceStack.Pop();
+        }
+
+        public override void VisitClassDeclaration(ClassDeclarationSyntax node)
+        {
+            using (ExpressionCaptureScope classTypeCapture = new ExpressionCaptureScope(visitorContext, null))
+            {
+                foreach (string namespaceToken in namespaceStack.Reverse())
+                    classTypeCapture.ResolveAccessToken(namespaceToken);
+
+                visitorContext.resolverContext.AddNamespace(classTypeCapture.captureNamespace);
+
+                classTypeCapture.ResolveAccessToken(node.Identifier.ValueText);
+
+                if (!classTypeCapture.IsType())
+                    throw new System.Exception($"User type {node.Identifier.ValueText} could not be found");
+            }
+
+            base.VisitClassDeclaration(node);
         }
 
         public override void VisitIdentifierName(IdentifierNameSyntax node)

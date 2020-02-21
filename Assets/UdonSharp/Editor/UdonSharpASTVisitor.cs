@@ -181,7 +181,7 @@ namespace UdonSharp
 
             using (ExpressionCaptureScope selfTypeCaptureScope = new ExpressionCaptureScope(visitorContext, null))
             {
-                foreach (string namespaceToken in namespaceStack)
+                foreach (string namespaceToken in namespaceStack.Reverse())
                     selfTypeCaptureScope.ResolveAccessToken(namespaceToken);
 
                 selfTypeCaptureScope.ResolveAccessToken(node.Identifier.ValueText);

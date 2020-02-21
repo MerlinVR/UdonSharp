@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UdonSharp
 {
@@ -51,8 +52,10 @@ namespace UdonSharp
 
             using (ExpressionCaptureScope classTypeCapture = new ExpressionCaptureScope(visitorContext, null))
             {
-                foreach (string namespaceToken in namespaceStack)
+                foreach (string namespaceToken in namespaceStack.Reverse())
                     classTypeCapture.ResolveAccessToken(namespaceToken);
+
+                visitorContext.resolverContext.AddNamespace(classTypeCapture.captureNamespace);
 
                 classTypeCapture.ResolveAccessToken(node.Identifier.ValueText);
 

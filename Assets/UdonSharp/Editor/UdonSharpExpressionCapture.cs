@@ -1320,8 +1320,14 @@ namespace UdonSharp
 
         private void HandleUnknownToken(string unknownToken)
         {
-            if (captureArchetype != ExpressionCaptureArchetype.Unknown)
+            if (captureArchetype != ExpressionCaptureArchetype.Unknown && captureArchetype != ExpressionCaptureArchetype.Namespace)
                 throw new System.Exception($"Unknown type/field/parameter/method {unresolvedAccessChain}.{unknownToken}");
+
+            captureArchetype = ExpressionCaptureArchetype.Unknown;
+            if (captureNamespace.Length > 0)
+            {
+                unresolvedAccessChain = captureNamespace;
+            }
 
             if (unresolvedAccessChain.Length > 0)
                 unresolvedAccessChain += $".{unknownToken}";

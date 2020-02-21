@@ -233,7 +233,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
             if (fieldDefinitions != null)
                 fieldDefinitions.TryGetValue(symbol, out fieldDefinition);
 
-            bool isNormalUnityObject = fieldDefinition == null || !fieldDefinition.fieldSymbol.IsUserDefinedBehaviour();
+            bool isNormalUnityObject = fieldDefinition == null || fieldDefinition.fieldSymbol.userCsType == null || !fieldDefinition.fieldSymbol.IsUserDefinedBehaviour();
 
             if (isNormalUnityObject)
                 return EditorGUILayout.ObjectField(fieldName, (UnityEngine.Object)value, declaredType, true);
