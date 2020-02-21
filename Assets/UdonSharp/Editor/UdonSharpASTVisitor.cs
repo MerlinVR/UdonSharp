@@ -1075,6 +1075,8 @@ namespace UdonSharp
             if (foundOperators.Count == 0 && type != typeof(object) && !type.IsValueType &&
                 (builtinOperatorType == BuiltinOperatorType.Equality || builtinOperatorType == BuiltinOperatorType.Inequality))
                 foundOperators.AddRange(GetOperators(typeof(object), builtinOperatorType));
+            else if (foundOperators.Count == 0 && type.IsEnum && (builtinOperatorType == BuiltinOperatorType.Equality || builtinOperatorType == BuiltinOperatorType.Inequality)) // Handle enum comparisons
+                foundOperators.Add(typeof(object).GetMethod("Equals", BindingFlags.Public | BindingFlags.Static));
 
             return foundOperators.ToArray();
         }
@@ -1403,6 +1405,25 @@ namespace UdonSharp
                         else
                         {
                             throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operands of type '{lhsType.Name}' and '{rhsType.Name}'");
+                        }
+                    }
+                    
+                    MethodBase invokedMethod = operatorMethodCapture.GetInvokeMethod(new SymbolDefinition[] { lhsValue, rhsValue });
+
+                    // This is a special case for enums only at the moment where we need to use Object.Equals to compare them since Udon does not currently expose equality operators for enums
+                    if (invokedMethod.DeclaringType == typeof(object) && invokedMethod.Name == "Equals")
+                    {
+                        if (lhsType != rhsType) // Only allow exact enum comparisons
+                            throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operands of type '{lhsType.Name}' and '{rhsType.Name}'");
+
+                        BuiltinOperatorType equalityOperatorType = SyntaxKindToBuiltinOperator(node.Kind());
+                        if (equalityOperatorType == BuiltinOperatorType.Inequality) // We need to invert the result manually
+                        {
+                            using (ExpressionCaptureScope negationScope = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                negationScope.SetToMethods(GetOperators(typeof(bool), BuiltinOperatorType.UnaryNegation));
+                                resultSymbol = negationScope.Invoke(new SymbolDefinition[] { resultSymbol });
+                            }
                         }
                     }
 

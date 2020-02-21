@@ -616,6 +616,11 @@ namespace UdonSharp
             return newInvokeParams.ToArray();
         }
 
+        public MethodBase GetInvokeMethod(SymbolDefinition[] invokeParams)
+        {
+            return visitorContext.resolverContext.FindBestOverloadFunction(captureMethods, invokeParams.Select(e => e.symbolCsType).ToList());
+        }
+
         private SymbolDefinition InvokeExtern(SymbolDefinition[] invokeParams)
         {
             // Find valid overrides
