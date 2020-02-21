@@ -163,8 +163,8 @@ namespace UdonSharp
         public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
         {
             UpdateSyntaxNode(node);
-
-            namespaceStack.Push(node.Name.ToFullString().TrimEnd('\r', '\n'));
+            
+            namespaceStack.Push(node.Name.ToFullString().TrimEnd('\r', '\n', ' '));
 
             foreach (UsingDirectiveSyntax usingDirective in node.Usings)
                 Visit(usingDirective);

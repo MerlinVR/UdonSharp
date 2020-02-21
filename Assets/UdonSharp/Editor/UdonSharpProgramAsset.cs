@@ -298,6 +298,11 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
                 if (foldoutEnabled)
                 {
+                    if (value == null) // We can abuse that the foldout modified the outer scope when it was expanded to make sure this gets set
+                    {
+                        return Activator.CreateInstance(declaredType, new object[] { 0 });
+                    }
+
                     EditorGUI.indentLevel++;
 
                     Array valueArray = value as Array;

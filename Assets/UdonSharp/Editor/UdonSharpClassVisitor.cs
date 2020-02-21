@@ -38,7 +38,7 @@ namespace UdonSharp
 
         public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
         {
-            namespaceStack.Push(node.Name.ToFullString().TrimEnd('\r', '\n'));
+            namespaceStack.Push(node.Name.ToFullString().TrimEnd('\r', '\n', ' '));
 
             base.VisitNamespaceDeclaration(node);
 

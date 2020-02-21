@@ -90,13 +90,30 @@ namespace UdonSharp
                         program.Heap.SetHeapVariable(symbolAddress, symbol.symbolDefaultValue, symbol.symbolCsType);
                     }
                     else if (symbol.symbolCsType.IsArray && 
-                            (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public) || symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Private))) // Initialize null array fields to a 0-length array like Unity does
+                            (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public))) // Initialize null array fields to a 0-length array like Unity does
                     {
                         program.Heap.SetHeapVariable(symbolAddress, System.Activator.CreateInstance(symbol.symbolCsType, new object[] { 0 }), symbol.symbolCsType);
                     }
                 }
 
                 RunFieldInitalizers(module);
+
+                // Do not let users assign null to array fields, Unity does not allow this in its normal handling
+                foreach (SymbolDefinition symbol in module.moduleSymbols.GetAllUniqueChildSymbols())
+                {
+                    uint symbolAddress = program.SymbolTable.GetAddressFromSymbol(symbol.symbolUniqueName);
+
+                    if (symbol.symbolCsType.IsArray &&
+                            (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public))) // Initialize null array fields to a 0-length array like Unity does
+                    {
+                        object currentArrayValue = program.Heap.GetHeapVariable(symbolAddress);
+
+                        if (currentArrayValue == null)
+                        {
+                            program.Heap.SetHeapVariable(symbolAddress, System.Activator.CreateInstance(symbol.symbolCsType, new object[] { 0 }), symbol.symbolCsType);
+                        }
+                    }
+                }
             }
         }
 

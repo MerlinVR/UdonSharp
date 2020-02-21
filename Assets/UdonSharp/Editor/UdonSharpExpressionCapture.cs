@@ -1250,7 +1250,7 @@ namespace UdonSharp
 
         private bool HandleExternUserFieldLookup(string fieldToken)
         {
-            if (!accessSymbol.IsUserDefinedBehaviour())
+            if (accessSymbol == null || !accessSymbol.IsUserDefinedBehaviour())
                 return false;
 
             ClassDefinition externClass = visitorContext.externClassDefinitions.Where(e => e.userClassType == accessSymbol.userCsType).FirstOrDefault();
@@ -1274,7 +1274,7 @@ namespace UdonSharp
 
         private bool HandleExternUserMethodLookup(string methodToken)
         {
-            if (!accessSymbol.IsUserDefinedBehaviour())
+            if (accessSymbol == null || !accessSymbol.IsUserDefinedBehaviour())
                 return false;
 
             ClassDefinition externClass = visitorContext.externClassDefinitions.Where(e => e.userClassType == accessSymbol.userCsType).FirstOrDefault();
