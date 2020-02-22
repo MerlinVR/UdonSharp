@@ -25,6 +25,7 @@ This compiler is in a very early state with only about two weeks of work on it s
 - Unity/Udon event callbacks with arguments. For instance, registering a OnPlayerJoined event with a VRCPlayerApi argument is valid.
 - String interpolation
 - Field initilizers
+- Referencing other custom classes, accessing fields and calling methods on them
 
 ## Differences from regular Unity C# to note
 - For the best experience making UdonSharp scripts, make your scripts inherit from `UdonSharpBehaviour` instead of `MonoBehaviour`
@@ -38,7 +39,7 @@ This compiler is in a very early state with only about two weeks of work on it s
 ## Setup
 
 ### Requirements
-- Unity 2018.4.15 or greater
+- Unity 2018.4.14 or greater
 - VRCSDK3
 - UdonSDK
 - The latest [release](https://github.com/Merlin-san/UdonSharp/releases/latest) of UdonSharp
