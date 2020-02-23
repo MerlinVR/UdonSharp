@@ -17,7 +17,7 @@ namespace UdonSharp
         Constant = 16, // Used to represent a constant value that does not change. This can either be statically defined constants 
         Array = 32, // If this symbol is an array type
         This = 64, // defines one of the 3 builtin `this` assignments for UdonBehaviour, GameObject, and Transform
-        //UserType = 128, // this symbol is a user defined behaviour that is stored as an UdonBehaviour
+        Reflection = 128, // Reflection information for type checking
     }
 
     [Serializable]

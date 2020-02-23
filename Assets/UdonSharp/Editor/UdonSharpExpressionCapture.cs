@@ -21,6 +21,7 @@ namespace UdonSharp
         LocalMethod,
         ExternUserField,
         ExternUserMethod,
+        InternalUdonSharpMethod,
     }
 
     /// <summary>
@@ -192,7 +193,8 @@ namespace UdonSharp
         {
             return captureArchetype == ExpressionCaptureArchetype.Method || 
                    captureArchetype == ExpressionCaptureArchetype.LocalMethod || 
-                   captureArchetype == ExpressionCaptureArchetype.ExternUserMethod;
+                   captureArchetype == ExpressionCaptureArchetype.ExternUserMethod ||
+                   captureArchetype == ExpressionCaptureArchetype.InternalUdonSharpMethod;
         }
 
         public bool IsProperty()
