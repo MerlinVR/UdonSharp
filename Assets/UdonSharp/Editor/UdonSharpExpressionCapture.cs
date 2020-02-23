@@ -689,7 +689,8 @@ namespace UdonSharp
                     visitorContext.uasmBuilder.AddPush(visitorContext.topTable.CreateConstSymbol(typeof(System.Type), genericType));
                 }
 
-                returnSymbol = visitorContext.topTable.CreateNamedSymbol("returnVal", returnType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
+                //returnSymbol = visitorContext.topTable.CreateNamedSymbol("returnVal", returnType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
+                returnSymbol = visitorContext.topTable.CreateUnnamedSymbol(returnType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
 
                 visitorContext.uasmBuilder.AddPush(returnSymbol);
 

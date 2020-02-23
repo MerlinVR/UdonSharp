@@ -1887,6 +1887,8 @@ namespace UdonSharp
 
             List<SymbolDefinition> invocationArgs = new List<SymbolDefinition>();
 
+            //visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
+
             foreach (ArgumentSyntax argument in node.ArgumentList.Arguments)
             {
                 using (ExpressionCaptureScope captureScope = new ExpressionCaptureScope(visitorContext, null))
@@ -1896,6 +1898,8 @@ namespace UdonSharp
                     invocationArgs.Add(captureScope.ExecuteGet());
                 }
             }
+
+            //visitorContext.PopTable();
             
             // Grab the external scope so that the method call can propagate its output upwards
             ExpressionCaptureScope externalScope = visitorContext.PopCaptureScope();
