@@ -324,9 +324,19 @@ namespace UdonSharp
         /// </summary>
         /// <param name="externMethod"></param>
         /// <returns></returns>
-        public string GetUdonMethodName(MethodBase externMethod, bool validate = true)
+        public string GetUdonMethodName(MethodBase externMethod, bool validate = true, List<System.Type> genericArguments = null)
         {
-            string functionNamespace = externMethod.ReflectedType.FullName.Replace(".", "").Replace("[]", "Array").Replace("+", "")/*.Replace("&", "Ref")*/;
+            System.Type methodSourceType = externMethod.ReflectedType;
+
+            if (genericArguments != null)
+            {
+                if (genericArguments.Count != 1)
+                    throw new System.ArgumentException("UdonSharp only supports 1 type generic methods at the moment");
+
+                methodSourceType = genericArguments.First();
+            }
+
+            string functionNamespace = methodSourceType.FullName.Replace(".", "").Replace("[]", "Array").Replace("+", "")/*.Replace("&", "Ref")*/;
             functionNamespace = functionNamespace.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
 
             string methodName = $"__{externMethod.Name.Trim('_').TrimStart('.')}";

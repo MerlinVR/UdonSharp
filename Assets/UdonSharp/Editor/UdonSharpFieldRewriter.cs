@@ -7,10 +7,20 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 public class UdonSharpFieldRewriter : CSharpSyntaxRewriter
 {
     public HashSet<FieldDeclarationSyntax> fieldsWithInitializers;
+    public Dictionary<SyntaxNode, SyntaxNode> remappedSyntaxNodes = new Dictionary<SyntaxNode, SyntaxNode>();
 
     public UdonSharpFieldRewriter(HashSet<FieldDeclarationSyntax> fieldsWithInitializers)
     {
         this.fieldsWithInitializers = fieldsWithInitializers;
+    }
+
+    public override SyntaxNode DefaultVisit(SyntaxNode node)
+    {
+        SyntaxNode newNode = base.DefaultVisit(node);
+
+        remappedSyntaxNodes.Add(newNode, node);
+
+        return newNode;
     }
 
     public override SyntaxNode VisitFieldDeclaration(FieldDeclarationSyntax node)
@@ -32,6 +42,9 @@ public class UdonSharpFieldRewriter : CSharpSyntaxRewriter
         var newNode = node.WithDeclaration(node.Declaration.WithVariables(variables));
         if (s.Length > 0)
             newNode = newNode.WithTrailingTrivia(SyntaxFactory.Comment($"/*{s}*/"));
+
+        remappedSyntaxNodes.Add(newNode, node);
+
         return newNode;
     }
 }

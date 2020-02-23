@@ -1848,6 +1848,39 @@ namespace UdonSharp
             throw new System.NotImplementedException("UdonSharp does not yet support labeled statements");
         }
 
+        private List<System.Type> GetTypeArgumentList(TypeArgumentListSyntax typeArgumentList)
+        {
+            UpdateSyntaxNode(typeArgumentList);
+
+            List<System.Type> argumentTypes = new List<System.Type>();
+
+            foreach (TypeSyntax typeSyntax in typeArgumentList.Arguments)
+            {
+                using (ExpressionCaptureScope typeCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    Visit(typeSyntax);
+
+                    if (!typeCaptureScope.IsType())
+                        throw new System.ArgumentException("Generic argument must be a valid type");
+
+                    argumentTypes.Add(typeCaptureScope.captureType);
+                }
+            }
+
+            return argumentTypes;
+        }
+
+        public override void VisitGenericName(GenericNameSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            if (visitorContext.topCaptureScope != null)
+            {
+                visitorContext.topCaptureScope.ResolveAccessToken(node.Identifier.ValueText);
+                visitorContext.topCaptureScope.HandleGenericAccess(GetTypeArgumentList(node.TypeArgumentList));
+            }
+        }
+
         public override void VisitInvocationExpression(InvocationExpressionSyntax node)
         {
             UpdateSyntaxNode(node);
@@ -1877,9 +1910,11 @@ namespace UdonSharp
                 if (!methodCaptureScope.IsMethod())
                     throw new System.Exception("Invocation requires method expression!");
 
-                using (ExpressionCaptureScope functionParamCaptureScope = new ExpressionCaptureScope(visitorContext, externalScope))
+                SymbolDefinition functionReturnValue = methodCaptureScope.Invoke(invocationArgs.ToArray());
+
+                using (ExpressionCaptureScope returnValPropagationScope = new ExpressionCaptureScope(visitorContext, externalScope))
                 {
-                    methodCaptureScope.Invoke(invocationArgs.ToArray());
+                    returnValPropagationScope.SetToLocalSymbol(functionReturnValue);
                 }
             }
         }

@@ -77,7 +77,12 @@ namespace UdonSharp
             }
             catch (System.Exception e)
             {
-                SyntaxNode currentNode = visitor.visitorContext.currentNode;
+                SyntaxNode currentNode = null;
+
+                if (!rewriter.remappedSyntaxNodes.TryGetValue(visitor.visitorContext.currentNode, out currentNode))
+                {
+                    currentNode = visitor.visitorContext.currentNode;
+                }
 
                 if (currentNode != null)
                 {

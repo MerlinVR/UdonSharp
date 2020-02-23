@@ -58,6 +58,9 @@ namespace UdonSharp
         // Used for array indexers
         private SymbolDefinition arrayIndexerIndexSymbol = null;
 
+        // Used for resolving generic methods, and eventually types when Udon adds support
+        private List<System.Type> genericTypeArguments = null;
+
         // Namespace lookup to check if something is a namespace
         private static HashSet<string> allLinkedNamespaces;
 
@@ -123,6 +126,7 @@ namespace UdonSharp
             captureProperty = childScope.captureProperty;
             captureType = childScope.captureType;
             accessSymbol = childScope.accessSymbol;
+            captureEnum = childScope.captureEnum;
             arrayIndexerIndexSymbol = childScope.arrayIndexerIndexSymbol;
         }
 
@@ -673,6 +677,18 @@ namespace UdonSharp
 
             if (returnType != typeof(void))
             {
+                if (genericTypeArguments != null)
+                {
+                    System.Type genericType = genericTypeArguments.First();
+
+                    if (returnType.IsArray)
+                        returnType = genericType.MakeArrayType();
+                    else
+                        returnType = genericType;
+
+                    visitorContext.uasmBuilder.AddPush(visitorContext.topTable.CreateConstSymbol(typeof(System.Type), genericType));
+                }
+
                 returnSymbol = visitorContext.topTable.CreateNamedSymbol("returnVal", returnType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
 
                 visitorContext.uasmBuilder.AddPush(returnSymbol);
@@ -681,7 +697,7 @@ namespace UdonSharp
                     visitorContext.topCaptureScope.SetToLocalSymbol(returnSymbol);
             }
 
-            visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(targetMethod));
+            visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(targetMethod, true, genericTypeArguments));
 
             return returnSymbol;
         }
@@ -1321,6 +1337,14 @@ namespace UdonSharp
             accessSymbol = newAccessSymbol;
             captureArchetype = ExpressionCaptureArchetype.ArrayIndexer;
             arrayIndexerIndexSymbol = indexerSymbol;
+        }
+
+        public void HandleGenericAccess(List<System.Type> genericArguments)
+        {
+            if (captureArchetype != ExpressionCaptureArchetype.Method)
+                throw new System.ArgumentException("Cannot resolve generic arguments on non-method expression");
+
+            genericTypeArguments = genericArguments;
         }
 
         private void HandleUnknownToken(string unknownToken)
