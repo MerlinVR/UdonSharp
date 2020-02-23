@@ -2053,7 +2053,7 @@ namespace UdonSharp
                         toStringScope.SetToLocalSymbol(interpolationResultSymbol);
                         toStringScope.ResolveAccessToken("ToString");
 
-                        interpolationResultSymbol = toStringScope.Invoke(new SymbolDefinition[] { interpolationResultSymbol });
+                        interpolationResultSymbol = toStringScope.Invoke(new SymbolDefinition[] { });
                     }
                 }
             }

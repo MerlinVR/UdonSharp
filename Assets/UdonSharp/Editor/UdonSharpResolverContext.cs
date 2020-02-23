@@ -534,6 +534,12 @@ namespace UdonSharp
                     }
                 }
 
+                // There are 0 method parameters but the user has passed in more than 0 arguments which is invalid
+                if (methodParams.Length == 0 && methodArgs.Count > 0)
+                {
+                    isMethodValid = false;
+                }
+
                 // If we passed in more arguments than a normal function can take, and the last param isn't a `params` arg then the arguments can't fit into the method call
                 if (methodParams.Length < methodArgs.Count && methodParams.Length > 0 && !methodParams.Last().HasParamsParameter())
                 {
