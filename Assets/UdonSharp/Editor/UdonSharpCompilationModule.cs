@@ -61,28 +61,23 @@ namespace UdonSharp
                     return errorCount;
                 }
             }
-            
-            var rewriter = new UdonSharpFieldRewriter(fieldsWithInitializers);
-            var result = rewriter.Visit(tree.GetRoot());
+
+            UdonSharpFieldVisitor fieldVisitor = new UdonSharpFieldVisitor(fieldsWithInitializers);
+            fieldVisitor.Visit(tree.GetRoot());
 
             MethodVisitor methodVisitor = new MethodVisitor(resolver, moduleSymbols, moduleLabels);
-            methodVisitor.Visit(result);
+            methodVisitor.Visit(tree.GetRoot());
 
             ASTVisitor visitor = new ASTVisitor(resolver, moduleSymbols, moduleLabels, methodVisitor.definedMethods, classDefinitions);
 
             try
             {
-                visitor.Visit(result);
+                visitor.Visit(tree.GetRoot());
                 visitor.VerifyIntegrity();
             }
             catch (System.Exception e)
             {
-                SyntaxNode currentNode = null;
-
-                if (!rewriter.remappedSyntaxNodes.TryGetValue(visitor.visitorContext.currentNode, out currentNode))
-                {
-                    currentNode = visitor.visitorContext.currentNode;
-                }
+                SyntaxNode currentNode = visitor.visitorContext.currentNode;
 
                 if (currentNode != null)
                 {
