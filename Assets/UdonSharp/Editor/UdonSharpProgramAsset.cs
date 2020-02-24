@@ -94,7 +94,8 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         protected override void RefreshProgramImpl()
         {
-            CompileCsProgram();
+            if (sourceCsScript != null && !EditorApplication.isCompiling)
+                CompileCsProgram();
         }
         
         protected override object GetPublicVariableDefaultValue(string symbol, Type type)
@@ -106,7 +107,6 @@ public class <TemplateClassName> : UdonSharpBehaviour
         {
             UdonSharpCompiler compiler = new UdonSharpCompiler(this);
             compiler.Compile();
-            SerializedProgramAsset.StoreProgram(program);
         }
 
         private void CompileAllCsPrograms()
