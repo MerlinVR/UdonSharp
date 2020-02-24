@@ -284,7 +284,7 @@ namespace UdonSharp
             return inheritedTypeMap;
         }
 
-        private System.Type RemapBaseType(System.Type type)
+        public System.Type RemapBaseType(System.Type type)
         {
             var typeMap = GetInheritedTypeMap();
 
