@@ -262,6 +262,38 @@ namespace UdonSharp
             return null;
         }
 
+        private static Dictionary<System.Type, System.Type> inheritedTypeMap = null;
+
+        private Dictionary<System.Type, System.Type> GetInheritedTypeMap()
+        {
+            if (inheritedTypeMap != null)
+                return inheritedTypeMap;
+
+            inheritedTypeMap = new Dictionary<System.Type, System.Type>();
+
+            IEnumerable<System.Type> typeList = System.AppDomain.CurrentDomain.GetAssemblies().SelectMany(t => t.GetTypes()).Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
+
+            foreach (System.Type childType in typeList)
+            {
+                if (childType.BaseType != null && childType.BaseType.Namespace.StartsWith("VRC.SDKBase"))
+                {
+                    inheritedTypeMap.Add(childType.BaseType, childType);
+                }
+            }
+
+            return inheritedTypeMap;
+        }
+
+        private System.Type RemapBaseType(System.Type type)
+        {
+            var typeMap = GetInheritedTypeMap();
+
+            if (typeMap.ContainsKey(type))
+                return typeMap[type];
+
+            return type;
+        }
+
         public string SanitizeTypeName(string typeName)
         {
             return typeName.Replace(",", "")
@@ -269,23 +301,6 @@ namespace UdonSharp
                            .Replace("[]", "Array")
                            .Replace("&", "Ref")
                            .Replace("+", "");
-        }
-
-        private string ReplaceSpecialCaseVRCComponents(string originalString)
-        {
-            originalString = originalString.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
-
-            if (originalString.StartsWith("VRCSDKBase"))
-            {
-                if (!(originalString.StartsWith("VRCSDKBaseVRCPlayerApi") ||
-                      originalString.StartsWith("VRCSDKBaseNetworking") ||
-                      originalString.StartsWith("VRCSDKBaseInputManager")))
-                {
-                    return originalString.Replace("VRCSDKBase", "VRCSDK3Components").Replace("_", "");
-                }
-            }
-
-            return originalString;
         }
 
         /// <summary>
@@ -296,6 +311,8 @@ namespace UdonSharp
         ///     or null if it is not a valid Udon type.</returns>
         public string GetUdonTypeName(System.Type externType)
         {
+            externType = RemapBaseType(externType);
+
             string externTypeName = externType.GetNameWithoutGenericArity();
             string typeNamespace = externType.Namespace;
 
@@ -318,7 +335,7 @@ namespace UdonSharp
             if (externTypeName == "T" || externTypeName == "T[]")
                 typeNamespace = "";
             
-            string fullTypeName = ReplaceSpecialCaseVRCComponents(SanitizeTypeName($"{typeNamespace}.{externTypeName}"));
+            string fullTypeName = SanitizeTypeName($"{typeNamespace}.{externTypeName}");
 
             foreach (System.Type genericType in externType.GetGenericArguments())
             {
@@ -330,6 +347,8 @@ namespace UdonSharp
             {
                 fullTypeName = "ListT";
             }
+
+            fullTypeName = fullTypeName.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
 
             return fullTypeName;
         }
@@ -351,7 +370,9 @@ namespace UdonSharp
                 methodSourceType = genericArguments.First();
             }
 
-            string functionNamespace = ReplaceSpecialCaseVRCComponents(SanitizeTypeName(methodSourceType.FullName));
+            methodSourceType = RemapBaseType(methodSourceType);
+
+            string functionNamespace = SanitizeTypeName(methodSourceType.FullName).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
 
             string methodName = $"__{externMethod.Name.Trim('_').TrimStart('.')}";
             ParameterInfo[] methodParams = externMethod.GetParameters();
@@ -400,7 +421,9 @@ namespace UdonSharp
 
         public string GetUdonFieldAccessorName(FieldInfo externField, FieldAccessorType accessorType, bool validate = true)
         {
-            string functionNamespace = ReplaceSpecialCaseVRCComponents(SanitizeTypeName(externField.DeclaringType.FullName));
+            System.Type fieldType = RemapBaseType(externField.DeclaringType);
+
+            string functionNamespace = SanitizeTypeName(fieldType.FullName).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
             string methodName = $"__{(accessorType == FieldAccessorType.Get ? "get" : "set")}_{externField.Name.Trim('_')}";
 
             string paramStr = $"__{GetUdonTypeName(externField.FieldType)}";

@@ -97,7 +97,12 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         protected override void RefreshProgramImpl()
         {
-            if (sourceCsScript != null && !EditorApplication.isCompiling)
+            bool hasAssemblyError = typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this) != null;
+
+            if (sourceCsScript != null && 
+                !EditorApplication.isCompiling &&
+                !EditorApplication.isUpdating &&
+                !hasAssemblyError)
                 CompileCsProgram();
         }
         
