@@ -271,6 +271,23 @@ namespace UdonSharp
                            .Replace("+", "");
         }
 
+        private string ReplaceSpecialCaseVRCComponents(string originalString)
+        {
+            originalString = originalString.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
+
+            if (originalString.StartsWith("VRCSDKBase"))
+            {
+                if (!(originalString.StartsWith("VRCSDKBaseVRCPlayerApi") ||
+                      originalString.StartsWith("VRCSDKBaseNetworking") ||
+                      originalString.StartsWith("VRCSDKBaseInputManager")))
+                {
+                    return originalString.Replace("VRCSDKBase", "VRCSDK3Components").Replace("_", "");
+                }
+            }
+
+            return originalString;
+        }
+
         /// <summary>
         /// Verifies that Udon supports the given type and resolves the type name used to reference it in Udon
         /// </summary>
@@ -301,7 +318,7 @@ namespace UdonSharp
             if (externTypeName == "T" || externTypeName == "T[]")
                 typeNamespace = "";
             
-            string fullTypeName = $"{typeNamespace}.{externTypeName}".Replace(".", "").Replace("[]", "Array").Replace("&", "Ref");
+            string fullTypeName = ReplaceSpecialCaseVRCComponents(SanitizeTypeName($"{typeNamespace}.{externTypeName}"));
 
             foreach (System.Type genericType in externType.GetGenericArguments())
             {
@@ -313,8 +330,6 @@ namespace UdonSharp
             {
                 fullTypeName = "ListT";
             }
-
-            fullTypeName = fullTypeName.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
 
             return fullTypeName;
         }
@@ -336,8 +351,7 @@ namespace UdonSharp
                 methodSourceType = genericArguments.First();
             }
 
-            string functionNamespace = methodSourceType.FullName.Replace(".", "").Replace("[]", "Array").Replace("+", "")/*.Replace("&", "Ref")*/;
-            functionNamespace = functionNamespace.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
+            string functionNamespace = ReplaceSpecialCaseVRCComponents(SanitizeTypeName(methodSourceType.FullName));
 
             string methodName = $"__{externMethod.Name.Trim('_').TrimStart('.')}";
             ParameterInfo[] methodParams = externMethod.GetParameters();
@@ -379,6 +393,23 @@ namespace UdonSharp
             if (validate && !nodeDefinitionLookup.Contains(finalFunctionSig))
             {
                 throw new System.Exception($"Could not find Udon function {finalFunctionSig}");
+            }
+
+            return finalFunctionSig;
+        }
+
+        public string GetUdonFieldAccessorName(FieldInfo externField, FieldAccessorType accessorType, bool validate = true)
+        {
+            string functionNamespace = ReplaceSpecialCaseVRCComponents(SanitizeTypeName(externField.DeclaringType.FullName));
+            string methodName = $"__{(accessorType == FieldAccessorType.Get ? "get" : "set")}_{externField.Name.Trim('_')}";
+
+            string paramStr = $"__{GetUdonTypeName(externField.FieldType)}";
+
+            string finalFunctionSig = $"{functionNamespace}.{methodName}{paramStr}";
+
+            if (validate && !nodeDefinitionLookup.Contains(finalFunctionSig))
+            {
+                throw new System.Exception($"Could not find Udon field accessor {finalFunctionSig}");
             }
 
             return finalFunctionSig;
@@ -780,23 +811,6 @@ namespace UdonSharp
             }
 
             return scoredMethods.First().Item1;
-        }
-
-        public string GetUdonFieldAccessorName(FieldInfo externField, FieldAccessorType accessorType, bool validate = true)
-        {
-            string functionNamespace = externField.DeclaringType.FullName.Replace(".", "").Replace("+", "");
-            string methodName = $"__{(accessorType == FieldAccessorType.Get ? "get" : "set")}_{externField.Name.Trim('_')}";
-            
-            string paramStr = $"__{GetUdonTypeName(externField.FieldType)}";
-
-            string finalFunctionSig = $"{functionNamespace}.{methodName}{paramStr}";
-
-            if (validate && !nodeDefinitionLookup.Contains(finalFunctionSig))
-            {
-                throw new System.Exception($"Could not find Udon field accessor {finalFunctionSig}");
-            }
-
-            return finalFunctionSig;
         }
 
         public bool ValidateUdonTypeName(string typeName, UdonReferenceType referenceType)
