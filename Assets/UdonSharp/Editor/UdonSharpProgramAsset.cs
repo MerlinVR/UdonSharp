@@ -8,6 +8,8 @@ using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
+using VRC.Udon.Editor.ProgramSources;
+using VRC.Udon.Editor.ProgramSources.Attributes;
 using VRC.Udon.Serialization.OdinSerializer;
 
 [assembly: UdonProgramSourceNewMenu(typeof(UdonSharp.UdonSharpProgramAsset), "Udon C# Program Asset")]
@@ -41,7 +43,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         private static bool showProgramUasm = false;
 
-        public override void RunProgramSourceEditor(Dictionary<string, (object value, Type declaredType)> publicVariables, ref bool dirty)
+        protected override void DrawProgramSourceGUI(UdonBehaviour udonBehaviour, ref bool dirty)
         {
             EditorGUI.BeginChangeCheck();
             MonoScript newSourceCsScript = (MonoScript)EditorGUILayout.ObjectField("Source Script", sourceCsScript, typeof(MonoScript), false);
@@ -58,7 +60,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 return;
             }
 
-            DrawPublicVariables(publicVariables, ref dirty);
+            DrawPublicVariables(udonBehaviour, ref dirty);
 
             DrawAssemblyErrorTextArea();
 
@@ -90,22 +92,21 @@ public class <TemplateClassName> : UdonSharpBehaviour
             //base.RunProgramSourceEditor(publicVariables, ref dirty);
         }
 
-        protected override void DoRefreshProgramActions()
+        protected override void RefreshProgramImpl()
         {
             CompileCsProgram();
         }
-
-        protected override (object value, Type declaredType) InitializePublicVariable(Type type, string symbol)
+        
+        protected override object GetPublicVariableDefaultValue(string symbol, Type type)
         {
-            return (program.Heap.GetHeapVariable(program.SymbolTable.GetAddressFromSymbol(symbol)), type);
+            return program.Heap.GetHeapVariable(program.SymbolTable.GetAddressFromSymbol(symbol));
         }
 
         public void CompileCsProgram()
         {
             UdonSharpCompiler compiler = new UdonSharpCompiler(this);
             compiler.Compile();
-
-            EditorUtility.SetDirty(this);
+            SerializedProgramAsset.StoreProgram(program);
         }
 
         private void CompileAllCsPrograms()
@@ -126,6 +127,12 @@ public class <TemplateClassName> : UdonSharpBehaviour
         public void AssembleCsProgram()
         {
             AssembleProgram();
+        }
+
+        public void ApplyProgram()
+        {
+            SerializedProgramAsset.StoreProgram(program);
+            EditorUtility.SetDirty(this);
         }
 
         public void SetUdonAssembly(string assembly)
@@ -452,13 +459,15 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
             return value;
         }
-
-        protected override void DrawFieldForTypeString(string symbol, ref (object value, Type declaredType) publicVariable, ref bool dirty, bool enabled)
+        
+        protected override object DrawPublicVariableField(string symbol, object variableValue, Type variableType, ref bool dirty, bool enabled)
         {
+            object newValue = variableValue;
+
             EditorGUI.BeginDisabledGroup(!enabled);
 
             bool shouldDraw = true;
-            bool isArray = publicVariable.declaredType.IsArray;
+            bool isArray = variableType.IsArray;
 
             FieldDefinition symbolField;
             if (fieldDefinitions != null && fieldDefinitions.TryGetValue(symbol, out symbolField))
@@ -481,12 +490,12 @@ public class <TemplateClassName> : UdonSharpBehaviour
                     EditorGUILayout.BeginHorizontal();
 
                 EditorGUI.BeginChangeCheck();
-                object newValue = DrawFieldForType(null, symbol, publicVariable, ref dirty, enabled);
+                newValue = DrawFieldForType(null, symbol, (variableValue, variableType), ref dirty, enabled);
 
                 if (EditorGUI.EndChangeCheck())
                 {
                     dirty = true;
-                    publicVariable.value = newValue;
+                    variableValue = newValue;
                 }
                 
                 if (symbolField.fieldSymbol != null && symbolField.fieldSymbol.syncMode != UdonSyncMode.NotSynced)
@@ -502,6 +511,8 @@ public class <TemplateClassName> : UdonSharpBehaviour
             }
 
             EditorGUI.EndDisabledGroup();
+
+            return variableValue;
         }
     }
     

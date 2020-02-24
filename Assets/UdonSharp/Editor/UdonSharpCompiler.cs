@@ -58,7 +58,7 @@ namespace UdonSharp
                     {
                         AssignHeapConstants(module);
 
-                        EditorUtility.SetDirty(module.programAsset);
+                        module.programAsset.ApplyProgram();
                     }
                 }
             }

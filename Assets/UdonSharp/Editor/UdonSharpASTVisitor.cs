@@ -1498,6 +1498,7 @@ namespace UdonSharp
             }
 
             visitorContext.uasmBuilder.AddJumpIndirect(visitorContext.returnJumpTarget);
+            //visitorContext.uasmBuilder.AddJumpToExit();
         }
 
         public override void VisitBreakStatement(BreakStatementSyntax node)

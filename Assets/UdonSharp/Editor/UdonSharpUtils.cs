@@ -22,7 +22,7 @@ namespace UdonSharp
                 case "NOP":
                 case "POP":
                 case "COPY":
-                    return 1;
+                    return 4;
                 case "PUSH":
                 case "JUMP_IF_FALSE":
                 case "JUMP":
@@ -32,7 +32,7 @@ namespace UdonSharp
                 //  they get replaced towards the end of compilation with jumps to concrete addresses
                 case "JUMP_LABEL":
                 case "JUMP_IF_FALSE_LABEL":
-                    return 5;
+                    return 8;
                 case "ANNOTATION":
                     throw new System.NotImplementedException("ANNOTATION instruction is not yet implemented in Udon");
                 default:
