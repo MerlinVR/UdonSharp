@@ -37,6 +37,9 @@ namespace UdonSharp
 
         public int Compile(List<ClassDefinition> classDefinitions)
         {
+            if (programAsset.sourceCsScript == null)
+                throw new System.ArgumentException($"Asset '{AssetDatabase.GetAssetPath(programAsset)}' does not have a valid program source to compile from");
+
             sourceCode = File.ReadAllText(AssetDatabase.GetAssetPath(programAsset.sourceCsScript));
 
             SyntaxTree tree = CSharpSyntaxTree.ParseText(sourceCode);

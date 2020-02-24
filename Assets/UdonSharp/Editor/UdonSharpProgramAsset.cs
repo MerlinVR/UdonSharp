@@ -41,6 +41,9 @@ public class <TemplateClassName> : UdonSharpBehaviour
         [NonSerialized, OdinSerialize]
         public Dictionary<string, FieldDefinition> fieldDefinitions;
 
+        [SerializeField, HideInInspector]
+        private SerializationData serializationData;
+
         private static bool showProgramUasm = false;
 
         protected override void DrawProgramSourceGUI(UdonBehaviour udonBehaviour, ref bool dirty)
@@ -513,6 +516,18 @@ public class <TemplateClassName> : UdonSharpBehaviour
             EditorGUI.EndDisabledGroup();
 
             return variableValue;
+        }
+
+        protected override void OnBeforeSerialize()
+        {
+            UnitySerializationUtility.SerializeUnityObject(this, ref serializationData);
+            base.OnBeforeSerialize();
+        }
+
+        protected override void OnAfterDeserialize()
+        {
+            UnitySerializationUtility.DeserializeUnityObject(this, ref serializationData);
+            base.OnAfterDeserialize();
         }
     }
     
