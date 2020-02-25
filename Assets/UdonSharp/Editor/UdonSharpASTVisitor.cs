@@ -762,9 +762,9 @@ namespace UdonSharp
                         SymbolDefinition resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { lhsCapture.ExecuteGet(), rhsValue });
 
                         BuiltinOperatorType operatorType = SyntaxKindToBuiltinOperator(node.Kind());
-                        bool explicitSet = operatorType == BuiltinOperatorType.LeftShift || operatorType == BuiltinOperatorType.RightShift;
 
-                        lhsCapture.ExecuteSet(resultSymbol, explicitSet);
+                        // In place arithmetic operators for lower precision types will return int, but C# will normaally cast the result back to the target type 
+                        lhsCapture.ExecuteSet(resultSymbol, true);
                     }
                 }
             }
