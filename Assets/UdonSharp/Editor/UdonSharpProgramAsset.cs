@@ -267,7 +267,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
             objectRect = EditorGUI.PrefixLabel(objectRect, new GUIContent(fieldName));
 
             currentUserScript = fieldDefinition.userBehaviourSource;
-
+            
             UnityEngine.Object objectFieldValue = (UnityEngine.Object)doObjectFieldMethod.Invoke(null, new object[] {
                 objectRect,
                 objectRect,
@@ -344,6 +344,11 @@ public class <TemplateClassName> : UdonSharpBehaviour
                         }
 
                         Type elementType = declaredType.GetElementType();
+
+                        if (fieldDefinition != null && (fieldDefinition.fieldSymbol.IsUserDefinedBehaviour() || fieldDefinition.fieldSymbol.userCsType == typeof(UdonBehaviour[])))
+                        {
+                            elementType = typeof(UdonBehaviour);
+                        }
 
                         for (int i = 0; i < valueArray.Length; ++i)
                         {

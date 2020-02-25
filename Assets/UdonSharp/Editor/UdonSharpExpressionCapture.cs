@@ -866,6 +866,15 @@ namespace UdonSharp
                 if (!accessSymbol.symbolCsType.IsArray)
                     throw new System.Exception("Type is not an array type");
 
+                if (getUserType)
+                    return accessSymbol.userCsType.GetElementType();
+
+                if (accessSymbol.IsUserDefinedBehaviour() && accessSymbol.userCsType.IsArray)
+                {
+                    // Special case for arrays since the symbolCsType needs to return a Component[], but we need to get the element type of the UdonBehaviour[]
+                    return typeof(VRC.Udon.UdonBehaviour);
+                }
+
                 return accessSymbol.symbolCsType.GetElementType();
             }
             else
@@ -930,7 +939,7 @@ namespace UdonSharp
                                 HandleExternUserMethodLookup(accessToken) ||
                                 HandleMemberPropertyAccess(accessToken) ||
                                 HandleMemberFieldAccess(accessToken) ||
-                                HandleMemberMethodLookup(accessToken);
+                                HandleMemberMethodLookup(accessToken); 
             }
 
 

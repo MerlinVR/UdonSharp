@@ -375,7 +375,7 @@ namespace UdonSharp
             }
 
             System.Type typeForName = resolvedSymbolType;
-            if (resolvedSymbolType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+            if (resolvedSymbolType == typeof(UdonSharpBehaviour) || resolvedSymbolType.IsSubclassOf(typeof(UdonSharpBehaviour)))
                 typeForName = typeof(VRC.Udon.UdonBehaviour);
             else if (resolvedSymbolType.IsArray && (resolvedSymbolType.GetElementType() == typeof(UdonSharpBehaviour) || resolvedSymbolType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour))))
                 typeForName = typeof(Component[]); // Hack because VRC doesn't expose UdonBehaviour array type

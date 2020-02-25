@@ -372,12 +372,20 @@ namespace UdonSharp
 
             methodSourceType = RemapBaseType(methodSourceType);
 
+            bool isUdonSharpBehaviour = false;
+
+            if (methodSourceType == typeof(UdonSharpBehaviour) || methodSourceType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+            {
+                methodSourceType = typeof(VRC.Udon.UdonBehaviour);
+                isUdonSharpBehaviour = true;
+            }
+
             string functionNamespace = SanitizeTypeName(methodSourceType.FullName).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
 
             string methodName = $"__{externMethod.Name.Trim('_').TrimStart('.')}";
             ParameterInfo[] methodParams = externMethod.GetParameters();
 
-            if ((functionNamespace == "UdonSharpUdonSharpBehaviour")
+            if (isUdonSharpBehaviour
                 && methodName == "__VRCInstantiate")
             {
                 functionNamespace = "VRCInstantiate";
