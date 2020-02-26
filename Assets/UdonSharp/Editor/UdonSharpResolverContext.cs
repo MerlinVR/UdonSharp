@@ -556,8 +556,10 @@ namespace UdonSharp
 
                     if (!currentParam.ParameterType.IsImplicitlyAssignableFrom(argType) && !currentParam.HasParamsParameter() && !currentParam.ParameterType.IsByRef)
                     {
+                        // Handle implicit upcasts to int from lower precision types
                         if (method is OperatorMethodInfo operatorParam && 
-                            (operatorParam.operatorType == BuiltinOperatorType.LeftShift || operatorParam.operatorType == BuiltinOperatorType.RightShift))
+                            (operatorParam.operatorType == BuiltinOperatorType.LeftShift || operatorParam.operatorType == BuiltinOperatorType.RightShift) &&
+                            (argType != typeof(uint) && argType != typeof(ulong) && argType != typeof(long)))
                         {
                             if (UdonSharpUtils.GetNumericConversionMethod(currentParam.ParameterType, argType) == null)
                             {
