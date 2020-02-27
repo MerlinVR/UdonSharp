@@ -1631,6 +1631,8 @@ namespace UdonSharp
             JumpLabel forLoopStart = visitorContext.labelTable.GetNewJumpLabel("forLoopStart");
             visitorContext.uasmBuilder.AddJumpLabel(forLoopStart);
 
+            JumpLabel forLoopContinue = visitorContext.labelTable.GetNewJumpLabel("forLoopContinue");
+
             JumpLabel forLoopEnd = visitorContext.labelTable.GetNewJumpLabel("forLoopEnd");
 
             SymbolDefinition conditionSymbol = null;
@@ -1643,13 +1645,15 @@ namespace UdonSharp
             visitorContext.uasmBuilder.AddPush(conditionSymbol);
             visitorContext.uasmBuilder.AddJumpIfFalse(forLoopEnd);
 
-            visitorContext.continueLabelStack.Push(forLoopStart);
+            visitorContext.continueLabelStack.Push(forLoopContinue);
             visitorContext.breakLabelStack.Push(forLoopEnd);
 
             Visit(node.Statement);
 
             visitorContext.continueLabelStack.Pop();
             visitorContext.breakLabelStack.Pop();
+
+            visitorContext.uasmBuilder.AddJumpLabel(forLoopContinue);
 
             foreach (ExpressionSyntax incrementor in node.Incrementors)
                 Visit(incrementor);
