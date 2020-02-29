@@ -763,13 +763,23 @@ namespace UdonSharp
                 restoreReturnLocationScope.ExecuteSet(oldReturnLocation);
             }
 
+            SymbolDefinition returnValue = null;
+
             if (captureLocalMethod.returnSymbol != null)
             {
+                returnValue = visitorContext.topTable.CreateUnnamedSymbol(captureLocalMethod.returnSymbol.userCsType, SymbolDeclTypeFlags.Internal);
+
+                using (ExpressionCaptureScope returnValSetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    returnValSetScope.SetToLocalSymbol(returnValue);
+                    returnValSetScope.ExecuteSet(captureLocalMethod.returnSymbol);
+                }
+
                 if (visitorContext.topCaptureScope != null && visitorContext.topCaptureScope.IsUnknownArchetype())
-                    visitorContext.topCaptureScope.SetToLocalSymbol(captureLocalMethod.returnSymbol);
+                    visitorContext.topCaptureScope.SetToLocalSymbol(returnValue);
             }
 
-            return captureLocalMethod.returnSymbol;
+            return returnValue;
         }
 
         private SymbolDefinition InvokeUserExtern(SymbolDefinition[] invokeParams)
