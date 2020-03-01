@@ -115,6 +115,11 @@ namespace UdonSharp
             return visitorContext.uasmBuilder.GetAssemblyStr(visitorContext.labelTable);
         }
 
+        public int GetExternStrCount()
+        {
+            return visitorContext.uasmBuilder.GetExternStrCount();
+        }
+
         private void UpdateSyntaxNode(SyntaxNode node)
         {
             visitorContext.currentNode = node;

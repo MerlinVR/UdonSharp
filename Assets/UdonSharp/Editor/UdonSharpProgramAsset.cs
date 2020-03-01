@@ -10,6 +10,7 @@ using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Editor.ProgramSources;
 using VRC.Udon.Editor.ProgramSources.Attributes;
+using VRC.Udon.EditorBindings;
 using VRC.Udon.Serialization.OdinSerializer;
 
 [assembly: UdonProgramSourceNewMenu(typeof(UdonSharp.UdonSharpProgramAsset), "Udon C# Program Asset")]
@@ -132,9 +133,26 @@ public class <TemplateClassName> : UdonSharpBehaviour
             compiler.Compile();
         }
 
-        public void AssembleCsProgram()
+        public void AssembleCsProgram(uint heapSize)
         {
-            AssembleProgram();
+            // The heap size is determined by the symbol count + the unique extern string count
+            UdonSharp.HeapFactory heapFactory = new UdonSharp.HeapFactory(heapSize); 
+            UdonEditorInterface assemblerInterface = new UdonEditorInterface(null, heapFactory, null, null, null, null, null, null, null);
+            assemblerInterface.AddTypeResolver(new UdonBehaviourTypeResolver());
+
+            FieldInfo assemblyError = typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            try
+            {
+                program = assemblerInterface.Assemble(udonAssembly);
+                assemblyError.SetValue(this, null);
+            }
+            catch (Exception e)
+            {
+                program = null;
+                assemblyError.SetValue(this, e.Message);
+                Debug.LogException(e);
+            }
         }
 
         public void ApplyProgram()

@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Generic;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace UdonSharp
@@ -7,6 +8,8 @@ namespace UdonSharp
     {
         StringBuilder assemblyTextBuilder = new StringBuilder();
         int programCounter = 0;
+
+        private HashSet<string> externStringSet = new HashSet<string>();
 
         static LabelTable currentLabelTable = null;
 
@@ -66,6 +69,11 @@ namespace UdonSharp
                 replaceStr += groupCollection["comment"].Value;
 
             return replaceStr;
+        }
+
+        public int GetExternStrCount()
+        {
+            return externStringSet.Count;
         }
 
         public void AppendCommentedLine(string line, string comment, int indent = 2)
@@ -147,6 +155,8 @@ namespace UdonSharp
 
         public void AddExternCall(string externCall, string comment = "")
         {
+            externStringSet.Add(externCall);
+
             AppendCommentedLine($"EXTERN, \"{externCall}\"", comment);
             programCounter += UdonSharpUtils.GetUdonInstructionSize("EXTERN");
         }

@@ -103,7 +103,7 @@ namespace UdonSharp
             string codeBlock = visitor.GetCompiledUasm();
 
             programAsset.SetUdonAssembly(dataBlock + codeBlock);
-            programAsset.AssembleCsProgram();
+            programAsset.AssembleCsProgram((uint)(moduleSymbols.GetAllUniqueChildSymbols().Count + visitor.GetExternStrCount()));
 
             programAsset.fieldDefinitions = visitor.visitorContext.localFieldDefinitions;
 
