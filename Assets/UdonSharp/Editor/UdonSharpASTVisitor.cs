@@ -180,9 +180,43 @@ namespace UdonSharp
             namespaceStack.Pop();
         }
 
+        public override void VisitSimpleBaseType(SimpleBaseTypeSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            Visit(node.Type);
+        }
+
+        public override void VisitBaseList(BaseListSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            foreach (BaseTypeSyntax type in node.Types)
+            {
+                using (ExpressionCaptureScope typeCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    Visit(type);
+
+                    if (typeCaptureScope.captureType.IsInterface)
+                    {
+                        throw new System.NotSupportedException("UdonSharp does not yet support inheriting from interfaces");
+                    }
+                    else if (typeCaptureScope.captureType != typeof(UdonSharpBehaviour))
+                    {
+                        if (typeCaptureScope.captureType == typeof(MonoBehaviour))
+                            throw new System.NotSupportedException("UdonSharp behaviours must inherit from 'UdonSharpBehaviour' instead of 'MonoBehaviour'");
+
+                        throw new System.NotSupportedException("UdonSharp does not yet support inheriting from classes other than 'UdonSharpBehaviour'");
+                    }
+                }
+            }
+        }
+
         public override void VisitClassDeclaration(ClassDeclarationSyntax node)
         {
             UpdateSyntaxNode(node);
+
+            Visit(node.BaseList);
 
             using (ExpressionCaptureScope selfTypeCaptureScope = new ExpressionCaptureScope(visitorContext, null))
             {
