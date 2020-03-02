@@ -1399,6 +1399,16 @@ namespace UdonSharp
             if (!returnType.IsArray/* && returnType != typeof(string)*/) // Uncomment the check for string when VRC has added the actual indexer function to Udon. 
                 throw new System.Exception("Can only run array indexers on array types");
 
+            bool isCastValid = (indexerSymbol.symbolCsType == typeof(int) || UdonSharpUtils.GetNumericConversionMethod(typeof(int), indexerSymbol.symbolCsType) != null) &&
+                                indexerSymbol.symbolCsType.IsValueType &&
+                                indexerSymbol.symbolCsType != typeof(float) && indexerSymbol.symbolCsType != typeof(float) && indexerSymbol.symbolCsType != typeof(decimal);
+
+            // This will need to be changed if Udon ever exposes collections with non-int indexers
+            if (isCastValid)
+                indexerSymbol = CastSymbolToType(indexerSymbol, typeof(int), true);
+            else
+                indexerSymbol = CastSymbolToType(indexerSymbol, typeof(int), false); // Non-explicit cast to handle if any types have implicit conversion operators and throw an error otherwise
+
             SymbolDefinition newAccessSymbol = ExecuteGet();
 
             accessSymbol = newAccessSymbol;
