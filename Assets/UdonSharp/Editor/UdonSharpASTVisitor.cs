@@ -755,6 +755,9 @@ namespace UdonSharp
                         case SyntaxKind.BarEqualsToken:
                         case SyntaxKind.CaretEqualsToken:
                             operatorMethods.AddRange(GetOperators(lhsCapture.GetReturnType(), node.Kind()));
+                            //operatorMethods.AddRange(GetOperators(rhsValue.symbolCsType, node.Kind()));
+                            operatorMethods.AddRange(GetImplicitHigherPrecisionOperator(lhsCapture.GetReturnType(), rhsValue.symbolCsType, SyntaxKindToBuiltinOperator(node.OperatorToken.Kind()), true));
+                            operatorMethods = operatorMethods.Distinct().ToList();
                             break;
                         default:
                             throw new System.NotImplementedException($"Assignment operator {node.OperatorToken.Kind()} does not have handling");
@@ -1086,6 +1089,34 @@ namespace UdonSharp
             return foundOperators.ToArray();
         }
 
+        private MethodInfo[] GetImplicitHigherPrecisionOperator(System.Type lhsType, System.Type rhsType, BuiltinOperatorType builtinOperatorType, bool isAssignment = false)
+        {
+            if (lhsType == rhsType)
+                return new MethodInfo[] { };
+
+            // If both are not numeric types then there will be no higher precision operator to use
+            // Implicit casts on the operands to higher precision types happen elsewhere
+            if (!UdonSharpUtils.IsNumericType(lhsType) || !UdonSharpUtils.IsNumericType(rhsType))
+                return new MethodInfo[] { };
+
+            // There is an implcit cast already so the other type's operator should be included in operator finding already
+            if (!isAssignment && (UdonSharpUtils.IsNumericImplicitCastValid(lhsType, rhsType) || UdonSharpUtils.IsNumericImplicitCastValid(rhsType, lhsType)))
+                return new MethodInfo[] { };
+
+            System.Type nextPrecisionLhs = UdonSharpUtils.GetNextHighestNumericPrecision(lhsType);
+            System.Type nextPrecisionRhs = UdonSharpUtils.GetNextHighestNumericPrecision(rhsType);
+
+            if (nextPrecisionLhs == null && nextPrecisionRhs == null)
+                return new MethodInfo[] { };
+
+            System.Type nextPrecision = nextPrecisionLhs;
+
+            if (nextPrecision == null || (nextPrecisionRhs == typeof(long)))
+                nextPrecision = nextPrecisionRhs;
+
+            return new MethodInfo[] { new OperatorMethodInfo(nextPrecision, builtinOperatorType) };
+        }
+
         private BuiltinOperatorType SyntaxKindToBuiltinOperator(SyntaxKind syntaxKind)
         {
             switch (syntaxKind)
@@ -1347,6 +1378,7 @@ namespace UdonSharp
                     case SyntaxKind.NotEqualsExpression:
                         operatorMethods.AddRange(GetOperators(lhsType, node.Kind()));
                         operatorMethods.AddRange(GetOperators(rhsType, node.Kind()));
+                        operatorMethods.AddRange(GetImplicitHigherPrecisionOperator(lhsType, rhsType, SyntaxKindToBuiltinOperator(node.Kind())));
                         operatorMethods = operatorMethods.Distinct().ToList();
                         isAssignment = false;
                         break;
@@ -1361,6 +1393,7 @@ namespace UdonSharp
                     case SyntaxKind.OrAssignmentExpression:
                     case SyntaxKind.ExclusiveOrAssignmentExpression:
                         operatorMethods.AddRange(GetOperators(lhsType, node.Kind()));
+                        operatorMethods.AddRange(GetImplicitHigherPrecisionOperator(lhsType, rhsType, SyntaxKindToBuiltinOperator(node.Kind())));
                         isAssignment = true;
                         break;
                     default:

@@ -425,6 +425,36 @@ namespace UdonSharp
             }
         }
 
+        private string PrettifyTypeName(System.Type type)
+        {
+            if (type == typeof(sbyte))
+                return "sbyte";
+            else if (type == typeof(byte))
+                return "byte";
+            else if (type == typeof(short))
+                return "short";
+            else if (type == typeof(ushort))
+                return "ushort";
+            else if (type == typeof(int))
+                return "int";
+            else if (type == typeof(uint))
+                return "uint";
+            else if (type == typeof(long))
+                return "long";
+            else if (type == typeof(ulong))
+                return "ulong";
+            else if (type == typeof(char))
+                return "char";
+            else if (type == typeof(string))
+                return "string";
+            else if (type == typeof(float))
+                return "float";
+            else if (type == typeof(double))
+                return "double";
+            else
+                return type.ToString();
+        }
+
         // There's probably a better place for this function...
         private SymbolDefinition CastSymbolToType(SymbolDefinition sourceSymbol, System.Type targetType, bool isExplicit, bool needsNewSymbol = false)
         {
@@ -447,7 +477,7 @@ namespace UdonSharp
 
             if ((!isExplicit && !targetType.IsImplicitlyAssignableFrom(sourceSymbol.userCsType)) &&
                 !isObjectAssignable && !isNumericCastValid)
-                throw new System.ArgumentException($"Cannot implicitly cast from {sourceSymbol.userCsType} to {targetType}");
+                throw new System.ArgumentException($"Cannot implicitly convert type '{PrettifyTypeName(sourceSymbol.userCsType)}' to '{PrettifyTypeName(targetType)}'");
 
             // Exact type match, just return the symbol, this is what will happen a majority of the time.
             if (targetType == sourceSymbol.symbolCsType || isObjectAssignable)

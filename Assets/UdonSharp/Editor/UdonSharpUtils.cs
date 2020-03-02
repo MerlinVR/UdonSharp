@@ -77,12 +77,61 @@ namespace UdonSharp
             { typeof(float), new System.Type[] { typeof(double) } },
         };
 
+        private static readonly IReadOnlyDictionary<System.Type, System.Type> nextHighestPrecisionType = new Dictionary<System.Type, System.Type>()
+        {
+            { typeof(sbyte), typeof(int) },
+            { typeof(byte), typeof(int) },
+            { typeof(short), typeof(int) },
+            { typeof(ushort), typeof(int) },
+            { typeof(int), typeof(long) },
+            { typeof(uint), typeof(long) },
+        };
+
+        private static readonly HashSet<System.Type> unsignedTypes = new HashSet<System.Type>()
+        {
+            typeof(byte),
+            typeof(ushort),
+            typeof(uint),
+            typeof(ulong),
+        };
+
+        private static readonly HashSet<System.Type> signedTypes = new HashSet<System.Type>()
+        {
+            typeof(sbyte),
+            typeof(short),
+            typeof(int),
+            typeof(long),
+        };
+
+        public static bool IsSignedType(System.Type type)
+        {
+            return signedTypes.Contains(type);
+        }
+
+        public static bool IsUnsignedType(System.Type type)
+        {
+            return unsignedTypes.Contains(type);
+        }
+
+        public static bool IsNumericType(System.Type type)
+        {
+            return implicitBuiltinConversions.ContainsKey(type);
+        }
+
         public static bool IsNumericImplicitCastValid(System.Type targetType, System.Type sourceType)
         {
             if (implicitBuiltinConversions.ContainsKey(sourceType) && implicitBuiltinConversions[sourceType].Contains(targetType))
                 return true;
 
             return false;
+        }
+
+        public static System.Type GetNextHighestNumericPrecision(System.Type type)
+        {
+            System.Type precisionType = null;
+            nextHighestPrecisionType.TryGetValue(type, out precisionType);
+
+            return precisionType;
         }
 
         public static MethodInfo GetNumericConversionMethod(System.Type targetType, System.Type sourceType)
