@@ -833,8 +833,11 @@ namespace UdonSharp
                     case SyntaxKind.MinusMinusToken:
                     case SyntaxKind.PreDecrementExpression:
                     case SyntaxKind.ExclamationToken:
+                        operatorMethods.AddRange(GetOperators(operandCapture.GetReturnType(), node.OperatorToken.Kind()));
+                        break;
                     case SyntaxKind.MinusToken:
                         operatorMethods.AddRange(GetOperators(operandCapture.GetReturnType(), node.OperatorToken.Kind()));
+                        operatorMethods.AddRange(GetImplicitHigherPrecisionOperator(operandCapture.GetReturnType(), null, SyntaxKindToBuiltinOperator(node.OperatorToken.Kind()), true));
                         break;
                     default:
                         throw new System.NotImplementedException($"Handling for prefix token {node.OperatorToken.Kind()} is not implemented");
@@ -1130,7 +1133,7 @@ namespace UdonSharp
 
             // If both are not numeric types then there will be no higher precision operator to use
             // Implicit casts on the operands to higher precision types happen elsewhere
-            if (!UdonSharpUtils.IsNumericType(lhsType) || !UdonSharpUtils.IsNumericType(rhsType))
+            if (!UdonSharpUtils.IsNumericType(lhsType) || (rhsType != null && !UdonSharpUtils.IsNumericType(rhsType)))
                 return new MethodInfo[] { };
 
             // There is an implcit cast already so the other type's operator should be included in operator finding already

@@ -128,6 +128,9 @@ namespace UdonSharp
 
         public static System.Type GetNextHighestNumericPrecision(System.Type type)
         {
+            if (type == null)
+                return null;
+
             System.Type precisionType = null;
             nextHighestPrecisionType.TryGetValue(type, out precisionType);
 
