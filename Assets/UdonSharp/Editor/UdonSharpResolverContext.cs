@@ -315,6 +315,11 @@ namespace UdonSharp
 
             string externTypeName = externType.GetNameWithoutGenericArity();
             string typeNamespace = externType.Namespace;
+            if (typeNamespace == null && externType.IsArray)
+            {
+                externType = externType.GetElementType();
+                typeNamespace = externType.Namespace;
+            }
 
             // Handle nested type names (+ sign in names)
             if (externType.DeclaringType != null)
@@ -346,6 +351,10 @@ namespace UdonSharp
             if (fullTypeName == "SystemCollectionsGenericListT")
             {
                 fullTypeName = "ListT";
+            }
+            else if (fullTypeName == "SystemCollectionsGenericIEnumerableT")
+            {
+                fullTypeName = "IEnumerableT";
             }
 
             fullTypeName = fullTypeName.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
@@ -380,7 +389,7 @@ namespace UdonSharp
                 isUdonSharpBehaviour = true;
             }
 
-            string functionNamespace = SanitizeTypeName(methodSourceType.FullName).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
+            string functionNamespace = SanitizeTypeName(methodSourceType.FullName ?? methodSourceType.Namespace + methodSourceType.Name).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
 
             string methodName = $"__{externMethod.Name.Trim('_').TrimStart('.')}";
             ParameterInfo[] methodParams = externMethod.GetParameters();
@@ -403,6 +412,8 @@ namespace UdonSharp
                     paramStr += $"_{GetUdonTypeName(parameterInfo.ParameterType)}";
                 }
             }
+            else if (externMethod is ConstructorInfo)
+                paramStr += "__";
 
             string returnStr = "";
 
