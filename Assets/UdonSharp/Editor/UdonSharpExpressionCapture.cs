@@ -129,6 +129,9 @@ namespace UdonSharp
             accessSymbol = childScope.accessSymbol;
             captureEnum = childScope.captureEnum;
             arrayIndexerIndexSymbol = childScope.arrayIndexerIndexSymbol;
+            captureLocalMethod = childScope.captureLocalMethod;
+            captureExternUserField = childScope.captureExternUserField;
+            captureExternUserMethod = childScope.captureExternUserMethod;
         }
 
         public void SetToLocalSymbol(SymbolDefinition symbol)
