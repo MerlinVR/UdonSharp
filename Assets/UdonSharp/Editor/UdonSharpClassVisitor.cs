@@ -89,6 +89,22 @@ namespace UdonSharp
             }
         }
 
+        public override void VisitArrayType(ArrayTypeSyntax node)
+        {
+            using (ExpressionCaptureScope arrayTypeCaptureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
+            {
+                Visit(node.ElementType);
+
+                arrayTypeCaptureScope.MakeArrayType();
+            }
+        }
+
+        public override void VisitArrayRankSpecifier(ArrayRankSpecifierSyntax node)
+        {
+            foreach (ExpressionSyntax size in node.Sizes)
+                Visit(size);
+        }
+
         #region Resolution boilerplate
         // Boilerplate to have resolution work correctly
         public override void VisitUsingDirective(UsingDirectiveSyntax node)
