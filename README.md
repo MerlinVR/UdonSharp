@@ -33,7 +33,7 @@ This compiler is in a very early state with only about two weeks of work on it s
 - If you need to call `GetComponent<UdonBehaviour>()` you will need to use `(UdonBehaviour)GetComponent(typeof(UdonBehaviour))` at the moment since the generic get component is not exposed for UdonBehaviour yet. GetComponent<T>() works for other Unity component types though.
 - Udon currently only supports array `[]` collections and by extension UdonSharp only supports arrays at the moment. It looks like they might support `List<T>` at some point, but it is not there yet. 
 - User defined methods currently cannot be recursive. They will technically compile, but will likely break because all invocations of a function currently share the same "stack" variables. Support for this is planned as an optional attribute since implementing recursion with Udon's primitives makes it very performance heavy.
-- Field initilizers are evaluated at compile time, if you have any init logic that depends on other objects in the scene you should use Awake or Start for this.
+- Field initilizers are evaluated at compile time, if you have any init logic that depends on other objects in the scene you should use Start for this.
 - Use the `UdonSynced` attribute on fields that you want to sync.  
 
 ## Setup
