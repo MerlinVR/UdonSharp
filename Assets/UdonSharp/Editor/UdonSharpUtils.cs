@@ -189,7 +189,7 @@ namespace UdonSharp
 
                 foreach (MethodInfo methodInfo in methods)
                 {
-                    if (methodInfo.ReturnType == targetType && methodInfo.GetParameters()[0].ParameterType == assignee)
+                    if (methodInfo.ReturnType == targetType && (methodInfo.GetParameters()[0].ParameterType == assignee || methodInfo.GetParameters()[0].ParameterType == typeof(UnityEngine.Object)))
                         return true;
                 }
             }

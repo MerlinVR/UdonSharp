@@ -526,7 +526,7 @@ namespace UdonSharp
 
                 foreach (MethodInfo methodInfo in methods)
                 {
-                    if (methodInfo.ReturnType == targetType && methodInfo.GetParameters()[0].ParameterType == sourceSymbol.symbolCsType)
+                    if (methodInfo.ReturnType == targetType && (methodInfo.GetParameters()[0].ParameterType == sourceSymbol.symbolCsType || methodInfo.GetParameters()[0].ParameterType == typeof(UnityEngine.Object)))
                     {
                         foundConversion = methodInfo;
                         break;
