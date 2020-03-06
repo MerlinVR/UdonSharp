@@ -1615,6 +1615,23 @@ namespace UdonSharp
             visitorContext.uasmBuilder.AddJump(visitorContext.continueLabelStack.Peek());
         }
 
+        private SymbolDefinition HandleImplicitBoolCast(SymbolDefinition symbol)
+        {
+            if (symbol.symbolCsType != typeof(bool))
+            {
+                SymbolDefinition conditionBoolCast = visitorContext.topTable.CreateUnnamedSymbol(typeof(bool), SymbolDeclTypeFlags.Internal);
+                using (ExpressionCaptureScope conditionSetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    conditionSetScope.SetToLocalSymbol(conditionBoolCast);
+                    conditionSetScope.ExecuteSet(symbol);
+                }
+
+                return conditionBoolCast;
+            }
+
+            return symbol;
+        }
+
         public override void VisitIfStatement(IfStatementSyntax node)
         {
             UpdateSyntaxNode(node);
@@ -1624,7 +1641,7 @@ namespace UdonSharp
             using (ExpressionCaptureScope conditionScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 Visit(node.Condition);
-                conditionSymbol = conditionScope.ExecuteGet();
+                conditionSymbol = HandleImplicitBoolCast(conditionScope.ExecuteGet());
             }
             
             JumpLabel failLabel = visitorContext.labelTable.GetNewJumpLabel("ifStatmentFalse");
@@ -1666,7 +1683,7 @@ namespace UdonSharp
             using (ExpressionCaptureScope conditionScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 Visit(node.Condition);
-                conditionSymbol = conditionScope.ExecuteGet();
+                conditionSymbol = HandleImplicitBoolCast(conditionScope.ExecuteGet());
             }
 
             visitorContext.uasmBuilder.AddPush(conditionSymbol);
@@ -1708,7 +1725,7 @@ namespace UdonSharp
             using (ExpressionCaptureScope conditionScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 Visit(node.Condition);
-                conditionSymbol = conditionScope.ExecuteGet();
+                conditionSymbol = HandleImplicitBoolCast(conditionScope.ExecuteGet());
             }
 
             visitorContext.uasmBuilder.AddPush(conditionSymbol);
@@ -1739,7 +1756,7 @@ namespace UdonSharp
             using (ExpressionCaptureScope conditionScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 Visit(node.Condition);
-                conditionSymbol = conditionScope.ExecuteGet();
+                conditionSymbol = HandleImplicitBoolCast(conditionScope.ExecuteGet());
             }
 
             visitorContext.uasmBuilder.AddPush(conditionSymbol);
@@ -1886,7 +1903,7 @@ namespace UdonSharp
             using (ExpressionCaptureScope conditionCapture = new ExpressionCaptureScope(visitorContext, null))
             {
                 Visit(node.Condition);
-                conditionSymbol = conditionCapture.ExecuteGet();
+                conditionSymbol = HandleImplicitBoolCast(conditionCapture.ExecuteGet());
             }
 
             JumpLabel conditionExpressionEnd = visitorContext.labelTable.GetNewJumpLabel("conditionExpressionEnd");
