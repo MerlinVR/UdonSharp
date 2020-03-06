@@ -1114,7 +1114,13 @@ namespace UdonSharp
 
             operatorName = $"op_{operatorName}";
 
-            foundOperators.AddRange(type.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == operatorName));
+            System.Type currentType = type;
+
+            while (currentType != null)
+            {
+                foundOperators.AddRange(currentType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == operatorName));
+                currentType = currentType.BaseType;
+            }
 
             // Add the object equality and inequality operators if we haven't already found better matches
             if (foundOperators.Count == 0 && type != typeof(object) && !type.IsValueType &&
@@ -1445,6 +1451,25 @@ namespace UdonSharp
                     operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
 
                     SymbolDefinition resultSymbol = null;
+
+                    BuiltinOperatorType operatorType = SyntaxKindToBuiltinOperator(node.Kind());
+
+                    // Basic handling for handling null equality/inequality on derived types since Unity has special behavior for comparing UnityEngine.Object types to null
+                    if (operatorType == BuiltinOperatorType.Equality ||
+                        operatorType == BuiltinOperatorType.Inequality)
+                    {
+                        bool lhsNull = lhsValue.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) && lhsValue.symbolDefaultValue == null;
+                        bool rhsNull = rhsValue.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) && rhsValue.symbolDefaultValue == null;
+
+                        if (lhsNull && !rhsNull)
+                        {
+                            lhsValue = visitorContext.topTable.CreateConstSymbol(rhsType, null);
+                        }
+                        else if (rhsNull && !lhsNull)
+                        {
+                            rhsValue = visitorContext.topTable.CreateConstSymbol(lhsType, null);
+                        }
+                    }
 
                     try
                     {
