@@ -464,6 +464,10 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
                 return minMaxCurve;
             }
+            else if (declaredType == typeof(LayerMask)) // Lazy layermask support, todo: make it more like the editor layer mask and also don't do all these LINQ operations and such every draw
+            {
+                return (LayerMask)EditorGUILayout.MaskField(fieldName, (LayerMask?)value ?? default, Enumerable.Range(0, 32).Select(e => LayerMask.LayerToName(e).Length > 0 ? e + ": " + LayerMask.LayerToName(e) : "").ToArray());
+            }
             else if (declaredType.IsEnum)
             {
                 return EditorGUILayout.EnumPopup(fieldName, (Enum)(value ?? Activator.CreateInstance(declaredType)));
