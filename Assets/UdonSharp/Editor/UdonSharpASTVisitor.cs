@@ -92,7 +92,7 @@ namespace UdonSharp
         private Stack<string> namespaceStack = new Stack<string>();
 
         public ASTVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable, List<MethodDefinition> methodDefinitions, List<ClassDefinition> externUserClassDefinitions)
-            :base(SyntaxWalkerDepth.Node)
+            : base(SyntaxWalkerDepth.Node)
         {
             visitorContext = new ASTVisitorContext(resolver, rootTable, labelTable);
             visitorContext.returnJumpTarget = rootTable.CreateNamedSymbol("returnTarget", typeof(uint), SymbolDeclTypeFlags.Internal);
@@ -168,7 +168,7 @@ namespace UdonSharp
         public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
         {
             UpdateSyntaxNode(node);
-            
+
             namespaceStack.Push(node.Name.ToFullString().TrimEnd('\r', '\n', ' '));
 
             foreach (UsingDirectiveSyntax usingDirective in node.Usings)
@@ -230,6 +230,9 @@ namespace UdonSharp
 
                 visitorContext.behaviourUserType = selfTypeCaptureScope.captureType;
             }
+
+            visitorContext.topTable.CreateReflectionSymbol("udonTypeID", typeof(long), Internal.UdonSharpInternalUtility.GetTypeID(visitorContext.behaviourUserType));
+            visitorContext.topTable.CreateReflectionSymbol("udonTypeName", typeof(string), Internal.UdonSharpInternalUtility.GetTypeName(visitorContext.behaviourUserType));
 
             visitorContext.uasmBuilder.AppendLine(".code_start", 0);
 
@@ -367,7 +370,7 @@ namespace UdonSharp
             {
                 SymbolDefinition arraySymbol = visitorContext.topTable.CreateUnnamedSymbol(arrayType, SymbolDeclTypeFlags.Internal);
                 varCaptureScope.SetToLocalSymbol(arraySymbol);
-                
+
                 if (node.Type.RankSpecifiers.Count != 1)
                     throw new System.NotSupportedException("UdonSharp does not support multidimensional or jagged arrays at the moment");
 
@@ -433,8 +436,8 @@ namespace UdonSharp
                             if (attributeTypeCapture.captureType != typeof(UdonSyncedAttribute))
                                 continue;
 
-                            if (attribute.ArgumentList == null || 
-                                attribute.ArgumentList.Arguments == null || 
+                            if (attribute.ArgumentList == null ||
+                                attribute.ArgumentList.Arguments == null ||
                                 attribute.ArgumentList.Arguments.Count == 0)
                             {
                                 syncMode = UdonSyncMode.None;
@@ -533,7 +536,7 @@ namespace UdonSharp
 
             if (node.Modifiers.HasModifier("static"))
                 throw new System.NotSupportedException("Static fields are not yet supported by UdonSharp");
-            
+
             bool isPublic = node.Modifiers.HasModifier("public");
 
             UdonSyncMode fieldSyncMode = GetSyncAttributeValue(node);
@@ -608,7 +611,7 @@ namespace UdonSharp
                                     variableType = initializerCapture.GetReturnType();
 
                                 newSymbol = visitorContext.topTable.CreateNamedSymbol(variableName, variableType, symbolType);
-                                
+
                                 symbolCreationScope.SetToLocalSymbol(newSymbol);
                                 createdSymbol = true;
                             }
@@ -634,14 +637,14 @@ namespace UdonSharp
                     }
                 }
             }
-            
+
             string udonTypeName = visitorContext.resolverContext.GetUdonTypeName(variableType);
 
             if (newSymbol != null)
                 VerifySyncValidForType(newSymbol.symbolCsType, syncMode);
 
-            bool isUserDefinedType = variableType == typeof(UdonSharpBehaviour) || 
-                                     variableType.IsSubclassOf(typeof(UdonSharpBehaviour)) || 
+            bool isUserDefinedType = variableType == typeof(UdonSharpBehaviour) ||
+                                     variableType.IsSubclassOf(typeof(UdonSharpBehaviour)) ||
                                      (variableType.IsArray && (variableType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)) || variableType.GetElementType() == typeof(UdonSharpBehaviour)));
 
             if (!visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Variable) &&
@@ -832,8 +835,13 @@ namespace UdonSharp
                     case SyntaxKind.PreIncrementExpression:
                     case SyntaxKind.MinusMinusToken:
                     case SyntaxKind.PreDecrementExpression:
+                        operatorMethods.AddRange(GetOperators(operandCapture.GetReturnType(), node.OperatorToken.Kind()));
+                        break;
                     case SyntaxKind.ExclamationToken:
                         operatorMethods.AddRange(GetOperators(operandCapture.GetReturnType(), node.OperatorToken.Kind()));
+
+                        if (operandCapture.GetReturnType() != typeof(bool))
+                            operatorMethods.AddRange(GetOperators(typeof(bool), node.OperatorToken.Kind()));
                         break;
                     case SyntaxKind.MinusToken:
                         operatorMethods.AddRange(GetOperators(operandCapture.GetReturnType(), node.OperatorToken.Kind()));
@@ -857,6 +865,11 @@ namespace UdonSharp
                             operatorType == BuiltinOperatorType.UnaryMinus)
                         {
                             SymbolDefinition operandResult = operandCapture.ExecuteGet();
+
+                            if (operatorType == BuiltinOperatorType.UnaryNegation &&
+                                operandResult.symbolCsType != typeof(bool) &&
+                                operatorMethods.Count == 1) // If the count isn't 1 it means we found an override for `!` for the specific type so we skip attempting the implicit cast
+                                operandResult = HandleImplicitBoolCast(operandResult);
 
                             resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandResult });
 
@@ -986,6 +999,9 @@ namespace UdonSharp
             string functionName = node.Identifier.ValueText;
             bool isBuiltinEvent = visitorContext.resolverContext.ReplaceInternalEventName(ref functionName);
 
+            if (functionName == "Awake")
+                throw new System.NotSupportedException("Udon does not support the 'Awake' event, use 'Start' instead");
+
             if (node.Modifiers.HasModifier("static"))
                 throw new System.NotSupportedException("UdonSharp does not currently support static method declarations");
 
@@ -1076,60 +1092,10 @@ namespace UdonSharp
             Visit(node.Expression);
             Visit(node.Name);
         }
-
-        private readonly HashSet<System.Type> builtinTypes = new HashSet<System.Type> 
+        
+        private static MethodInfo[] GetOperators(System.Type type, BuiltinOperatorType builtinOperatorType)
         {
-            typeof(string),
-            typeof(bool),
-            typeof(byte),
-            typeof(sbyte),
-            typeof(char),
-            typeof(decimal),
-            typeof(double),
-            typeof(float),
-            typeof(int),
-            typeof(uint),
-            typeof(long),
-            typeof(ulong),
-            typeof(short),
-            typeof(ushort),
-            typeof(object),
-        };
-
-        private MethodInfo[] GetOperators(System.Type type, BuiltinOperatorType builtinOperatorType)
-        {
-            List<MethodInfo> foundOperators = new List<MethodInfo>();
-
-            // If it's a builtin type then create a fake operator methodinfo for it.
-            // If this operator doesn't actually exist, it will get filtered by the overload finding
-            if (builtinTypes.Contains(type))
-                foundOperators.Add(new OperatorMethodInfo(type, builtinOperatorType));
-            
-            // Now look for operators that the type defines
-            string operatorName = System.Enum.GetName(typeof(BuiltinOperatorType), builtinOperatorType);
-            if (builtinOperatorType == BuiltinOperatorType.Multiplication)
-                operatorName = "Multiply"; // Udon breaks standard naming with its multiplication overrides on base types
-            else if (builtinOperatorType == BuiltinOperatorType.UnaryMinus)
-                operatorName = "UnaryNegation";
-
-            operatorName = $"op_{operatorName}";
-
-            System.Type currentType = type;
-
-            while (currentType != null)
-            {
-                foundOperators.AddRange(currentType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == operatorName));
-                currentType = currentType.BaseType;
-            }
-
-            // Add the object equality and inequality operators if we haven't already found better matches
-            if (foundOperators.Count == 0 && type != typeof(object) && !type.IsValueType &&
-                (builtinOperatorType == BuiltinOperatorType.Equality || builtinOperatorType == BuiltinOperatorType.Inequality))
-                foundOperators.AddRange(GetOperators(typeof(object), builtinOperatorType));
-            else if (foundOperators.Count == 0 && type.IsEnum && (builtinOperatorType == BuiltinOperatorType.Equality || builtinOperatorType == BuiltinOperatorType.Inequality)) // Handle enum comparisons
-                foundOperators.Add(typeof(object).GetMethod("Equals", BindingFlags.Public | BindingFlags.Static));
-
-            return foundOperators.ToArray();
+            return UdonSharpUtils.GetOperators(type, builtinOperatorType);
         }
 
         private MethodInfo[] GetImplicitHigherPrecisionOperator(System.Type lhsType, System.Type rhsType, BuiltinOperatorType builtinOperatorType, bool isAssignment = false)
@@ -1740,6 +1706,9 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
+            SymbolTable forLoopSymbolTable = new SymbolTable(visitorContext.resolverContext, visitorContext.topTable);
+            visitorContext.PushTable(forLoopSymbolTable);
+
             Visit(node.Declaration);
 
             foreach (ExpressionSyntax initializer in node.Initializers)
@@ -1778,6 +1747,8 @@ namespace UdonSharp
             visitorContext.uasmBuilder.AddJump(forLoopStart);
 
             visitorContext.uasmBuilder.AddJumpLabel(forLoopEnd);
+
+            visitorContext.PopTable();
         }
 
         public override void VisitForEachStatement(ForEachStatementSyntax node)

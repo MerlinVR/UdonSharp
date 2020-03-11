@@ -53,8 +53,9 @@ namespace UdonSharp
         public MethodDefinition captureLocalMethod { get; private set; } = null;
         public FieldDefinition captureExternUserField { get; private set; } = null;
         public MethodDefinition captureExternUserMethod { get; private set; } = null;
+        public InternalMethodHandler InternalMethodHandler { get; private set; } = null;
 
-        private SymbolDefinition accessSymbol = null;
+        public SymbolDefinition accessSymbol { get; private set; } = null;
 
         // Used for array indexers
         private SymbolDefinition arrayIndexerIndexSymbol = null;
@@ -91,6 +92,7 @@ namespace UdonSharp
 
             visitorContext = context;
             parentScope = parentScopeIn;
+            InternalMethodHandler = new InternalMethodHandler(context, this);
 
             visitorContext.PushCaptureScope(this);
         }
@@ -132,6 +134,7 @@ namespace UdonSharp
             captureLocalMethod = childScope.captureLocalMethod;
             captureExternUserField = childScope.captureExternUserField;
             captureExternUserMethod = childScope.captureExternUserMethod;
+            InternalMethodHandler = childScope.InternalMethodHandler;
         }
 
         public void SetToLocalSymbol(SymbolDefinition symbol)
@@ -459,7 +462,7 @@ namespace UdonSharp
         }
 
         // There's probably a better place for this function...
-        private SymbolDefinition CastSymbolToType(SymbolDefinition sourceSymbol, System.Type targetType, bool isExplicit, bool needsNewSymbol = false)
+        public SymbolDefinition CastSymbolToType(SymbolDefinition sourceSymbol, System.Type targetType, bool isExplicit, bool needsNewSymbol = false)
         {
             if (targetType.IsByRef) // Convert ref and out args to their main types.
                 targetType = targetType.GetElementType();
@@ -660,6 +663,436 @@ namespace UdonSharp
             return visitorContext.resolverContext.FindBestOverloadFunction(captureMethods, invokeParams.Select(e => e.symbolCsType).ToList());
         }
 
+        private bool AllMethodParametersMatch(MethodInfo methodInfo, System.Type[] parameterTypes)
+        {
+            ParameterInfo[] parameters = methodInfo.GetParameters();
+
+            if (parameters.Length != parameterTypes.Length)
+                return false;
+
+            for (int i = 0; i < parameters.Length; ++i)
+            {
+                if (parameters[i].ParameterType != parameterTypes[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        private MethodInfo ConvertGetComponentToGetComponents(MethodInfo targetMethod)
+        {
+            if (targetMethod.GetParameters().FirstOrDefault() != null && targetMethod.GetParameters().FirstOrDefault().ParameterType == typeof(System.Type))
+                throw new System.ArgumentException("Cannot use GetComponent with type arguments on generic versions");
+
+            System.Type declaringType = targetMethod.DeclaringType;
+
+            string searchString = targetMethod.Name;
+            if (!searchString.Contains("GetComponents"))
+                searchString = searchString.Replace("GetComponent", "GetComponents");
+
+            System.Type[] targetParameters = targetMethod.GetParameters().Select(e => e.ParameterType).ToArray();
+
+            if (targetParameters.Count() == 0 || targetParameters.First() != typeof(System.Type))
+            {
+                targetParameters = new System.Type[] { typeof(System.Type) }.Concat(targetParameters).ToArray();
+            }
+
+            MethodInfo[] foundMethods = declaringType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == searchString && AllMethodParametersMatch(e, targetParameters)).ToArray();
+            
+            if (foundMethods.Length != 1)
+            {
+                throw new System.ArgumentException($"No valid typeof override found for function {targetMethod}");
+            }
+
+            return foundMethods.First();
+        }
+
+        // Metaprogramming using expression captures, very fun. It would be cool to have a scripting thing setup to generate an AST and code from just an input string of code at some point in the future.
+        // Handles getting a single user component type by looping through all components of the type UdonBehaviour and checking their internal type ID
+        private SymbolDefinition HandleGenericGetComponentSingle(SymbolDefinition componentArray, System.Type udonSharpType)
+        {
+            SymbolDefinition resultSymbol = visitorContext.topTable.CreateUnnamedSymbol(udonSharpType, SymbolDeclTypeFlags.Internal);
+            
+            visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
+
+            using (ExpressionCaptureScope resultResetScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                resultResetScope.SetToLocalSymbol(resultSymbol);
+                resultResetScope.ExecuteSet(visitorContext.topTable.CreateConstSymbol(udonSharpType, null));
+            }
+
+            SymbolDefinition componentTypeID = visitorContext.topTable.CreateConstSymbol(typeof(long), Internal.UdonSharpInternalUtility.GetTypeID(udonSharpType));
+
+            SymbolDefinition componentCount = null;
+
+            using (ExpressionCaptureScope lengthGetterScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                lengthGetterScope.SetToLocalSymbol(componentArray);
+                lengthGetterScope.ResolveAccessToken("Length");
+
+                componentCount = lengthGetterScope.ExecuteGet();
+            }
+
+            SymbolDefinition arrayIndex = visitorContext.topTable.CreateUnnamedSymbol(typeof(int), SymbolDeclTypeFlags.Internal);
+            using (ExpressionCaptureScope arrayIndexResetScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                arrayIndexResetScope.SetToLocalSymbol(arrayIndex);
+                arrayIndexResetScope.ExecuteSet(visitorContext.topTable.CreateConstSymbol(typeof(int), 0));
+            }
+
+            JumpLabel loopStartJumpPoint = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentLoop");
+            visitorContext.uasmBuilder.AddJumpLabel(loopStartJumpPoint);
+
+            JumpLabel loopExitJumpPoint = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentLoopEnd");
+
+            SymbolDefinition loopConditionSymbol = null;
+
+            using (ExpressionCaptureScope loopConditionCheck = new ExpressionCaptureScope(visitorContext, null))
+            {
+                loopConditionCheck.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.LessThan));
+                loopConditionSymbol = loopConditionCheck.Invoke(new SymbolDefinition[] { arrayIndex, componentCount });
+            }
+            
+            visitorContext.uasmBuilder.AddJumpIfFalse(loopExitJumpPoint, loopConditionSymbol);
+
+
+            SymbolDefinition componentValue = null;
+
+            using (ExpressionCaptureScope componentArrayGetter = new ExpressionCaptureScope(visitorContext, null))
+            {
+                componentArrayGetter.SetToLocalSymbol(componentArray);
+                componentArrayGetter.HandleArrayIndexerAccess(arrayIndex);
+                
+                componentValue = CastSymbolToType(componentArrayGetter.ExecuteGet(), udonSharpType, true, true);
+            }
+
+            SymbolDefinition objectTypeId = null;
+
+            using (ExpressionCaptureScope typeIDGetScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                typeIDGetScope.SetToLocalSymbol(componentValue);
+                typeIDGetScope.ResolveAccessToken(nameof(UdonSharpBehaviour.GetUdonTypeID));
+
+                objectTypeId = typeIDGetScope.Invoke(new SymbolDefinition[] { });
+            }
+
+            SymbolDefinition typeIdEqualsConditionSymbol = null;
+
+            using (ExpressionCaptureScope equalsConditionScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                equalsConditionScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(long), BuiltinOperatorType.Equality));
+                typeIdEqualsConditionSymbol = equalsConditionScope.Invoke(new SymbolDefinition[] { objectTypeId, componentTypeID });
+            }
+
+            JumpLabel conditionFalseJumpLoc = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentIdNotEqual");
+
+            visitorContext.uasmBuilder.AddJumpIfFalse(conditionFalseJumpLoc, typeIdEqualsConditionSymbol);
+
+            using (ExpressionCaptureScope setResultScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                setResultScope.SetToLocalSymbol(resultSymbol);
+                setResultScope.ExecuteSet(componentValue);
+            }
+
+            visitorContext.uasmBuilder.AddJump(loopExitJumpPoint); // Exit early
+
+            visitorContext.uasmBuilder.AddJumpLabel(conditionFalseJumpLoc);
+
+            using (ExpressionCaptureScope indexIncrementScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                indexIncrementScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.Addition));
+                SymbolDefinition incrementResult = indexIncrementScope.Invoke(new SymbolDefinition[] { arrayIndex, visitorContext.topTable.CreateConstSymbol(typeof(int), 1) });
+                visitorContext.uasmBuilder.AddCopy(arrayIndex, incrementResult);
+            }
+
+            visitorContext.uasmBuilder.AddJump(loopStartJumpPoint);
+
+            visitorContext.uasmBuilder.AddJumpLabel(loopExitJumpPoint);
+
+            visitorContext.PopTable();
+
+            return resultSymbol;
+        }
+
+        // Handles getting an array of user components, first iterates the array of components to count how many of them are the given user type, then creates an array of that size, 
+        //   then iterates the array again and assigns the components to the correct index in the array
+        private SymbolDefinition HandleGenericGetComponentArray(SymbolDefinition componentArray, System.Type udonSharpType)
+        {
+            SymbolDefinition resultSymbol = visitorContext.topTable.CreateUnnamedSymbol(udonSharpType.MakeArrayType(), SymbolDeclTypeFlags.Internal);
+
+            visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
+
+            using (ExpressionCaptureScope resultResetScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                resultResetScope.SetToLocalSymbol(resultSymbol);
+                SymbolDefinition arrayConstSymbol = visitorContext.topTable.CreateConstSymbol(udonSharpType.MakeArrayType(), null);
+                arrayConstSymbol.symbolDefaultValue = new Component[0];
+                resultResetScope.ExecuteSet(arrayConstSymbol);
+            }
+
+            SymbolDefinition componentTypeID = visitorContext.topTable.CreateConstSymbol(typeof(long), Internal.UdonSharpInternalUtility.GetTypeID(udonSharpType));
+            
+            SymbolDefinition componentCounterSymbol = visitorContext.topTable.CreateUnnamedSymbol(typeof(int), SymbolDeclTypeFlags.Internal);
+
+            using (ExpressionCaptureScope resetComponentCountScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                resetComponentCountScope.SetToLocalSymbol(componentCounterSymbol);
+                resetComponentCountScope.ExecuteSet(visitorContext.topTable.CreateConstSymbol(typeof(int), 0));
+            }
+
+            SymbolDefinition componentCount = null;
+
+            using (ExpressionCaptureScope lengthGetterScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                lengthGetterScope.SetToLocalSymbol(componentArray);
+                lengthGetterScope.ResolveAccessToken("Length");
+
+                componentCount = lengthGetterScope.ExecuteGet();
+            }
+
+            SymbolDefinition arrayIndex = visitorContext.topTable.CreateUnnamedSymbol(typeof(int), SymbolDeclTypeFlags.Internal);
+
+            // First loop to count the number of components
+            {
+                using (ExpressionCaptureScope arrayIndexResetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    arrayIndexResetScope.SetToLocalSymbol(arrayIndex);
+                    arrayIndexResetScope.ExecuteSet(visitorContext.topTable.CreateConstSymbol(typeof(int), 0));
+                }
+
+                JumpLabel loopStartJumpPoint = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentsLoop");
+                visitorContext.uasmBuilder.AddJumpLabel(loopStartJumpPoint);
+
+                JumpLabel loopExitJumpPoint = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentsLoopEnd");
+
+                SymbolDefinition loopConditionSymbol = null;
+
+                using (ExpressionCaptureScope loopConditionCheck = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    loopConditionCheck.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.LessThan));
+                    loopConditionSymbol = loopConditionCheck.Invoke(new SymbolDefinition[] { arrayIndex, componentCount });
+                }
+
+                visitorContext.uasmBuilder.AddJumpIfFalse(loopExitJumpPoint, loopConditionSymbol);
+
+                SymbolDefinition componentValue = null;
+
+                using (ExpressionCaptureScope componentArrayGetter = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    componentArrayGetter.SetToLocalSymbol(componentArray);
+                    componentArrayGetter.HandleArrayIndexerAccess(arrayIndex);
+
+                    componentValue = CastSymbolToType(componentArrayGetter.ExecuteGet(), udonSharpType, true, true);
+                }
+
+                SymbolDefinition objectTypeId = null;
+
+                using (ExpressionCaptureScope typeIDGetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    typeIDGetScope.SetToLocalSymbol(componentValue);
+                    typeIDGetScope.ResolveAccessToken(nameof(UdonSharpBehaviour.GetUdonTypeID));
+
+                    objectTypeId = typeIDGetScope.Invoke(new SymbolDefinition[] { });
+                }
+
+                JumpLabel incrementConditionFalseJump = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentsIncrementConditionFalse");
+
+                SymbolDefinition incrementConditionSymbol = null;
+
+                using (ExpressionCaptureScope incrementConditionScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    incrementConditionScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(long), BuiltinOperatorType.Equality));
+                    incrementConditionSymbol = incrementConditionScope.Invoke(new SymbolDefinition[] { objectTypeId, componentTypeID });
+                }
+
+                visitorContext.uasmBuilder.AddJumpIfFalse(incrementConditionFalseJump, incrementConditionSymbol);
+
+                using (ExpressionCaptureScope incrementComponentCountScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    incrementComponentCountScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.Addition));
+                    SymbolDefinition incrementResult = incrementComponentCountScope.Invoke(new SymbolDefinition[] { componentCounterSymbol, visitorContext.topTable.CreateConstSymbol(typeof(int), 1) });
+                    visitorContext.uasmBuilder.AddCopy(componentCounterSymbol, incrementResult);
+                }
+
+                visitorContext.uasmBuilder.AddJumpLabel(incrementConditionFalseJump);
+
+
+                using (ExpressionCaptureScope indexIncrementScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    indexIncrementScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.Addition));
+                    SymbolDefinition incrementResult = indexIncrementScope.Invoke(new SymbolDefinition[] { arrayIndex, visitorContext.topTable.CreateConstSymbol(typeof(int), 1) });
+                    visitorContext.uasmBuilder.AddCopy(arrayIndex, incrementResult);
+                }
+
+                visitorContext.uasmBuilder.AddJump(loopStartJumpPoint);
+
+                visitorContext.uasmBuilder.AddJumpLabel(loopExitJumpPoint);
+            }
+
+            // Skip the second loop if we found no valid components
+            JumpLabel exitJumpLabel = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentsSkipArrayIteration");
+            SymbolDefinition skipSecondLoopConditionSymbol = null;
+            using (ExpressionCaptureScope skipSecondLoopConditionScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                skipSecondLoopConditionScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.GreaterThan));
+                skipSecondLoopConditionSymbol = skipSecondLoopConditionScope.Invoke(new SymbolDefinition[] { componentCounterSymbol, visitorContext.topTable.CreateConstSymbol(typeof(int), 0) });
+            }
+
+            visitorContext.uasmBuilder.AddJumpIfFalse(exitJumpLabel, skipSecondLoopConditionSymbol);
+
+            // Second loop to assign values to the array
+            {
+                // Initialize the new array
+                using (ExpressionCaptureScope arrayVarScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    arrayVarScope.SetToLocalSymbol(resultSymbol);
+
+                    using (ExpressionCaptureScope arrayCreationScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        arrayCreationScope.SetToMethods(resultSymbol.symbolCsType.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
+
+                        SymbolDefinition newArraySymbol = arrayCreationScope.Invoke(new SymbolDefinition[] { componentCounterSymbol });
+                        if (resultSymbol.IsUserDefinedBehaviour())
+                            newArraySymbol.symbolCsType = resultSymbol.userCsType;
+
+                        arrayVarScope.ExecuteSet(newArraySymbol);
+                    }
+                }
+
+                using (ExpressionCaptureScope arrayIndexResetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    arrayIndexResetScope.SetToLocalSymbol(arrayIndex);
+                    arrayIndexResetScope.ExecuteSet(visitorContext.topTable.CreateConstSymbol(typeof(int), 0));
+                }
+
+                SymbolDefinition destIdxSymbol = visitorContext.topTable.CreateUnnamedSymbol(typeof(int), SymbolDeclTypeFlags.Internal);
+
+                using (ExpressionCaptureScope resetDestIdxScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    resetDestIdxScope.SetToLocalSymbol(destIdxSymbol);
+                    resetDestIdxScope.ExecuteSet(visitorContext.topTable.CreateConstSymbol(typeof(int), 0));
+                }
+
+                JumpLabel loopStartJumpPoint = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentsLoop2");
+                visitorContext.uasmBuilder.AddJumpLabel(loopStartJumpPoint);
+
+                JumpLabel loopExitJumpPoint = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentsLoopEnd2");
+
+                SymbolDefinition loopConditionSymbol = null;
+
+                using (ExpressionCaptureScope loopConditionCheck = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    loopConditionCheck.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.LessThan));
+                    loopConditionSymbol = loopConditionCheck.Invoke(new SymbolDefinition[] { arrayIndex, componentCount });
+                }
+
+                visitorContext.uasmBuilder.AddJumpIfFalse(loopExitJumpPoint, loopConditionSymbol);
+
+                SymbolDefinition componentValue = null;
+
+                using (ExpressionCaptureScope componentArrayGetter = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    componentArrayGetter.SetToLocalSymbol(componentArray);
+                    componentArrayGetter.HandleArrayIndexerAccess(arrayIndex);
+
+                    componentValue = CastSymbolToType(componentArrayGetter.ExecuteGet(), udonSharpType, true, true);
+                }
+
+                SymbolDefinition objectTypeId = null;
+
+                using (ExpressionCaptureScope typeIDGetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    typeIDGetScope.SetToLocalSymbol(componentValue);
+                    typeIDGetScope.ResolveAccessToken(nameof(UdonSharpBehaviour.GetUdonTypeID));
+
+                    objectTypeId = typeIDGetScope.Invoke(new SymbolDefinition[] { });
+                }
+
+                JumpLabel addConditionFalseJump = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentsAddConditionFalse");
+
+                SymbolDefinition addConditionSymbol = null;
+
+                using (ExpressionCaptureScope addConditionScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    addConditionScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(long), BuiltinOperatorType.Equality));
+                    addConditionSymbol = addConditionScope.Invoke(new SymbolDefinition[] { objectTypeId, componentTypeID });
+                }
+
+                visitorContext.uasmBuilder.AddJumpIfFalse(addConditionFalseJump, addConditionSymbol);
+
+                using (ExpressionCaptureScope setArrayValueScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    setArrayValueScope.SetToLocalSymbol(resultSymbol);
+                    setArrayValueScope.HandleArrayIndexerAccess(destIdxSymbol);
+
+                    using (ExpressionCaptureScope sourceValueGetScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        sourceValueGetScope.SetToLocalSymbol(componentArray);
+                        sourceValueGetScope.HandleArrayIndexerAccess(arrayIndex);
+
+                        SymbolDefinition arrayValue = sourceValueGetScope.ExecuteGet();
+                        arrayValue.symbolCsType = udonSharpType;
+                        setArrayValueScope.ExecuteSet(arrayValue);
+                    }
+                }
+
+                using (ExpressionCaptureScope incrementTargetCountScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    incrementTargetCountScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.Addition));
+                    SymbolDefinition incrementResult = incrementTargetCountScope.Invoke(new SymbolDefinition[] { destIdxSymbol, visitorContext.topTable.CreateConstSymbol(typeof(int), 1) });
+                    visitorContext.uasmBuilder.AddCopy(destIdxSymbol, incrementResult);
+                }
+
+                visitorContext.uasmBuilder.AddJumpLabel(addConditionFalseJump);
+
+                using (ExpressionCaptureScope indexIncrementScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    indexIncrementScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.Addition));
+                    SymbolDefinition incrementResult = indexIncrementScope.Invoke(new SymbolDefinition[] { arrayIndex, visitorContext.topTable.CreateConstSymbol(typeof(int), 1) });
+                    visitorContext.uasmBuilder.AddCopy(arrayIndex, incrementResult);
+                }
+
+                visitorContext.uasmBuilder.AddJump(loopStartJumpPoint);
+
+                visitorContext.uasmBuilder.AddJumpLabel(loopExitJumpPoint);
+            }
+
+            visitorContext.uasmBuilder.AddJumpLabel(exitJumpLabel);
+
+            visitorContext.PopTable();
+
+            return resultSymbol;
+        }
+
+        private SymbolDefinition HandleGenericUSharpGetComponent(MethodInfo targetMethod, System.Type udonSharpType, SymbolDefinition[] invokeParams)
+        {
+            bool isArray = targetMethod.ReturnType.IsArray;
+
+            targetMethod = ConvertGetComponentToGetComponents(targetMethod);
+
+            SymbolDefinition udonBehaviourType = visitorContext.topTable.CreateConstSymbol(typeof(System.Type), typeof(VRC.Udon.UdonBehaviour));
+
+            visitorContext.uasmBuilder.AddPush(udonBehaviourType);
+
+            foreach (SymbolDefinition invokeParam in invokeParams)
+                visitorContext.uasmBuilder.AddPush(invokeParam);
+
+            SymbolDefinition resultComponents = visitorContext.topTable.CreateUnnamedSymbol(typeof(Component[]), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
+
+            visitorContext.uasmBuilder.AddPush(resultComponents);
+
+            visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(targetMethod));
+
+            if (isArray)
+            {
+                return HandleGenericGetComponentArray(resultComponents, udonSharpType);
+            }
+            else
+            {
+                return HandleGenericGetComponentSingle(resultComponents, udonSharpType);
+            }
+        }
+
         private SymbolDefinition InvokeExtern(SymbolDefinition[] invokeParams)
         {
             // Find valid overrides
@@ -711,9 +1144,6 @@ namespace UdonSharp
                 }
             }
 
-            foreach (SymbolDefinition invokeParam in expandedParams)
-                visitorContext.uasmBuilder.AddPush(invokeParam);
-
             SymbolDefinition returnSymbol = null;
 
             System.Type returnType = typeof(void);
@@ -725,30 +1155,41 @@ namespace UdonSharp
             else
                 throw new System.Exception("Invalid target method type");
 
-            if (returnType != typeof(void))
+            if (targetMethod.Name.StartsWith("GetComponent") &&
+                genericTypeArguments != null && genericTypeArguments.First().IsSubclassOf(typeof(UdonSharpBehaviour)))
             {
-                if (genericTypeArguments != null)
+                returnSymbol = HandleGenericUSharpGetComponent(targetMethod as MethodInfo, genericTypeArguments.First(), invokeParams);
+            }
+            else
+            {
+                foreach (SymbolDefinition invokeParam in expandedParams)
+                    visitorContext.uasmBuilder.AddPush(invokeParam);
+
+                if (returnType != typeof(void))
                 {
-                    System.Type genericType = genericTypeArguments.First();
+                    if (genericTypeArguments != null)
+                    {
+                        System.Type genericType = genericTypeArguments.First();
 
-                    if (returnType.IsArray)
-                        returnType = genericType.MakeArrayType();
-                    else
-                        returnType = genericType;
+                        if (returnType.IsArray)
+                            returnType = genericType.MakeArrayType();
+                        else
+                            returnType = genericType;
 
-                    visitorContext.uasmBuilder.AddPush(visitorContext.topTable.CreateConstSymbol(typeof(System.Type), genericType));
+                        visitorContext.uasmBuilder.AddPush(visitorContext.topTable.CreateConstSymbol(typeof(System.Type), genericType));
+                    }
+
+                    //returnSymbol = visitorContext.topTable.CreateNamedSymbol("returnVal", returnType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
+                    returnSymbol = visitorContext.topTable.CreateUnnamedSymbol(returnType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
+
+                    visitorContext.uasmBuilder.AddPush(returnSymbol);
+
+                    if (visitorContext.topCaptureScope != null && visitorContext.topCaptureScope.IsUnknownArchetype())
+                        visitorContext.topCaptureScope.SetToLocalSymbol(returnSymbol);
                 }
 
-                //returnSymbol = visitorContext.topTable.CreateNamedSymbol("returnVal", returnType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
-                returnSymbol = visitorContext.topTable.CreateUnnamedSymbol(returnType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
-
-                visitorContext.uasmBuilder.AddPush(returnSymbol);
-
-                if (visitorContext.topCaptureScope != null && visitorContext.topCaptureScope.IsUnknownArchetype())
-                    visitorContext.topCaptureScope.SetToLocalSymbol(returnSymbol);
+                visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(targetMethod, true, genericTypeArguments));
             }
-
-            visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(targetMethod, true, genericTypeArguments));
 
             return returnSymbol;
         }
@@ -886,6 +1327,10 @@ namespace UdonSharp
             {
                 return InvokeUserExtern(invokeParams);
             }
+            else if (captureArchetype == ExpressionCaptureArchetype.InternalUdonSharpMethod)
+            {
+                return InternalMethodHandler.Invoke(invokeParams);
+            }
             else
             {
                 throw new System.Exception($"Cannot call invoke on archetype {captureArchetype}");
@@ -958,7 +1403,8 @@ namespace UdonSharp
                 resolvedToken = HandleLocalSymbolLookup(accessToken) ||
                                 HandleLocalMethodLookup(accessToken) ||
                                 HandleLocalUdonBehaviourMethodLookup(accessToken) ||
-                                HandleLocalUdonBehaviourPropertyLookup(accessToken);
+                                HandleLocalUdonBehaviourPropertyLookup(accessToken) ||
+                                HandleUdonSharpInternalMethodLookup(accessToken);
             }
             else if (captureArchetype == ExpressionCaptureArchetype.Unknown)
             {
@@ -966,6 +1412,7 @@ namespace UdonSharp
                                 HandleLocalMethodLookup(accessToken) ||
                                 HandleLocalUdonBehaviourMethodLookup(accessToken) ||
                                 HandleLocalUdonBehaviourPropertyLookup(accessToken) ||
+                                HandleUdonSharpInternalMethodLookup(accessToken) ||
                                 HandleTypeLookup(accessToken) ||
                                 HandleNamespaceLookup(accessToken);
             }
@@ -975,7 +1422,8 @@ namespace UdonSharp
                                 HandleEnumFieldLookup(accessToken) ||
                                 HandleStaticMethodLookup(accessToken) ||
                                 HandleStaticPropertyLookup(accessToken) ||
-                                HandleStaticFieldLookup(accessToken);
+                                HandleStaticFieldLookup(accessToken) ||
+                                HandleUdonSharpInternalMethodLookup(accessToken);
             }
             else if (IsMethod())
             {
@@ -995,6 +1443,7 @@ namespace UdonSharp
             {
                 resolvedToken = HandleExternUserFieldLookup(accessToken) ||
                                 HandleExternUserMethodLookup(accessToken) ||
+                                HandleUdonSharpInternalMethodLookup(accessToken) ||
                                 HandleMemberPropertyAccess(accessToken) ||
                                 HandleMemberFieldAccess(accessToken) ||
                                 HandleMemberMethodLookup(accessToken); 
@@ -1387,6 +1836,22 @@ namespace UdonSharp
             return true;
         }
 
+        private bool HandleUdonSharpInternalMethodLookup(string methodToken)
+        {
+            bool isInternalMethod = InternalMethodHandler.ResolveAccessToken(methodToken);
+
+            if (!isInternalMethod)
+                return false;
+
+            if (captureArchetype == ExpressionCaptureArchetype.Unknown && unresolvedAccessChain.Length == 0)
+                ResolveAccessToken("this");
+
+            accessSymbol = ExecuteGet();
+            captureArchetype = ExpressionCaptureArchetype.InternalUdonSharpMethod;
+
+            return true;
+        }
+
         public void HandleArrayIndexerAccess(SymbolDefinition indexerSymbol)
         {
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
@@ -1421,10 +1886,13 @@ namespace UdonSharp
 
         public void HandleGenericAccess(List<System.Type> genericArguments)
         {
-            if (captureArchetype != ExpressionCaptureArchetype.Method)
+            if (captureArchetype != ExpressionCaptureArchetype.Method && captureArchetype != ExpressionCaptureArchetype.InternalUdonSharpMethod)
                 throw new System.ArgumentException("Cannot resolve generic arguments on non-method expression");
 
             genericTypeArguments = genericArguments;
+
+            if (captureArchetype == ExpressionCaptureArchetype.InternalUdonSharpMethod)
+                InternalMethodHandler.HandleGenericAccess(genericArguments);
         }
 
         private void HandleUnknownToken(string unknownToken)

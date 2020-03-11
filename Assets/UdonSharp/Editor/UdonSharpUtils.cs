@@ -269,7 +269,62 @@ namespace UdonSharp
         {
             return udonSyncTypes.Contains(type);
         }
-        
+
+        private static readonly HashSet<System.Type> builtinTypes = new HashSet<System.Type>
+        {
+            typeof(string),
+            typeof(bool),
+            typeof(byte),
+            typeof(sbyte),
+            typeof(char),
+            typeof(decimal),
+            typeof(double),
+            typeof(float),
+            typeof(int),
+            typeof(uint),
+            typeof(long),
+            typeof(ulong),
+            typeof(short),
+            typeof(ushort),
+            typeof(object),
+        };
+
+        public static MethodInfo[] GetOperators(System.Type type, BuiltinOperatorType builtinOperatorType)
+        {
+            List<MethodInfo> foundOperators = new List<MethodInfo>();
+
+            // If it's a builtin type then create a fake operator methodinfo for it.
+            // If this operator doesn't actually exist, it will get filtered by the overload finding
+            if (builtinTypes.Contains(type))
+                foundOperators.Add(new OperatorMethodInfo(type, builtinOperatorType));
+
+            // Now look for operators that the type defines
+            string operatorName = System.Enum.GetName(typeof(BuiltinOperatorType), builtinOperatorType);
+            if (builtinOperatorType == BuiltinOperatorType.Multiplication)
+                operatorName = "Multiply"; // Udon breaks standard naming with its multiplication overrides on base types
+            else if (builtinOperatorType == BuiltinOperatorType.UnaryMinus)
+                operatorName = "UnaryNegation";
+
+            operatorName = $"op_{operatorName}";
+
+            System.Type currentType = type;
+
+            while (currentType != null)
+            {
+                foundOperators.AddRange(currentType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == operatorName));
+                currentType = currentType.BaseType;
+            }
+
+            // Add the object equality and inequality operators if we haven't already found better matches
+            if (foundOperators.Count == 0 && type != typeof(object) && !type.IsValueType &&
+                (builtinOperatorType == BuiltinOperatorType.Equality || builtinOperatorType == BuiltinOperatorType.Inequality))
+                foundOperators.AddRange(GetOperators(typeof(object), builtinOperatorType));
+            else if (foundOperators.Count == 0 && type.IsEnum && (builtinOperatorType == BuiltinOperatorType.Equality || builtinOperatorType == BuiltinOperatorType.Inequality)) // Handle enum comparisons
+                foundOperators.Add(typeof(object).GetMethod("Equals", BindingFlags.Public | BindingFlags.Static));
+
+            return foundOperators.ToArray();
+        }
+
         public static void LogBuildError(string message, string filePath, int line, int character)
         {
             MethodInfo buildErrorLogMethod = typeof(UnityEngine.Debug).GetMethod("LogPlayerBuildError", BindingFlags.NonPublic | BindingFlags.Static);

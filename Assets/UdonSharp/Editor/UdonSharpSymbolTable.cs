@@ -17,7 +17,7 @@ namespace UdonSharp
         Constant = 16, // Used to represent a constant value that does not change. This can either be statically defined constants 
         Array = 32, // If this symbol is an array type
         This = 64, // defines one of the 3 builtin `this` assignments for UdonBehaviour, GameObject, and Transform
-        Reflection = 128, // Reflection information for type checking
+        Reflection = 128, // Metadata information for type checking and other editor time info
     }
 
     [Serializable]
@@ -218,14 +218,15 @@ namespace UdonSharp
         /// <param name="value"></param>
         /// <param name="foundSymbol"></param>
         /// <returns></returns>
-        public bool TryGetGlobalConstSymbol(System.Type type, object value, out SymbolDefinition foundSymbol)
+        public bool TryGetGlobalSymbol(System.Type type, object value, out SymbolDefinition foundSymbol, SymbolDeclTypeFlags flags)
         {
             SymbolTable globalSymTable = GetGlobalSymbolTable();
 
             foreach (SymbolDefinition definition in globalSymTable.symbolDefinitions)
             {
-                if (definition.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) &&
-                    definition.declarationType.HasFlag(SymbolDeclTypeFlags.Internal) &&
+                bool hasFlags = ((int)flags & (int)definition.declarationType) == (int)flags;
+
+                if (hasFlags &&
                     definition.symbolCsType == type &&
                     ((value == null && definition.symbolDefaultValue == null) ||
                     (definition.symbolDefaultValue != null && definition.symbolDefaultValue.Equals(value))))
@@ -246,9 +247,45 @@ namespace UdonSharp
 
             SymbolDefinition symbolDefinition;
 
-            if (!TryGetGlobalConstSymbol(type, value, out symbolDefinition))
+            if (!TryGetGlobalSymbol(type, value, out symbolDefinition, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Constant))
             {
                 symbolDefinition = CreateUnnamedSymbol(type, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Constant);
+                symbolDefinition.symbolDefaultValue = value;
+            }
+
+            return symbolDefinition;
+        }
+
+        public SymbolDefinition GetReflectionSymbol(string name, System.Type type)
+        {
+            SymbolDefinition symbolDefinition = null;
+
+            SymbolTable globalSymbols = GetGlobalSymbolTable();
+
+            foreach (SymbolDefinition currentSymbol in globalSymbols.symbolDefinitions)
+            {
+                if (currentSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Reflection) &&
+                    currentSymbol.symbolOriginalName == name &&
+                    currentSymbol.symbolCsType == type)
+                {
+                    symbolDefinition = currentSymbol;
+                    break;
+                }
+            }
+
+            return symbolDefinition;
+        }
+
+        public SymbolDefinition CreateReflectionSymbol(string name, System.Type type, object value)
+        {
+            if (value != null && !type.IsAssignableFrom(value.GetType()))
+                throw new ArgumentException($"Non-compatible value given for type {type.FullName}");
+
+            SymbolDefinition symbolDefinition = GetReflectionSymbol(name, type);
+            
+            if (symbolDefinition == null)
+            {
+                symbolDefinition = CreateNamedSymbol(name, type, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Constant | SymbolDeclTypeFlags.Reflection);
                 symbolDefinition.symbolDefaultValue = value;
             }
 
@@ -359,8 +396,13 @@ namespace UdonSharp
                 uniqueSymbolName = $"this_{uniqueSymbolName}";
                 hasGlobalDeclaration = true;
             }
+            if (declType.HasFlag(SymbolDeclTypeFlags.Reflection))
+            {
+                uniqueSymbolName = $"__refl_{uniqueSymbolName}";
+                hasGlobalDeclaration = true;
+            }
 
-            if (!declType.HasFlag(SymbolDeclTypeFlags.Public) && !declType.HasFlag(SymbolDeclTypeFlags.Private))
+            if (!declType.HasFlag(SymbolDeclTypeFlags.Public) && !declType.HasFlag(SymbolDeclTypeFlags.Private) && !declType.HasFlag(SymbolDeclTypeFlags.Reflection))
             {
                 if (appendType)
                 {

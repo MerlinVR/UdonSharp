@@ -138,6 +138,7 @@ namespace UdonSharp
             foreach (SymbolDefinition symbol in moduleSymbols.GetAllUniqueChildSymbols()
                 .OrderBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Public))
                 .ThenBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Private))
+                .ThenBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Reflection))
                 .ThenBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.This))
                 .ThenBy(e => !e.declarationType.HasFlag(SymbolDeclTypeFlags.Internal))
                 .ThenBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Constant))

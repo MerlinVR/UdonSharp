@@ -139,6 +139,12 @@ namespace UdonSharp
             programCounter += UdonSharpUtils.GetUdonInstructionSize("JUMP");
         }
 
+        public void AddJumpIfFalse(JumpLabel jumpTarget, SymbolDefinition conditionSymbol, string comment = "")
+        {
+            AddPush(conditionSymbol);
+            AddJumpIfFalse(jumpTarget, comment);
+        }
+
         public void AddJumpIfFalse(JumpLabel jumpTarget, string comment = "")
         {
             if (jumpTarget.IsResolved)
