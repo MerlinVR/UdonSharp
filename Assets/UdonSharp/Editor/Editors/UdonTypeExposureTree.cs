@@ -11,7 +11,10 @@ namespace UdonSharp.Editors
 {
     public class UdonTypeExposureTreeView : TreeView
     {
-        public bool showBaseTypeMembers = true;
+        public bool showBaseTypeMembers = false;
+
+        // Hides anything that does not return or take an object parameter that can potentially contain a player/VRC protected object
+        public bool hideWhitelistAccessors = false;
 
         private Dictionary<string, TreeViewItem> hiearchyItems = new Dictionary<string, TreeViewItem>();
 
@@ -211,6 +214,113 @@ namespace UdonSharp.Editors
             return parentItem;
         }
 
+        private HashSet<System.Type> visitedHiddenTypeCheck = new HashSet<System.Type>();
+
+        bool ShouldHideType(System.Type type, bool rootTypeCheck = false)
+        {
+            if (!rootTypeCheck)
+            {
+                if (visitedHiddenTypeCheck.Contains(type))
+                    return true;
+
+                visitedHiddenTypeCheck.Add(type);
+            }
+
+            if (type != null && type.Namespace != null && type.Namespace.Contains("System") &&
+                type != typeof(object))
+                return true;
+
+            if (type.IsArray)
+            {
+                if (rootTypeCheck)
+                    return true;
+
+                return ShouldHideType(type.GetElementType());
+            }
+
+            if (type.IsByRef)
+                return ShouldHideType(type.GetElementType());
+
+            if (!rootTypeCheck && typeof(Component).IsAssignableFrom(type))
+                return false;
+
+            if (type.IsGenericType || type.IsGenericParameter || type.IsGenericTypeDefinition)
+                return false;
+
+            bool shouldHideType = true;
+
+            BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
+            if (!showBaseTypeMembers)
+                bindingFlags |= BindingFlags.DeclaredOnly;
+
+            foreach (MemberInfo member in type.GetMembers(bindingFlags))
+            {
+                shouldHideType &= ShouldHideMember(member);
+            }
+
+            return shouldHideType && (rootTypeCheck || !typeof(Component).IsAssignableFrom(type));
+        }
+
+        bool ShouldHideMember(MemberInfo memberInfo)
+        {
+            bool shouldHide = true;
+
+            if (memberInfo is MethodInfo methodInfo)
+            {
+                string methodUdonName = resolver.GetUdonMethodName(methodInfo, false);
+
+                //if (resolver.IsValidUdonMethod(methodUdonName))
+                {
+                    if (methodInfo.ReturnType != null && methodInfo.ReturnType != typeof(void))
+                    {
+                        shouldHide &= ShouldHideType(methodInfo.ReturnType);
+                    }
+
+                    foreach (ParameterInfo parameterInfo in methodInfo.GetParameters())
+                    {
+                        if (parameterInfo.IsOut || parameterInfo.ParameterType.IsByRef)
+                            shouldHide &= ShouldHideType(parameterInfo.ParameterType);
+                    }
+                }
+            }
+            else if (memberInfo is FieldInfo fieldInfo)
+            {
+                string fieldName = resolver.GetUdonFieldAccessorName(fieldInfo, FieldAccessorType.Get, false);
+
+                //if (resolver.IsValidUdonMethod(fieldName))
+                    shouldHide &= ShouldHideType(fieldInfo.FieldType);
+            }
+            else if (memberInfo is PropertyInfo propertyInfo)
+            {
+                string propertyName = resolver.GetUdonMethodName(propertyInfo.GetGetMethod(), false);
+
+                //if (resolver.IsValidUdonMethod(propertyName))
+                    shouldHide &= ShouldHideType(propertyInfo.PropertyType);
+            }
+
+            return shouldHide;
+        }
+
+        bool ShouldHideMemberTopLevel(MemberInfo member)
+        {
+            if (!hideWhitelistAccessors)
+                return false;
+
+            visitedHiddenTypeCheck.Clear();
+
+            return ShouldHideMember(member);
+        }
+
+        bool ShouldHideTypeTopLevel(System.Type type, bool rootTypeCheck = false)
+        {
+            if (!hideWhitelistAccessors)
+                return false;
+
+            visitedHiddenTypeCheck.Clear();
+
+            return ShouldHideType(type, rootTypeCheck);
+        }
+
         private void AddChildNode(TreeViewItem parentItem, MemberInfo memberInfo, ref int currentID)
         {
             var obsoleteAttribute = memberInfo.GetCustomAttribute<System.ObsoleteAttribute>();
@@ -221,6 +331,9 @@ namespace UdonSharp.Editors
                 return;
 
             if (memberInfo.DeclaringType.IsEnum)
+                return;
+
+            if (ShouldHideMemberTopLevel(memberInfo))
                 return;
 
             TreeViewItem memberItem = new TreeViewItem(currentID++, parentItem.depth + 1, $"<{memberInfo.MemberType}> {memberInfo.ToString()}");
@@ -434,6 +547,9 @@ namespace UdonSharp.Editors
             foreach (System.Type type in exposedTypes.OrderBy(e => e.Name))
             {
                 EditorUtility.DisplayProgressBar("Adding types...", $"Adding type {type}", currentTypeCount++ / (float)exposedTypes.Count);
+                
+                if (ShouldHideTypeTopLevel(type, true))
+                    continue;
 
                 string typeNamespace = type.Namespace;
                 if (typeNamespace == null || typeNamespace == "")
@@ -511,8 +627,11 @@ namespace UdonSharp.Editors
 
                 if (!type.IsEnum)
                 {
-                    foreach (MethodInfo method in type.GetMethods(bindingFlags).Where(e => !e.IsSpecialName && (!type.IsArray || e.Name != "Address")))
+                    foreach (MethodInfo method in type.GetMethods(bindingFlags).Where(e => (!type.IsArray || e.Name != "Address")))
                     {
+                        if (method.IsSpecialName && !method.Name.StartsWith("op_"))
+                            continue;
+
                         AddChildNode(typeParent, method, ref currentID);
                     }
                 }
@@ -563,6 +682,7 @@ namespace UdonSharp.Editors
 
             EditorGUI.BeginChangeCheck();
             treeView.showBaseTypeMembers = EditorGUILayout.Toggle("Show base members", treeView.showBaseTypeMembers);
+            treeView.hideWhitelistAccessors = EditorGUILayout.Toggle("Hide whitelisted accessors", treeView.hideWhitelistAccessors);
             if (EditorGUI.EndChangeCheck())
                 treeView.Reload();
 
