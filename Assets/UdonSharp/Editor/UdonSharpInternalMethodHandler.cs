@@ -203,7 +203,7 @@ namespace UdonSharp
                         if (captureFunc == InternalFunc.TypeIDInstance)
                             resultSetterScope.ExecuteSet(visitorContext.topTable.CreateConstSymbol(typeof(long), 0L));
                         else
-                            resultSetterScope.ExecuteSet(visitorContext.topTable.CreateConstSymbol(typeof(string), "GraphType"));
+                            resultSetterScope.ExecuteSet(visitorContext.topTable.CreateConstSymbol(typeof(string), "UnknownType"));
 
                         visitorContext.uasmBuilder.AddJumpLabel(exitBranchJump);
                     }

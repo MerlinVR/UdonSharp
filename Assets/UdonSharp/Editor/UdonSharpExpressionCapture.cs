@@ -58,6 +58,7 @@ namespace UdonSharp
         public SymbolDefinition accessSymbol { get; private set; } = null;
 
         // Used for array indexers
+        private SymbolDefinition arrayBacktraceSymbol = null;
         private SymbolDefinition arrayIndexerIndexSymbol = null;
 
         // Used for resolving generic methods, and eventually types when Udon adds support
@@ -273,6 +274,8 @@ namespace UdonSharp
         // Inserts uasm instructions to get the value stored in the current localSymbol, property, or field
         public SymbolDefinition ExecuteGet()
         {
+            arrayBacktraceSymbol = null;
+
             if (captureArchetype == ExpressionCaptureArchetype.LocalSymbol)
                 return captureLocalSymbol;
 
@@ -339,6 +342,8 @@ namespace UdonSharp
                     getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(accessSymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Get").First());
                     elementType = accessSymbol.userCsType.GetElementType();
                 }
+
+                arrayBacktraceSymbol = accessSymbol;
 
                 outSymbol = visitorContext.topTable.CreateUnnamedSymbol(elementType, SymbolDeclTypeFlags.Internal);
 
@@ -428,6 +433,18 @@ namespace UdonSharp
             else
             {
                 throw new System.Exception("Set can only be run on Fields, Properties, and local Symbols");
+            }
+
+            // Copy the result back into the array if it's a value type
+            if (captureArchetype != ExpressionCaptureArchetype.ArrayIndexer && arrayBacktraceSymbol != null && accessSymbol.symbolCsType.IsValueType)
+            {
+                using (ExpressionCaptureScope arraySetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    arraySetScope.SetToLocalSymbol(arrayBacktraceSymbol);
+                    arraySetScope.HandleArrayIndexerAccess(arrayIndexerIndexSymbol);
+
+                    arraySetScope.ExecuteSet(accessSymbol);
+                }
             }
         }
 
