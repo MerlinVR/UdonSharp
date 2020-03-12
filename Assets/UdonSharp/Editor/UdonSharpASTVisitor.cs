@@ -808,8 +808,14 @@ namespace UdonSharp
 
                         BuiltinOperatorType operatorType = SyntaxKindToBuiltinOperator(node.Kind());
 
-                        // In place arithmetic operators for lower precision types will return int, but C# will normaally cast the result back to the target type 
-                        lhsCapture.ExecuteSet(resultSymbol, true);
+                        // Create a new set scope to maintain array setter handling for structs
+                        using (ExpressionCaptureScope lhsSetScope = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            Visit(node.Left);
+
+                            // In place arithmetic operators for lower precision types will return int, but C# will normaally cast the result back to the target type 
+                            lhsSetScope.ExecuteSet(resultSymbol, true);
+                        }
                     }
                 }
             }
