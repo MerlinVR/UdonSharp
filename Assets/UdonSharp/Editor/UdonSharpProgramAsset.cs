@@ -42,13 +42,20 @@ public class <TemplateClassName> : UdonSharpBehaviour
         [NonSerialized, OdinSerialize]
         public Dictionary<string, FieldDefinition> fieldDefinitions;
 
+        [HideInInspector]
+        public string behaviourIDHeapVarName;
+
         [SerializeField, HideInInspector]
         private SerializationData serializationData;
 
         private static bool showProgramUasm = false;
 
+        private UdonBehaviour currentBehaviour = null;
+
         protected override void DrawProgramSourceGUI(UdonBehaviour udonBehaviour, ref bool dirty)
         {
+            currentBehaviour = udonBehaviour;
+
             EditorGUI.BeginChangeCheck();
             MonoScript newSourceCsScript = (MonoScript)EditorGUILayout.ObjectField("Source Script", sourceCsScript, typeof(MonoScript), false);
             if (EditorGUI.EndChangeCheck())
@@ -63,6 +70,21 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 DrawCreateScriptButton();
                 return;
             }
+            
+            object behaviourID = null;
+            bool shouldUseRuntimeValue = EditorApplication.isPlaying && currentBehaviour != null;
+
+            // UdonBehaviours won't have valid heap values unless they have been enabled once to run their initialization. 
+            // So we check against a value we know will exist to make sure we can use the heap variables.
+            if (shouldUseRuntimeValue)
+            {
+                behaviourID = currentBehaviour.GetProgramVariable(behaviourIDHeapVarName);
+                if (behaviourID == null)
+                    shouldUseRuntimeValue = false;
+            }
+
+            // Just manually break the disabled scope in the UdonBehaviourEditor default drawing for now
+            GUI.enabled = GUI.enabled || shouldUseRuntimeValue;
 
             DrawPublicVariables(udonBehaviour, ref dirty);
 
@@ -94,6 +116,8 @@ public class <TemplateClassName> : UdonSharpBehaviour
             //EditorGUI.indentLevel--;
 
             //base.RunProgramSourceEditor(publicVariables, ref dirty);
+
+            currentBehaviour = null;
         }
 
         protected override void RefreshProgramImpl()
@@ -343,7 +367,12 @@ public class <TemplateClassName> : UdonSharpBehaviour
                     using (EditorGUILayout.VerticalScope verticalScope = new EditorGUILayout.VerticalScope())
                     {
                         EditorGUI.BeginChangeCheck();
-                        int newLength = EditorGUILayout.IntField("Size", valueArray.Length);
+                        int newLength = EditorGUILayout.DelayedIntField("Size", valueArray.Length);
+                        if (newLength < 0)
+                        {
+                            Debug.LogError("Array size must be non-negative.");
+                            newLength = valueArray.Length;
+                        }
 
                         // We need to resize the array
                         if (EditorGUI.EndChangeCheck())
@@ -494,10 +523,10 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
             return value;
         }
-        
+
         protected override object DrawPublicVariableField(string symbol, object variableValue, Type variableType, ref bool dirty, bool enabled)
         {
-            object newValue = variableValue;
+            bool shouldUseRuntimeValue = EditorApplication.isPlaying && currentBehaviour != null && GUI.enabled; // GUI.enabled is determined in DrawProgramSourceGUI
 
             EditorGUI.BeginDisabledGroup(!enabled);
 
@@ -521,16 +550,28 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
             if (shouldDraw)
             {
+                if (shouldUseRuntimeValue)
+                {
+                    variableValue = currentBehaviour.GetProgramVariable(symbol);
+                }
+
                 if (!isArray) // Drawing horizontal groups on arrays screws them up, there's probably better handling for this using a manual rect
                     EditorGUILayout.BeginHorizontal();
 
                 EditorGUI.BeginChangeCheck();
-                newValue = DrawFieldForType(null, symbol, (variableValue, variableType), ref dirty, enabled);
+                object newValue = DrawFieldForType(null, symbol, (variableValue, variableType), ref dirty, enabled);
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    dirty = true;
-                    variableValue = newValue;
+                    if (shouldUseRuntimeValue)
+                    {
+                        currentBehaviour.SetProgramVariable(symbol, newValue);
+                    }
+                    else
+                    {
+                        dirty = true;
+                        variableValue = newValue;
+                    }
                 }
                 
                 if (symbolField.fieldSymbol != null && symbolField.fieldSymbol.syncMode != UdonSyncMode.NotSynced)
@@ -546,7 +587,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
             }
 
             EditorGUI.EndDisabledGroup();
-
+            
             return variableValue;
         }
 

@@ -115,6 +115,11 @@ namespace UdonSharp
             return visitorContext.uasmBuilder.GetAssemblyStr(visitorContext.labelTable);
         }
 
+        public string GetIDHeapVarName()
+        {
+            return visitorContext.topTable.CreateReflectionSymbol("udonTypeID", typeof(long), Internal.UdonSharpInternalUtility.GetTypeID(visitorContext.behaviourUserType)).symbolUniqueName;
+        }
+
         public int GetExternStrCount()
         {
             return visitorContext.uasmBuilder.GetExternStrCount();

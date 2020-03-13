@@ -104,6 +104,7 @@ namespace UdonSharp
 
             programAsset.SetUdonAssembly(dataBlock + codeBlock);
             programAsset.AssembleCsProgram((uint)(moduleSymbols.GetAllUniqueChildSymbols().Count + visitor.GetExternStrCount()));
+            programAsset.behaviourIDHeapVarName = visitor.GetIDHeapVarName();
 
             programAsset.fieldDefinitions = visitor.visitorContext.localFieldDefinitions;
 
