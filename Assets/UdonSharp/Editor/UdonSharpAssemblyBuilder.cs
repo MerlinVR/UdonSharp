@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿
+//#define USE_UDON_LABELS
+
+using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -32,13 +35,16 @@ namespace UdonSharp
 
             currentLabelTable = labelTable;
 
+#if !USE_UDON_LABELS
             assemblyString = Regex.Replace(assemblyString, @"(?<whitespace>\s*)(?<labeltype>JUMP_LABEL,|JUMP_IF_FALSE_LABEL,)\s*[[](?<label>[a-zA-Z_\d]+)[\]](?<commentwhitespace>\s*)(?<comment>[#]+\s*[a-zA-Z#\s]+)*", MatchEval);
+#endif
 
             currentLabelTable = null;
 
             return assemblyString;
         }
 
+#if !USE_UDON_LABELS
         private static string MatchEval(Match match)
         {
             GroupCollection groupCollection = match.Groups;
@@ -70,6 +76,7 @@ namespace UdonSharp
 
             return replaceStr;
         }
+#endif
 
         public int GetExternStrCount()
         {
@@ -121,6 +128,9 @@ namespace UdonSharp
 
         public void AddJump(JumpLabel jumpTarget, string comment = "")
         {
+#if USE_UDON_LABELS
+            AppendCommentedLine($"JUMP, {jumpTarget.uniqueName}", comment);
+#else
             if (jumpTarget.IsResolved)
             {
                 AppendCommentedLine($"JUMP, {jumpTarget.AddresStr()}", comment);
@@ -129,6 +139,7 @@ namespace UdonSharp
             {
                 AppendCommentedLine($"JUMP_LABEL, [{jumpTarget.uniqueName}]", comment);
             }
+#endif
 
             programCounter += UdonSharpUtils.GetUdonInstructionSize("JUMP");
         }
@@ -147,6 +158,9 @@ namespace UdonSharp
 
         public void AddJumpIfFalse(JumpLabel jumpTarget, string comment = "")
         {
+#if USE_UDON_LABELS
+            AppendCommentedLine($"JUMP_IF_FALSE, {jumpTarget.uniqueName}", comment);
+#else
             if (jumpTarget.IsResolved)
             {
                 AppendCommentedLine($"JUMP_IF_FALSE, {jumpTarget.AddresStr()}", comment);
@@ -155,6 +169,7 @@ namespace UdonSharp
             {
                 AppendCommentedLine($"JUMP_IF_FALSE_LABEL, [{jumpTarget.uniqueName}]", comment);
             }
+#endif
 
             programCounter += UdonSharpUtils.GetUdonInstructionSize("JUMP_IF_FALSE");
         }
@@ -180,6 +195,10 @@ namespace UdonSharp
                 throw new System.Exception($"Target jump label {jumpLabel.uniqueName} has already been used!");
 
             jumpLabel.resolvedAddress = (uint)programCounter;
+
+#if USE_UDON_LABELS
+            AppendCommentedLine($"{jumpLabel.uniqueName}:", comment);
+#endif
             //AppendCommentedLine("NOP", comment);
             //programCounter += UdonSharpUtils.GetUdonInstructionSize("NOP");
         }
