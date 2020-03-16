@@ -77,7 +77,10 @@ public class <TemplateClassName> : UdonSharpBehaviour
                     EditorGUILayout.PropertyField(settings.FindProperty("newScriptTemplateOverride"), templateOverrideLabel);
 
                     if (EditorGUI.EndChangeCheck())
+                    {
                         settings.ApplyModifiedProperties();
+                        EditorUtility.SetDirty(UdonSharpSettingsObject.GetOrCreateSettings());
+                    }
                 },
             };
 
