@@ -220,6 +220,9 @@ namespace UdonSharp
         public override void VisitClassDeclaration(ClassDeclarationSyntax node)
         {
             UpdateSyntaxNode(node);
+            
+            if (node.BaseList == null)
+                throw new System.NotSupportedException("UdonSharp only supports classes that  from 'UdonSharpBehaviour' at the moment");
 
             Visit(node.BaseList);
 
@@ -902,7 +905,7 @@ namespace UdonSharp
                 }
                 catch (System.Exception)
                 {
-                    throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operand of type '{operandCapture.GetReturnType().Name}'");
+                    throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operand of type '{UdonSharpUtils.PrettifyTypeName(operandCapture.GetReturnType())}'");
                 }
             }
         }
@@ -956,7 +959,7 @@ namespace UdonSharp
                 }
                 catch (System.Exception)
                 {
-                    throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operand of type '{operandCapture.GetReturnType().Name}'");
+                    throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operand of type '{UdonSharpUtils.PrettifyTypeName(operandCapture.GetReturnType())}'");
                 }
             }
         }
@@ -1421,7 +1424,7 @@ namespace UdonSharp
                 }
 
                 if (operatorMethods.Count == 0)
-                    throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operands of type '{lhsType.Name}' and '{rhsType.Name}'");
+                    throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operands of type '{UdonSharpUtils.PrettifyTypeName(lhsType)}' and '{UdonSharpUtils.PrettifyTypeName(rhsType)}'");
                 
                 using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
                 {
@@ -1481,7 +1484,7 @@ namespace UdonSharp
                         }
                         else
                         {
-                            throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operands of type '{lhsType.Name}' and '{rhsType.Name}'");
+                            throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operands of type '{UdonSharpUtils.PrettifyTypeName(lhsType)}' and '{UdonSharpUtils.PrettifyTypeName(rhsType)}'");
                         }
                     }
                     
@@ -1491,7 +1494,7 @@ namespace UdonSharp
                     if (invokedMethod.DeclaringType == typeof(object) && invokedMethod.Name == "Equals")
                     {
                         if (lhsType != rhsType) // Only allow exact enum comparisons
-                            throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operands of type '{lhsType.Name}' and '{rhsType.Name}'");
+                            throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operands of type '{UdonSharpUtils.PrettifyTypeName(lhsType)}' and '{UdonSharpUtils.PrettifyTypeName(rhsType)}'");
 
                         BuiltinOperatorType equalityOperatorType = SyntaxKindToBuiltinOperator(node.Kind());
                         if (equalityOperatorType == BuiltinOperatorType.Inequality) // We need to invert the result manually

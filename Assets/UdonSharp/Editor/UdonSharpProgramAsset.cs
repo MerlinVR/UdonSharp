@@ -20,22 +20,6 @@ namespace UdonSharp
     [CreateAssetMenu(menuName = "VRChat/Udon/Udon C# Program Asset", fileName = "New Udon C# Program Asset")]
     public class UdonSharpProgramAsset : UdonAssemblyProgramAsset
     {
-        private readonly string programCsTemplate = @"
-using UdonSharp;
-using UnityEngine;
-using VRC.SDKBase;
-using VRC.Udon;
-
-[AddComponentMenu("""")]
-public class <TemplateClassName> : UdonSharpBehaviour
-{
-    void Start()
-    {
-        
-    }
-}
-";
-
         [SerializeField]
         public MonoScript sourceCsScript;
 
@@ -203,13 +187,12 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 //string initialPath = Path.GetDirectoryName(thisPath);
                 string fileName = Path.GetFileNameWithoutExtension(thisPath).Replace(" Udon C# Program Asset", "").Replace(" ", "").Replace("#", "Sharp");
 
-                string chosenFilePath = EditorUtility.SaveFilePanelInProject("Save UdonScript File", fileName, "cs", "Save UdonScript file");
-
-                string chosenFileName = Path.GetFileNameWithoutExtension(chosenFilePath).Replace(" ", "").Replace("#", "Sharp");
+                string chosenFilePath = EditorUtility.SaveFilePanelInProject("Save UdonSharp File", fileName, "cs", "Save UdonSharp file");
 
                 if (chosenFilePath.Length > 0)
                 {
-                    string fileContents = programCsTemplate.Replace("<TemplateClassName>", chosenFileName);
+                    string chosenFileName = Path.GetFileNameWithoutExtension(chosenFilePath).Replace(" ", "").Replace("#", "Sharp");
+                    string fileContents = UdonSharpSettingsObject.GetProgramTemplateString().Replace("<TemplateClassName>", chosenFileName);
 
                     File.WriteAllText(chosenFilePath, fileContents);
 

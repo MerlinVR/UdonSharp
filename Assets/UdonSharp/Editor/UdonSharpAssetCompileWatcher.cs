@@ -23,6 +23,7 @@ namespace UdonSharp
         static readonly object modifiedFileLock = new object();
 
         static HashSet<string> modifiedFilePaths = new HashSet<string>();
+        static HashSet<string> renamedFilePaths = new HashSet<string>();
 
         static UdonSharpAssetCompileWatcher()
         {
@@ -30,13 +31,12 @@ namespace UdonSharp
 
             AssemblyReloadEvents.beforeAssemblyReload += CleanupWatcher;
 
-            FileSystemWatcher fileSystemWatcher;
-
             fileSystemWatcher = new FileSystemWatcher("Assets/", "*.cs");
             fileSystemWatcher.IncludeSubdirectories = true;
 
-            fileSystemWatcher.NotifyFilter = NotifyFilters.LastWrite;
+            fileSystemWatcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
             fileSystemWatcher.Changed += OnSourceFileChanged;
+            fileSystemWatcher.Renamed += OnSourceFileRenamed;
             fileSystemWatcher.EnableRaisingEvents = true;
         }
 
@@ -50,6 +50,9 @@ namespace UdonSharp
 
         static void HandleScriptModifications(List<MonoScript> scripts)
         {
+            if (!UdonSharpSettingsObject.GetOrCreateSettings().autoCompileOnModify)
+                return;
+
             string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
 
             List<UdonSharpProgramAsset> udonSharpPrograms = new List<UdonSharpProgramAsset>();
@@ -97,6 +100,16 @@ namespace UdonSharp
 
             if (modifiedScripts.Count > 0)
                 HandleScriptModifications(modifiedScripts);
+
+            //lock (modifiedFileLock)
+            //{
+            //    foreach (string renamedFile in renamedFilePaths)
+            //    {
+            //        Debug.Log(renamedFile);
+            //    }
+
+            //    renamedFilePaths.Clear();
+            //}
         }
 
         static void OnSourceFileChanged(object source, FileSystemEventArgs args)
@@ -105,6 +118,14 @@ namespace UdonSharp
             {
                 modifiedFilePaths.Add(args.FullPath);
             }
+        }
+
+        static void OnSourceFileRenamed(object source, RenamedEventArgs args)
+        {
+            //lock (modifiedFileLock)
+            //{
+            //    renamedFilePaths.Add(args.Name);
+            //}
         }
     }
 
