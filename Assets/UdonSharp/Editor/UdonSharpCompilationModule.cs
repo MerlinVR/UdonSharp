@@ -40,10 +40,14 @@ namespace UdonSharp
             if (programAsset.sourceCsScript == null)
                 throw new System.ArgumentException($"Asset '{AssetDatabase.GetAssetPath(programAsset)}' does not have a valid program source to compile from");
 
+            programAsset.compileErrors.Clear();
+
             sourceCode = File.ReadAllText(AssetDatabase.GetAssetPath(programAsset.sourceCsScript));
 
             SyntaxTree tree = CSharpSyntaxTree.ParseText(sourceCode);
             int errorCount = 0;
+
+            string errorString = "";
 
             foreach (Diagnostic diagnostic in tree.GetDiagnostics())
             {
@@ -53,10 +57,12 @@ namespace UdonSharp
 
                     LinePosition linePosition = diagnostic.Location.GetLineSpan().StartLinePosition;
 
-                    UdonSharpUtils.LogBuildError($"error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}",
-                                                    AssetDatabase.GetAssetPath(programAsset.sourceCsScript).Replace("/", "\\"),
-                                                    linePosition.Line,
-                                                    linePosition.Character);
+                    errorString = UdonSharpUtils.LogBuildError($"error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}",
+                                                                AssetDatabase.GetAssetPath(programAsset.sourceCsScript).Replace("/", "\\"),
+                                                                linePosition.Line,
+                                                                linePosition.Character);
+
+                    programAsset.compileErrors.Add(errorString);
                 }
 
                 if (errorCount > 0)
@@ -82,31 +88,39 @@ namespace UdonSharp
             {
                 SyntaxNode currentNode = visitor.visitorContext.currentNode;
 
+                string logMessage = "";
+
                 if (currentNode != null)
                 {
                     FileLinePositionSpan lineSpan = currentNode.GetLocation().GetLineSpan();
 
-                    UdonSharpUtils.LogBuildError($"{e.GetType()}: {e.Message}",
-                                                    AssetDatabase.GetAssetPath(programAsset.sourceCsScript).Replace("/", "\\"),
-                                                    lineSpan.StartLinePosition.Line,
-                                                    lineSpan.StartLinePosition.Character);
+                    logMessage = UdonSharpUtils.LogBuildError($"{e.GetType()}: {e.Message}",
+                                                                AssetDatabase.GetAssetPath(programAsset.sourceCsScript).Replace("/", "\\"),
+                                                                lineSpan.StartLinePosition.Line,
+                                                                lineSpan.StartLinePosition.Character);
                 }
                 else
                 {
+                    logMessage = e.ToString();
                     Debug.LogException(e);
                 }
+                
+                programAsset.compileErrors.Add(logMessage);
 
                 errorCount++;
             }
 
-            string dataBlock = BuildHeapDataBlock();
-            string codeBlock = visitor.GetCompiledUasm();
+            if (errorCount == 0)
+            {
+                string dataBlock = BuildHeapDataBlock();
+                string codeBlock = visitor.GetCompiledUasm();
 
-            programAsset.SetUdonAssembly(dataBlock + codeBlock);
-            programAsset.AssembleCsProgram((uint)(moduleSymbols.GetAllUniqueChildSymbols().Count + visitor.GetExternStrCount()));
-            programAsset.behaviourIDHeapVarName = visitor.GetIDHeapVarName();
+                programAsset.SetUdonAssembly(dataBlock + codeBlock);
+                programAsset.AssembleCsProgram((uint)(moduleSymbols.GetAllUniqueChildSymbols().Count + visitor.GetExternStrCount()));
+                programAsset.behaviourIDHeapVarName = visitor.GetIDHeapVarName();
 
-            programAsset.fieldDefinitions = visitor.visitorContext.localFieldDefinitions;
+                programAsset.fieldDefinitions = visitor.visitorContext.localFieldDefinitions;
+            }
 
             return errorCount;
         }
@@ -136,10 +150,11 @@ namespace UdonSharp
             builder.AppendLine("", 0);
 
             // Prettify the symbol order in the data block
+            // Reflection info goes first so that we can use it for knowing what script threw an error from in game logs
             foreach (SymbolDefinition symbol in moduleSymbols.GetAllUniqueChildSymbols()
-                .OrderBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Public))
+                .OrderBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Reflection))
+                .ThenBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Public))
                 .ThenBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Private))
-                .ThenBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Reflection))
                 .ThenBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.This))
                 .ThenBy(e => !e.declarationType.HasFlag(SymbolDeclTypeFlags.Internal))
                 .ThenBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Constant))

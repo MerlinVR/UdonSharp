@@ -357,15 +357,19 @@ namespace UdonSharp
                 return type.Name;
         }
 
-        public static void LogBuildError(string message, string filePath, int line, int character)
+        public static string LogBuildError(string message, string filePath, int line, int character)
         {
             MethodInfo buildErrorLogMethod = typeof(UnityEngine.Debug).GetMethod("LogPlayerBuildError", BindingFlags.NonPublic | BindingFlags.Static);
 
+            string errorMessage = $"[UdonSharp] {filePath}({line},{character}): {message}";
+
             buildErrorLogMethod.Invoke(null, new object[] {
-                        $"[UdonSharp] {filePath}({line},{character}): {message}",
+                        errorMessage,
                         filePath,
                         line + 1,
                         character });
+
+            return errorMessage;
         }
     }
 }

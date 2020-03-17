@@ -37,7 +37,7 @@ namespace UdonSharp
     /// </summary>
     public class ExpressionCaptureScope : System.IDisposable
     {
-        string unresolvedAccessChain = "";
+        public string unresolvedAccessChain { get; private set; } = "";
         public ExpressionCaptureArchetype captureArchetype { get; private set; } = ExpressionCaptureArchetype.Unknown;
 
         public bool isAttributeCaptureScope { get; set; } = false;
@@ -100,7 +100,7 @@ namespace UdonSharp
 
         ~ExpressionCaptureScope()
         {
-            Debug.Assert(disposed == true, "Expression capture scope was not disposed!");
+            Debug.Assert(disposed, "Expression capture scope was not disposed!");
         }
         
         public void Dispose()

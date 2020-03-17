@@ -590,7 +590,7 @@ namespace UdonSharp
                     Visit(node.Type);
 
                     if (!typeCapture.IsType())
-                        throw new System.Exception("Type could not be parsed from variable declaration!");
+                        throw new System.Exception($"The type or namespace name '{typeCapture.unresolvedAccessChain}' could not be found (are you missing a using directive?)");
 
                     variableType = typeCapture.captureType;
                 }
@@ -657,6 +657,7 @@ namespace UdonSharp
 
             if (!visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Variable) &&
                 !visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Type) &&
+                //VRC.Udon.Editor.UdonEditorManager.Instance.GetTypeFromTypeString(udonTypeName) != null && // I'd assume that this should work instead of the ValidateUdonTypeName calls, but it doesn't pick up a bunch of types
                 !isUserDefinedType)
                 throw new System.NotSupportedException($"Udon does not support variables of type '{variableType.Name}' yet");
 

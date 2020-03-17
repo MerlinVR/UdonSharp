@@ -29,12 +29,34 @@ namespace UdonSharp
         [HideInInspector]
         public string behaviourIDHeapVarName;
 
+        [HideInInspector]
+        public List<string> compileErrors = new List<string>();
+
         [SerializeField, HideInInspector]
         private SerializationData serializationData;
 
-        private static bool showProgramUasm = false;
+        private bool showProgramUasm = false;
 
         private UdonBehaviour currentBehaviour = null;
+
+        private static GUIStyle errorTextStyle;
+
+        private void DrawCompileErrorTextArea()
+        {
+            if (compileErrors == null || compileErrors.Count == 0)
+                return;
+
+            if (errorTextStyle == null)
+            {
+                errorTextStyle = new GUIStyle(EditorStyles.textArea);
+                errorTextStyle.normal.textColor = new Color32(211, 34, 34, 255);
+                errorTextStyle.focused.textColor = errorTextStyle.normal.textColor;
+            }
+
+            // todo: convert this to a tree view that just has a list of selectable items that jump to the error
+            EditorGUILayout.LabelField($"Compile Error{(compileErrors.Count > 1 ? "s" : "")}", EditorStyles.boldLabel);
+            EditorGUILayout.TextArea(string.Join("\n", compileErrors.Select(e => e.Replace("[UdonSharp] ", ""))), errorTextStyle);
+        }
 
         protected override void DrawProgramSourceGUI(UdonBehaviour udonBehaviour, ref bool dirty)
         {
@@ -72,6 +94,7 @@ namespace UdonSharp
 
             DrawPublicVariables(udonBehaviour, ref dirty);
 
+            DrawCompileErrorTextArea();
             DrawAssemblyErrorTextArea();
 
             EditorGUILayout.Space();
