@@ -25,6 +25,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
 ";
 
         public bool autoCompileOnModify = true;
+        public bool compileAllScripts = true;
         public TextAsset newScriptTemplateOverride = null;
 
         internal static UdonSharpSettingsObject GetOrCreateSettings()
@@ -59,6 +60,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
     public class UdonSharpSettingsProvider
     {
         private static GUIContent autoCompileLabel = new GUIContent("Auto compile on modify", "Trigger a compile whenever a U# source file is modified.");
+        private static GUIContent compileAllLabel = new GUIContent("Compile all scripts", "Compile all scripts when a script is modified. This prevents some potential for weird issues where classes don't match");
         private static GUIContent templateOverrideLabel = new GUIContent("Script template override", "A custom override file to use as a template for newly created U# files. Put \"<TemplateClassName>\" in place of a class name for it to automatically populate with the file name.");
 
         [SettingsProvider]
@@ -70,15 +72,24 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 keywords = new HashSet<string>(new string[] { "Udon", "Sharp", "U#", "VRC", "VRChat" }),
                 guiHandler = (searchContext) =>
                 {
-                    SerializedObject settings = UdonSharpSettingsObject.GetSerializedSettings();
+                    UdonSharpSettingsObject settings = UdonSharpSettingsObject.GetOrCreateSettings();
+                    SerializedObject settingsObject = UdonSharpSettingsObject.GetSerializedSettings();
 
                     EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.PropertyField(settings.FindProperty("autoCompileOnModify"), autoCompileLabel);
-                    EditorGUILayout.PropertyField(settings.FindProperty("newScriptTemplateOverride"), templateOverrideLabel);
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettingsObject.autoCompileOnModify)), autoCompileLabel);
+                    
+                    if (settings.autoCompileOnModify)
+                    {
+                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettingsObject.compileAllScripts)), compileAllLabel);
+                        if (!settings.compileAllScripts)
+                            EditorGUILayout.HelpBox("Only compiling the script that has been modified can cause issues if you have multiple scripts communicating via methods.", MessageType.Warning);
+                    }
+
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty("newScriptTemplateOverride"), templateOverrideLabel);
 
                     if (EditorGUI.EndChangeCheck())
                     {
-                        settings.ApplyModifiedProperties();
+                        settingsObject.ApplyModifiedProperties();
                         EditorUtility.SetDirty(UdonSharpSettingsObject.GetOrCreateSettings());
                     }
                 },

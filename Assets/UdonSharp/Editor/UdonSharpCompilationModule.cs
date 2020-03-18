@@ -26,6 +26,8 @@ namespace UdonSharp
         
         public HashSet<FieldDeclarationSyntax> fieldsWithInitializers;
 
+        public int ErrorCount { get; private set; } = 0;
+
         public CompilationModule(UdonSharpProgramAsset sourceAsset)
         {
             programAsset = sourceAsset;
@@ -64,11 +66,12 @@ namespace UdonSharp
 
                     programAsset.compileErrors.Add(errorString);
                 }
+            }
 
-                if (errorCount > 0)
-                {
-                    return errorCount;
-                }
+            if (errorCount > 0)
+            {
+                ErrorCount = errorCount;
+                return errorCount;
             }
 
             UdonSharpFieldVisitor fieldVisitor = new UdonSharpFieldVisitor(fieldsWithInitializers);

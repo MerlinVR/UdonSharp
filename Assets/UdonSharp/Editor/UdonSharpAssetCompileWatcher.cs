@@ -75,8 +75,15 @@ namespace UdonSharp
 
             if (assetsToUpdate.Count > 0)
             {
-                UdonSharpCompiler compiler = new UdonSharpCompiler(assetsToUpdate.ToArray());
-                compiler.Compile();
+                if (UdonSharpSettingsObject.GetOrCreateSettings().compileAllScripts)
+                {
+                    UdonSharpProgramAsset.CompileAllCsPrograms();
+                }
+                else
+                {
+                    UdonSharpCompiler compiler = new UdonSharpCompiler(assetsToUpdate.ToArray());
+                    compiler.Compile();
+                }
             }
         }
 

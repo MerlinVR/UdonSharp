@@ -149,7 +149,7 @@ namespace UdonSharp
             compiler.Compile();
         }
 
-        private void CompileAllCsPrograms()
+        public static void CompileAllCsPrograms()
         {
             string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
 

@@ -13,4 +13,5 @@ MonoBehaviour:
   m_Name: UdonSharpSettings
   m_EditorClassIdentifier: UdonSharp.Editor:UdonSharp:UdonSharpSettingsObject
   autoCompileOnModify: 1
+  compileAllScripts: 1
   newScriptTemplateOverride: {fileID: 0}
