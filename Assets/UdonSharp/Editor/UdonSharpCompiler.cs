@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CSharp;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Profiling;
 using VRC.Udon.Common.Interfaces;
 
 namespace UdonSharp
@@ -33,6 +34,8 @@ namespace UdonSharp
 
         public void Compile()
         {
+            Profiler.BeginSample("UdonSharp Compile");
+
             System.Diagnostics.Stopwatch compileTimer = new System.Diagnostics.Stopwatch();
             compileTimer.Start();
 
@@ -90,6 +93,8 @@ namespace UdonSharp
                     Debug.Log($"[UdonSharp] Compile of script{(modules.Length > 1 ? "s" : "")} {string.Join(", ", modules.Select(e => Path.GetFileName(AssetDatabase.GetAssetPath(e.programAsset.sourceCsScript))))} finished in {compileTimer.Elapsed.ToString("mm\\:ss\\.fff")}");
                 }
             }
+
+            Profiler.EndSample();
         }
 
         public int AssignHeapConstants()

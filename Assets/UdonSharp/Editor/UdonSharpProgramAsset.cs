@@ -55,7 +55,7 @@ namespace UdonSharp
 
             // todo: convert this to a tree view that just has a list of selectable items that jump to the error
             EditorGUILayout.LabelField($"Compile Error{(compileErrors.Count > 1 ? "s" : "")}", EditorStyles.boldLabel);
-            EditorGUILayout.TextArea(string.Join("\n", compileErrors.Select(e => e.Replace("[UdonSharp] ", ""))), errorTextStyle);
+            EditorGUILayout.TextArea(string.Join("\n", compileErrors.Select(e => e.Replace("[<color=#FF00FF>UdonSharp</color>] ", ""))), errorTextStyle);
         }
 
         protected override void DrawProgramSourceGUI(UdonBehaviour udonBehaviour, ref bool dirty)

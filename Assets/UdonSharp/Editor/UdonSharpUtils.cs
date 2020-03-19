@@ -361,7 +361,7 @@ namespace UdonSharp
         {
             MethodInfo buildErrorLogMethod = typeof(UnityEngine.Debug).GetMethod("LogPlayerBuildError", BindingFlags.NonPublic | BindingFlags.Static);
 
-            string errorMessage = $"[UdonSharp] {filePath}({line},{character}): {message}";
+            string errorMessage = $"[<color=#FF00FF>UdonSharp</color>] {filePath}({line},{character}): {message}";
 
             buildErrorLogMethod.Invoke(null, new object[] {
                         errorMessage,

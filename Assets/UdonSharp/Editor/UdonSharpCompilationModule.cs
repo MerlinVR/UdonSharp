@@ -8,6 +8,7 @@ using System.Reflection;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace UdonSharp
 {
@@ -42,11 +43,16 @@ namespace UdonSharp
             if (programAsset.sourceCsScript == null)
                 throw new System.ArgumentException($"Asset '{AssetDatabase.GetAssetPath(programAsset)}' does not have a valid program source to compile from");
 
+            Profiler.BeginSample("Compile Module");
+
             programAsset.compileErrors.Clear();
 
             sourceCode = File.ReadAllText(AssetDatabase.GetAssetPath(programAsset.sourceCsScript));
 
+            Profiler.BeginSample("Parse AST");
             SyntaxTree tree = CSharpSyntaxTree.ParseText(sourceCode);
+            Profiler.EndSample();
+
             int errorCount = 0;
 
             string errorString = "";
@@ -71,9 +77,11 @@ namespace UdonSharp
             if (errorCount > 0)
             {
                 ErrorCount = errorCount;
+                Profiler.EndSample();
                 return errorCount;
             }
 
+            Profiler.BeginSample("Visit");
             UdonSharpFieldVisitor fieldVisitor = new UdonSharpFieldVisitor(fieldsWithInitializers);
             fieldVisitor.Visit(tree.GetRoot());
 
@@ -112,18 +120,26 @@ namespace UdonSharp
 
                 errorCount++;
             }
+            Profiler.EndSample();
 
             if (errorCount == 0)
             {
+                Profiler.BeginSample("Build assembly");
                 string dataBlock = BuildHeapDataBlock();
                 string codeBlock = visitor.GetCompiledUasm();
 
                 programAsset.SetUdonAssembly(dataBlock + codeBlock);
+                Profiler.EndSample();
+                
+                Profiler.BeginSample("Assemble Program");
                 programAsset.AssembleCsProgram((uint)(moduleSymbols.GetAllUniqueChildSymbols().Count + visitor.GetExternStrCount()));
+                Profiler.EndSample();
                 programAsset.behaviourIDHeapVarName = visitor.GetIDHeapVarName();
 
                 programAsset.fieldDefinitions = visitor.visitorContext.localFieldDefinitions;
             }
+
+            Profiler.EndSample();
 
             return errorCount;
         }
