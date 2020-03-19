@@ -1939,7 +1939,100 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
-            throw new System.NotImplementedException("UdonSharp does not yet support switch statements");
+            JumpLabel switchExitLabel = visitorContext.labelTable.GetNewJumpLabel("switchStatementExit");
+
+            visitorContext.breakLabelStack.Push(switchExitLabel);
+
+            SymbolDefinition switchExpressionSymbol = null;
+            using (ExpressionCaptureScope switchExpressionScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                Visit(node.Expression);
+                switchExpressionSymbol = switchExpressionScope.ExecuteGet();
+            }
+
+            JumpLabel[] sectionJumps = new JumpLabel[node.Sections.Count];
+
+            JumpLabel defaultJump = null;
+
+            JumpLabel nextLabelJump = visitorContext.labelTable.GetNewJumpLabel("nextSwitchLabelJump");
+
+            // Iterate all the sections and build the condition jumps first
+            for (int i = 0; i < node.Sections.Count; ++i)
+            {
+                SwitchSectionSyntax switchSection = node.Sections[i];
+                JumpLabel sectionJump = visitorContext.labelTable.GetNewJumpLabel("switchStatmentSectionJump");
+                sectionJumps[i] = sectionJump;
+
+                for (int j = 0; j < switchSection.Labels.Count; ++j)
+                {
+                    SwitchLabelSyntax switchLabel = switchSection.Labels[j];
+                    SymbolDefinition switchLabelValue = null;
+
+                    using (ExpressionCaptureScope conditionValueCapture = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        Visit(switchLabel);
+
+                        if (!conditionValueCapture.IsUnknownArchetype())
+                            switchLabelValue = conditionValueCapture.ExecuteGet();
+                    }
+
+                    if (switchLabelValue == null)
+                    {
+                        defaultJump = sectionJump;
+                        continue;
+                    }
+
+                    visitorContext.uasmBuilder.AddJumpLabel(nextLabelJump);
+                    nextLabelJump = visitorContext.labelTable.GetNewJumpLabel("nextSwitchLabelJump");
+
+                    SymbolDefinition conditionEqualitySymbol = null;
+                    using (ExpressionCaptureScope equalityCheckScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        List<MethodInfo> operatorMethods = new List<MethodInfo>();
+                        operatorMethods.AddRange(UdonSharpUtils.GetOperators(switchExpressionSymbol.symbolCsType, BuiltinOperatorType.Equality));
+                        operatorMethods.AddRange(GetImplicitHigherPrecisionOperator(switchExpressionSymbol.symbolCsType, switchLabelValue.symbolCsType, BuiltinOperatorType.Equality));
+                        equalityCheckScope.SetToMethods(operatorMethods.ToArray());
+                        conditionEqualitySymbol = equalityCheckScope.Invoke(new SymbolDefinition[] { switchExpressionSymbol, switchLabelValue });
+                    }
+
+                    // Jump past the jump to the section if false
+                    visitorContext.uasmBuilder.AddJumpIfFalse(nextLabelJump, conditionEqualitySymbol);
+                    visitorContext.uasmBuilder.AddJump(sectionJump);
+                }
+            }
+
+            visitorContext.uasmBuilder.AddJumpLabel(nextLabelJump);
+
+            if (defaultJump != null)
+                visitorContext.uasmBuilder.AddJump(defaultJump);
+            else
+                visitorContext.uasmBuilder.AddJump(switchExitLabel); 
+
+            // Now fill out the code sections for each condition and resolve the jump labels for each section
+            for (int i = 0; i < node.Sections.Count; ++i)
+            {
+                visitorContext.uasmBuilder.AddJumpLabel(sectionJumps[i]);
+                foreach (StatementSyntax statment in node.Sections[i].Statements)
+                {
+                    Visit(statment);
+                }
+            }
+
+            visitorContext.uasmBuilder.AddJumpLabel(switchExitLabel);
+            visitorContext.breakLabelStack.Pop();
+        }
+
+        public override void VisitDefaultSwitchLabel(DefaultSwitchLabelSyntax node)
+        {
+            // Just do nothing here so the outer scope is unknown type
+            UpdateSyntaxNode(node);
+        }
+
+        public override void VisitCaseSwitchLabel(CaseSwitchLabelSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            Visit(node.Value);
         }
 
         public override void VisitGotoStatement(GotoStatementSyntax node)
