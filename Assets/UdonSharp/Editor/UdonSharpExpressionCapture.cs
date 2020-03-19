@@ -1111,11 +1111,12 @@ namespace UdonSharp
             }
 
             SymbolDefinition[] expandedParams = GetExpandedInvokeParams(targetMethod, invokeParams);
+            bool isUserTypeGetComponent = targetMethod.Name.StartsWith("GetComponent") && genericTypeArguments != null && genericTypeArguments.First().IsSubclassOf(typeof(UdonSharpBehaviour));
 
             // Now make the needed symbol definitions and run the invoke
             if (!targetMethod.IsStatic && !(targetMethod is ConstructorInfo)/* && targetMethod.Name != "Instantiate"*/) // Constructors don't take an instance argument, but are still classified as an instance method
             {
-                if (genericTypeArguments != null && typeof(GameObject).IsAssignableFrom(accessSymbol.symbolCsType)) // Handle GetComponent<T> on gameobjects by getting their transform first
+                if (genericTypeArguments != null && typeof(GameObject).IsAssignableFrom(accessSymbol.symbolCsType) && !isUserTypeGetComponent) // Handle GetComponent<T> on gameobjects by getting their transform first
                 {
                     using (ExpressionCaptureScope transformComponentGetScope = new ExpressionCaptureScope(visitorContext, null))
                     {
@@ -1142,8 +1143,7 @@ namespace UdonSharp
             else
                 throw new System.Exception("Invalid target method type");
 
-            if (targetMethod.Name.StartsWith("GetComponent") &&
-                genericTypeArguments != null && genericTypeArguments.First().IsSubclassOf(typeof(UdonSharpBehaviour)))
+            if (isUserTypeGetComponent)
             {
                 returnSymbol = HandleGenericUSharpGetComponent(targetMethod as MethodInfo, genericTypeArguments.First(), invokeParams);
             }
