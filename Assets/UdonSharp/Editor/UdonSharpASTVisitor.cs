@@ -364,9 +364,8 @@ namespace UdonSharp
             UpdateSyntaxNode(node);
 
             System.Type arrayType = null;
-
-            if (node.Initializer != null)
-                throw new System.NotSupportedException("UdonSharp does not yet support initializer lists for arrays");
+            
+            bool hasInitializer = node.Initializer != null;
 
             using (ExpressionCaptureScope arrayTypeScope = new ExpressionCaptureScope(visitorContext, null))
             {
@@ -379,15 +378,34 @@ namespace UdonSharp
                 SymbolDefinition arraySymbol = visitorContext.topTable.CreateUnnamedSymbol(arrayType, SymbolDeclTypeFlags.Internal);
                 varCaptureScope.SetToLocalSymbol(arraySymbol);
 
-                if (node.Type.RankSpecifiers.Count != 1)
+                if (node.Type.RankSpecifiers.Count != 1 || node.Type.RankSpecifiers[0].Sizes.Count != 1)
                     throw new System.NotSupportedException("UdonSharp does not support multidimensional or jagged arrays at the moment");
 
                 SymbolDefinition arrayRankSymbol = null;
 
-                using (ExpressionCaptureScope rankCapture = new ExpressionCaptureScope(visitorContext, null))
+                ArrayRankSpecifierSyntax arrayRankSpecifier = node.Type.RankSpecifiers[0];
+
+                if (arrayRankSpecifier.Sizes[0] is OmittedArraySizeExpressionSyntax) // Automatically deduce array size from the number of initialization expressions
                 {
-                    Visit(node.Type.RankSpecifiers[0]);
-                    arrayRankSymbol = rankCapture.ExecuteGet();
+                    arrayRankSymbol = visitorContext.topTable.CreateConstSymbol(typeof(int), node.Initializer.Expressions.Count);
+                }
+                else
+                {
+                    using (ExpressionCaptureScope rankCapture = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        Visit(node.Type.RankSpecifiers[0]);
+                        arrayRankSymbol = rankCapture.ExecuteGet();
+                    }
+                }
+
+                if (hasInitializer && arrayRankSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) && ((int)arrayRankSymbol.symbolDefaultValue) != node.Initializer.Expressions.Count)
+                {
+                    UpdateSyntaxNode(node.Initializer);
+                    throw new System.ArgumentException($"An array initializer of length '{(int)arrayRankSymbol.symbolDefaultValue}' is expected");
+                }
+                else if (hasInitializer && !arrayRankSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant))
+                {
+                    throw new System.ArgumentException("A constant value is expected");
                 }
 
                 using (ExpressionCaptureScope constructorCaptureScope = new ExpressionCaptureScope(visitorContext, null))
@@ -399,6 +417,111 @@ namespace UdonSharp
                         newArraySymbol.symbolCsType = arraySymbol.userCsType;
 
                     varCaptureScope.ExecuteSet(newArraySymbol);
+                }
+
+                if (hasInitializer)
+                {
+                    for (int i = 0; i < node.Initializer.Expressions.Count; ++i)
+                    {
+                        using (ExpressionCaptureScope arraySetIdxScope = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            arraySetIdxScope.SetToLocalSymbol(arraySymbol);
+                            arraySetIdxScope.HandleArrayIndexerAccess(visitorContext.topTable.CreateConstSymbol(typeof(int), i));
+
+                            using (ExpressionCaptureScope initializerExpressionCapture = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                Visit(node.Initializer.Expressions[i]);
+                                arraySetIdxScope.ExecuteSetDirect(initializerExpressionCapture);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Arrays that are created using only an initializer list `new [] { value, value, value }`
+        public override void VisitImplicitArrayCreationExpression(ImplicitArrayCreationExpressionSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            var expressions = node.Initializer.Expressions;
+
+            SymbolDefinition[] initializerSymbols = new SymbolDefinition[expressions.Count];
+
+            for (int i = 0; i < expressions.Count; ++i)
+            {
+                ExpressionSyntax expression = expressions[i];
+
+                using (ExpressionCaptureScope initializerExpressionScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    Visit(expression);
+                    initializerSymbols[i] = initializerExpressionScope.ExecuteGet();
+                }
+            }
+
+            HashSet<System.Type> symbolTypes = new HashSet<System.Type>();
+
+            foreach (SymbolDefinition symbolDefinition in initializerSymbols)
+            {
+                symbolTypes.Add(symbolDefinition.userCsType);
+            }
+
+            System.Type arrayType = null;
+
+            if (symbolTypes.Count == 1)
+            {
+                arrayType = symbolTypes.First();
+            }
+            else
+            {
+                HashSet<System.Type> validTypeSet = new HashSet<System.Type>();
+
+                foreach (System.Type initializerType in symbolTypes)
+                {
+                    if (validTypeSet.Contains(initializerType))
+                        continue;
+
+                    bool isImplicitMatch = true;
+                    foreach (System.Type otherType in symbolTypes) // Make sure all other symbols can be implicitly assigned to this type
+                    {
+                        isImplicitMatch &= initializerType.IsImplicitlyAssignableFrom(otherType);
+                    }
+
+                    if (isImplicitMatch)
+                        validTypeSet.Add(initializerType);
+                }
+
+                if (validTypeSet.Count != 1)
+                    throw new System.Exception("No best type found for implicitly-typed array");
+
+                arrayType = validTypeSet.First();
+            }
+
+            SymbolDefinition arraySymbol = visitorContext.topTable.CreateUnnamedSymbol(arrayType.MakeArrayType(), SymbolDeclTypeFlags.Internal);
+
+            using (ExpressionCaptureScope arraySetScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
+            {
+                arraySetScope.SetToLocalSymbol(arraySymbol);
+
+                using (ExpressionCaptureScope constructorCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    constructorCaptureScope.SetToMethods(arraySymbol.symbolCsType.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
+
+                    SymbolDefinition newArraySymbol = constructorCaptureScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(int), initializerSymbols.Length) });
+                    if (arraySymbol.IsUserDefinedBehaviour())
+                        newArraySymbol.symbolCsType = arraySymbol.userCsType;
+
+                    arraySetScope.ExecuteSet(newArraySymbol);
+                }
+            }
+
+            for (int i = 0; i < initializerSymbols.Length; ++i)
+            {
+                using (ExpressionCaptureScope arrayIdxSetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    arrayIdxSetScope.SetToLocalSymbol(arraySymbol);
+                    arrayIdxSetScope.HandleArrayIndexerAccess(visitorContext.topTable.CreateConstSymbol(typeof(int), i));
+                    arrayIdxSetScope.ExecuteSet(initializerSymbols[i]);
                 }
             }
         }
@@ -2145,7 +2268,7 @@ namespace UdonSharp
             }
 
             if (node.Initializer != null)
-                throw new System.NotImplementedException("Initializer lists are not yet supported by UdonSharp");
+                throw new System.NotImplementedException("Object initializers are not yet supported by UdonSharp");
 
             using (ExpressionCaptureScope creationCaptureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
             {

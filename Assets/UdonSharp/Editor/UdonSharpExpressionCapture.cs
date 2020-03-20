@@ -448,6 +448,12 @@ namespace UdonSharp
             }
         }
 
+        // Just a stub for now that will be extended to avoid the COPY instruction when possible
+        public void ExecuteSetDirect(ExpressionCaptureScope valueExpression, bool explicitCast = false)
+        {
+            ExecuteSet(valueExpression.ExecuteGet(), explicitCast);
+        }
+
         // There's probably a better place for this function...
         public SymbolDefinition CastSymbolToType(SymbolDefinition sourceSymbol, System.Type targetType, bool isExplicit, bool needsNewSymbol = false)
         {
