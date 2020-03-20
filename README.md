@@ -11,8 +11,7 @@ This compiler is in a very early state with only about two weeks of work on it s
 ## C# features supported
 - Automatic property and field accessor handling for getting and setting
 - Flow control
-  - Supports: `if` `else` `while` `for` `do` `foreach` `return` `break` `continue` `ternary operator (condition ? true : false)` `??`
-  - `switch` is currently not supported, but is planned
+  - Supports: `if` `else` `while` `for` `do` `foreach` `switch` `return` `break` `continue` `ternary operator (condition ? true : false)` `??`
   - `goto` is not currently supported: https://xkcd.com/292/ I may add it in the future anyways
 - Extern method overload resolution with support for default arguments and `params` argument lists
 - Implicit and explicit type conversions
