@@ -88,7 +88,16 @@ namespace UdonSharp
             MethodVisitor methodVisitor = new MethodVisitor(resolver, moduleSymbols, moduleLabels);
             methodVisitor.Visit(tree.GetRoot());
 
-            ASTVisitor visitor = new ASTVisitor(resolver, moduleSymbols, moduleLabels, methodVisitor.definedMethods, classDefinitions);
+            UdonSharpSettingsObject settings = UdonSharpSettingsObject.GetOrCreateSettings();
+
+            ClassDebugInfo debugInfo = null;
+
+            if (settings.buildDebugInfo)
+            {
+                debugInfo = new ClassDebugInfo(sourceCode, settings.includeInlineCode);
+            }
+
+            ASTVisitor visitor = new ASTVisitor(resolver, moduleSymbols, moduleLabels, methodVisitor.definedMethods, classDefinitions, debugInfo);
 
             try
             {
@@ -115,7 +124,7 @@ namespace UdonSharp
                     logMessage = e.ToString();
                     Debug.LogException(e);
                 }
-                
+
                 programAsset.compileErrors.Add(logMessage);
 
                 errorCount++;
@@ -137,6 +146,11 @@ namespace UdonSharp
                 programAsset.behaviourIDHeapVarName = visitor.GetIDHeapVarName();
 
                 programAsset.fieldDefinitions = visitor.visitorContext.localFieldDefinitions;
+
+                if (debugInfo != null)
+                    debugInfo.FinalizeDebugInfo();
+
+                programAsset.debugInfo = debugInfo;
             }
 
             Profiler.EndSample();

@@ -37,8 +37,9 @@ namespace UdonSharp
 
         // Debugging info
         public SyntaxNode currentNode = null;
+        public ClassDebugInfo debugInfo = null;
 
-        public ASTVisitorContext(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTableIn)
+        public ASTVisitorContext(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTableIn, ClassDebugInfo debugInfoIn = null)
         {
             resolverContext = resolver;
 
@@ -51,6 +52,11 @@ namespace UdonSharp
 
             uasmBuilder = new AssemblyBuilder();
 
+            if (debugInfoIn != null)
+            {
+                debugInfo = debugInfoIn;
+                debugInfo.assemblyBuilder = uasmBuilder;
+            }
         }
 
         public void PopTable()
@@ -91,10 +97,10 @@ namespace UdonSharp
         public ASTVisitorContext visitorContext { get; private set; }
         private Stack<string> namespaceStack = new Stack<string>();
 
-        public ASTVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable, List<MethodDefinition> methodDefinitions, List<ClassDefinition> externUserClassDefinitions)
+        public ASTVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable, List<MethodDefinition> methodDefinitions, List<ClassDefinition> externUserClassDefinitions, ClassDebugInfo debugInfo)
             : base(SyntaxWalkerDepth.Node)
         {
-            visitorContext = new ASTVisitorContext(resolver, rootTable, labelTable);
+            visitorContext = new ASTVisitorContext(resolver, rootTable, labelTable, debugInfo);
             visitorContext.returnJumpTarget = rootTable.CreateNamedSymbol("returnTarget", typeof(uint), SymbolDeclTypeFlags.Internal);
             visitorContext.definedMethods = methodDefinitions;
             visitorContext.externClassDefinitions = externUserClassDefinitions;
@@ -128,6 +134,9 @@ namespace UdonSharp
         private void UpdateSyntaxNode(SyntaxNode node)
         {
             visitorContext.currentNode = node;
+
+            if (visitorContext.debugInfo != null)
+                visitorContext.debugInfo.UpdateSyntaxNode(node);
         }
 
         public override void DefaultVisit(SyntaxNode node)

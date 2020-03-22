@@ -32,6 +32,9 @@ namespace UdonSharp
         [HideInInspector]
         public List<string> compileErrors = new List<string>();
 
+        [HideInInspector]
+        public ClassDebugInfo debugInfo = null;
+
         [SerializeField, HideInInspector]
         private SerializationData serializationData;
 

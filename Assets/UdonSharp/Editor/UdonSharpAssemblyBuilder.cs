@@ -10,7 +10,7 @@ namespace UdonSharp
     public class AssemblyBuilder
     {
         StringBuilder assemblyTextBuilder = new StringBuilder();
-        int programCounter = 0;
+        public int programCounter { get; private set; } = 0;
 
         private HashSet<string> externStringSet = new HashSet<string>();
 

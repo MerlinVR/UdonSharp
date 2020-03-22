@@ -289,13 +289,18 @@ namespace UdonSharp
             typeof(object),
         };
 
+        public static bool IsBuiltinType(System.Type type)
+        {
+            return builtinTypes.Contains(type);
+        }
+
         public static MethodInfo[] GetOperators(System.Type type, BuiltinOperatorType builtinOperatorType)
         {
             List<MethodInfo> foundOperators = new List<MethodInfo>();
 
             // If it's a builtin type then create a fake operator methodinfo for it.
             // If this operator doesn't actually exist, it will get filtered by the overload finding
-            if (builtinTypes.Contains(type))
+            if (IsBuiltinType(type))
                 foundOperators.Add(new OperatorMethodInfo(type, builtinOperatorType));
 
             // Now look for operators that the type defines
