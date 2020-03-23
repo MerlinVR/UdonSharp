@@ -333,7 +333,8 @@ namespace UdonSharp
                 throw new Exception("Could not find DoObjectField() method");
 
             Rect objectRect = EditorGUILayout.GetControlRect();
-            int id = GUIUtility.GetControlID(typeof(UnityEngine.Object).GetHashCode(), FocusType.Keyboard, objectRect);
+            Rect originalRect = objectRect;
+            int id = GUIUtility.GetControlID(typeof(UnityEngine.Object).GetHashCode(), FocusType.Keyboard, originalRect);
 
             System.Type validatorDelegateType = typeof(EditorGUI).GetNestedType("ObjectFieldValidator", BindingFlags.Static | BindingFlags.NonPublic);
             MethodInfo validateMethodInfo = typeof(UdonSharpProgramAsset).GetMethod("ValidateObjectReference", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -354,6 +355,21 @@ namespace UdonSharp
             });
 
             currentUserScript = null;
+
+            string labelText = "";
+            if (objectFieldValue != null)
+            {
+                labelText = $"{objectFieldValue.name} ({ObjectNames.NicifyVariableName(fieldDefinition.fieldSymbol.userCsType.Name)})";
+            }
+            else
+            {
+                labelText = $"None ({ObjectNames.NicifyVariableName(fieldDefinition.fieldSymbol.userCsType.Name)})";
+            }
+
+            // Manually draw this using the same ID so that we can get some of the style information to bleed over
+            objectRect = EditorGUI.PrefixLabel(originalRect, new GUIContent(fieldName));
+            if (Event.current.type == EventType.Repaint)
+                EditorStyles.objectField.Draw(objectRect, new GUIContent(labelText, AssetPreview.GetMiniThumbnail(this)), id);
 
             return objectFieldValue;
         }
