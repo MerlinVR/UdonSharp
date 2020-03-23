@@ -339,7 +339,7 @@ namespace UdonSharp
             System.Type validatorDelegateType = typeof(EditorGUI).GetNestedType("ObjectFieldValidator", BindingFlags.Static | BindingFlags.NonPublic);
             MethodInfo validateMethodInfo = typeof(UdonSharpProgramAsset).GetMethod("ValidateObjectReference", BindingFlags.NonPublic | BindingFlags.Instance);
 
-            objectRect = EditorGUI.PrefixLabel(objectRect, new GUIContent(fieldName));
+            objectRect = EditorGUI.PrefixLabel(objectRect, id, new GUIContent(fieldName));
 
             currentUserScript = fieldDefinition.userBehaviourSource;
             
@@ -367,7 +367,7 @@ namespace UdonSharp
             }
 
             // Manually draw this using the same ID so that we can get some of the style information to bleed over
-            objectRect = EditorGUI.PrefixLabel(originalRect, new GUIContent(fieldName));
+            objectRect = EditorGUI.PrefixLabel(originalRect, id, new GUIContent(fieldName));
             if (Event.current.type == EventType.Repaint)
                 EditorStyles.objectField.Draw(objectRect, new GUIContent(labelText, AssetPreview.GetMiniThumbnail(this)), id);
 
