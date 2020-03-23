@@ -15,3 +15,5 @@ MonoBehaviour:
   autoCompileOnModify: 1
   compileAllScripts: 1
   newScriptTemplateOverride: {fileID: 0}
+  buildDebugInfo: 1
+  includeInlineCode: 1

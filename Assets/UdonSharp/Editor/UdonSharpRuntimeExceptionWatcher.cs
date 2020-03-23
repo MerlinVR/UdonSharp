@@ -1,5 +1,4 @@
-﻿//#define ALLOW_CLIENT_CAPTURE // Waiting on VRC to re-add the needed debug information to the logs in-game so this can be tested
-
+﻿
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -16,23 +15,20 @@ namespace UdonSharp
     {
         static Queue<string> debugOutputQueue;
         static Dictionary<long, (string, ClassDebugInfo)> scriptLookup;
-
-#if ALLOW_CLIENT_CAPTURE
+        
         // Log watcher vars
         static FileSystemWatcher logDirectoryWatcher;
         static object logModifiedLock;
         static Dictionary<string, long> lastLogOffsets;
         static HashSet<string> modifiedLogPaths;
-#endif
 
         static RuntimeExceptionWatcher()
         {
             debugOutputQueue = new Queue<string>();
-#if ALLOW_CLIENT_CAPTURE
+
             logModifiedLock = new object();
             lastLogOffsets = new Dictionary<string, long>();
             modifiedLogPaths = new HashSet<string>();
-#endif
 
             Application.logMessageReceived += OnLog;
             EditorApplication.update += OnEditorUpdate;
@@ -64,22 +60,21 @@ namespace UdonSharp
 
                 scriptLookup.Add(programID, (AssetDatabase.GetAssetPath(programAsset.sourceCsScript), programAsset.debugInfo));
             }
-
-#if ALLOW_CLIENT_CAPTURE
+            
             // Now setup the filesystem watcher
             string[] splitPath = Application.persistentDataPath.Split('/', '\\');
             string VRCDataPath = string.Join("\\", splitPath.Take(splitPath.Length - 2)) + "\\VRChat\\VRChat";
             
+            UdonSharpSettingsObject udonSharpSettings = UdonSharpSettingsObject.GetOrCreateSettings();
+
             AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
             logDirectoryWatcher = new FileSystemWatcher(VRCDataPath, "output_log_*.txt");
             logDirectoryWatcher.IncludeSubdirectories = false;
             logDirectoryWatcher.NotifyFilter = NotifyFilters.LastWrite;
             logDirectoryWatcher.Changed += OnLogFileChanged;
-            logDirectoryWatcher.EnableRaisingEvents = true;
-#endif
+            logDirectoryWatcher.EnableRaisingEvents = udonSharpSettings.buildDebugInfo && udonSharpSettings.listenForVRCExceptions;
         }
-
-#if ALLOW_CLIENT_CAPTURE
+        
         static void CleanupLogWatcher()
         {
             logDirectoryWatcher.Dispose();
@@ -92,7 +87,6 @@ namespace UdonSharp
                 modifiedLogPaths.Add(args.FullPath);
             }
         }
-#endif
 
         static void OnLog(string logStr, string stackTrace, LogType type)
         {
@@ -109,79 +103,95 @@ namespace UdonSharp
                 HandleLogError(debugOutputQueue.Dequeue(), "Udon runtime exception detected!");
             }
 
-#if ALLOW_CLIENT_CAPTURE
-            List<(string, string)> modifiedFilesAndContents = null;
+            UdonSharpSettingsObject udonSharpSettings = UdonSharpSettingsObject.GetOrCreateSettings();
+            bool shouldListenForVRC = udonSharpSettings.buildDebugInfo && udonSharpSettings.listenForVRCExceptions;
 
-            lock (logModifiedLock)
+            logDirectoryWatcher.EnableRaisingEvents = shouldListenForVRC;
+
+            if (shouldListenForVRC)
             {
-                if (modifiedLogPaths.Count > 0)
+                List<(string, string)> modifiedFilesAndContents = null;
+
+                lock (logModifiedLock)
                 {
-                    modifiedFilesAndContents = new List<(string, string)>();
-                    HashSet<string> newLogPaths = new HashSet<string>();
-
-                    foreach (string logPath in modifiedLogPaths)
+                    if (modifiedLogPaths.Count > 0)
                     {
-                        long lastFileOffset;
-                        if (!lastLogOffsets.TryGetValue(logPath, out lastFileOffset))
-                            lastLogOffsets.Add(logPath, 0);
+                        modifiedFilesAndContents = new List<(string, string)>();
+                        HashSet<string> newLogPaths = new HashSet<string>();
 
-                        string newLogContent = "";
-
-                        newLogPaths.Add(logPath);
-
-                        try
+                        foreach (string logPath in modifiedLogPaths)
                         {
-                            FileInfo fileInfo = new FileInfo(logPath);
+                            long lastFileOffset;
+                            if (!lastLogOffsets.TryGetValue(logPath, out lastFileOffset))
+                                lastLogOffsets.Add(logPath, -1);
 
-                            using (var stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                            lastFileOffset = lastLogOffsets[logPath];
+
+                            string newLogContent = "";
+
+                            newLogPaths.Add(logPath);
+
+                            try
                             {
-                                using (StreamReader reader = new StreamReader(stream))
+                                FileInfo fileInfo = new FileInfo(logPath);
+
+                                using (var stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                                 {
-                                    reader.BaseStream.Seek(lastFileOffset, SeekOrigin.Begin);
+                                    using (StreamReader reader = new StreamReader(stream))
+                                    {
+                                        if (lastFileOffset == -1)
+                                        {
+                                            reader.BaseStream.Seek(0, SeekOrigin.End);
+                                        }
+                                        else
+                                        {
+                                            reader.BaseStream.Seek(lastFileOffset, SeekOrigin.Begin);
+                                        }
 
-                                    newLogContent = reader.ReadToEnd();
+                                        newLogContent = reader.ReadToEnd();
 
-                                    lastLogOffsets[logPath] = reader.BaseStream.Position;
-                                    reader.Close();
+                                        lastLogOffsets[logPath] = reader.BaseStream.Position;
+                                        reader.Close();
+                                    }
+
+                                    stream.Close();
                                 }
 
-                                stream.Close();
+                                newLogPaths.Remove(logPath);
+
+                                if (newLogContent != "")
+                                    modifiedFilesAndContents.Add((logPath, newLogContent));
                             }
-
-                            newLogPaths.Remove(logPath);
-
-                            if (newLogContent != "")
-                                modifiedFilesAndContents.Add((logPath, newLogContent));
+                            catch (System.IO.IOException)
+                            { }
                         }
-                        catch (System.IO.IOException)
-                        { }
+
+                        modifiedLogPaths = newLogPaths;
                     }
-
-                    modifiedLogPaths = newLogPaths;
                 }
-            }
 
-            if (modifiedFilesAndContents != null)
-            {
-                foreach (var modifiedFile in modifiedFilesAndContents)
+                if (modifiedFilesAndContents != null)
                 {
-                    const string errorMatchStr = "[<color=yellow>UdonBehaviour</color>] VRC.Udon.VM.UdonVMException:";
-
-                    int currentErrorIndex = modifiedFile.Item2.IndexOf(errorMatchStr);
-                    while (currentErrorIndex != -1)
+                    foreach (var modifiedFile in modifiedFilesAndContents)
                     {
-                        HandleLogError(modifiedFile.Item2.Substring(currentErrorIndex, modifiedFile.Item2.Length - currentErrorIndex), "Runtime VRC client exception detected!");
+                        const string errorMatchStr = "[UdonBehaviour] An exception occurred during Udon execution, this UdonBehaviour will be halted.";
 
-                        currentErrorIndex = modifiedFile.Item2.IndexOf(errorMatchStr, currentErrorIndex + errorMatchStr.Length);
+                        int currentErrorIndex = modifiedFile.Item2.IndexOf(errorMatchStr);
+                        while (currentErrorIndex != -1)
+                        {
+                            HandleLogError(modifiedFile.Item2.Substring(currentErrorIndex, modifiedFile.Item2.Length - currentErrorIndex), $"VRChat client runtime Udon exception detected! Source log file: {Path.GetFileName(modifiedFile.Item1)}");
+
+                            currentErrorIndex = modifiedFile.Item2.IndexOf(errorMatchStr, currentErrorIndex + errorMatchStr.Length);
+                        }
                     }
                 }
             }
-#endif
         }
 
         static void HandleLogError(string errorStr, string logPrefix)
         {
-            if (!errorStr.StartsWith("[<color=yellow>UdonBehaviour</color>] An exception occurred during Udon execution, this UdonBehaviour will be halted."))
+            if (!errorStr.StartsWith("[<color=yellow>UdonBehaviour</color>] An exception occurred during Udon execution, this UdonBehaviour will be halted.") && // Editor
+                !errorStr.StartsWith("[UdonBehaviour] An exception occurred during Udon execution, this UdonBehaviour will be halted.")) // Client
                 return;
 
             const string exceptionMessageStr = "Exception Message:";
@@ -209,8 +219,6 @@ namespace UdonSharp
             {
                 return;
             }
-
-            //Debug.Log($"Program Counter: {programCounter}, program ID {programID}, program name {programName}");
 
             (string, ClassDebugInfo) assetInfo;
 

@@ -30,6 +30,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         public bool buildDebugInfo = true;
         public bool includeInlineCode = true;
+        public bool listenForVRCExceptions = false;
 
         internal static UdonSharpSettingsObject GetOrCreateSettings()
         {
@@ -65,8 +66,9 @@ public class <TemplateClassName> : UdonSharpBehaviour
         private static GUIContent autoCompileLabel = new GUIContent("Auto compile on modify", "Trigger a compile whenever a U# source file is modified.");
         private static GUIContent compileAllLabel = new GUIContent("Compile all scripts", "Compile all scripts when a script is modified. This prevents some potential for weird issues where classes don't match");
         private static GUIContent templateOverrideLabel = new GUIContent("Script template override", "A custom override file to use as a template for newly created U# files. Put \"<TemplateClassName>\" in place of a class name for it to automatically populate with the file name.");
-        private static GUIContent includeDebugInfo = new GUIContent("Debug build", "Include debug info in build");
-        private static GUIContent includeInlineCode = new GUIContent("Inline code", "Include C# inline in generated assembly");
+        private static GUIContent includeDebugInfoLabel = new GUIContent("Debug build", "Include debug info in build");
+        private static GUIContent includeInlineCodeLabel = new GUIContent("Inline code", "Include C# inline in generated assembly");
+        private static GUIContent listenForVRCExceptionsLabel = new GUIContent("Listen for client exceptions", "Listens for exceptions from Udon and tries to match them to scripts in the project");
 
         [SettingsProvider]
         public static SettingsProvider CreateSettingsProvider()
@@ -95,11 +97,12 @@ public class <TemplateClassName> : UdonSharpBehaviour
                     EditorGUILayout.Space();
                     EditorGUILayout.LabelField("Debugging", EditorStyles.boldLabel);
 
-                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettingsObject.buildDebugInfo)), includeDebugInfo);
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettingsObject.buildDebugInfo)), includeDebugInfoLabel);
 
                     if (settings.buildDebugInfo)
                     {
-                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettingsObject.includeInlineCode)), includeInlineCode);
+                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettingsObject.includeInlineCode)), includeInlineCodeLabel);
+                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettingsObject.listenForVRCExceptions)), listenForVRCExceptionsLabel);
                     }
 
                     if (EditorGUI.EndChangeCheck())
