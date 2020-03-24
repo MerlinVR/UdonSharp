@@ -98,7 +98,7 @@ namespace UdonSharp
 
             DrawPublicVariables(udonBehaviour, ref dirty);
 
-            if (currentBehaviour != null && !shouldUseRuntimeValue)
+            if (currentBehaviour != null && !shouldUseRuntimeValue && program != null)
             {
                 string[] exportedSymbolNames = program.SymbolTable.GetExportedSymbols();
 
