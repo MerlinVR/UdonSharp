@@ -272,11 +272,25 @@ namespace UdonSharp
 
                     for (int moduleIdx = 0; moduleIdx < modulesToInitialize.Length; ++moduleIdx)
                     {
-                        IUdonProgram program = modulesToInitialize[moduleIdx].programAsset.GetRealProgram();
+                        CompilationModule module = modulesToInitialize[moduleIdx];
+                        IUdonProgram program = module.programAsset.GetRealProgram();
 
                         System.Type cls = assembly.GetType($"FieldInitialzers.Initializer{moduleIdx}");
                         MethodInfo methodInfo = cls.GetMethod("DoInit", BindingFlags.Public | BindingFlags.Static);
                         methodInfo.Invoke(null, new[] { program });
+
+                        foreach (var fieldDeclarationSyntax in module.fieldsWithInitializers)
+                        {
+                            foreach (var variable in fieldDeclarationSyntax.Declaration.Variables)
+                            {
+                                string varName = variable.Identifier.ToString();
+
+                                object heapValue = program.Heap.GetHeapVariable(program.SymbolTable.GetAddressFromSymbol(varName));
+
+                                if (heapValue != null && UdonSharpUtils.IsUserDefinedType(heapValue.GetType()))
+                                    UdonSharpUtils.LogBuildError($"Field: '{varName}' UdonSharp does not yet support field initializers on user-defined types or jagged arrays", AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript), 0, 0);
+                            }
+                        }
                     }
                 }
             }
