@@ -362,6 +362,54 @@ namespace UdonSharp
                 return type.Name;
         }
 
+        public static bool IsUserDefinedBehaviour(System.Type type)
+        {
+            return type == typeof(UdonSharpBehaviour) ||
+                   type.IsSubclassOf(typeof(UdonSharpBehaviour)) ||
+                  (type.IsArray && (type.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)) || type.GetElementType() == typeof(UdonSharpBehaviour)));
+        }
+
+        public static bool IsUserDefinedType(System.Type type)
+        {
+            return IsUserDefinedBehaviour(type) ||
+                  type.IsArray && type.GetElementType().IsArray; // Jagged arrays
+        }
+
+        private static Dictionary<System.Type, System.Type> userTypeToUdonTypeCache = new Dictionary<System.Type, System.Type>();
+
+        public static System.Type UserTypeToUdonType(System.Type type)
+        {
+            System.Type udonType;
+            if (!userTypeToUdonTypeCache.TryGetValue(type, out udonType))
+            {
+                if (IsUserDefinedType(type))
+                {
+                    if (type.IsArray)
+                    {
+                        if (!type.GetElementType().IsArray)
+                        {
+                            udonType = typeof(UnityEngine.Component[]);// Hack because VRC doesn't expose the array type of UdonBehaviour
+                        }
+                        else // Jagged arrays
+                        {
+                            udonType = typeof(object[]);
+                        }
+                    }
+                    else
+                    {
+                        udonType = typeof(VRC.Udon.UdonBehaviour);
+                    }
+                }
+
+                if (udonType == null)
+                    udonType = type;
+
+                userTypeToUdonTypeCache.Add(type, udonType);
+            }
+
+            return udonType;
+        }
+
         public static string LogBuildError(string message, string filePath, int line, int character)
         {
             MethodInfo buildErrorLogMethod = typeof(UnityEngine.Debug).GetMethod("LogPlayerBuildError", BindingFlags.NonPublic | BindingFlags.Static);

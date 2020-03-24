@@ -356,7 +356,8 @@ namespace UdonSharp
             {
                 Visit(node.ElementType);
 
-                arrayTypeCaptureScope.MakeArrayType();
+                for (int i = 0; i < node.RankSpecifiers.Count; ++i)
+                    arrayTypeCaptureScope.MakeArrayType();
             }
         }
 
@@ -387,8 +388,11 @@ namespace UdonSharp
                 SymbolDefinition arraySymbol = visitorContext.topTable.CreateUnnamedSymbol(arrayType, SymbolDeclTypeFlags.Internal);
                 varCaptureScope.SetToLocalSymbol(arraySymbol);
 
-                if (node.Type.RankSpecifiers.Count != 1 || node.Type.RankSpecifiers[0].Sizes.Count != 1)
-                    throw new System.NotSupportedException("UdonSharp does not support multidimensional or jagged arrays at the moment");
+                foreach (ArrayRankSpecifierSyntax rankSpecifierSyntax in node.Type.RankSpecifiers)
+                {
+                    if (rankSpecifierSyntax.Sizes.Count != 1)
+                        throw new System.NotSupportedException("UdonSharp does not support multidimensional arrays at the moment");
+                }
 
                 SymbolDefinition arrayRankSymbol = null;
 
@@ -422,7 +426,7 @@ namespace UdonSharp
                     constructorCaptureScope.SetToMethods(arraySymbol.symbolCsType.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
 
                     SymbolDefinition newArraySymbol = constructorCaptureScope.Invoke(new SymbolDefinition[] { arrayRankSymbol });
-                    if (arraySymbol.IsUserDefinedBehaviour())
+                    if (arraySymbol.IsUserDefinedType())
                         newArraySymbol.symbolCsType = arraySymbol.userCsType;
 
                     varCaptureScope.ExecuteSet(newArraySymbol);
@@ -517,7 +521,7 @@ namespace UdonSharp
                     constructorCaptureScope.SetToMethods(arraySymbol.symbolCsType.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
 
                     SymbolDefinition newArraySymbol = constructorCaptureScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(int), initializerSymbols.Length) });
-                    if (arraySymbol.IsUserDefinedBehaviour())
+                    if (arraySymbol.IsUserDefinedType())
                         newArraySymbol.symbolCsType = arraySymbol.userCsType;
 
                     arraySetScope.ExecuteSet(newArraySymbol);
@@ -685,11 +689,15 @@ namespace UdonSharp
             FieldDefinition fieldDefinition = new FieldDefinition(fieldSymbol);
             fieldDefinition.fieldAttributes = GetFieldAttributes(node);
 
-            if (fieldSymbol.IsUserDefinedBehaviour())
+            if (fieldSymbol.IsUserDefinedType())
             {
+                System.Type fieldType = fieldSymbol.userCsType;
+                while (fieldType.IsArray)
+                    fieldType = fieldType.GetElementType();
+
                 foreach (ClassDefinition classDefinition in visitorContext.externClassDefinitions)
                 {
-                    if (classDefinition.userClassType == fieldSymbol.userCsType)
+                    if (classDefinition.userClassType == fieldType)
                     {
                         fieldDefinition.userBehaviourSource = classDefinition.classScript;
                         break;
@@ -783,9 +791,7 @@ namespace UdonSharp
             if (newSymbol != null)
                 VerifySyncValidForType(newSymbol.symbolCsType, syncMode);
 
-            bool isUserDefinedType = variableType == typeof(UdonSharpBehaviour) ||
-                                     variableType.IsSubclassOf(typeof(UdonSharpBehaviour)) ||
-                                     (variableType.IsArray && (variableType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)) || variableType.GetElementType() == typeof(UdonSharpBehaviour)));
+            bool isUserDefinedType = UdonSharpUtils.IsUserDefinedType(variableType);
 
             if (!visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Variable) &&
                 !visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Type) &&

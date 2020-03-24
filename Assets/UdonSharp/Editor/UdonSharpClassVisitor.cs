@@ -95,7 +95,8 @@ namespace UdonSharp
             {
                 Visit(node.ElementType);
 
-                arrayTypeCaptureScope.MakeArrayType();
+                for (int i = 0; i < node.RankSpecifiers.Count; ++i)
+                    arrayTypeCaptureScope.MakeArrayType();
             }
         }
 

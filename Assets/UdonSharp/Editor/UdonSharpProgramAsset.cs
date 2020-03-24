@@ -314,15 +314,15 @@ namespace UdonSharp
             return null;
         }
 
-        private object DrawUnityObjectField(string fieldName, string symbol, (object value, Type declaredType) publicVariable, ref bool dirty)
+        private object DrawUnityObjectField(string fieldName, string symbol, (object value, Type declaredType, string originalSymbol) publicVariable, ref bool dirty)
         {
-            (object value, Type declaredType) = publicVariable;
+            (object value, Type declaredType, string originalSymbol) = publicVariable;
 
             FieldDefinition fieldDefinition = null;
             if (fieldDefinitions != null)
-                fieldDefinitions.TryGetValue(symbol, out fieldDefinition);
+                fieldDefinitions.TryGetValue(originalSymbol, out fieldDefinition);
 
-            bool isNormalUnityObject = fieldDefinition == null || fieldDefinition.fieldSymbol.userCsType == null || !fieldDefinition.fieldSymbol.IsUserDefinedBehaviour();
+            bool isNormalUnityObject = !UdonSharpUtils.IsUserDefinedBehaviour(declaredType) && (fieldDefinition == null || fieldDefinition.fieldSymbol.userCsType == null || !fieldDefinition.fieldSymbol.IsUserDefinedBehaviour());
 
             if (isNormalUnityObject)
                 return EditorGUILayout.ObjectField(fieldName, (UnityEngine.Object)value, declaredType, true);
@@ -348,7 +348,7 @@ namespace UdonSharp
                 objectRect,
                 id,
                 (UnityEngine.Object)value,
-                fieldDefinition.fieldSymbol.symbolCsType,
+                typeof(UdonBehaviour),
                 null,
                 Delegate.CreateDelegate(validatorDelegateType, this, validateMethodInfo),
                 true
@@ -356,14 +356,18 @@ namespace UdonSharp
 
             currentUserScript = null;
 
+            System.Type variableRootType = fieldDefinition.fieldSymbol.userCsType;
+            while (variableRootType.IsArray)
+                variableRootType = variableRootType.GetElementType();
+
             string labelText = "";
             if (objectFieldValue != null)
             {
-                labelText = $"{objectFieldValue.name} ({ObjectNames.NicifyVariableName(fieldDefinition.fieldSymbol.userCsType.Name)})";
+                labelText = $"{objectFieldValue.name} ({ObjectNames.NicifyVariableName(variableRootType.Name)})";
             }
             else
             {
-                labelText = $"None ({ObjectNames.NicifyVariableName(fieldDefinition.fieldSymbol.userCsType.Name)})";
+                labelText = $"None ({ObjectNames.NicifyVariableName(variableRootType.Name)})";
             }
 
             // Manually draw this using the same ID so that we can get some of the style information to bleed over
@@ -377,17 +381,18 @@ namespace UdonSharp
         [NonSerialized]
         private Dictionary<string, bool> foldoutStates = new Dictionary<string, bool>();
 
-        private object DrawFieldForType(string fieldName, string symbol, (object value, Type declaredType) publicVariable, ref bool dirty, bool enabled)
+        private object DrawFieldForType(string fieldName, string symbol, (object value, Type declaredType, string originalSymbol) publicVariable, ref bool dirty, bool enabled)
         {
             bool isArrayElement = fieldName != null;
+
+            (object value, Type declaredType, string originalSymbol) = publicVariable;
+
             FieldDefinition fieldDefinition = null;
             if (fieldDefinitions != null)
-                fieldDefinitions.TryGetValue(symbol, out fieldDefinition);
+                fieldDefinitions.TryGetValue(originalSymbol, out fieldDefinition);
 
             if (fieldName == null)
                 fieldName = ObjectNames.NicifyVariableName(symbol);
-
-            (object value, Type declaredType) = publicVariable;
 
             if (declaredType.IsArray)
             {
@@ -403,9 +408,50 @@ namespace UdonSharp
 
                 if (foldoutEnabled)
                 {
+                    Type elementType = declaredType.GetElementType();
+                    Type arrayDataType = declaredType;
+
+                    if (fieldDefinition != null)
+                    {
+                        if (originalSymbol == symbol) // We're at the root of an array so figure out if it's a jagged array and handle converting it to an object[]
+                        {
+                            if (fieldDefinition.fieldSymbol.IsUserDefinedBehaviour() || fieldDefinition.fieldSymbol.userCsType == typeof(UdonBehaviour[]))
+                            {
+                                elementType = typeof(UdonBehaviour);
+                            }
+                            else if (fieldDefinition.fieldSymbol.IsUserDefinedType() && fieldDefinition.fieldSymbol.userCsType.IsArray) // Jagged array
+                            {
+                                System.Type userElementType = fieldDefinition.fieldSymbol.userCsType.GetElementType();
+                                if (!elementType.IsArray)
+                                    elementType = userElementType;
+                                else
+                                {
+                                    System.Type objectArrayType = typeof(object);
+                                    while (userElementType.IsArray)
+                                    {
+                                        userElementType = userElementType.GetElementType();
+                                        objectArrayType = objectArrayType.MakeArrayType();
+                                    }
+
+                                    elementType = objectArrayType;
+                                    arrayDataType = typeof(object[]);
+                                }
+                            }
+                        }
+                        else if (fieldDefinition.fieldSymbol.IsUserDefinedType())
+                        {
+                            elementType = fieldDefinition.fieldSymbol.userCsType;
+                            while (elementType.IsArray)
+                                elementType = elementType.GetElementType();
+
+                            if (UdonSharpUtils.IsUserDefinedBehaviour(elementType))
+                                arrayDataType = typeof(Component[]);
+                        }
+                    }
+
                     if (value == null) // We can abuse that the foldout modified the outer scope when it was expanded to make sure this gets set
                     {
-                        return Activator.CreateInstance(declaredType, new object[] { 0 });
+                        return Activator.CreateInstance(arrayDataType, new object[] { 0 });
                     }
 
                     EditorGUI.indentLevel++;
@@ -425,7 +471,7 @@ namespace UdonSharp
                         // We need to resize the array
                         if (EditorGUI.EndChangeCheck())
                         {
-                            Array newArray = Activator.CreateInstance(declaredType, new object[] { newLength }) as Array;
+                            Array newArray = Activator.CreateInstance(arrayDataType, new object[] { newLength }) as Array;
 
                             for (int i = 0; i < newLength && i < valueArray.Length; ++i)
                             {
@@ -438,16 +484,9 @@ namespace UdonSharp
                             return newArray;
                         }
 
-                        Type elementType = declaredType.GetElementType();
-
-                        if (fieldDefinition != null && (fieldDefinition.fieldSymbol.IsUserDefinedBehaviour() || fieldDefinition.fieldSymbol.userCsType == typeof(UdonBehaviour[])))
-                        {
-                            elementType = typeof(UdonBehaviour);
-                        }
-
                         for (int i = 0; i < valueArray.Length; ++i)
                         {
-                            var elementData = (valueArray.GetValue(i), elementType);
+                            var elementData = (valueArray.GetValue(i), elementType, originalSymbol);
 
                             EditorGUI.BeginChangeCheck();
                             object newArrayVal = DrawFieldForType($"Element {i}", $"{symbol}_element{i}", elementData, ref dirty, enabled);
@@ -467,7 +506,7 @@ namespace UdonSharp
             }
             else if (typeof(UnityEngine.Object).IsAssignableFrom(declaredType))
             {
-                return DrawUnityObjectField(fieldName, symbol, publicVariable, ref dirty);
+                return DrawUnityObjectField(fieldName, symbol, (value, declaredType, originalSymbol), ref dirty);
             }
             else if (declaredType == typeof(string))
             {
@@ -607,7 +646,7 @@ namespace UdonSharp
                     EditorGUILayout.BeginHorizontal();
 
                 EditorGUI.BeginChangeCheck();
-                object newValue = DrawFieldForType(null, symbol, (variableValue, variableType), ref dirty, enabled);
+                object newValue = DrawFieldForType(null, symbol, (variableValue, variableType, symbol), ref dirty, enabled);
 
                 if (EditorGUI.EndChangeCheck())
                 {

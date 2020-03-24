@@ -24,24 +24,12 @@ namespace UdonSharp
     public class SymbolDefinition
     {
         [OdinSerialize]
-        private System.Type internalType; 
+        private System.Type internalType;
 
         // The type of the symbol from the C# side
         public System.Type symbolCsType
         {
-            get
-            {
-                if (IsUserDefinedBehaviour())
-                {
-                    if (internalType.IsArray)
-                        return typeof(Component[]); // Hack because VRC doesn't expose the array type of UdonBehaviour
-
-                    return typeof(VRC.Udon.UdonBehaviour);
-                }
-
-                return internalType;
-            }
-
+            get { return UdonSharpUtils.UserTypeToUdonType(internalType); }
             set { internalType = value; }
         }
 
@@ -64,13 +52,15 @@ namespace UdonSharp
         // The default value for the symbol that gets set on the heap
         // This is only used for global (public/private) symbols with a default value, and constant symbols
         public object symbolDefaultValue = null;
-
-        //public bool IsUserDefinedBehaviour() { return declarationType.HasFlag(SymbolDeclTypeFlags.UserType); }
+        
         public bool IsUserDefinedBehaviour()
         {
-            return internalType == typeof(UdonSharpBehaviour) ||
-                   internalType.IsSubclassOf(typeof(UdonSharpBehaviour)) || 
-                  (internalType.IsArray && (internalType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)) || internalType.GetElementType() == typeof(UdonSharpBehaviour)));
+            return UdonSharpUtils.IsUserDefinedBehaviour(internalType);
+        }
+
+        public bool IsUserDefinedType()
+        {
+            return UdonSharpUtils.IsUserDefinedType(internalType);
         }
     }
 
@@ -416,11 +406,7 @@ namespace UdonSharp
                     uniqueSymbolName = $"__{IncrementUniqueNameCounter(uniqueSymbolName)}_{uniqueSymbolName}";
             }
 
-            System.Type typeForName = resolvedSymbolType;
-            if (resolvedSymbolType == typeof(UdonSharpBehaviour) || resolvedSymbolType.IsSubclassOf(typeof(UdonSharpBehaviour)))
-                typeForName = typeof(VRC.Udon.UdonBehaviour);
-            else if (resolvedSymbolType.IsArray && (resolvedSymbolType.GetElementType() == typeof(UdonSharpBehaviour) || resolvedSymbolType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour))))
-                typeForName = typeof(Component[]); // Hack because VRC doesn't expose UdonBehaviour array type
+            System.Type typeForName = UdonSharpUtils.UserTypeToUdonType(resolvedSymbolType);
 
             string udonTypeName = resolver.GetUdonTypeName(typeForName);
 

@@ -461,7 +461,7 @@ namespace UdonSharp
                 targetType = targetType.GetElementType();
 
             // Special case for passing through user defined classes if they match
-            if (sourceSymbol.IsUserDefinedBehaviour() && 
+            if (sourceSymbol.IsUserDefinedType() && 
                 (targetType.IsAssignableFrom(sourceSymbol.userCsType) || (targetType.IsArray && targetType == sourceSymbol.userCsType)))
                 return sourceSymbol;
             
@@ -945,7 +945,7 @@ namespace UdonSharp
                         arrayCreationScope.SetToMethods(resultSymbol.symbolCsType.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
 
                         SymbolDefinition newArraySymbol = arrayCreationScope.Invoke(new SymbolDefinition[] { componentCounterSymbol });
-                        if (resultSymbol.IsUserDefinedBehaviour())
+                        if (resultSymbol.IsUserDefinedType())
                             newArraySymbol.symbolCsType = resultSymbol.userCsType;
 
                         arrayVarScope.ExecuteSet(newArraySymbol);
@@ -1365,11 +1365,14 @@ namespace UdonSharp
                 if (getUserType)
                     return accessSymbol.userCsType.GetElementType();
 
-                if (accessSymbol.IsUserDefinedBehaviour() && accessSymbol.userCsType.IsArray)
+                if (accessSymbol.IsUserDefinedBehaviour() && accessSymbol.userCsType.IsArray && accessSymbol.symbolCsType == typeof(Component[]))
                 {
                     // Special case for arrays since the symbolCsType needs to return a Component[], but we need to get the element type of the UdonBehaviour[]
                     return typeof(VRC.Udon.UdonBehaviour);
                 }
+
+                if (accessSymbol.userCsType.GetElementType().IsArray)
+                    return typeof(object[]);
 
                 return accessSymbol.symbolCsType.GetElementType();
             }
@@ -1855,7 +1858,7 @@ namespace UdonSharp
                 throw new System.Exception("Can only run indexers on Local Symbols, Properties, Fields, and other indexers");
             }
 
-            System.Type returnType = GetReturnType();
+            System.Type returnType = GetReturnType(true);
 
             if (!returnType.IsArray/* && returnType != typeof(string)*/) // Uncomment the check for string when VRC has added the actual indexer function to Udon. 
                 throw new System.Exception("Can only run array indexers on array types");
