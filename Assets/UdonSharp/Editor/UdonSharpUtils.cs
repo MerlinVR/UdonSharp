@@ -65,7 +65,7 @@ namespace UdonSharp
         // https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/conversions#implicit-numeric-conversions
         private static readonly IReadOnlyDictionary<System.Type, System.Type[]> implicitBuiltinConversions = new Dictionary<System.Type, System.Type[]>()
         {
-            { typeof(sbyte), new System.Type[] { typeof(short), typeof(int), typeof(long), typeof(double), typeof(decimal) } },
+            { typeof(sbyte), new System.Type[] { typeof(short), typeof(int), typeof(long), typeof(float), typeof(double), typeof(decimal) } },
             { typeof(byte), new System.Type[] { typeof(short), typeof(ushort), typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal) } },
             { typeof(short), new System.Type[] { typeof(int), typeof(long), typeof(float), typeof(double), typeof(decimal) } },
             { typeof(ushort), new System.Type[] { typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal) } },
@@ -368,11 +368,16 @@ namespace UdonSharp
                    type.IsSubclassOf(typeof(UdonSharpBehaviour)) ||
                   (type.IsArray && (type.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)) || type.GetElementType() == typeof(UdonSharpBehaviour)));
         }
+        
+        public static bool IsUserJaggedArray(System.Type type)
+        {
+            return type.IsArray && type.GetElementType().IsArray;
+        }
 
         public static bool IsUserDefinedType(System.Type type)
         {
             return IsUserDefinedBehaviour(type) ||
-                  type.IsArray && type.GetElementType().IsArray; // Jagged arrays
+                   IsUserJaggedArray(type);
         }
 
         private static Dictionary<System.Type, System.Type> userTypeToUdonTypeCache = new Dictionary<System.Type, System.Type>();
