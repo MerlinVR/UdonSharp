@@ -1,9 +1,9 @@
 # UdonSharp
-## An experimental compiler for compiling C#-like syntax to Udon assembly
+## An experimental compiler for compiling C# to Udon assembly
 
-UdonSharp is a compiler that compiles C#-like syntax to Udon assembly. UdonSharp is not currently conformant to any version of the C# language specification, so there are many things that are not implemented or will not work. If you want to learn C#, I don't recommend you use UdonSharp for learning as it is right now, since there may be language features tutorials assume exist that don't yet exist in U#. 
+UdonSharp is a compiler that compiles C# to Udon assembly. UdonSharp is not currently conformant to any version of the C# language specification, so there are many things that are not implemented or will not work. If you want to learn C#, I don't recommend you use UdonSharp for learning as it is right now, since there may be language features tutorials assume exist that don't yet exist in U#. 
 
-This compiler is in a very early state with only about two weeks of work on it so far. There has been very little work done on optimizations. Despite that, programs compiled by this generally perform similarly to their graph-compiled counterparts. Though due to how Udon currently handles copying structs, UdonSharp scripts can generate more garbage than the graph counterparts at the moment. 
+This compiler is in an early state and I have no prior experience making compilers. There has been very little work done on optimizations. Despite that, programs compiled by this generally perform similarly to their graph-compiled counterparts. Though due to how Udon currently handles copying structs, UdonSharp scripts can generate more garbage than the graph counterparts at the moment. 
 
 ## Features that Udon supports which are currently not supported by U#
 - UdonSharp is currently at feature parity with the Udon graph as far as I am aware. Please message me or make an issue if you find something that should be supported, but is not.
@@ -24,6 +24,7 @@ This compiler is in a very early state with only about two weeks of work on it s
 - Unity/Udon event callbacks with arguments. For instance, registering a OnPlayerJoined event with a VRCPlayerApi argument is valid.
 - String interpolation
 - Field initilizers
+- Jagged arrays
 - Referencing other custom classes, accessing fields, and calling methods on them
 
 ## Differences from regular Unity C# to note
