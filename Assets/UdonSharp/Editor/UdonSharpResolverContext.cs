@@ -632,6 +632,13 @@ namespace UdonSharp
             else if (validMethods.Count == 1) // There's only one option so just return it ez
                 return validMethods.First();
 
+            // Filter out duplicate methods
+            // Still not sure if I want this or want to use it to highlight shortcomings in other areas
+            //validMethods = validMethods.Distinct().ToList();
+
+            //if (validMethods.Count == 1)
+            //    return validMethods.First();
+
             // We found multiple potential overloads so we need to find the best one
             // See section 7.5.3.2 of the C# 5.0 language specification for the outline this search roughly follows, 
             //  there are some things it doesn't handle, and the "better" type checking is probably not quite the same.
@@ -849,7 +856,7 @@ namespace UdonSharp
                 string methodListString = "";
 
                 foreach (MethodBase methodInfo in ambiguousMethods)
-                    methodListString += $"{methodInfo}\n";
+                    methodListString += $"{methodInfo.DeclaringType}: {methodInfo}\n";
 
                 throw new System.Exception("Ambiguous method overload reference, candidate methods:\n" + methodListString);
             }

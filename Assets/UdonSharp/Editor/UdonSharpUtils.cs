@@ -247,6 +247,13 @@ namespace UdonSharp
         {
             first = first.ReflectedType == first.DeclaringType ? first : first.DeclaringType.GetMethod(first.Name, first.GetParameters().Select(p => p.ParameterType).ToArray());
             second = second.ReflectedType == second.DeclaringType ? second : second.DeclaringType.GetMethod(second.Name, second.GetParameters().Select(p => p.ParameterType).ToArray());
+
+            // Special case for comparing object functions since they need to be explicitly included in GetMethods
+            if (first.DeclaringType == typeof(object))
+                second = typeof(object).GetMethod(second.Name, second.GetParameters().Select(p => p.ParameterType).ToArray());
+            if (second.DeclaringType == typeof(object))
+                first = typeof(object).GetMethod(first.Name, first.GetParameters().Select(p => p.ParameterType).ToArray());
+
             return first == second;
         }
 

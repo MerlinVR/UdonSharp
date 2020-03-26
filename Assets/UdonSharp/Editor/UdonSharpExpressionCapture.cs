@@ -1376,6 +1376,10 @@ namespace UdonSharp
 
                 return accessSymbol.symbolCsType.GetElementType();
             }
+            else if (captureArchetype == ExpressionCaptureArchetype.Enum)
+            {
+                return captureType;
+            }
             else
             {
                 throw new System.Exception("GetReturnType only valid for Local Symbols, Properties, Fields, and array indexers");
@@ -1435,7 +1439,8 @@ namespace UdonSharp
                      captureArchetype == ExpressionCaptureArchetype.Property || 
                      captureArchetype == ExpressionCaptureArchetype.Field ||
                      captureArchetype == ExpressionCaptureArchetype.ExternUserField ||
-                     captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
+                     captureArchetype == ExpressionCaptureArchetype.ArrayIndexer ||
+                     captureArchetype == ExpressionCaptureArchetype.Enum)
             {
                 resolvedToken = HandleExternUserFieldLookup(accessToken) ||
                                 HandleExternUserMethodLookup(accessToken) ||
@@ -1698,6 +1703,9 @@ namespace UdonSharp
 
         private bool HandleMemberPropertyAccess(string propertyToken)
         {
+            if (captureArchetype == ExpressionCaptureArchetype.Enum)
+                return false;
+
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
                 captureArchetype != ExpressionCaptureArchetype.Property &&
                 captureArchetype != ExpressionCaptureArchetype.Field &&
@@ -1729,6 +1737,9 @@ namespace UdonSharp
 
         private bool HandleMemberFieldAccess(string fieldToken)
         {
+            if (captureArchetype == ExpressionCaptureArchetype.Enum)
+                return false;
+
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
                 captureArchetype != ExpressionCaptureArchetype.Property &&
                 captureArchetype != ExpressionCaptureArchetype.Field &&
@@ -1763,23 +1774,27 @@ namespace UdonSharp
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
                 captureArchetype != ExpressionCaptureArchetype.Property &&
                 captureArchetype != ExpressionCaptureArchetype.Field && 
-                captureArchetype != ExpressionCaptureArchetype.ArrayIndexer)
+                captureArchetype != ExpressionCaptureArchetype.ArrayIndexer &&
+                captureArchetype != ExpressionCaptureArchetype.Enum)
             {
                 throw new System.Exception("Can only access member methods on Local Symbols, Properties, and Fields");
             }
             
             System.Type returnType = GetReturnType();
 
-            MethodInfo[] foundMethodInfos = returnType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == methodToken).ToArray();
+            List<MethodInfo> foundMethodInfos = new List<MethodInfo>(returnType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == methodToken));
 
-            if (foundMethodInfos.Length == 0)
+            if (returnType != typeof(object))
+                foundMethodInfos.AddRange(typeof(object).GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == methodToken));
+
+            if (foundMethodInfos.Count == 0)
                 return false;
 
             SymbolDefinition newAccessSymbol = ExecuteGet();
 
             accessSymbol = newAccessSymbol;
             captureArchetype = ExpressionCaptureArchetype.Method;
-            captureMethods = foundMethodInfos;
+            captureMethods = foundMethodInfos.ToArray();
 
             return true;
         }
