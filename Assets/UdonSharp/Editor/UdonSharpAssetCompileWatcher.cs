@@ -50,7 +50,9 @@ namespace UdonSharp
 
         static void HandleScriptModifications(List<MonoScript> scripts)
         {
-            if (!UdonSharpSettingsObject.GetOrCreateSettings().autoCompileOnModify)
+            UdonSharpSettings settings = UdonSharpSettings.GetSettings();
+
+            if (settings != null && !settings.autoCompileOnModify)
                 return;
 
             string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
@@ -75,7 +77,7 @@ namespace UdonSharp
 
             if (assetsToUpdate.Count > 0)
             {
-                if (UdonSharpSettingsObject.GetOrCreateSettings().compileAllScripts)
+                if (settings == null || settings.compileAllScripts)
                 {
                     UdonSharpProgramAsset.CompileAllCsPrograms();
                 }

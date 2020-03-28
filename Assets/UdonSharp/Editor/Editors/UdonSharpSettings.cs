@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace UdonSharp
 {
-    public class UdonSharpSettingsObject : ScriptableObject
+    public class UdonSharpSettings : ScriptableObject
     {
         private const string SettingsSavePath = "Assets/UdonSharp/UdonSharpSettings.asset";
 
@@ -32,12 +32,21 @@ public class <TemplateClassName> : UdonSharpBehaviour
         public bool includeInlineCode = true;
         public bool listenForVRCExceptions = false;
 
-        internal static UdonSharpSettingsObject GetOrCreateSettings()
+        public static UdonSharpSettings GetSettings()
         {
-            UdonSharpSettingsObject settings = AssetDatabase.LoadAssetAtPath<UdonSharpSettingsObject>(SettingsSavePath);
+            UdonSharpSettings settings = AssetDatabase.LoadAssetAtPath<UdonSharpSettings>(SettingsSavePath);
+            
+            return settings;
+        }
+
+        internal static UdonSharpSettings GetOrCreateSettings()
+        {
+            UdonSharpSettings settings = AssetDatabase.LoadAssetAtPath<UdonSharpSettings>(SettingsSavePath);
             if (settings == null)
             {
-                settings = ScriptableObject.CreateInstance<UdonSharpSettingsObject>();
+                Debug.LogWarning("Settings null!");
+
+                settings = ScriptableObject.CreateInstance<UdonSharpSettings>();
                 AssetDatabase.CreateAsset(settings, SettingsSavePath);
                 AssetDatabase.SaveAssets();
             }
@@ -50,17 +59,17 @@ public class <TemplateClassName> : UdonSharpBehaviour
             return new SerializedObject(GetOrCreateSettings());
         }
 
-        internal static string GetProgramTemplateString()
+        public static string GetProgramTemplateString()
         {
-            UdonSharpSettingsObject settings = GetOrCreateSettings();
+            UdonSharpSettings settings = GetSettings();
 
-            if (settings.newScriptTemplateOverride != null)
+            if (settings != null && settings.newScriptTemplateOverride != null)
                 return settings.newScriptTemplateOverride.ToString();
 
             return DefaultProgramTemplate;
         }
     }
-
+    
     public class UdonSharpSettingsProvider
     {
         private static GUIContent autoCompileLabel = new GUIContent("Auto compile on modify", "Trigger a compile whenever a U# source file is modified.");
@@ -79,15 +88,15 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 keywords = new HashSet<string>(new string[] { "Udon", "Sharp", "U#", "VRC", "VRChat" }),
                 guiHandler = (searchContext) =>
                 {
-                    UdonSharpSettingsObject settings = UdonSharpSettingsObject.GetOrCreateSettings();
-                    SerializedObject settingsObject = UdonSharpSettingsObject.GetSerializedSettings();
+                    UdonSharpSettings settings = UdonSharpSettings.GetOrCreateSettings();
+                    SerializedObject settingsObject = UdonSharpSettings.GetSerializedSettings();
 
                     EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettingsObject.autoCompileOnModify)), autoCompileLabel);
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.autoCompileOnModify)), autoCompileLabel);
                     
                     if (settings.autoCompileOnModify)
                     {
-                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettingsObject.compileAllScripts)), compileAllLabel);
+                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.compileAllScripts)), compileAllLabel);
                         if (!settings.compileAllScripts)
                             EditorGUILayout.HelpBox("Only compiling the script that has been modified can cause issues if you have multiple scripts communicating via methods.", MessageType.Warning);
                     }
@@ -97,18 +106,18 @@ public class <TemplateClassName> : UdonSharpBehaviour
                     EditorGUILayout.Space();
                     EditorGUILayout.LabelField("Debugging", EditorStyles.boldLabel);
 
-                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettingsObject.buildDebugInfo)), includeDebugInfoLabel);
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.buildDebugInfo)), includeDebugInfoLabel);
 
                     if (settings.buildDebugInfo)
                     {
-                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettingsObject.includeInlineCode)), includeInlineCodeLabel);
-                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettingsObject.listenForVRCExceptions)), listenForVRCExceptionsLabel);
+                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.includeInlineCode)), includeInlineCodeLabel);
+                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.listenForVRCExceptions)), listenForVRCExceptionsLabel);
                     }
 
                     if (EditorGUI.EndChangeCheck())
                     {
                         settingsObject.ApplyModifiedProperties();
-                        EditorUtility.SetDirty(UdonSharpSettingsObject.GetOrCreateSettings());
+                        EditorUtility.SetDirty(UdonSharpSettings.GetSettings());
                     }
                 },
             };

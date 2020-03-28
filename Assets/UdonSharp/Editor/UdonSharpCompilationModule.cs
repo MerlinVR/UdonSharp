@@ -88,11 +88,11 @@ namespace UdonSharp
             MethodVisitor methodVisitor = new MethodVisitor(resolver, moduleSymbols, moduleLabels);
             methodVisitor.Visit(tree.GetRoot());
 
-            UdonSharpSettingsObject settings = UdonSharpSettingsObject.GetOrCreateSettings();
+            UdonSharpSettings settings = UdonSharpSettings.GetSettings();
 
             ClassDebugInfo debugInfo = null;
 
-            if (settings.buildDebugInfo)
+            if (settings == null || settings.buildDebugInfo)
             {
                 debugInfo = new ClassDebugInfo(sourceCode, settings.includeInlineCode);
             }

@@ -65,14 +65,14 @@ namespace UdonSharp
             string[] splitPath = Application.persistentDataPath.Split('/', '\\');
             string VRCDataPath = string.Join("\\", splitPath.Take(splitPath.Length - 2)) + "\\VRChat\\VRChat";
             
-            UdonSharpSettingsObject udonSharpSettings = UdonSharpSettingsObject.GetOrCreateSettings();
+            //UdonSharpSettingsObject udonSharpSettings = UdonSharpSettingsObject.GetOrCreateSettings();
 
             AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
             logDirectoryWatcher = new FileSystemWatcher(VRCDataPath, "output_log_*.txt");
             logDirectoryWatcher.IncludeSubdirectories = false;
             logDirectoryWatcher.NotifyFilter = NotifyFilters.LastWrite;
             logDirectoryWatcher.Changed += OnLogFileChanged;
-            logDirectoryWatcher.EnableRaisingEvents = udonSharpSettings.buildDebugInfo && udonSharpSettings.listenForVRCExceptions;
+            logDirectoryWatcher.EnableRaisingEvents = false; /*udonSharpSettings.buildDebugInfo && udonSharpSettings.listenForVRCExceptions*/
         }
         
         static void CleanupLogWatcher()
@@ -103,8 +103,8 @@ namespace UdonSharp
                 HandleLogError(debugOutputQueue.Dequeue(), "Udon runtime exception detected!");
             }
 
-            UdonSharpSettingsObject udonSharpSettings = UdonSharpSettingsObject.GetOrCreateSettings();
-            bool shouldListenForVRC = udonSharpSettings.buildDebugInfo && udonSharpSettings.listenForVRCExceptions;
+            UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
+            bool shouldListenForVRC = udonSharpSettings != null && udonSharpSettings.buildDebugInfo && udonSharpSettings.listenForVRCExceptions;
 
             logDirectoryWatcher.EnableRaisingEvents = shouldListenForVRC;
 
