@@ -94,7 +94,7 @@ namespace UdonSharp
 
             if (settings == null || settings.buildDebugInfo)
             {
-                debugInfo = new ClassDebugInfo(sourceCode, settings.includeInlineCode);
+                debugInfo = new ClassDebugInfo(sourceCode, settings == null || settings.includeInlineCode);
             }
 
             ASTVisitor visitor = new ASTVisitor(resolver, moduleSymbols, moduleLabels, methodVisitor.definedMethods, classDefinitions, debugInfo);
