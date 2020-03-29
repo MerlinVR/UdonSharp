@@ -714,7 +714,10 @@ namespace UdonSharp
                 return;
 
             if (!UdonSharpUtils.IsUdonSyncedType(typeToSync))
-                throw new System.NotSupportedException($"Udon does not currently support syncing of the type {typeToSync}");
+                throw new System.NotSupportedException($"Udon does not currently support syncing of the type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+
+            if (syncMode != UdonSyncMode.None && (typeToSync == typeof(string) || typeToSync == typeof(char)))
+                throw new System.NotSupportedException($"Udon does not support tweening the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
         }
 
         public override void VisitFieldDeclaration(FieldDeclarationSyntax node)

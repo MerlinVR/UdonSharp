@@ -259,7 +259,7 @@ namespace UdonSharp
 
         private static readonly HashSet<System.Type> udonSyncTypes = new HashSet<System.Type>()
         {
-            typeof(bool), // bool is apparently broken despite being listed as supported, not sure if it has been fixed yet.
+            typeof(bool),
             typeof(char),
             typeof(byte), typeof(sbyte),
             typeof(int), typeof(uint),
