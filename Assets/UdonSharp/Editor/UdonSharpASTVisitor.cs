@@ -724,13 +724,15 @@ namespace UdonSharp
             if (node.Modifiers.HasModifier("static"))
                 throw new System.NotSupportedException("Static fields are not yet supported by UdonSharp");
 
-            bool isPublic = node.Modifiers.HasModifier("public");
-
             UdonSyncMode fieldSyncMode = GetSyncAttributeValue(node);
+
+            List<System.Attribute> fieldAttributes = GetFieldAttributes(node);
+
+            bool isPublic = node.Modifiers.HasModifier("public") || fieldAttributes.Find(e => e is SerializeField) != null;
 
             SymbolDefinition fieldSymbol = HandleVariableDeclaration(node.Declaration, isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private, fieldSyncMode);
             FieldDefinition fieldDefinition = new FieldDefinition(fieldSymbol);
-            fieldDefinition.fieldAttributes = GetFieldAttributes(node);
+            fieldDefinition.fieldAttributes = fieldAttributes;
 
             if (fieldSymbol.IsUserDefinedType())
             {
