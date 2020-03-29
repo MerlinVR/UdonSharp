@@ -1592,10 +1592,13 @@ namespace UdonSharp
                 throw new System.Exception("Invalid source archetype for type lookup");
             }
 
-            System.Type foundType = visitorContext.resolverContext.ResolveExternType(typeQualifiedName);
+            System.Type foundType = null;
 
-            if (foundType == null && isAttributeCaptureScope)
+            if (isAttributeCaptureScope)
                 foundType = visitorContext.resolverContext.ResolveExternType(typeQualifiedName + "Attribute");
+
+            if (foundType == null)
+                foundType = visitorContext.resolverContext.ResolveExternType(typeQualifiedName);
 
             if (foundType == null)
                 return false;

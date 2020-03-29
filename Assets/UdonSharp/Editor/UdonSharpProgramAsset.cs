@@ -478,7 +478,21 @@ namespace UdonSharp
             }
             else if (declaredType == typeof(string))
             {
-                return EditorGUILayout.TextField(fieldName, (string)value);
+                TextAreaAttribute textArea = fieldDefinition == null ? null : fieldDefinition.GetAttribute<TextAreaAttribute>();
+
+                if (textArea != null)
+                {
+                    EditorGUILayout.BeginVertical();
+                    EditorGUILayout.LabelField(fieldName);
+                    string textAreaText = EditorGUILayout.TextArea((string)value);
+                    EditorGUILayout.EndVertical();
+
+                    return textAreaText;
+                }
+                else
+                {
+                    return EditorGUILayout.TextField(fieldName, (string)value);
+                }
             }
             else if (declaredType == typeof(float))
             {
@@ -514,7 +528,16 @@ namespace UdonSharp
             }
             else if (declaredType == typeof(Color))
             {
-                return EditorGUILayout.ColorField(fieldName, (Color?)value ?? default);
+                ColorUsageAttribute colorUsage = fieldDefinition == null ? null : fieldDefinition.GetAttribute<ColorUsageAttribute>();
+
+                if (colorUsage != null)
+                {
+                    return EditorGUILayout.ColorField(new GUIContent(fieldName), (Color?)value ?? default, false, colorUsage.showAlpha, colorUsage.hdr);
+                }
+                else
+                {
+                    return EditorGUILayout.ColorField(fieldName, (Color?)value ?? default);
+                }
             }
             else if (declaredType == typeof(Color32))
             {
@@ -563,7 +586,22 @@ namespace UdonSharp
             }
             else if (declaredType == typeof(Gradient))
             {
-                return EditorGUILayout.GradientField(fieldName, (Gradient)value);
+                GradientUsageAttribute gradientUsage = fieldDefinition == null ? null : fieldDefinition.GetAttribute<GradientUsageAttribute>();
+
+                if (value == null)
+                {
+                    value = new Gradient();
+                    GUI.changed = true;
+                }
+
+                if (gradientUsage != null)
+                {
+                    return EditorGUILayout.GradientField(new GUIContent(fieldName), (Gradient)value, gradientUsage.hdr);
+                }
+                else
+                {
+                    return EditorGUILayout.GradientField(fieldName, (Gradient)value);
+                }
             }
             else if (declaredType == typeof(AnimationCurve))
             {
@@ -596,6 +634,22 @@ namespace UdonSharp
                 if (hideAttribute != null)
                 {
                     shouldDraw = false;
+                }
+
+                foreach (Attribute attribute in symbolField.fieldAttributes)
+                {
+                    if (attribute == null)
+                        continue;
+
+                    if (attribute is HeaderAttribute)
+                    {
+                        EditorGUILayout.Space();
+                        EditorGUILayout.LabelField((attribute as HeaderAttribute).header, EditorStyles.boldLabel);
+                    }
+                    else if (attribute is SpaceAttribute)
+                    {
+                        GUILayout.Space((attribute as SpaceAttribute).height);
+                    }
                 }
             }
             else

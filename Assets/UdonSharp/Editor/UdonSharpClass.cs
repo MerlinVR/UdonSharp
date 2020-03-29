@@ -25,13 +25,27 @@ namespace UdonSharp
 
             foreach (var attribute in fieldAttributes)
             {
-                if (attribute.GetType() == attributeType)
-                    return attribute as T;
+                if (attribute is T)
+                    return (T)attribute;
             }
 
             return null;
         }
 
+        public T[] GetAttributes<T>() where T : System.Attribute
+        {
+            System.Type attributeType = typeof(T);
+
+            List<T> attributes = new List<T>();
+
+            foreach (var attribute in fieldAttributes)
+            {
+                if (attribute is T)
+                    attributes.Add((T)attribute);
+            }
+
+            return attributes.ToArray();
+        }
     }
 
     public class ClassDefinition

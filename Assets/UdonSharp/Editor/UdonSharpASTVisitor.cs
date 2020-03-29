@@ -611,7 +611,12 @@ namespace UdonSharp
             return syncMode;
         }
 
-        // This could potentially be turned into constructing the attributes using Roslyn's scripting API
+        public override void VisitAttributeArgument(AttributeArgumentSyntax node)
+        {
+            UpdateSyntaxNode(node);
+            Visit(node.Expression);
+        }
+        
         private List<System.Attribute> GetFieldAttributes(FieldDeclarationSyntax node)
         {
             List<System.Attribute> attributes = new List<System.Attribute>();
@@ -620,6 +625,8 @@ namespace UdonSharp
             {
                 foreach (AttributeListSyntax attributeList in node.AttributeLists)
                 {
+                    UpdateSyntaxNode(attributeList);
+
                     foreach (AttributeSyntax attribute in attributeList.Attributes)
                     {
                         using (ExpressionCaptureScope attributeTypeCapture = new ExpressionCaptureScope(visitorContext, null))
@@ -629,11 +636,7 @@ namespace UdonSharp
 
                             System.Type captureType = attributeTypeCapture.captureType;
 
-                            if (captureType == typeof(HideInInspector))
-                            {
-                                attributes.Add(new HideInInspector());
-                            }
-                            else if (captureType == typeof(UdonSyncedAttribute))
+                            if (captureType == typeof(UdonSyncedAttribute))
                             {
                                 UdonSyncMode syncMode = UdonSyncMode.NotSynced;
 
@@ -656,6 +659,46 @@ namespace UdonSharp
                                     }
                                 }
                                 attributes.Add(new UdonSyncedAttribute(syncMode));
+                            }
+                            else if (captureType != null)
+                            {
+                                object attributeObject = null;
+
+                                if (attribute.ArgumentList == null ||
+                                    attribute.ArgumentList.Arguments == null ||
+                                    attribute.ArgumentList.Arguments.Count == 0)
+                                {
+                                    attributeObject = System.Activator.CreateInstance(captureType);
+                                }
+                                else
+                                {
+                                    // todo: requires constant folding to support decently
+                                    object[] attributeArgs = new object[attribute.ArgumentList.Arguments.Count];
+                                    
+                                    for (int i = 0; i < attributeArgs.Length; ++i)
+                                    {
+                                        AttributeArgumentSyntax attributeArg = attribute.ArgumentList.Arguments[i];
+
+                                        using (ExpressionCaptureScope attributeCapture = new ExpressionCaptureScope(visitorContext, null))
+                                        {
+                                            Visit(attributeArg);
+
+                                            SymbolDefinition attrSymbol = attributeCapture.ExecuteGet();
+
+                                            if (!attrSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant))
+                                            {
+                                                throw new System.ArgumentException("Attributes do not support non-constant expressions");
+                                            }
+
+                                            attributeArgs[i] = attrSymbol.symbolDefaultValue;
+                                        }
+                                    }
+
+                                    attributeObject = System.Activator.CreateInstance(captureType, attributeArgs);
+                                }
+
+                                if (attributeObject != null)
+                                    attributes.Add((System.Attribute)attributeObject);
                             }
                         }
                     }
