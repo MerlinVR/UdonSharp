@@ -1511,21 +1511,36 @@ namespace UdonSharp
             return true;
         }
 
+        private static Dictionary<(System.Type, BindingFlags), MethodInfo[]> typeMethodCache = new Dictionary<(System.Type, BindingFlags), MethodInfo[]>();
+
+        private static MethodInfo[] GetTypeMethods(System.Type type, BindingFlags bindingFlags)
+        {
+            MethodInfo[] methods;
+            if (!typeMethodCache.TryGetValue((type, bindingFlags), out methods))
+            {
+                methods = type.GetMethods(bindingFlags);
+                typeMethodCache.Add((type, bindingFlags), methods);
+            }
+
+            return methods;
+        }
+
         private bool HandleLocalUdonBehaviourMethodLookup(string localUdonMethodName)
         {
-            MethodInfo[] foundMethods = typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver).GetMethods(BindingFlags.Instance | BindingFlags.Public).Where(e => e.Name == localUdonMethodName).ToArray();
-            foundMethods = foundMethods.Concat(typeof(Component).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy).Where(e => e.Name == localUdonMethodName)).ToArray();
-            foundMethods = foundMethods.Concat(typeof(Object).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy).Where(e => e.Name == localUdonMethodName)).ToArray();
-            foundMethods = foundMethods.Distinct().ToArray();
+            List<MethodInfo> methods = new List<MethodInfo>(GetTypeMethods(typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver), BindingFlags.Instance | BindingFlags.Public));
+            methods.AddRange(GetTypeMethods(typeof(Component), BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy));
+            methods.AddRange(GetTypeMethods(typeof(Object), BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy));
 
             if (localUdonMethodName == "VRCInstantiate")
-                foundMethods = foundMethods.Concat(typeof(UdonSharpBehaviour).GetMethods(BindingFlags.Static | BindingFlags.Public).Where(e => e.Name == localUdonMethodName)).ToArray();
+                methods.AddRange(GetTypeMethods(typeof(UdonSharpBehaviour), BindingFlags.Static | BindingFlags.Public));
 
-            if (foundMethods.Length == 0)
+            IEnumerable<MethodInfo> foundMethods = methods.Where(e => e.Name == localUdonMethodName).Distinct();
+
+            if (foundMethods.Count() == 0)
                 return false;
 
             accessSymbol = visitorContext.topTable.CreateThisSymbol(visitorContext.behaviourUserType);
-            captureMethods = foundMethods;
+            captureMethods = foundMethods.ToArray();
             captureArchetype = ExpressionCaptureArchetype.Method;
 
             return true;

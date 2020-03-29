@@ -212,6 +212,8 @@ namespace UdonSharp
             return typeName;
         }
 
+        private static List<Assembly> loadedAssemblyCache = null;
+        
         public System.Type ResolveExternType(string qualifiedTypeName)
         {
             qualifiedTypeName = ParseBuiltinTypeAlias(qualifiedTypeName);
@@ -239,18 +241,38 @@ namespace UdonSharp
 
                 if (foundType != null)
                 {
-                    typeLookupCache.Add(testFullyQualifiedType, foundType);
+                    if (!typeLookupCache.ContainsKey(qualifiedTypeName))
+                        typeLookupCache.Add(qualifiedTypeName, foundType);
+                    if (!typeLookupCache.ContainsKey(testFullyQualifiedType))
+                        typeLookupCache.Add(testFullyQualifiedType, foundType);
                     return foundType;
                 }
                 else // Type wasn't found in current assembly, look through all loaded assemblies
                 {
-                    foreach (Assembly assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+                    if (loadedAssemblyCache == null)
                     {
+                        loadedAssemblyCache = System.AppDomain.CurrentDomain.GetAssemblies()
+                            .OrderBy(e =>
+                                e.GetName().Name.Contains("UnityEngine") ||
+                                e.GetName().Name.Contains("System") || 
+                                e.GetName().Name.Contains("VRC") ||
+                                e.GetName().Name.Contains("Udon") || 
+                                e.GetName().Name.Contains("Assembly-CSharp") ||
+                                e.GetName().Name.Contains("mscorlib")).Reverse().ToList();
+                    }
+                    
+                    foreach (Assembly assembly in loadedAssemblyCache)
+                    { 
                         foundType = assembly.GetType(testFullyQualifiedType);
 
                         if (foundType != null)
                         {
-                            typeLookupCache.Add(testFullyQualifiedType, foundType);
+                            //Debug.Log($"Found type {foundType} in assembly {assembly.GetName().Name}");
+                            
+                            if (!typeLookupCache.ContainsKey(qualifiedTypeName)) 
+                                typeLookupCache.Add(qualifiedTypeName, foundType);
+                            if (!typeLookupCache.ContainsKey(testFullyQualifiedType))
+                                typeLookupCache.Add(testFullyQualifiedType, foundType);
                             return foundType;
                         }
                     }
