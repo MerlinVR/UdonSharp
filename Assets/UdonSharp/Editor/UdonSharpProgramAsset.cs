@@ -314,7 +314,7 @@ namespace UdonSharp
             return null;
         }
 
-        private object DrawUnityObjectField(string fieldName, string symbol, (object value, Type declaredType, FieldDefinition symbolField) publicVariable, ref bool dirty)
+        private object DrawUnityObjectField(GUIContent fieldName, string symbol, (object value, Type declaredType, FieldDefinition symbolField) publicVariable, ref bool dirty)
         {
             (object value, Type declaredType, FieldDefinition symbolField) = publicVariable;
 
@@ -390,6 +390,16 @@ namespace UdonSharp
             if (fieldName == null)
                 fieldName = ObjectNames.NicifyVariableName(symbol);
 
+            GUIContent fieldLabel = null;
+
+            TooltipAttribute tooltip = fieldDefinition == null ? null : fieldDefinition.GetAttribute<TooltipAttribute>();
+
+            if (tooltip != null)
+                fieldLabel = new GUIContent(fieldName, tooltip.tooltip);
+            else
+                fieldLabel = new GUIContent(fieldName);
+
+
             if (declaredType.IsArray)
             {
                 bool foldoutEnabled;
@@ -399,7 +409,7 @@ namespace UdonSharp
                     foldoutStates.Add(symbol, false);
                 }
 
-                foldoutEnabled = EditorGUILayout.Foldout(foldoutEnabled, fieldName);
+                foldoutEnabled = EditorGUILayout.Foldout(foldoutEnabled, fieldLabel);
                 foldoutStates[symbol] = foldoutEnabled;
 
                 if (foldoutEnabled)
@@ -415,7 +425,7 @@ namespace UdonSharp
                     {
                         arrayDataType = typeof(Component[]);
                     }
-                    
+
 
                     if (value == null) // We can abuse that the foldout modified the outer scope when it was expanded to make sure this gets set
                     {
@@ -474,7 +484,7 @@ namespace UdonSharp
             }
             else if (typeof(UnityEngine.Object).IsAssignableFrom(declaredType))
             {
-                return DrawUnityObjectField(fieldName, symbol, (value, declaredType, symbolField), ref dirty);
+                return DrawUnityObjectField(fieldLabel, symbol, (value, declaredType, symbolField), ref dirty);
             }
             else if (declaredType == typeof(string))
             {
@@ -483,7 +493,7 @@ namespace UdonSharp
                 if (textArea != null)
                 {
                     EditorGUILayout.BeginVertical();
-                    EditorGUILayout.LabelField(fieldName);
+                    EditorGUILayout.LabelField(fieldLabel);
                     string textAreaText = EditorGUILayout.TextArea((string)value);
                     EditorGUILayout.EndVertical();
 
@@ -491,40 +501,40 @@ namespace UdonSharp
                 }
                 else
                 {
-                    return EditorGUILayout.TextField(fieldName, (string)value);
+                    return EditorGUILayout.TextField(fieldLabel, (string)value);
                 }
             }
             else if (declaredType == typeof(float))
             {
-                return EditorGUILayout.FloatField(fieldName, (float?)value ?? default);
+                return EditorGUILayout.FloatField(fieldLabel, (float?)value ?? default);
             }
             else if (declaredType == typeof(double))
             {
-                return EditorGUILayout.DoubleField(fieldName, (double?)value ?? default);
+                return EditorGUILayout.DoubleField(fieldLabel, (double?)value ?? default);
             }
             else if (declaredType == typeof(int))
             {
-                return EditorGUILayout.IntField(fieldName, (int?)value ?? default);
+                return EditorGUILayout.IntField(fieldLabel, (int?)value ?? default);
             }
             else if (declaredType == typeof(long))
             {
-                return EditorGUILayout.LongField(fieldName, (long?)value ?? default);
+                return EditorGUILayout.LongField(fieldLabel, (long?)value ?? default);
             }
             else if (declaredType == typeof(bool))
             {
-                return EditorGUILayout.Toggle(fieldName, (bool?)value ?? default);
+                return EditorGUILayout.Toggle(fieldLabel, (bool?)value ?? default);
             }
             else if (declaredType == typeof(Vector2))
             {
-                return EditorGUILayout.Vector2Field(fieldName, (Vector2?)value ?? default);
+                return EditorGUILayout.Vector2Field(fieldLabel, (Vector2?)value ?? default);
             }
             else if (declaredType == typeof(Vector3))
             {
-                return EditorGUILayout.Vector3Field(fieldName, (Vector3?)value ?? default);
+                return EditorGUILayout.Vector3Field(fieldLabel, (Vector3?)value ?? default);
             }
             else if (declaredType == typeof(Vector4))
             {
-                return EditorGUILayout.Vector4Field(fieldName, (Vector4?)value ?? default);
+                return EditorGUILayout.Vector4Field(fieldLabel, (Vector4?)value ?? default);
             }
             else if (declaredType == typeof(Color))
             {
@@ -532,26 +542,26 @@ namespace UdonSharp
 
                 if (colorUsage != null)
                 {
-                    return EditorGUILayout.ColorField(new GUIContent(fieldName), (Color?)value ?? default, false, colorUsage.showAlpha, colorUsage.hdr);
+                    return EditorGUILayout.ColorField(fieldLabel, (Color?)value ?? default, false, colorUsage.showAlpha, colorUsage.hdr);
                 }
                 else
                 {
-                    return EditorGUILayout.ColorField(fieldName, (Color?)value ?? default);
+                    return EditorGUILayout.ColorField(fieldLabel, (Color?)value ?? default);
                 }
             }
             else if (declaredType == typeof(Color32))
             {
-                return (Color32)EditorGUILayout.ColorField(fieldName, (Color32?)value ?? default);
+                return (Color32)EditorGUILayout.ColorField(fieldLabel, (Color32?)value ?? default);
             }
             else if (declaredType == typeof(Quaternion))
             {
                 Quaternion quatVal = (Quaternion?)value ?? default;
-                Vector4 newQuat = EditorGUILayout.Vector4Field(fieldName, new Vector4(quatVal.x, quatVal.y, quatVal.z, quatVal.w));
+                Vector4 newQuat = EditorGUILayout.Vector4Field(fieldLabel, new Vector4(quatVal.x, quatVal.y, quatVal.z, quatVal.w));
                 return new Quaternion(newQuat.x, newQuat.y, newQuat.z, newQuat.w);
             }
             else if (declaredType == typeof(Bounds))
             {
-                return EditorGUILayout.BoundsField(fieldName, (Bounds?)value ?? default);
+                return EditorGUILayout.BoundsField(fieldLabel, (Bounds?)value ?? default);
             }
             else if (declaredType == typeof(ParticleSystem.MinMaxCurve))
             {
@@ -559,7 +569,7 @@ namespace UdonSharp
                 ParticleSystem.MinMaxCurve minMaxCurve = (ParticleSystem.MinMaxCurve?)value ?? default;
 
                 EditorGUILayout.BeginVertical();
-                EditorGUILayout.LabelField(fieldName);
+                EditorGUILayout.LabelField(fieldLabel);
                 EditorGUI.indentLevel++;
                 minMaxCurve.curveMultiplier = EditorGUILayout.FloatField("Multiplier", minMaxCurve.curveMultiplier);
                 minMaxCurve.curveMin = EditorGUILayout.CurveField("Min Curve", minMaxCurve.curveMin);
@@ -573,16 +583,16 @@ namespace UdonSharp
             }
             else if (declaredType == typeof(LayerMask)) // Lazy layermask support, todo: make it more like the editor layer mask and also don't do all these LINQ operations and such every draw
             {
-                return (LayerMask)EditorGUILayout.MaskField(fieldName, (LayerMask?)value ?? default, Enumerable.Range(0, 32).Select(e => LayerMask.LayerToName(e).Length > 0 ? e + ": " + LayerMask.LayerToName(e) : "").ToArray());
+                return (LayerMask)EditorGUILayout.MaskField(fieldLabel, (LayerMask?)value ?? default, Enumerable.Range(0, 32).Select(e => LayerMask.LayerToName(e).Length > 0 ? e + ": " + LayerMask.LayerToName(e) : "").ToArray());
             }
             else if (declaredType.IsEnum)
             {
-                return EditorGUILayout.EnumPopup(fieldName, (Enum)(value ?? Activator.CreateInstance(declaredType)));
+                return EditorGUILayout.EnumPopup(fieldLabel, (Enum)(value ?? Activator.CreateInstance(declaredType)));
             }
             else if (declaredType == typeof(System.Type))
             {
                 string typeName = value != null ? ((Type)value).FullName : "null";
-                EditorGUILayout.LabelField(fieldName, typeName);
+                EditorGUILayout.LabelField(fieldLabel, typeName);
             }
             else if (declaredType == typeof(Gradient))
             {
@@ -596,16 +606,16 @@ namespace UdonSharp
 
                 if (gradientUsage != null)
                 {
-                    return EditorGUILayout.GradientField(new GUIContent(fieldName), (Gradient)value, gradientUsage.hdr);
+                    return EditorGUILayout.GradientField(fieldLabel, (Gradient)value, gradientUsage.hdr);
                 }
                 else
                 {
-                    return EditorGUILayout.GradientField(fieldName, (Gradient)value);
+                    return EditorGUILayout.GradientField(fieldLabel, (Gradient)value);
                 }
             }
             else if (declaredType == typeof(AnimationCurve))
             {
-                return EditorGUILayout.CurveField(fieldName, (AnimationCurve)value);
+                return EditorGUILayout.CurveField(fieldLabel, (AnimationCurve)value);
             }
             else
             {
