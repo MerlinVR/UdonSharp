@@ -256,7 +256,8 @@ namespace UdonSharp
                     }
                 }
             }
-
+            
+            typeLookupCache.Add(qualifiedTypeName, null);
             // We didn't find a valid type
             //throw new System.ArgumentException($"Could not resolve type {qualifiedTypeName}");
             return null;

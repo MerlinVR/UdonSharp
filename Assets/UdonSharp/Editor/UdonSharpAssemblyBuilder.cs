@@ -2,6 +2,7 @@
 //#define USE_UDON_LABELS
 
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -36,7 +37,7 @@ namespace UdonSharp
             currentLabelTable = labelTable;
 
 #if !USE_UDON_LABELS
-            assemblyString = Regex.Replace(assemblyString, @"(?<whitespace>\s*)(?<labeltype>JUMP_LABEL,|JUMP_IF_FALSE_LABEL,)\s*[[](?<label>[a-zA-Z_\d]+)[\]](?<commentwhitespace>\s*)(?<comment>[#]+\s*[a-zA-Z#\s]+)*", MatchEval);
+            assemblyString = ReplaceLabels(assemblyString, labelTable);
 #endif
 
             currentLabelTable = null;
@@ -45,36 +46,43 @@ namespace UdonSharp
         }
 
 #if !USE_UDON_LABELS
-        private static string MatchEval(Match match)
+        private string ReplaceLabels(string assemblyString, LabelTable labelTable)
         {
-            GroupCollection groupCollection = match.Groups;
-
-            string replaceStr = "";
+            StringBuilder newAssemblyBuilder = new StringBuilder();
             
-            replaceStr += groupCollection["whitespace"].Value; // Whitespace
-
-            if (groupCollection["labeltype"].Value == "JUMP_LABEL,")
+            using (StringReader reader = new StringReader(assemblyString))
             {
-                replaceStr += "JUMP, ";
+                string currentLine = reader.ReadLine();
+
+                while (currentLine != null)
+                {
+                    string line = currentLine.TrimStart(' ', '\n', '\r');
+                    if (line.StartsWith("JUMP_LABEL,"))
+                    {
+                        int startIdx = line.IndexOf('[') + 1;
+                        int endIdx = line.IndexOf(']');
+                        string labelName = line.Substring(startIdx, endIdx - startIdx);
+                        JumpLabel label = labelTable.GetLabel(labelName);
+                        newAssemblyBuilder.AppendLine("        JUMP, " + label.AddresStr());
+                    }
+                    else if (line.StartsWith("JUMP_IF_FALSE_LABEL,"))
+                    {
+                        int startIdx = line.IndexOf('[') + 1;
+                        int endIdx = line.IndexOf(']');
+                        string labelName = line.Substring(startIdx, endIdx - startIdx);
+                        JumpLabel label = labelTable.GetLabel(labelName);
+                        newAssemblyBuilder.AppendLine("        JUMP_IF_FALSE, " + label.AddresStr());
+                    }
+                    else
+                    {
+                        newAssemblyBuilder.AppendLine(currentLine);
+                    }
+
+                    currentLine = reader.ReadLine();
+                }
             }
-            else if (groupCollection["labeltype"].Value == "JUMP_IF_FALSE_LABEL,")
-            {
-                replaceStr += "JUMP_IF_FALSE, ";
-            }
 
-            string labelName = groupCollection["label"].Value;
-
-            JumpLabel targetLabel = currentLabelTable.GetLabel(labelName);
-
-            replaceStr += targetLabel.AddresStr();
-
-            replaceStr += groupCollection["commentwhitespace"];
-
-            // optional comment
-            if (groupCollection.Count > 4)
-                replaceStr += groupCollection["comment"].Value;
-
-            return replaceStr;
+            return newAssemblyBuilder.ToString();
         }
 #endif
 
