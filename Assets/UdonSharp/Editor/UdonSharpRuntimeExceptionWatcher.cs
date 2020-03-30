@@ -197,7 +197,13 @@ namespace UdonSharp
             const string exceptionMessageStr = "Exception Message:";
             const string seperatorStr = "----------------------";
             int errorMessageStart = errorStr.IndexOf(exceptionMessageStr) + exceptionMessageStr.Length;
+            if (errorMessageStart == -1)
+                return;
+
             int errorMessageEnd = errorStr.IndexOf(seperatorStr, errorMessageStart);
+
+            if (errorMessageEnd == -1 || errorMessageEnd < errorMessageStart)
+                return;
 
             string errorMessage = errorStr.Substring(errorMessageStart, errorMessageEnd - errorMessageStart).TrimStart('\n', '\r');
             int programCounter;
