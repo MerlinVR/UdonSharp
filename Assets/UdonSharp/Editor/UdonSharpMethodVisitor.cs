@@ -34,11 +34,15 @@ namespace UdonSharp
 
         public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
         {
-            namespaceStack.Push(node.Name.ToFullString().TrimEnd('\r', '\n', ' '));
+            string[] namespaces = node.Name.ToFullString().TrimEnd('\r', '\n', ' ').Split('.');
+
+            foreach (string currentNamespace in namespaces)
+                namespaceStack.Push(currentNamespace);
 
             base.VisitNamespaceDeclaration(node);
 
-            namespaceStack.Pop();
+            for (int i = 0; i < namespaces.Length; ++i)
+                namespaceStack.Pop();
         }
 
         public override void VisitClassDeclaration(ClassDeclarationSyntax node)
@@ -46,7 +50,12 @@ namespace UdonSharp
             using (ExpressionCaptureScope classTypeCapture = new ExpressionCaptureScope(visitorContext, null))
             {
                 foreach (string namespaceToken in namespaceStack.Reverse())
+                {
                     classTypeCapture.ResolveAccessToken(namespaceToken);
+
+                    if (classTypeCapture.IsNamespace())
+                        visitorContext.resolverContext.AddNamespace(classTypeCapture.captureNamespace);
+                }
 
                 visitorContext.resolverContext.AddNamespace(classTypeCapture.captureNamespace);
 

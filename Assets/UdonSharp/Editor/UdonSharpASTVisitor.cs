@@ -183,7 +183,10 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
-            namespaceStack.Push(node.Name.ToFullString().TrimEnd('\r', '\n', ' '));
+            string[] namespaces = node.Name.ToFullString().TrimEnd('\r', '\n', ' ').Split('.');
+
+            foreach (string currentNamespace in namespaces)
+                namespaceStack.Push(currentNamespace);
 
             foreach (UsingDirectiveSyntax usingDirective in node.Usings)
                 Visit(usingDirective);
@@ -191,7 +194,8 @@ namespace UdonSharp
             foreach (MemberDeclarationSyntax memberDeclaration in node.Members)
                 Visit(memberDeclaration);
 
-            namespaceStack.Pop();
+            for (int i = 0; i < namespaces.Length; ++i)
+                namespaceStack.Pop();
         }
 
         public override void VisitSimpleBaseType(SimpleBaseTypeSyntax node)
@@ -232,13 +236,16 @@ namespace UdonSharp
             
             if (node.BaseList == null)
                 throw new System.NotSupportedException("UdonSharp only supports classes that  from 'UdonSharpBehaviour' at the moment");
-
-            Visit(node.BaseList);
-
+            
             using (ExpressionCaptureScope selfTypeCaptureScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 foreach (string namespaceToken in namespaceStack.Reverse())
+                {
                     selfTypeCaptureScope.ResolveAccessToken(namespaceToken);
+
+                    if (selfTypeCaptureScope.IsNamespace())
+                        visitorContext.resolverContext.AddNamespace(selfTypeCaptureScope.captureNamespace);
+                }
 
                 selfTypeCaptureScope.ResolveAccessToken(node.Identifier.ValueText);
 
@@ -247,6 +254,8 @@ namespace UdonSharp
 
                 visitorContext.behaviourUserType = selfTypeCaptureScope.captureType;
             }
+
+            Visit(node.BaseList);
 
             visitorContext.topTable.CreateReflectionSymbol("udonTypeID", typeof(long), Internal.UdonSharpInternalUtility.GetTypeID(visitorContext.behaviourUserType));
             visitorContext.topTable.CreateReflectionSymbol("udonTypeName", typeof(string), Internal.UdonSharpInternalUtility.GetTypeName(visitorContext.behaviourUserType));
