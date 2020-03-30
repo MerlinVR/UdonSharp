@@ -434,6 +434,21 @@ namespace UdonSharp.Editors
             return countTotal;
         }
 
+        // Mostly because assembly.GetTypes doesn't return types that are nested under other nested types, which people really shouldn't do, but this is here for completeness
+        private List<System.Type> GetNestedTypes(System.Type type)
+        {
+            List<System.Type> nestedTypes = new List<System.Type>();
+
+            foreach (System.Type nestedType in type.GetNestedTypes())
+            {
+                nestedTypes.Add(nestedType);
+
+                nestedTypes.AddRange(GetNestedTypes(nestedType));
+            }
+
+            return nestedTypes;
+        }
+
         private void BuildExposedTypeList()
         {
             if (exposedTypes != null)
@@ -457,7 +472,17 @@ namespace UdonSharp.Editors
                         assembly.FullName.Contains("CodeAnalysis"))
                         continue;
 
-                    System.Type[] types = assembly.GetTypes();
+                    System.Type[] assemblyTypes = assembly.GetTypes();
+
+                    List<System.Type> types = new List<System.Type>();
+
+                    foreach (System.Type assemblyType in assemblyTypes)
+                    {
+                        types.Add(assemblyType);
+                        types.AddRange(GetNestedTypes(assemblyType));
+                    }
+
+                    types = types.Distinct().ToList();
 
                     foreach (System.Type type in types)
                     {
@@ -476,30 +501,81 @@ namespace UdonSharp.Editors
                         }
 
                         MethodInfo[] methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
-
-                        bool addedType = false;
-
+                        
                         foreach (MethodInfo method in methods)
                         {
                             if (resolver.IsValidUdonMethod(resolver.GetUdonMethodName(method, false)))
                             {
-                                if (!addedType)
-                                {
-                                    exposedTypeSet.Add(method.DeclaringType);
-                                    addedType = true;
-                                }
+                                exposedTypeSet.Add(method.DeclaringType);
+
 
                                 // We also want to highlight types that can be returned or taken as parameters
                                 if (method.ReturnType != null &&
                                     method.ReturnType != typeof(void) &&
                                     method.ReturnType.Name != "T" &&
                                     method.ReturnType.Name != "T[]")
+                                {
                                     exposedTypeSet.Add(method.ReturnType);
+
+                                    if (!method.ReturnType.IsArray && !method.ReturnType.IsGenericType && !method.ReturnType.IsGenericTypeDefinition)
+                                        exposedTypeSet.Add(method.ReturnType.MakeArrayType());
+                                }
 
                                 foreach (ParameterInfo parameterInfo in method.GetParameters())
                                 {
                                     if (!parameterInfo.ParameterType.IsByRef)
+                                    {
                                         exposedTypeSet.Add(parameterInfo.ParameterType);
+
+                                        if (!parameterInfo.ParameterType.IsArray)
+                                            exposedTypeSet.Add(parameterInfo.ParameterType.MakeArrayType());
+                                    }
+                                }
+                            }
+                        }
+
+                        foreach (PropertyInfo property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+                        {
+                            MethodInfo propertyGetter = property.GetGetMethod();
+                            if (propertyGetter == null)
+                                continue;
+
+                            if (resolver.IsValidUdonMethod(resolver.GetUdonMethodName(propertyGetter, false)))
+                            {
+                                System.Type returnType = propertyGetter.ReturnType;
+                                
+                                exposedTypeSet.Add(property.DeclaringType);
+
+                                if (returnType != null &&
+                                    returnType != typeof(void) &&
+                                    returnType.Name != "T" &&
+                                    returnType.Name != "T[]")
+                                {
+                                    exposedTypeSet.Add(returnType);
+
+                                    if (!returnType.IsArray && !returnType.IsGenericType && !returnType.IsGenericTypeDefinition)
+                                        exposedTypeSet.Add(returnType.MakeArrayType());
+                                }
+                            }
+                        }
+
+                        foreach (FieldInfo field in type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+                        {
+                            if (resolver.IsValidUdonMethod(resolver.GetUdonFieldAccessorName(field, FieldAccessorType.Get, false)))
+                            {
+                                System.Type returnType = field.FieldType;
+                                
+                                exposedTypeSet.Add(field.DeclaringType);
+
+                                if (returnType != null &&
+                                    returnType != typeof(void) &&
+                                    returnType.Name != "T" &&
+                                    returnType.Name != "T[]")
+                                {
+                                    exposedTypeSet.Add(returnType);
+
+                                    if (!returnType.IsArray && !returnType.IsGenericType && !returnType.IsGenericTypeDefinition)
+                                        exposedTypeSet.Add(returnType.MakeArrayType());
                                 }
                             }
                         }
