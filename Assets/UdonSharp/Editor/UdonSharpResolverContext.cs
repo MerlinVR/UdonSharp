@@ -609,14 +609,17 @@ namespace UdonSharp
                     }
                     else if (currentParam.HasParamsParameter()) // Make sure all params args can be assigned to the param type
                     {
-                        System.Type paramType = currentParam.ParameterType.GetElementType();
-
-                        for (int j = i; j < methodArgs.Count; ++j)
+                        if (!(currentParam.ParameterType.IsImplicitlyAssignableFrom(methodArgs[i]) && i == methodArgs.Count - 1)) // Handle passing in the actual array type for the params parameter
                         {
-                            if (!paramType.IsImplicitlyAssignableFrom(methodArgs[j]))
+                            System.Type paramType = currentParam.ParameterType.GetElementType();
+
+                            for (int j = i; j < methodArgs.Count; ++j)
                             {
-                                isMethodValid = false;
-                                break;
+                                if (!paramType.IsImplicitlyAssignableFrom(methodArgs[j]))
+                                {
+                                    isMethodValid = false;
+                                    break;
+                                }
                             }
                         }
 

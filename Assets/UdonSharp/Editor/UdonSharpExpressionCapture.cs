@@ -623,25 +623,32 @@ namespace UdonSharp
                 {
                     int paramCount = invokeParams.Length - i;
 
-                    SymbolDefinition paramsArraySymbol = visitorContext.topTable.CreateConstSymbol(methodParams[i].ParameterType, 
-                                    System.Activator.CreateInstance(methodParams[i].ParameterType, new object[] { paramCount }));
-
-                    for (int j = i; j < invokeParams.Length; ++j)
+                    if (paramCount == 1 && methodParams[i].ParameterType.IsImplicitlyAssignableFrom(invokeParams[i].userCsType))
                     {
-                        int paramArrayIndex = j - i;
-
-                        // This can potentially grow unbounded, but we'll hope that the user doesn't go insane with the param count
-                        SymbolDefinition arrayIndexSymbol = visitorContext.topTable.CreateConstSymbol(typeof(int), paramArrayIndex);
-
-                        using (ExpressionCaptureScope paramArraySetterScope = new ExpressionCaptureScope(visitorContext, null))
-                        {
-                            paramArraySetterScope.SetToLocalSymbol(paramsArraySymbol);
-                            paramArraySetterScope.HandleArrayIndexerAccess(arrayIndexSymbol);
-                            paramArraySetterScope.ExecuteSet(invokeParams[j]);
-                        }
+                        newInvokeParams.Add(invokeParams[i]);
                     }
+                    else
+                    {
+                        SymbolDefinition paramsArraySymbol = visitorContext.topTable.CreateConstSymbol(methodParams[i].ParameterType,
+                                        System.Activator.CreateInstance(methodParams[i].ParameterType, new object[] { paramCount }));
 
-                    newInvokeParams.Add(paramsArraySymbol);
+                        for (int j = i; j < invokeParams.Length; ++j)
+                        {
+                            int paramArrayIndex = j - i;
+
+                            // This can potentially grow unbounded, but we'll hope that the user doesn't go insane with the param count
+                            SymbolDefinition arrayIndexSymbol = visitorContext.topTable.CreateConstSymbol(typeof(int), paramArrayIndex);
+
+                            using (ExpressionCaptureScope paramArraySetterScope = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                paramArraySetterScope.SetToLocalSymbol(paramsArraySymbol);
+                                paramArraySetterScope.HandleArrayIndexerAccess(arrayIndexSymbol);
+                                paramArraySetterScope.ExecuteSet(invokeParams[j]);
+                            }
+                        }
+
+                        newInvokeParams.Add(paramsArraySymbol);
+                    }
                     break;
                 }
 
