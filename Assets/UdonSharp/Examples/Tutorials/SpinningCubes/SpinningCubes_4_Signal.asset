@@ -20,7 +20,7 @@ MonoBehaviour:
     null\r\n\r\n.data_end\r\n\r\n        \r\n         # using UnityEngine;\r\n        \r\n
     \        # using VRC.SDK3.Components;\r\n        \r\n         # using VRC.SDKBase;\r\n
     \       \r\n         # using VRC.Udon;\r\n        \r\n         # namespace UdonSharp.Examples.Tutorials\r\n
-    \       \r\n         # [AddComponentMenu(\"Udon Sharp/Tutorials/Spinning Cube
+    \       \r\n         # [AddComponentMenu(\"Udon Sharp/Tutorials/Spinning Cubes
     4 Signal\")]\r\n        \r\n         # public class SpinningCubes_4_Signal : UdonSharpBehaviour\r\n.code_start\r\n
     \       \r\n         # public float speed = 60f;\r\n.code_end\r\n"
   assemblyError: 
@@ -158,58 +158,59 @@ MonoBehaviour:
     - startInstruction: 0
       endInstruction: -1
       startSourceChar: 89
-      endSourceChar: 185
+      endSourceChar: 289
       line: 6
       lineChar: 0
       spanCodeSection: "namespace UdonSharp.Examples.Tutorials\r\n{\r\n    /// <summary>\r\n
-        \   /// \r\n    /// </summary>\r\n    "
+        \   /// U# implementation of the fourth Udon spinning cube example (https://www.youtube.com/watch?v=HSpvrfWICeI)\r\n
+        \   /// </summary>\r\n    "
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 185
-      endSourceChar: 292
+      startSourceChar: 289
+      endSourceChar: 397
       line: 11
       lineChar: 4
-      spanCodeSection: "[AddComponentMenu(\"Udon Sharp/Tutorials/Spinning Cube 4 Signal\")]\r\n
-        \   public class SpinningCubes_4_Signal "
+      spanCodeSection: "[AddComponentMenu(\"Udon Sharp/Tutorials/Spinning Cubes 4
+        Signal\")]\r\n    public class SpinningCubes_4_Signal "
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 292
-      endSourceChar: 294
+      startSourceChar: 397
+      endSourceChar: 399
       line: 12
       lineChar: 40
       spanCodeSection: ': '
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 294
-      endSourceChar: 294
+      startSourceChar: 399
+      endSourceChar: 399
       line: 12
       lineChar: 42
       spanCodeSection: 
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 294
-      endSourceChar: 330
+      startSourceChar: 399
+      endSourceChar: 435
       line: 12
       lineChar: 42
       spanCodeSection: "UdonSharpBehaviour \r\n    {\r\n        "
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 330
-      endSourceChar: 337
+      startSourceChar: 435
+      endSourceChar: 442
       line: 14
       lineChar: 8
       spanCodeSection: 'public '
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 337
-      endSourceChar: 337
+      startSourceChar: 442
+      endSourceChar: 442
       line: 14
       lineChar: 15
       spanCodeSection: 
     - startInstruction: 0
       endInstruction: 0
-      startSourceChar: 337
-      endSourceChar: 337
+      startSourceChar: 442
+      endSourceChar: 442
       line: 14
       lineChar: 15
       spanCodeSection: 

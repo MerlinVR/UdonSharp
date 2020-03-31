@@ -742,27 +742,30 @@ namespace UdonSharp
 
             bool isPublic = node.Modifiers.HasModifier("public") || fieldAttributes.Find(e => e is SerializeField) != null;
 
-            SymbolDefinition fieldSymbol = HandleVariableDeclaration(node.Declaration, isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private, fieldSyncMode);
-            FieldDefinition fieldDefinition = new FieldDefinition(fieldSymbol);
-            fieldDefinition.fieldAttributes = fieldAttributes;
-
-            if (fieldSymbol.IsUserDefinedType())
+            List<SymbolDefinition> fieldSymbols = HandleVariableDeclaration(node.Declaration, isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private, fieldSyncMode);
+            foreach (SymbolDefinition fieldSymbol in fieldSymbols)
             {
-                System.Type fieldType = fieldSymbol.userCsType;
-                while (fieldType.IsArray)
-                    fieldType = fieldType.GetElementType();
+                FieldDefinition fieldDefinition = new FieldDefinition(fieldSymbol);
+                fieldDefinition.fieldAttributes = fieldAttributes;
 
-                foreach (ClassDefinition classDefinition in visitorContext.externClassDefinitions)
+                if (fieldSymbol.IsUserDefinedType())
                 {
-                    if (classDefinition.userClassType == fieldType)
+                    System.Type fieldType = fieldSymbol.userCsType;
+                    while (fieldType.IsArray)
+                        fieldType = fieldType.GetElementType();
+
+                    foreach (ClassDefinition classDefinition in visitorContext.externClassDefinitions)
                     {
-                        fieldDefinition.userBehaviourSource = classDefinition.classScript;
-                        break;
+                        if (classDefinition.userClassType == fieldType)
+                        {
+                            fieldDefinition.userBehaviourSource = classDefinition.classScript;
+                            break;
+                        }
                     }
                 }
-            }
 
-            visitorContext.localFieldDefinitions.Add(fieldSymbol.symbolUniqueName, fieldDefinition);
+                visitorContext.localFieldDefinitions.Add(fieldSymbol.symbolUniqueName, fieldDefinition);
+            }
         }
 
         public override void VisitVariableDeclaration(VariableDeclarationSyntax node)
@@ -772,7 +775,7 @@ namespace UdonSharp
             HandleVariableDeclaration(node, SymbolDeclTypeFlags.Local, UdonSyncMode.NotSynced);
         }
 
-        public SymbolDefinition HandleVariableDeclaration(VariableDeclarationSyntax node, SymbolDeclTypeFlags symbolType, UdonSyncMode syncMode)
+        public List<SymbolDefinition> HandleVariableDeclaration(VariableDeclarationSyntax node, SymbolDeclTypeFlags symbolType, UdonSyncMode syncMode)
         {
             UpdateSyntaxNode(node);
 
@@ -794,9 +797,12 @@ namespace UdonSharp
             }
 
             SymbolDefinition newSymbol = null;
+            List<SymbolDefinition> newSymbols = new List<SymbolDefinition>();
 
             foreach (VariableDeclaratorSyntax variableDeclarator in node.Variables)
             {
+                newSymbol = null;
+
                 string variableName = variableDeclarator.Identifier.ValueText;
                 bool createdSymbol = false;
 
@@ -841,12 +847,15 @@ namespace UdonSharp
                         symbolCreationScope.SetToLocalSymbol(newSymbol);
                     }
                 }
+
+                if (newSymbol != null)
+                {
+                    VerifySyncValidForType(newSymbol.symbolCsType, syncMode);
+                    newSymbols.Add(newSymbol);
+                }
             }
 
             string udonTypeName = visitorContext.resolverContext.GetUdonTypeName(variableType);
-
-            if (newSymbol != null)
-                VerifySyncValidForType(newSymbol.symbolCsType, syncMode);
 
             bool isUserDefinedType = UdonSharpUtils.IsUserDefinedType(variableType);
 
@@ -856,7 +865,7 @@ namespace UdonSharp
                 !isUserDefinedType)
                 throw new System.NotSupportedException($"Udon does not support variables of type '{variableType.Name}' yet");
 
-            return newSymbol;
+            return newSymbols;
         }
 
         public override void VisitIdentifierName(IdentifierNameSyntax node)

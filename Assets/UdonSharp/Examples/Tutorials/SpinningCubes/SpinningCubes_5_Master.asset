@@ -29,7 +29,8 @@ MonoBehaviour:
     \       \r\n         # using UnityEngine;\r\n        \r\n         # using VRC.SDK3.Components;\r\n
     \       \r\n         # using VRC.SDKBase;\r\n        \r\n         # using VRC.Udon;\r\n
     \       \r\n         # namespace UdonSharp.Examples.Tutorials\r\n        \r\n
-    \        # public class SpinningCubes_5_Master : UdonSharpBehaviour\r\n.code_start\r\n
+    \        # [AddComponentMenu(\"Udon Sharp/Tutorials/Spinning Cubes 5 Master\")]\r\n
+    \       \r\n         # public class SpinningCubes_5_Master : UdonSharpBehaviour\r\n.code_start\r\n
     \       \r\n         # public GameObject cubeToRotate;\r\n        \r\n         #
     UdonBehaviour udonRotateTarget;\r\n        \r\n         # bool isRotating = false;\r\n
     \       \r\n         # private void Start()\r\n    .export _start\r\n        \r\n
@@ -202,324 +203,326 @@ MonoBehaviour:
     - startInstruction: 0
       endInstruction: -1
       startSourceChar: 89
-      endSourceChar: 185
+      endSourceChar: 288
       line: 6
       lineChar: 0
       spanCodeSection: "namespace UdonSharp.Examples.Tutorials\r\n{\r\n    /// <summary>\r\n
-        \   /// \r\n    /// </summary>\r\n    "
+        \   /// U# implementation of the fifth Udon spinning cube example (https://www.youtube.com/watch?v=tgbGetGdwiU)\r\n
+        \   /// </summary>\r\n    "
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 185
-      endSourceChar: 221
+      startSourceChar: 288
+      endSourceChar: 396
       line: 11
       lineChar: 4
-      spanCodeSection: 'public class SpinningCubes_5_Master '
+      spanCodeSection: "[AddComponentMenu(\"Udon Sharp/Tutorials/Spinning Cubes 5
+        Master\")]\r\n    public class SpinningCubes_5_Master "
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 221
-      endSourceChar: 223
-      line: 11
+      startSourceChar: 396
+      endSourceChar: 398
+      line: 12
       lineChar: 40
       spanCodeSection: ': '
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 223
-      endSourceChar: 223
-      line: 11
+      startSourceChar: 398
+      endSourceChar: 398
+      line: 12
       lineChar: 42
       spanCodeSection: 
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 223
-      endSourceChar: 259
-      line: 11
+      startSourceChar: 398
+      endSourceChar: 434
+      line: 12
       lineChar: 42
       spanCodeSection: "UdonSharpBehaviour \r\n    {\r\n        "
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 259
-      endSourceChar: 266
-      line: 13
+      startSourceChar: 434
+      endSourceChar: 441
+      line: 14
       lineChar: 8
       spanCodeSection: 'public '
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 266
-      endSourceChar: 266
-      line: 13
+      startSourceChar: 441
+      endSourceChar: 441
+      line: 14
       lineChar: 15
       spanCodeSection: 
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 266
-      endSourceChar: 302
-      line: 13
+      startSourceChar: 441
+      endSourceChar: 477
+      line: 14
       lineChar: 15
       spanCodeSection: "GameObject cubeToRotate;\r\n\r\n        "
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 302
-      endSourceChar: 302
-      line: 15
+      startSourceChar: 477
+      endSourceChar: 477
+      line: 16
       lineChar: 8
       spanCodeSection: 
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 302
-      endSourceChar: 302
-      line: 15
+      startSourceChar: 477
+      endSourceChar: 477
+      line: 16
       lineChar: 8
       spanCodeSection: 
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 302
-      endSourceChar: 343
-      line: 15
+      startSourceChar: 477
+      endSourceChar: 518
+      line: 16
       lineChar: 8
       spanCodeSection: "UdonBehaviour udonRotateTarget;\r\n        "
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 343
-      endSourceChar: 343
-      line: 16
+      startSourceChar: 518
+      endSourceChar: 518
+      line: 17
       lineChar: 8
       spanCodeSection: 
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 343
-      endSourceChar: 343
-      line: 16
+      startSourceChar: 518
+      endSourceChar: 518
+      line: 17
       lineChar: 8
       spanCodeSection: 
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 343
-      endSourceChar: 379
-      line: 16
+      startSourceChar: 518
+      endSourceChar: 554
+      line: 17
       lineChar: 8
       spanCodeSection: "bool isRotating = false;\r\n\r\n        "
     - startInstruction: 0
       endInstruction: 19
-      startSourceChar: 379
-      endSourceChar: 409
-      line: 18
+      startSourceChar: 554
+      endSourceChar: 584
+      line: 19
       lineChar: 8
       spanCodeSection: "private void Start()\r\n        "
     - startInstruction: 20
       endInstruction: 19
-      startSourceChar: 409
-      endSourceChar: 424
-      line: 19
+      startSourceChar: 584
+      endSourceChar: 599
+      line: 20
       lineChar: 8
       spanCodeSection: "{\r\n            "
     - startInstruction: 20
       endInstruction: 19
-      startSourceChar: 424
-      endSourceChar: 424
-      line: 20
+      startSourceChar: 599
+      endSourceChar: 599
+      line: 21
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 20
       endInstruction: 19
-      startSourceChar: 424
-      endSourceChar: 443
-      line: 20
+      startSourceChar: 599
+      endSourceChar: 618
+      line: 21
       lineChar: 12
       spanCodeSection: 'udonRotateTarget = '
     - startInstruction: 20
       endInstruction: 19
-      startSourceChar: 443
-      endSourceChar: 458
-      line: 20
+      startSourceChar: 618
+      endSourceChar: 633
+      line: 21
       lineChar: 31
       spanCodeSection: (UdonBehaviour)
     - startInstruction: 20
       endInstruction: 19
-      startSourceChar: 458
-      endSourceChar: 484
-      line: 20
+      startSourceChar: 633
+      endSourceChar: 659
+      line: 21
       lineChar: 46
       spanCodeSection: cubeToRotate.GetComponent(
     - startInstruction: 20
       endInstruction: 19
-      startSourceChar: 484
-      endSourceChar: 491
-      line: 20
+      startSourceChar: 659
+      endSourceChar: 666
+      line: 21
       lineChar: 72
       spanCodeSection: typeof(
     - startInstruction: 20
       endInstruction: 99
-      startSourceChar: 491
-      endSourceChar: 530
-      line: 20
+      startSourceChar: 666
+      endSourceChar: 705
+      line: 21
       lineChar: 79
       spanCodeSection: "UdonBehaviour));\r\n        }\r\n\r\n        "
     - startInstruction: 100
       endInstruction: 119
-      startSourceChar: 530
-      endSourceChar: 566
-      line: 23
+      startSourceChar: 705
+      endSourceChar: 741
+      line: 24
       lineChar: 8
       spanCodeSection: "private void OnMouseDown()\r\n        "
     - startInstruction: 120
       endInstruction: 119
-      startSourceChar: 566
-      endSourceChar: 581
-      line: 24
+      startSourceChar: 741
+      endSourceChar: 756
+      line: 25
       lineChar: 8
       spanCodeSection: "{\r\n            "
     - startInstruction: 120
       endInstruction: 119
-      startSourceChar: 581
-      endSourceChar: 581
-      line: 25
+      startSourceChar: 756
+      endSourceChar: 756
+      line: 26
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 120
       endInstruction: 119
-      startSourceChar: 581
-      endSourceChar: 614
-      line: 25
+      startSourceChar: 756
+      endSourceChar: 789
+      line: 26
       lineChar: 12
       spanCodeSection: udonRotateTarget.SendCustomEvent(
     - startInstruction: 120
       endInstruction: 151
-      startSourceChar: 614
-      endSourceChar: 649
-      line: 25
+      startSourceChar: 789
+      endSourceChar: 824
+      line: 26
       lineChar: 45
       spanCodeSection: "\"DoRotate\");\r\n        }\r\n\r\n        "
     - startInstruction: 152
       endInstruction: 171
-      startSourceChar: 649
-      endSourceChar: 681
-      line: 28
+      startSourceChar: 824
+      endSourceChar: 856
+      line: 29
       lineChar: 8
       spanCodeSection: "public void DoRotate()\r\n        "
     - startInstruction: 172
       endInstruction: 171
-      startSourceChar: 681
-      endSourceChar: 696
-      line: 29
+      startSourceChar: 856
+      endSourceChar: 871
+      line: 30
       lineChar: 8
       spanCodeSection: "{\r\n            "
     - startInstruction: 172
       endInstruction: 171
-      startSourceChar: 696
-      endSourceChar: 696
-      line: 30
+      startSourceChar: 871
+      endSourceChar: 871
+      line: 31
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 172
       endInstruction: 171
-      startSourceChar: 696
-      endSourceChar: 709
-      line: 30
+      startSourceChar: 871
+      endSourceChar: 884
+      line: 31
       lineChar: 12
       spanCodeSection: 'isRotating = '
     - startInstruction: 172
       endInstruction: 171
-      startSourceChar: 709
-      endSourceChar: 710
-      line: 30
+      startSourceChar: 884
+      endSourceChar: 885
+      line: 31
       lineChar: 25
       spanCodeSection: '!'
     - startInstruction: 172
       endInstruction: 223
-      startSourceChar: 710
-      endSourceChar: 744
-      line: 30
+      startSourceChar: 885
+      endSourceChar: 919
+      line: 31
       lineChar: 26
       spanCodeSection: "isRotating;\r\n        }\r\n\r\n        "
     - startInstruction: 224
       endInstruction: 243
-      startSourceChar: 744
-      endSourceChar: 775
-      line: 33
+      startSourceChar: 919
+      endSourceChar: 950
+      line: 34
       lineChar: 8
       spanCodeSection: "private void Update()\r\n        "
     - startInstruction: 244
       endInstruction: 243
-      startSourceChar: 775
-      endSourceChar: 790
-      line: 34
+      startSourceChar: 950
+      endSourceChar: 965
+      line: 35
       lineChar: 8
       spanCodeSection: "{\r\n            "
     - startInstruction: 244
       endInstruction: 243
-      startSourceChar: 790
-      endSourceChar: 794
-      line: 35
+      startSourceChar: 965
+      endSourceChar: 969
+      line: 36
       lineChar: 12
       spanCodeSection: if (
     - startInstruction: 244
       endInstruction: 259
-      startSourceChar: 794
-      endSourceChar: 823
-      line: 35
+      startSourceChar: 969
+      endSourceChar: 998
+      line: 36
       lineChar: 16
       spanCodeSection: "isRotating)\r\n                "
     - startInstruction: 260
       endInstruction: 259
-      startSourceChar: 823
-      endSourceChar: 823
-      line: 36
+      startSourceChar: 998
+      endSourceChar: 998
+      line: 37
       lineChar: 16
       spanCodeSection: 
     - startInstruction: 260
       endInstruction: 259
-      startSourceChar: 823
-      endSourceChar: 840
-      line: 36
+      startSourceChar: 998
+      endSourceChar: 1015
+      line: 37
       lineChar: 16
       spanCodeSection: transform.Rotate(
     - startInstruction: 260
       endInstruction: 259
-      startSourceChar: 840
-      endSourceChar: 840
-      line: 36
+      startSourceChar: 1015
+      endSourceChar: 1015
+      line: 37
       lineChar: 33
       spanCodeSection: 
     - startInstruction: 260
       endInstruction: 259
-      startSourceChar: 840
-      endSourceChar: 848
-      line: 36
+      startSourceChar: 1015
+      endSourceChar: 1023
+      line: 37
       lineChar: 33
       spanCodeSection: Vector3.
     - startInstruction: 260
       endInstruction: 275
-      startSourceChar: 848
-      endSourceChar: 852
-      line: 36
+      startSourceChar: 1023
+      endSourceChar: 1027
+      line: 37
       lineChar: 41
       spanCodeSection: 'up, '
     - startInstruction: 276
       endInstruction: 275
-      startSourceChar: 852
-      endSourceChar: 858
-      line: 36
+      startSourceChar: 1027
+      endSourceChar: 1033
+      line: 37
       lineChar: 45
       spanCodeSection: '60f * '
     - startInstruction: 276
       endInstruction: 275
-      startSourceChar: 858
-      endSourceChar: 858
-      line: 36
+      startSourceChar: 1033
+      endSourceChar: 1033
+      line: 37
       lineChar: 51
       spanCodeSection: 
     - startInstruction: 276
       endInstruction: 275
-      startSourceChar: 858
-      endSourceChar: 863
-      line: 36
+      startSourceChar: 1033
+      endSourceChar: 1038
+      line: 37
       lineChar: 51
       spanCodeSection: Time.
     - startInstruction: 276
       endInstruction: 276
-      startSourceChar: 863
-      endSourceChar: 863
-      line: 36
+      startSourceChar: 1038
+      endSourceChar: 1038
+      line: 37
       lineChar: 56
       spanCodeSection: 
   serializationData:

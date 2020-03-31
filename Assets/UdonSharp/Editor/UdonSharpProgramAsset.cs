@@ -682,7 +682,7 @@ namespace UdonSharp
                     fieldDefinitions.TryGetValue(symbol, out fieldDefinition);
 
                 EditorGUI.BeginChangeCheck();
-                object newValue = DrawFieldForType(null, symbol, (variableValue, variableType, fieldDefinition), fieldDefinition.fieldSymbol.userCsType, ref dirty, enabled);
+                object newValue = DrawFieldForType(null, symbol, (variableValue, variableType, fieldDefinition), fieldDefinition != null ? fieldDefinition.fieldSymbol.userCsType : null, ref dirty, enabled);
 
                 if (EditorGUI.EndChangeCheck())
                 {
