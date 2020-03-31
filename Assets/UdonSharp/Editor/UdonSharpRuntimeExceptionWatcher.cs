@@ -32,6 +32,26 @@ namespace UdonSharp
 
             Application.logMessageReceived += OnLog;
             EditorApplication.update += OnEditorUpdate;
+            
+            // Now setup the filesystem watcher
+            string[] splitPath = Application.persistentDataPath.Split('/', '\\');
+            string VRCDataPath = string.Join("\\", splitPath.Take(splitPath.Length - 2)) + "\\VRChat\\VRChat";
+
+            AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
+            logDirectoryWatcher = new FileSystemWatcher(VRCDataPath, "output_log_*.txt");
+            logDirectoryWatcher.IncludeSubdirectories = false;
+            logDirectoryWatcher.NotifyFilter = NotifyFilters.LastWrite;
+            logDirectoryWatcher.Changed += OnLogFileChanged;
+            logDirectoryWatcher.EnableRaisingEvents = false;
+        }
+
+        static bool InitializeScriptLookup()
+        {
+            if (scriptLookup != null)
+                return true;
+
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+                return false;
 
             scriptLookup = new Dictionary<long, (string, ClassDebugInfo)>();
             string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
@@ -60,19 +80,8 @@ namespace UdonSharp
 
                 scriptLookup.Add(programID, (AssetDatabase.GetAssetPath(programAsset.sourceCsScript), programAsset.debugInfo));
             }
-            
-            // Now setup the filesystem watcher
-            string[] splitPath = Application.persistentDataPath.Split('/', '\\');
-            string VRCDataPath = string.Join("\\", splitPath.Take(splitPath.Length - 2)) + "\\VRChat\\VRChat";
-            
-            //UdonSharpSettingsObject udonSharpSettings = UdonSharpSettingsObject.GetOrCreateSettings();
 
-            AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
-            logDirectoryWatcher = new FileSystemWatcher(VRCDataPath, "output_log_*.txt");
-            logDirectoryWatcher.IncludeSubdirectories = false;
-            logDirectoryWatcher.NotifyFilter = NotifyFilters.LastWrite;
-            logDirectoryWatcher.Changed += OnLogFileChanged;
-            logDirectoryWatcher.EnableRaisingEvents = false; /*udonSharpSettings.buildDebugInfo && udonSharpSettings.listenForVRCExceptions*/
+            return true;
         }
         
         static void CleanupLogWatcher()
@@ -98,6 +107,9 @@ namespace UdonSharp
 
         static void OnEditorUpdate()
         {
+            if (!InitializeScriptLookup())
+                return;
+
             while (debugOutputQueue.Count > 0)
             {
                 HandleLogError(debugOutputQueue.Dequeue(), "Udon runtime exception detected!");
