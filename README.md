@@ -36,6 +36,11 @@ This compiler is in an early state and I have no prior experience making compile
 - Field initilizers are evaluated at compile time, if you have any init logic that depends on other objects in the scene you should use Start for this.
 - Use the `UdonSynced` attribute on fields that you want to sync.  
 
+## Udon bugs that affect U#
+- Heap variables do not get initialized immediately which can cause unexpected behavior. Mainly when you use VRCInstantiate to create an object, the UdonBehaviour components on the instantiated object will not be setup until the next frame. So you cannot set values on the UdonBehaviour script immediately after initialization and attempts to get variables will return null. Due to how `GetComponent<T>` on user defined types works, it will also fail and return null until the behaviour has a chance to initialize its heap. This also happens if you have a UdonBehaviour that has never been enabled. https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/heap-values-are-not-initialized-in-some-cases-so-getprogramvariable-returns-null
+- In a similar manner custom events will not be fired immediately after instantiation. https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/sendcustomevent-fails-on-gameobjects-that-where-instantiated-in-the-same-functio
+- Setters on properties for struct types do not currently function https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/raysetorigin-and-raysetdirection-not-working
+
 ## Setup
 
 ### Requirements
