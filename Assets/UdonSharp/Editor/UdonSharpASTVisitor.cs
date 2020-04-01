@@ -1802,6 +1802,9 @@ namespace UdonSharp
 
         private SymbolDefinition HandleImplicitBoolCast(SymbolDefinition symbol)
         {
+            if (symbol == null)
+                throw new System.ArgumentException("Cannot implicitly convert type 'void' to 'bool'");
+
             if (symbol.symbolCsType != typeof(bool))
             {
                 SymbolDefinition conditionBoolCast = visitorContext.topTable.CreateUnnamedSymbol(typeof(bool), SymbolDeclTypeFlags.Internal);

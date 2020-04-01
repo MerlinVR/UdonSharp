@@ -255,7 +255,13 @@ namespace UdonSharp
                 throw new System.Exception("Cannot get property get method on non-properties");
 
             if (captureProperty.ReflectedType == typeof(VRC.Udon.UdonBehaviour))
-                return typeof(Component).GetProperty(captureProperty.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static).GetGetMethod();
+            {
+                PropertyInfo property = typeof(Component).GetProperty(captureProperty.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+                if (property == null)
+                    return null;
+
+                return property.GetGetMethod();
+            }
 
             return captureProperty.GetGetMethod();
         }
@@ -266,7 +272,13 @@ namespace UdonSharp
                 throw new System.Exception("Cannot get property get method on non-properties");
 
             if (captureProperty.ReflectedType == typeof(VRC.Udon.UdonBehaviour))
-                return typeof(Component).GetProperty(captureProperty.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static).GetGetMethod();
+            {
+                PropertyInfo property = typeof(Component).GetProperty(captureProperty.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+                if (property == null)
+                    return null;
+
+                return property.GetGetMethod();
+            }
 
             return captureProperty.GetSetMethod();
         }
@@ -284,6 +296,9 @@ namespace UdonSharp
             if (captureArchetype == ExpressionCaptureArchetype.Property)
             {
                 MethodInfo getMethod = GetUdonGetMethodInfo();
+
+                if (getMethod == null)
+                    throw new System.MemberAccessException($"Property or indexer '{captureProperty.DeclaringType.Name}.{captureProperty.Name}' doesn't exist");
 
                 if (getMethod.ReturnType == typeof(void))
                     throw new System.TypeLoadException("Cannot return type of void from a get statement");
@@ -386,7 +401,7 @@ namespace UdonSharp
                 MethodInfo setMethod = GetUdonSetMethodInfo();
 
                 if (setMethod == null)
-                    throw new System.MemberAccessException($"Property or indexer '{captureProperty.DeclaringType.Name}.{captureProperty.Name}' cannot be assigned to -- it is read only");
+                    throw new System.MemberAccessException($"Property or indexer '{captureProperty.DeclaringType.Name}.{captureProperty.Name}' cannot be assigned to -- it is read only or doesn't exist");
 
                 string udonMethodString = visitorContext.resolverContext.GetUdonMethodName(setMethod);
 
@@ -479,7 +494,7 @@ namespace UdonSharp
                 throw new System.ArgumentException($"Cannot implicitly convert type '{UdonSharpUtils.PrettifyTypeName(sourceSymbol.userCsType)}' to '{UdonSharpUtils.PrettifyTypeName(targetType)}'");
 
             // Exact type match, just return the symbol, this is what will happen a majority of the time.
-            if (targetType == sourceSymbol.symbolCsType || isObjectAssignable)
+            if (targetType == sourceSymbol.symbolCsType || (isObjectAssignable && !needsNewSymbol))
                 return sourceSymbol;
 
             // We can just return the symbol as-is
@@ -1734,7 +1749,8 @@ namespace UdonSharp
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
                 captureArchetype != ExpressionCaptureArchetype.Property &&
                 captureArchetype != ExpressionCaptureArchetype.Field &&
-                captureArchetype != ExpressionCaptureArchetype.ArrayIndexer)
+                captureArchetype != ExpressionCaptureArchetype.ArrayIndexer &&
+                captureArchetype != ExpressionCaptureArchetype.ExternUserField)
             {
                 throw new System.Exception("Can only access properties on Local Symbols, Properties, and Fields");
             }
@@ -1768,7 +1784,8 @@ namespace UdonSharp
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
                 captureArchetype != ExpressionCaptureArchetype.Property &&
                 captureArchetype != ExpressionCaptureArchetype.Field &&
-                captureArchetype != ExpressionCaptureArchetype.ArrayIndexer)
+                captureArchetype != ExpressionCaptureArchetype.ArrayIndexer &&
+                captureArchetype != ExpressionCaptureArchetype.ExternUserField)
             {
                 throw new System.Exception("Can only access fields on Local Symbols, Properties, and Fields");
             }
@@ -1800,7 +1817,8 @@ namespace UdonSharp
                 captureArchetype != ExpressionCaptureArchetype.Property &&
                 captureArchetype != ExpressionCaptureArchetype.Field && 
                 captureArchetype != ExpressionCaptureArchetype.ArrayIndexer &&
-                captureArchetype != ExpressionCaptureArchetype.Enum)
+                captureArchetype != ExpressionCaptureArchetype.Enum &&
+                captureArchetype != ExpressionCaptureArchetype.ExternUserField)
             {
                 throw new System.Exception("Can only access member methods on Local Symbols, Properties, and Fields");
             }
@@ -1829,7 +1847,9 @@ namespace UdonSharp
             if (accessSymbol == null || !accessSymbol.IsUserDefinedBehaviour())
                 return false;
 
-            ClassDefinition externClass = visitorContext.externClassDefinitions.Where(e => e.userClassType == accessSymbol.userCsType).FirstOrDefault();
+            System.Type returnType = GetReturnType(true);
+
+            ClassDefinition externClass = visitorContext.externClassDefinitions.Where(e => e.userClassType == returnType).FirstOrDefault();
 
             if (externClass == null)
                 return false;
