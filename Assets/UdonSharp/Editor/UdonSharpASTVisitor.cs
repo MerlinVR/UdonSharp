@@ -819,7 +819,7 @@ namespace UdonSharp
                             if (newSymbol == null)
                             {
                                 if (isVar)
-                                    variableType = initializerCapture.GetReturnType();
+                                    variableType = initializerCapture.GetReturnType(true);
 
                                 newSymbol = visitorContext.topTable.CreateNamedSymbol(variableName, variableType, symbolType);
 
