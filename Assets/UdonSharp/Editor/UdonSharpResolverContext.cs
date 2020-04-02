@@ -455,7 +455,7 @@ namespace UdonSharp
 
             if (validate && !nodeDefinitionLookup.Contains(finalFunctionSig))
             {
-                throw new System.Exception($"Could not find Udon function {finalFunctionSig}");
+                throw new System.Exception($"Method {finalFunctionSig} is not exposed in Udon");
             }
 
             return finalFunctionSig;
@@ -474,7 +474,7 @@ namespace UdonSharp
 
             if (validate && !nodeDefinitionLookup.Contains(finalFunctionSig))
             {
-                throw new System.Exception($"Could not find Udon field accessor {finalFunctionSig}");
+                throw new System.Exception($"Field accessor {finalFunctionSig} is not exposed in Udon");
             }
 
             return finalFunctionSig;
