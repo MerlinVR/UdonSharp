@@ -376,6 +376,12 @@ namespace UdonSharp
                 // Capture type should still be valid from the last transition
                 outSymbol = visitorContext.topTable.CreateConstSymbol(captureType, GetEnumValue());
             }
+            else if (captureArchetype == ExpressionCaptureArchetype.Unknown)
+            {
+                string[] unresolvedTokens = unresolvedAccessChain.Split('.');
+                string invalidName = unresolvedTokens.Length > 1 ? unresolvedTokens[unresolvedTokens.Length - 2] : unresolvedTokens[0];
+                throw new System.Exception($"The name '{invalidName}' does not exist in the current context");
+            }
             else
             {
                 throw new System.Exception("Get can only be run on Fields, Properties, Local Symbols, array indexers, and the `this` keyword");
@@ -1954,7 +1960,26 @@ namespace UdonSharp
         private void HandleUnknownToken(string unknownToken)
         {
             if (captureArchetype != ExpressionCaptureArchetype.Unknown && captureArchetype != ExpressionCaptureArchetype.Namespace)
-                throw new System.Exception($"Unknown type/field/parameter/method {unresolvedAccessChain}.{unknownToken}");
+            {
+                System.Type returnType = null;
+
+                try
+                {
+                    returnType = GetReturnType(true);
+                }
+                catch { }
+
+                string tokenName = unresolvedAccessChain + (unresolvedAccessChain.Length != 0 ? "." : "") + unknownToken;
+
+                if (returnType != null)
+                {
+                    throw new System.Exception($"'{returnType.Name}' does not contain a definition for '{tokenName}'");
+                }
+                else
+                {
+                    throw new System.Exception($"Unknown type/field/parameter/method '{tokenName}'");
+                }
+            }
 
             captureArchetype = ExpressionCaptureArchetype.Unknown;
             if (captureNamespace.Length > 0)
