@@ -42,7 +42,7 @@ MonoBehaviour:
     __0_intnl_SystemBoolean\r\n        EXTERN, \"SystemObject.__op_Equality__SystemObject_SystemObject__SystemBoolean\"\r\n
     \       PUSH, __0_intnl_SystemBoolean\r\n        PUSH, isInEditor\r\n        COPY\r\n
     \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n
-    \        # void LateUpdate()\r\n    .export _lateUpdate\r\n        \r\n    _lateUpdate:\r\n
+    \        # void Update()\r\n    .export _update\r\n        \r\n    _update:\r\n
     \       \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n        PUSH, __0_intnl_returnTarget_UInt32\r\n
     \       COPY\r\n        \r\n         # {\r\n        \r\n         # if (isInEditor)\r\n
     \       PUSH, isInEditor\r\n        JUMP_IF_FALSE, 0x000000A0\r\n        \r\n
@@ -368,77 +368,77 @@ MonoBehaviour:
     - startInstruction: 116
       endInstruction: 135
       startSourceChar: 619
-      endSourceChar: 646
+      endSourceChar: 642
       line: 25
       lineChar: 8
-      spanCodeSection: "void LateUpdate()\r\n        "
+      spanCodeSection: "void Update()\r\n        "
     - startInstruction: 136
       endInstruction: 135
-      startSourceChar: 646
-      endSourceChar: 661
+      startSourceChar: 642
+      endSourceChar: 657
       line: 26
       lineChar: 8
       spanCodeSection: "{\r\n            "
     - startInstruction: 136
       endInstruction: 135
-      startSourceChar: 661
-      endSourceChar: 665
+      startSourceChar: 657
+      endSourceChar: 661
       line: 27
       lineChar: 12
       spanCodeSection: if (
     - startInstruction: 136
       endInstruction: 151
-      startSourceChar: 665
-      endSourceChar: 694
+      startSourceChar: 661
+      endSourceChar: 690
       line: 27
       lineChar: 16
       spanCodeSection: "isInEditor)\r\n                "
     - startInstruction: 152
       endInstruction: 159
-      startSourceChar: 694
-      endSourceChar: 717
+      startSourceChar: 690
+      endSourceChar: 713
       line: 28
       lineChar: 16
       spanCodeSection: "return;\r\n\r\n            "
     - startInstruction: 160
       endInstruction: 159
-      startSourceChar: 717
-      endSourceChar: 717
+      startSourceChar: 713
+      endSourceChar: 713
       line: 30
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 160
       endInstruction: 159
-      startSourceChar: 717
-      endSourceChar: 750
+      startSourceChar: 713
+      endSourceChar: 746
       line: 30
       lineChar: 12
       spanCodeSection: transform.SetPositionAndRotation(
     - startInstruction: 160
       endInstruction: 159
-      startSourceChar: 750
-      endSourceChar: 776
+      startSourceChar: 746
+      endSourceChar: 772
       line: 30
       lineChar: 45
       spanCodeSection: playerApi.GetBonePosition(
     - startInstruction: 160
       endInstruction: 191
-      startSourceChar: 776
-      endSourceChar: 790
+      startSourceChar: 772
+      endSourceChar: 786
       line: 30
       lineChar: 71
       spanCodeSection: 'trackedBone), '
     - startInstruction: 192
       endInstruction: 191
-      startSourceChar: 790
-      endSourceChar: 816
+      startSourceChar: 786
+      endSourceChar: 812
       line: 30
       lineChar: 85
       spanCodeSection: playerApi.GetBoneRotation(
     - startInstruction: 192
       endInstruction: 192
-      startSourceChar: 816
-      endSourceChar: 816
+      startSourceChar: 812
+      endSourceChar: 812
       line: 30
       lineChar: 111
       spanCodeSection: 

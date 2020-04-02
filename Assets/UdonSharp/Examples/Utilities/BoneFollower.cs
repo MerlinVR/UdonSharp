@@ -23,7 +23,7 @@ namespace UdonSharp.Examples.Utilities
             isInEditor = playerApi == null;
         }
 
-        void LateUpdate()
+        void Update()
         {
             if (isInEditor)
                 return;
