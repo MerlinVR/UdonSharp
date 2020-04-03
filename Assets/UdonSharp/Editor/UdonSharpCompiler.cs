@@ -196,16 +196,28 @@ namespace UdonSharp
                     bool isConst = fieldDeclarationSyntax.Modifiers.Any(t => t.ToString() == "const");
                     foreach (var variable in fieldDeclarationSyntax.Declaration.Variables)
                     {
+                        FieldDefinition fieldDef = module.compiledClassDefinition?.fieldDefinitions?.Find(e => (e.fieldSymbol.declarationType == SymbolDeclTypeFlags.Private || e.fieldSymbol.declarationType == SymbolDeclTypeFlags.Public) &&
+                                                                                                                e.fieldSymbol.symbolOriginalName == variable.Identifier.ToString());
+
+                        string typeQualifiedName = type.ToString();
+                        if (fieldDef != null)
+                        {
+                            if (fieldDef.fieldSymbol.symbolCsType.Namespace.Length == 0)
+                                typeQualifiedName = fieldDef.fieldSymbol.symbolCsType.Name;
+                            else
+                                typeQualifiedName = fieldDef.fieldSymbol.symbolCsType.Namespace + "." + fieldDef.fieldSymbol.symbolCsType.Name;
+                        }
+
                         if (variable.Initializer != null)
                         {
                             string name = variable.Identifier.ToString();
                             if (isConst)
                             {
-                                _class.Members.Add(new CodeSnippetTypeMember($"const {type} {name} {variable.Initializer};"));
+                                _class.Members.Add(new CodeSnippetTypeMember($"const {typeQualifiedName} {name} {variable.Initializer};"));
                             }
                             else
                             {
-                                method.Statements.Add(new CodeSnippetStatement($"{type} {name} {variable.Initializer};"));
+                                method.Statements.Add(new CodeSnippetStatement($"{typeQualifiedName} {name} {variable.Initializer};"));
                             }
 
                             method.Statements.Add(new CodeSnippetStatement(

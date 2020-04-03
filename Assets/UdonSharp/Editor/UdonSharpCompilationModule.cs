@@ -27,6 +27,8 @@ namespace UdonSharp
         
         public HashSet<FieldDeclarationSyntax> fieldsWithInitializers;
 
+        public ClassDefinition compiledClassDefinition = null;
+
         public int ErrorCount { get; private set; } = 0;
 
         public CompilationModule(UdonSharpProgramAsset sourceAsset)
@@ -133,6 +135,8 @@ namespace UdonSharp
 
             if (errorCount == 0)
             {
+                compiledClassDefinition = classDefinitions.Where(e => e.userClassType == visitor.visitorContext.behaviourUserType).FirstOrDefault();
+
                 Profiler.BeginSample("Build assembly");
                 string dataBlock = BuildHeapDataBlock();
                 string codeBlock = visitor.GetCompiledUasm();
