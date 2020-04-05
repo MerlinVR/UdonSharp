@@ -8,11 +8,12 @@ namespace UdonSharp.Examples.Utilities
     [AddComponentMenu("Udon Sharp/Utilities/Player Mod Setter")]
     public class PlayerModSetter : UdonSharpBehaviour
     {
-        public bool useLegacyLocomotion = false;
-
         public float jumpHeight = 3f;
         public float runSpeed = 4f;
         public float walkSpeed = 2f;
+        public float gravity = 1f;
+
+        public bool useLegacyLocomotion = false;
 
         void Start()
         {
@@ -24,12 +25,13 @@ namespace UdonSharp.Examples.Utilities
                 playerApi.SetJumpImpulse(jumpHeight);
                 playerApi.SetRunSpeed(runSpeed);
                 playerApi.SetWalkSpeed(walkSpeed);
+                playerApi.SetGravityStrength(gravity);
 
                 if (useLegacyLocomotion)
                     playerApi.UseLegacyLocomotion();
             }
 
-            Destroy(gameObject);
+            Destroy(this);
         }
     }
 }
