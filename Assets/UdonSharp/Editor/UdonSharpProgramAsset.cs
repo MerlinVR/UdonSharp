@@ -35,6 +35,9 @@ namespace UdonSharp
         [HideInInspector]
         public ClassDebugInfo debugInfo = null;
 
+        [SerializeField]
+        private bool hasInteractEvent = false;
+
         [SerializeField, HideInInspector]
         private SerializationData serializationData;
 
@@ -95,6 +98,16 @@ namespace UdonSharp
             // Just manually break the disabled scope in the UdonBehaviourEditor default drawing for now
             GUI.enabled = GUI.enabled || shouldUseRuntimeValue;
             shouldUseRuntimeValue &= GUI.enabled;
+
+            if (currentBehaviour != null && hasInteractEvent)
+            {
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Interact", EditorStyles.boldLabel);
+                currentBehaviour.interactText = EditorGUILayout.TextField("Interaction Text", currentBehaviour.interactText);
+                currentBehaviour.proximity = EditorGUILayout.Slider("Proximity", currentBehaviour.proximity, 0f, 100f);
+            }
+
+            EditorGUILayout.Space();
 
             DrawPublicVariables(udonBehaviour, ref dirty);
 
@@ -203,6 +216,17 @@ namespace UdonSharp
             {
                 program = assemblerInterface.Assemble(udonAssembly);
                 assemblyError.SetValue(this, null);
+
+                hasInteractEvent = false;
+
+                foreach (string entryPoint in program.EntryPoints.GetExportedSymbols())
+                {
+                    if (entryPoint == "_interact")
+                    {
+                        hasInteractEvent = true;
+                        break;
+                    }
+                }
             }
             catch (Exception e)
             {
