@@ -1,7 +1,8 @@
-﻿using UnityEngine;
+﻿using UdonSharp;
+using UnityEngine;
 
 [AddComponentMenu("")]
-public class Test03_FlowControl : MonoBehaviour
+public class Test03_FlowControl : UdonSharpBehaviour
 {
     public bool shouldLog;
     public bool secondLog;
