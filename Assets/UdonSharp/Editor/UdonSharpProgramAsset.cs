@@ -105,6 +105,11 @@ namespace UdonSharp
                 EditorGUILayout.LabelField("Interact", EditorStyles.boldLabel);
                 currentBehaviour.interactText = EditorGUILayout.TextField("Interaction Text", currentBehaviour.interactText);
                 currentBehaviour.proximity = EditorGUILayout.Slider("Proximity", currentBehaviour.proximity, 0f, 100f);
+
+                EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
+                if (GUILayout.Button("Trigger Interact"))
+                    currentBehaviour.SendCustomEvent("_interact");
+                EditorGUI.EndDisabledGroup();
             }
 
             EditorGUILayout.Space();
