@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CSharp;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Profiling;
 using VRC.Udon.Common.Interfaces;
 
 namespace UdonSharp
@@ -33,6 +34,8 @@ namespace UdonSharp
 
         public void Compile()
         {
+            Profiler.BeginSample("UdonSharp Compile");
+
             System.Diagnostics.Stopwatch compileTimer = new System.Diagnostics.Stopwatch();
             compileTimer.Start();
 
@@ -53,12 +56,20 @@ namespace UdonSharp
 
                     int moduleErrorCount = module.Compile(classDefinitions);
                     totalErrorCount += moduleErrorCount;
+                }
 
-                    if (moduleErrorCount == 0)
+                if (totalErrorCount == 0)
+                {
+                    EditorUtility.DisplayProgressBar("UdonSharp Compile", "Assigning constants...", 1f);
+                    int initializerErrorCount = AssignHeapConstants();
+                    totalErrorCount += initializerErrorCount;
+
+                    if (initializerErrorCount == 0)
                     {
-                        AssignHeapConstants(module);
-
-                        module.programAsset.ApplyProgram();
+                        foreach (CompilationModule module in modules)
+                        {
+                            module.programAsset.ApplyProgram();
+                        }
                     }
                 }
             }
@@ -72,112 +83,164 @@ namespace UdonSharp
             EditorUtility.ClearProgressBar();
 
             if (totalErrorCount == 0)
-                Debug.Log($"[UdonSharp] Compile of script{(modules.Length > 1 ? "s" : "")} {string.Join(", ", modules.Select(e => Path.GetFileName(AssetDatabase.GetAssetPath(e.programAsset.sourceCsScript))))} finished in {compileTimer.Elapsed.ToString("mm\\:ss\\.fff")}");
+            {
+                if (modules.Length > 5)
+                {
+                    Debug.Log($"[UdonSharp] Compile of {modules.Length} scripts finished in {compileTimer.Elapsed.ToString("mm\\:ss\\.fff")}");
+                }
+                else
+                {
+                    Debug.Log($"[UdonSharp] Compile of script{(modules.Length > 1 ? "s" : "")} {string.Join(", ", modules.Select(e => Path.GetFileName(AssetDatabase.GetAssetPath(e.programAsset.sourceCsScript))))} finished in {compileTimer.Elapsed.ToString("mm\\:ss\\.fff")}");
+                }
+            }
+
+            Profiler.EndSample();
         }
 
-        public void AssignHeapConstants(CompilationModule module)
+        public int AssignHeapConstants()
         {
-            IUdonProgram program = module.programAsset.GetRealProgram();
+            CompilationModule[] compiledModules = modules.Where(e => e.ErrorCount == 0).ToArray();
 
-            if (program != null)
+            foreach (CompilationModule module in compiledModules)
             {
-                foreach (SymbolDefinition symbol in module.moduleSymbols.GetAllUniqueChildSymbols())
+                IUdonProgram program = module.programAsset.GetRealProgram();
+
+                if (program != null)
                 {
-                    uint symbolAddress = program.SymbolTable.GetAddressFromSymbol(symbol.symbolUniqueName);
-
-                    if (symbol.symbolDefaultValue != null)
+                    foreach (SymbolDefinition symbol in module.moduleSymbols.GetAllUniqueChildSymbols())
                     {
-                        program.Heap.SetHeapVariable(symbolAddress, symbol.symbolDefaultValue, symbol.symbolCsType);
-                    }
-                    else if (symbol.symbolCsType.IsArray && 
-                            (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public))) // Initialize null array fields to a 0-length array like Unity does
-                    {
-                        program.Heap.SetHeapVariable(symbolAddress, System.Activator.CreateInstance(symbol.symbolCsType, new object[] { 0 }), symbol.symbolCsType);
-                    }
-                }
+                        uint symbolAddress = program.SymbolTable.GetAddressFromSymbol(symbol.symbolUniqueName);
 
-                RunFieldInitalizers(module);
-
-                // Do not let users assign null to array fields, Unity does not allow this in its normal handling
-                foreach (SymbolDefinition symbol in module.moduleSymbols.GetAllUniqueChildSymbols())
-                {
-                    uint symbolAddress = program.SymbolTable.GetAddressFromSymbol(symbol.symbolUniqueName);
-
-                    if (symbol.symbolCsType.IsArray &&
-                            (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public))) // Initialize null array fields to a 0-length array like Unity does
-                    {
-                        object currentArrayValue = program.Heap.GetHeapVariable(symbolAddress);
-
-                        if (currentArrayValue == null)
+                        if (symbol.symbolDefaultValue != null)
+                        {
+                            program.Heap.SetHeapVariable(symbolAddress, symbol.symbolDefaultValue, symbol.symbolCsType);
+                        }
+                        else if (symbol.symbolCsType.IsArray &&
+                                (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public))) // Initialize null array fields to a 0-length array like Unity does
                         {
                             program.Heap.SetHeapVariable(symbolAddress, System.Activator.CreateInstance(symbol.symbolCsType, new object[] { 0 }), symbol.symbolCsType);
                         }
                     }
                 }
             }
-        }
 
-        private void RunFieldInitalizers(CompilationModule module)
-        {
-            IUdonProgram program = module.programAsset.GetRealProgram();
+            int fieldInitializerErrorCount = RunFieldInitalizers(compiledModules);
 
-            // We don't need to run the costly compilation if the user hasn't defined any fields with initializers
-            if (module.fieldsWithInitializers.Count == 0)
-                return;
-
-            CodeCompileUnit compileUnit = new CodeCompileUnit();
-            CodeNamespace ns = new CodeNamespace("FieldInitialzers");
-            compileUnit.Namespaces.Add(ns);
-            foreach (var resolverUsingNamespace in module.resolver.usingNamespaces)
+            foreach (CompilationModule module in compiledModules)
             {
-                if (!string.IsNullOrEmpty(resolverUsingNamespace))
-                    ns.Imports.Add(new CodeNamespaceImport(resolverUsingNamespace));
-            }
+                IUdonProgram program = module.programAsset.GetRealProgram();
 
-            CodeTypeDeclaration _class = new CodeTypeDeclaration("Initializer");
-            ns.Types.Add(_class);
-            CodeMemberMethod method = new CodeMemberMethod();
-            _class.Members.Add(method);
-            method.Attributes = MemberAttributes.Public | MemberAttributes.Static;
-            method.ReturnType = new CodeTypeReference(typeof(void));
-            method.Name = "DoInit";
-            method.Parameters.Add(new CodeParameterDeclarationExpression(typeof(IUdonProgram), "program"));
-
-            foreach (var fieldDeclarationSyntax in module.fieldsWithInitializers)
-            {
-                var type = fieldDeclarationSyntax.Declaration.Type;
-                int count = 0;
-                bool isConst = fieldDeclarationSyntax.Modifiers.Any(t => t.ToString() == "const");
-                foreach (var variable in fieldDeclarationSyntax.Declaration.Variables)
+                if (program != null)
                 {
-                    if (variable.Initializer != null)
+                    // Do not let users assign null to array fields, Unity does not allow this in its normal handling
+                    foreach (SymbolDefinition symbol in module.moduleSymbols.GetAllUniqueChildSymbols())
                     {
-                        string name = variable.Identifier.ToString();
-                        if (isConst)
-                        {
-                            _class.Members.Add(new CodeSnippetTypeMember($"const {type} {name} {variable.Initializer};"));
-                        }
-                        else
-                        {
-                            method.Statements.Add(new CodeSnippetStatement($"{type} {name} {variable.Initializer};"));
-                        }
+                        uint symbolAddress = program.SymbolTable.GetAddressFromSymbol(symbol.symbolUniqueName);
 
-                        method.Statements.Add(new CodeSnippetStatement(
-                            $"program.Heap.SetHeapVariable(program.SymbolTable.GetAddressFromSymbol(\"{variable.Identifier}\"), {name});"));
+                        if (symbol.symbolCsType.IsArray &&
+                                (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public))) // Initialize null array fields to a 0-length array like Unity does
+                        {
+                            object currentArrayValue = program.Heap.GetHeapVariable(symbolAddress);
 
-                        count++;
+                            if (currentArrayValue == null)
+                            {
+                                program.Heap.SetHeapVariable(symbolAddress, System.Activator.CreateInstance(symbol.symbolCsType, new object[] { 0 }), symbol.symbolCsType);
+                            }
+                        }
                     }
                 }
             }
 
-            CSharpCodeProvider provider = new CSharpCodeProvider();
-            StringBuilder sb = new StringBuilder();
-            using (StringWriter streamWriter = new StringWriter(sb))
-            {
-                provider.GenerateCodeFromCompileUnit(compileUnit, streamWriter, new CodeGeneratorOptions());
-            }
+            return fieldInitializerErrorCount;
+        }
 
-            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(sb.ToString());
+        private int RunFieldInitalizers(CompilationModule[] compiledModules)
+        {
+            CompilationModule[] modulesToInitialize = compiledModules.Where(e => e.fieldsWithInitializers.Count > 0).ToArray();
+            
+            // We don't need to run the costly compilation if the user hasn't defined any fields with initializers
+            if (modulesToInitialize.Length == 0)
+                return 0;
+
+            int initializerErrorCount = 0;
+
+            SyntaxTree[] initializerTrees = new SyntaxTree[modulesToInitialize.Length];
+            StringBuilder[] codeStringBuilders = new StringBuilder[modulesToInitialize.Length];
+
+            for (int moduleIdx = 0; moduleIdx < modulesToInitialize.Length; ++moduleIdx)
+            {
+                CompilationModule module = modulesToInitialize[moduleIdx];
+
+                CodeCompileUnit compileUnit = new CodeCompileUnit();
+                CodeNamespace ns = new CodeNamespace("FieldInitialzers");
+                compileUnit.Namespaces.Add(ns);
+                foreach (var resolverUsingNamespace in module.resolver.usingNamespaces)
+                {
+                    if (!string.IsNullOrEmpty(resolverUsingNamespace))
+                        ns.Imports.Add(new CodeNamespaceImport(resolverUsingNamespace));
+                }
+
+                CodeTypeDeclaration _class = new CodeTypeDeclaration($"Initializer{moduleIdx}");
+                ns.Types.Add(_class);
+                CodeMemberMethod method = new CodeMemberMethod();
+                _class.Members.Add(method);
+                method.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+                method.ReturnType = new CodeTypeReference(typeof(void));
+                method.Name = "DoInit";
+                method.Parameters.Add(new CodeParameterDeclarationExpression(typeof(IUdonProgram), "program"));
+
+                foreach (var fieldDeclarationSyntax in module.fieldsWithInitializers)
+                {
+                    var type = fieldDeclarationSyntax.Declaration.Type;
+                    int count = 0;
+                    bool isConst = fieldDeclarationSyntax.Modifiers.Any(t => t.ToString() == "const");
+                    foreach (var variable in fieldDeclarationSyntax.Declaration.Variables)
+                    {
+                        FieldDefinition fieldDef = module.compiledClassDefinition?.fieldDefinitions?.Find(e => (e.fieldSymbol.declarationType == SymbolDeclTypeFlags.Private || e.fieldSymbol.declarationType == SymbolDeclTypeFlags.Public) &&
+                                                                                                                e.fieldSymbol.symbolOriginalName == variable.Identifier.ToString());
+
+                        string typeQualifiedName = type.ToString();
+                        if (fieldDef != null)
+                        {
+                            if (fieldDef.fieldSymbol.symbolCsType.Namespace.Length == 0)
+                                typeQualifiedName = fieldDef.fieldSymbol.symbolCsType.Name;
+                            else
+                                typeQualifiedName = fieldDef.fieldSymbol.symbolCsType.Namespace + "." + fieldDef.fieldSymbol.symbolCsType.Name;
+                        }
+
+                        if (variable.Initializer != null)
+                        {
+                            string name = variable.Identifier.ToString();
+                            if (isConst)
+                            {
+                                _class.Members.Add(new CodeSnippetTypeMember($"const {typeQualifiedName} {name} {variable.Initializer};"));
+                            }
+                            else
+                            {
+                                method.Statements.Add(new CodeSnippetStatement($"{typeQualifiedName} {name} {variable.Initializer};"));
+                            }
+
+                            method.Statements.Add(new CodeSnippetStatement(
+                                $"program.Heap.SetHeapVariable(program.SymbolTable.GetAddressFromSymbol(\"{variable.Identifier}\"), {name});"));
+
+                            count++;
+                        }
+                    }
+                }
+
+                StringBuilder sb = new StringBuilder();
+                codeStringBuilders[moduleIdx] = sb;
+
+                CSharpCodeProvider provider = new CSharpCodeProvider();
+                using (StringWriter streamWriter = new StringWriter(sb))
+                {
+                    provider.GenerateCodeFromCompileUnit(compileUnit, streamWriter, new CodeGeneratorOptions());
+                }
+
+                SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(sb.ToString());
+
+                initializerTrees[moduleIdx] = syntaxTree;
+            }
 
             var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
             var references = new List<MetadataReference>();
@@ -189,7 +252,7 @@ namespace UdonSharp
 
             CSharpCompilation compilation = CSharpCompilation.Create(
                 $"init{initAssemblyCounter++}",
-                syntaxTrees: new[] {syntaxTree},
+                syntaxTrees: initializerTrees,
                 references: references,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
@@ -198,6 +261,7 @@ namespace UdonSharp
                 EmitResult result = compilation.Emit(memoryStream);
                 if (!result.Success)
                 {
+                    // todo: make these errors point to the correct source files
                     bool error = false;
                     foreach (Diagnostic diagnostic in result.Diagnostics)
                     {
@@ -205,22 +269,45 @@ namespace UdonSharp
                         {
                             Debug.LogError(diagnostic);
                             error = true;
+                            initializerErrorCount++;
                         }
                     }
 
                     if (error)
-                        Debug.LogError($"Generated Source code: {sb}");
+                        Debug.LogError($"Generated Source code: {string.Join("\n", codeStringBuilders.Select(e => e.ToString()))}");
                 }
                 else
                 {
                     memoryStream.Seek(0, SeekOrigin.Begin);
 
                     Assembly assembly = Assembly.Load(memoryStream.ToArray());
-                    var cls = assembly.GetType("FieldInitialzers.Initializer");
-                    MethodInfo methodInfo = cls.GetMethod("DoInit", BindingFlags.Public | BindingFlags.Static);
-                    methodInfo.Invoke(null, new[] {program});
+
+                    for (int moduleIdx = 0; moduleIdx < modulesToInitialize.Length; ++moduleIdx)
+                    {
+                        CompilationModule module = modulesToInitialize[moduleIdx];
+                        IUdonProgram program = module.programAsset.GetRealProgram();
+
+                        System.Type cls = assembly.GetType($"FieldInitialzers.Initializer{moduleIdx}");
+                        MethodInfo methodInfo = cls.GetMethod("DoInit", BindingFlags.Public | BindingFlags.Static);
+                        methodInfo.Invoke(null, new[] { program });
+
+                        foreach (var fieldDeclarationSyntax in module.fieldsWithInitializers)
+                        {
+                            foreach (var variable in fieldDeclarationSyntax.Declaration.Variables)
+                            {
+                                string varName = variable.Identifier.ToString();
+
+                                object heapValue = program.Heap.GetHeapVariable(program.SymbolTable.GetAddressFromSymbol(varName));
+
+                                if (heapValue != null && UdonSharpUtils.IsUserDefinedType(heapValue.GetType()))
+                                    UdonSharpUtils.LogBuildError($"Field: '{varName}' UdonSharp does not yet support field initializers on user-defined types or jagged arrays", AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript), 0, 0);
+                            }
+                        }
+                    }
                 }
             }
+
+            return initializerErrorCount;
         }
 
         private List<ClassDefinition> BuildClassDefinitions()

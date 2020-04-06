@@ -212,6 +212,8 @@ namespace UdonSharp
             return typeName;
         }
 
+        private static List<Assembly> loadedAssemblyCache = null;
+        
         public System.Type ResolveExternType(string qualifiedTypeName)
         {
             qualifiedTypeName = ParseBuiltinTypeAlias(qualifiedTypeName);
@@ -239,27 +241,80 @@ namespace UdonSharp
 
                 if (foundType != null)
                 {
-                    typeLookupCache.Add(testFullyQualifiedType, foundType);
+                    if (!typeLookupCache.ContainsKey(qualifiedTypeName))
+                        typeLookupCache.Add(qualifiedTypeName, foundType);
+                    if (!typeLookupCache.ContainsKey(testFullyQualifiedType))
+                        typeLookupCache.Add(testFullyQualifiedType, foundType);
                     return foundType;
                 }
                 else // Type wasn't found in current assembly, look through all loaded assemblies
                 {
-                    foreach (Assembly assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+                    if (loadedAssemblyCache == null)
                     {
+                        loadedAssemblyCache = System.AppDomain.CurrentDomain.GetAssemblies()
+                            .OrderBy(e =>
+                                e.GetName().Name.Contains("UnityEngine") ||
+                                e.GetName().Name.Contains("System") || 
+                                e.GetName().Name.Contains("VRC") ||
+                                e.GetName().Name.Contains("Udon") || 
+                                e.GetName().Name.Contains("Assembly-CSharp") ||
+                                e.GetName().Name.Contains("mscorlib")).Reverse().ToList();
+                    }
+                    
+                    foreach (Assembly assembly in loadedAssemblyCache)
+                    { 
                         foundType = assembly.GetType(testFullyQualifiedType);
 
                         if (foundType != null)
                         {
-                            typeLookupCache.Add(testFullyQualifiedType, foundType);
+                            //Debug.Log($"Found type {foundType} in assembly {assembly.GetName().Name}");
+                            
+                            if (!typeLookupCache.ContainsKey(qualifiedTypeName)) 
+                                typeLookupCache.Add(qualifiedTypeName, foundType);
+                            if (!typeLookupCache.ContainsKey(testFullyQualifiedType))
+                                typeLookupCache.Add(testFullyQualifiedType, foundType);
                             return foundType;
                         }
                     }
                 }
             }
-
+            
+            typeLookupCache.Add(qualifiedTypeName, null);
             // We didn't find a valid type
             //throw new System.ArgumentException($"Could not resolve type {qualifiedTypeName}");
             return null;
+        }
+
+        private static Dictionary<System.Type, System.Type> inheritedTypeMap = null;
+
+        private Dictionary<System.Type, System.Type> GetInheritedTypeMap()
+        {
+            if (inheritedTypeMap != null)
+                return inheritedTypeMap;
+
+            inheritedTypeMap = new Dictionary<System.Type, System.Type>();
+
+            IEnumerable<System.Type> typeList = System.AppDomain.CurrentDomain.GetAssemblies().SelectMany(t => t.GetTypes()).Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
+
+            foreach (System.Type childType in typeList)
+            {
+                if (childType.BaseType != null && childType.BaseType.Namespace.StartsWith("VRC.SDKBase"))
+                {
+                    inheritedTypeMap.Add(childType.BaseType, childType);
+                }
+            }
+
+            return inheritedTypeMap;
+        }
+
+        public System.Type RemapBaseType(System.Type type)
+        {
+            var typeMap = GetInheritedTypeMap();
+
+            if (typeMap.ContainsKey(type))
+                return typeMap[type];
+
+            return type;
         }
 
         public string SanitizeTypeName(string typeName)
@@ -271,23 +326,6 @@ namespace UdonSharp
                            .Replace("+", "");
         }
 
-        private string ReplaceSpecialCaseVRCComponents(string originalString)
-        {
-            originalString = originalString.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
-
-            if (originalString.StartsWith("VRCSDKBase"))
-            {
-                if (!(originalString.StartsWith("VRCSDKBaseVRCPlayerApi") ||
-                      originalString.StartsWith("VRCSDKBaseNetworking") ||
-                      originalString.StartsWith("VRCSDKBaseInputManager")))
-                {
-                    return originalString.Replace("VRCSDKBase", "VRCSDK3Components").Replace("_", "");
-                }
-            }
-
-            return originalString;
-        }
-
         /// <summary>
         /// Verifies that Udon supports the given type and resolves the type name used to reference it in Udon
         /// </summary>
@@ -296,8 +334,15 @@ namespace UdonSharp
         ///     or null if it is not a valid Udon type.</returns>
         public string GetUdonTypeName(System.Type externType)
         {
+            externType = RemapBaseType(externType);
+
             string externTypeName = externType.GetNameWithoutGenericArity();
             string typeNamespace = externType.Namespace;
+            if (typeNamespace == null && externType.IsArray)
+            {
+                externType = externType.GetElementType();
+                typeNamespace = externType.Namespace;
+            }
 
             // Handle nested type names (+ sign in names)
             if (externType.DeclaringType != null)
@@ -318,7 +363,7 @@ namespace UdonSharp
             if (externTypeName == "T" || externTypeName == "T[]")
                 typeNamespace = "";
             
-            string fullTypeName = ReplaceSpecialCaseVRCComponents(SanitizeTypeName($"{typeNamespace}.{externTypeName}"));
+            string fullTypeName = SanitizeTypeName($"{typeNamespace}.{externTypeName}");
 
             foreach (System.Type genericType in externType.GetGenericArguments())
             {
@@ -330,6 +375,12 @@ namespace UdonSharp
             {
                 fullTypeName = "ListT";
             }
+            else if (fullTypeName == "SystemCollectionsGenericIEnumerableT")
+            {
+                fullTypeName = "IEnumerableT";
+            }
+
+            fullTypeName = fullTypeName.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
 
             return fullTypeName;
         }
@@ -351,12 +402,22 @@ namespace UdonSharp
                 methodSourceType = genericArguments.First();
             }
 
-            string functionNamespace = ReplaceSpecialCaseVRCComponents(SanitizeTypeName(methodSourceType.FullName));
+            methodSourceType = RemapBaseType(methodSourceType);
+
+            bool isUdonSharpBehaviour = false;
+
+            if (methodSourceType == typeof(UdonSharpBehaviour) || methodSourceType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+            {
+                methodSourceType = typeof(VRC.Udon.UdonBehaviour);
+                isUdonSharpBehaviour = true;
+            }
+
+            string functionNamespace = SanitizeTypeName(methodSourceType.FullName ?? methodSourceType.Namespace + methodSourceType.Name).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
 
             string methodName = $"__{externMethod.Name.Trim('_').TrimStart('.')}";
             ParameterInfo[] methodParams = externMethod.GetParameters();
 
-            if ((functionNamespace == "UdonSharpUdonSharpBehaviour")
+            if (isUdonSharpBehaviour
                 && methodName == "__VRCInstantiate")
             {
                 functionNamespace = "VRCInstantiate";
@@ -374,6 +435,8 @@ namespace UdonSharp
                     paramStr += $"_{GetUdonTypeName(parameterInfo.ParameterType)}";
                 }
             }
+            else if (externMethod is ConstructorInfo)
+                paramStr += "__";
 
             string returnStr = "";
 
@@ -392,7 +455,7 @@ namespace UdonSharp
 
             if (validate && !nodeDefinitionLookup.Contains(finalFunctionSig))
             {
-                throw new System.Exception($"Could not find Udon function {finalFunctionSig}");
+                throw new System.Exception($"Method {finalFunctionSig} is not exposed in Udon");
             }
 
             return finalFunctionSig;
@@ -400,7 +463,9 @@ namespace UdonSharp
 
         public string GetUdonFieldAccessorName(FieldInfo externField, FieldAccessorType accessorType, bool validate = true)
         {
-            string functionNamespace = ReplaceSpecialCaseVRCComponents(SanitizeTypeName(externField.DeclaringType.FullName));
+            System.Type fieldType = RemapBaseType(externField.DeclaringType);
+
+            string functionNamespace = SanitizeTypeName(fieldType.FullName).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
             string methodName = $"__{(accessorType == FieldAccessorType.Get ? "get" : "set")}_{externField.Name.Trim('_')}";
 
             string paramStr = $"__{GetUdonTypeName(externField.FieldType)}";
@@ -409,7 +474,7 @@ namespace UdonSharp
 
             if (validate && !nodeDefinitionLookup.Contains(finalFunctionSig))
             {
-                throw new System.Exception($"Could not find Udon field accessor {finalFunctionSig}");
+                throw new System.Exception($"Field accessor {finalFunctionSig} is not exposed in Udon");
             }
 
             return finalFunctionSig;
@@ -525,8 +590,10 @@ namespace UdonSharp
 
                     if (!currentParam.ParameterType.IsImplicitlyAssignableFrom(argType) && !currentParam.HasParamsParameter() && !currentParam.ParameterType.IsByRef)
                     {
+                        // Handle implicit upcasts to int from lower precision types
                         if (method is OperatorMethodInfo operatorParam && 
-                            (operatorParam.operatorType == BuiltinOperatorType.LeftShift || operatorParam.operatorType == BuiltinOperatorType.RightShift))
+                            (operatorParam.operatorType == BuiltinOperatorType.LeftShift || operatorParam.operatorType == BuiltinOperatorType.RightShift) &&
+                            (argType != typeof(uint) && argType != typeof(ulong) && argType != typeof(long)))
                         {
                             if (UdonSharpUtils.GetNumericConversionMethod(currentParam.ParameterType, argType) == null)
                             {
@@ -542,14 +609,17 @@ namespace UdonSharp
                     }
                     else if (currentParam.HasParamsParameter()) // Make sure all params args can be assigned to the param type
                     {
-                        System.Type paramType = currentParam.ParameterType.GetElementType();
-
-                        for (int j = i; j < methodArgs.Count; ++j)
+                        if (!(currentParam.ParameterType.IsImplicitlyAssignableFrom(methodArgs[i]) && i == methodArgs.Count - 1)) // Handle passing in the actual array type for the params parameter
                         {
-                            if (!paramType.IsImplicitlyAssignableFrom(methodArgs[j]))
+                            System.Type paramType = currentParam.ParameterType.GetElementType();
+
+                            for (int j = i; j < methodArgs.Count; ++j)
                             {
-                                isMethodValid = false;
-                                break;
+                                if (!paramType.IsImplicitlyAssignableFrom(methodArgs[j]))
+                                {
+                                    isMethodValid = false;
+                                    break;
+                                }
                             }
                         }
 
@@ -587,6 +657,13 @@ namespace UdonSharp
                 return null;
             else if (validMethods.Count == 1) // There's only one option so just return it ez
                 return validMethods.First();
+
+            // Filter out duplicate methods
+            // Still not sure if I want this or want to use it to highlight shortcomings in other areas
+            //validMethods = validMethods.Distinct().ToList();
+
+            //if (validMethods.Count == 1)
+            //    return validMethods.First();
 
             // We found multiple potential overloads so we need to find the best one
             // See section 7.5.3.2 of the C# 5.0 language specification for the outline this search roughly follows, 
@@ -805,7 +882,7 @@ namespace UdonSharp
                 string methodListString = "";
 
                 foreach (MethodBase methodInfo in ambiguousMethods)
-                    methodListString += $"{methodInfo}\n";
+                    methodListString += $"{methodInfo.DeclaringType}: {methodInfo}\n";
 
                 throw new System.Exception("Ambiguous method overload reference, candidate methods:\n" + methodListString);
             }

@@ -3,32 +3,50 @@ using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
 
-namespace UdonSharpTests
-{
-    [AddComponentMenu("")]
+//namespace UdonSharpTests
+//{
+    [AddComponentMenu("")] 
     public class Test08_Instantiation : UdonSharpBehaviour
     {
         public GameObject sourcePrefab;
-
+        
         public int objectCount;
-
+        
         public float rotationOffset;
 
         public float rotationSpeed;
 
         private GameObject[] spawnedObjects;
-
-        public UdonBehaviour otherBehaviour;
         
+        [HideInInspector]
+        public UdonBehaviour otherBehaviour;
+
+        string[] listInitTest = new string[]
+         {
+                "Hello",
+                "test",
+                "string",
+                "aaaa",
+         };
+
+        private void testFunc(short input)
+        {
+
+        }
+
         private void Start()
         {
-            otherBehaviour.SendCustomEvent("PrintTest"); 
-
             spawnedObjects = new GameObject[objectCount];
 
             for (int i = 0; i < objectCount; ++i)
             {
                 GameObject instantiatedObject = VRCInstantiate(sourcePrefab);
+                UdonBehaviour behaviour = (UdonBehaviour)instantiatedObject.GetComponent(typeof(UdonBehaviour));
+
+                //Debug.Log(behaviour);
+
+                behaviour.SetProgramVariable("displayName", "hello");
+                //Debug.Log(behaviour.GetProgramVariable("displayName"));
 
                 instantiatedObject.SetActive(true);
                 instantiatedObject.transform.parent = transform;
@@ -40,24 +58,56 @@ namespace UdonSharpTests
             }
         }
 
+        private void OnEnable()
+        {
+            //testFunc(4);
+
+            //Debug.Log("hello! 15");
+
+            //foreach (var test in "hello")
+            //{
+            //    Debug.Log(test); 
+            //}
+
+            //ushort testVal = 4f;
+
+            //otherBehaviour.SendCustomEvent("PrintTest"); 
+             
+
+            foreach (GameObject gameObj in spawnedObjects)
+            {
+
+                UdonBehaviour behaviour = (UdonBehaviour)gameObj.GetComponent(typeof(UdonBehaviour));
+                behaviour.SetProgramVariable("displayName", "hello");
+            }
+
+            Debug.Log($"initialized on frame {Time.frameCount}");
+        }
+
         public override void OnPlayerJoined(VRCPlayerApi player)
         {
             Debug.LogFormat("Player {0} joined!", player.displayName);
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
             float time = Time.time;
             float twoPi = Mathf.PI * 2f;
 
-            //Vector3 assignmentTarget = Vector3.zero;
-            //Vector3 assignmentSource = Vector3.zero;
+        //Vector3 assignmentTarget = Vector3.zero;
+        //Vector3 assignmentSource = Vector3.zero;
+
+        Debug.Log($"Update manager frame {Time.frameCount}");
 
             for (int i = 0; i < objectCount; ++i)
             {
                 //assignmentTarget = assignmentSource;
 
                 GameObject spawnedObject = spawnedObjects[i];
+                //UdonBehaviour behaviour = (UdonBehaviour)spawnedObject.GetComponent(typeof(UdonBehaviour));
+                //behaviour.SetProgramVariable("displayName", "hello there");
+
+                Vector3 testVec = new Vector3(4, 5, 6);
 
                 float progress = ((i / (float)objectCount) + rotationSpeed * time) * twoPi;
 
@@ -69,4 +119,4 @@ namespace UdonSharpTests
         }
     }
 
-}
+//}

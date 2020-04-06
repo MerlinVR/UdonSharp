@@ -56,7 +56,7 @@ public class Test05_BehaviourInteractions : UdonSharpBehaviour
 
         Transform testTransform = null; 
 
-        Debug.Log(referenceTransform ?? GetTestObject()); 
+        Debug.Log(referenceTransform ?? GetTestObject());
 
         //transform.Rotate(Vector3.up, Time.deltaTime * degreesPerSecond);
     }

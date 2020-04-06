@@ -38,11 +38,15 @@ namespace UdonSharp
 
         public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
         {
-            namespaceStack.Push(node.Name.ToFullString().TrimEnd('\r', '\n', ' '));
+            string[] namespaces = node.Name.ToFullString().TrimEnd('\r', '\n', ' ').Split('.');
+
+            foreach (string currentNamespace in namespaces)
+                namespaceStack.Push(currentNamespace);
 
             base.VisitNamespaceDeclaration(node);
 
-            namespaceStack.Pop();
+            for (int i = 0; i < namespaces.Length; ++i)
+                namespaceStack.Pop();
         }
 
         public override void VisitClassDeclaration(ClassDeclarationSyntax node)
@@ -53,9 +57,12 @@ namespace UdonSharp
             using (ExpressionCaptureScope classTypeCapture = new ExpressionCaptureScope(visitorContext, null))
             {
                 foreach (string namespaceToken in namespaceStack.Reverse())
+                {
                     classTypeCapture.ResolveAccessToken(namespaceToken);
 
-                visitorContext.resolverContext.AddNamespace(classTypeCapture.captureNamespace);
+                    if (classTypeCapture.IsNamespace())
+                        visitorContext.resolverContext.AddNamespace(classTypeCapture.captureNamespace);
+                }
 
                 classTypeCapture.ResolveAccessToken(node.Identifier.ValueText);
 
@@ -87,6 +94,23 @@ namespace UdonSharp
 
                 classDefinition.fieldDefinitions.Add(new FieldDefinition(newSymbol));
             }
+        }
+
+        public override void VisitArrayType(ArrayTypeSyntax node)
+        {
+            using (ExpressionCaptureScope arrayTypeCaptureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
+            {
+                Visit(node.ElementType);
+
+                for (int i = 0; i < node.RankSpecifiers.Count; ++i)
+                    arrayTypeCaptureScope.MakeArrayType();
+            }
+        }
+
+        public override void VisitArrayRankSpecifier(ArrayRankSpecifierSyntax node)
+        {
+            foreach (ExpressionSyntax size in node.Sizes)
+                Visit(size);
         }
 
         #region Resolution boilerplate

@@ -91,16 +91,14 @@ namespace UdonSharp
                     operatorType == BuiltinOperatorType.Inequality)
                     return typeof(bool);
 
-                if (operatorType == BuiltinOperatorType.LeftShift || operatorType == BuiltinOperatorType.RightShift)
+                
+                if (operatorSourceType == typeof(byte) ||
+                    operatorSourceType == typeof(sbyte) ||
+                    operatorSourceType == typeof(char) ||
+                    operatorSourceType == typeof(short) ||
+                    operatorSourceType == typeof(ushort))
                 {
-                    if (operatorSourceType == typeof(byte) ||
-                        operatorSourceType == typeof(sbyte) ||
-                        operatorSourceType == typeof(char) ||
-                        operatorSourceType == typeof(short) ||
-                        operatorSourceType == typeof(ushort))
-                    {
-                        return typeof(int);
-                    }
+                    return typeof(int);
                 }
 
                 return operatorSourceType;

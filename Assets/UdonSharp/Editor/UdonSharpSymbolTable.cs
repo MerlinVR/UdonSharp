@@ -17,31 +17,19 @@ namespace UdonSharp
         Constant = 16, // Used to represent a constant value that does not change. This can either be statically defined constants 
         Array = 32, // If this symbol is an array type
         This = 64, // defines one of the 3 builtin `this` assignments for UdonBehaviour, GameObject, and Transform
-        Reflection = 128, // Reflection information for type checking
+        Reflection = 128, // Metadata information for type checking and other editor time info
     }
 
     [Serializable]
     public class SymbolDefinition
     {
         [OdinSerialize]
-        private System.Type internalType; 
+        private System.Type internalType;
 
         // The type of the symbol from the C# side
         public System.Type symbolCsType
         {
-            get
-            {
-                if (IsUserDefinedBehaviour())
-                {
-                    if (internalType.IsArray)
-                        return typeof(Component[]); // Hack because VRC doesn't expose the array type of UdonBehaviour
-
-                    return typeof(VRC.Udon.UdonBehaviour);
-                }
-
-                return internalType;
-            }
-
+            get { return UdonSharpUtils.UserTypeToUdonType(internalType); }
             set { internalType = value; }
         }
 
@@ -64,13 +52,15 @@ namespace UdonSharp
         // The default value for the symbol that gets set on the heap
         // This is only used for global (public/private) symbols with a default value, and constant symbols
         public object symbolDefaultValue = null;
-
-        //public bool IsUserDefinedBehaviour() { return declarationType.HasFlag(SymbolDeclTypeFlags.UserType); }
+        
         public bool IsUserDefinedBehaviour()
         {
-            return internalType == typeof(UdonSharpBehaviour) ||
-                   internalType.IsSubclassOf(typeof(UdonSharpBehaviour)) || 
-                  (internalType.IsArray && (internalType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)) || internalType.GetElementType() == typeof(UdonSharpBehaviour)));
+            return UdonSharpUtils.IsUserDefinedBehaviour(internalType);
+        }
+
+        public bool IsUserDefinedType()
+        {
+            return UdonSharpUtils.IsUserDefinedType(internalType);
         }
     }
 
@@ -218,14 +208,15 @@ namespace UdonSharp
         /// <param name="value"></param>
         /// <param name="foundSymbol"></param>
         /// <returns></returns>
-        public bool TryGetGlobalConstSymbol(System.Type type, object value, out SymbolDefinition foundSymbol)
+        public bool TryGetGlobalSymbol(System.Type type, object value, out SymbolDefinition foundSymbol, SymbolDeclTypeFlags flags)
         {
             SymbolTable globalSymTable = GetGlobalSymbolTable();
 
             foreach (SymbolDefinition definition in globalSymTable.symbolDefinitions)
             {
-                if (definition.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) &&
-                    definition.declarationType.HasFlag(SymbolDeclTypeFlags.Internal) &&
+                bool hasFlags = ((int)flags & (int)definition.declarationType) == (int)flags;
+
+                if (hasFlags &&
                     definition.symbolCsType == type &&
                     ((value == null && definition.symbolDefaultValue == null) ||
                     (definition.symbolDefaultValue != null && definition.symbolDefaultValue.Equals(value))))
@@ -246,9 +237,45 @@ namespace UdonSharp
 
             SymbolDefinition symbolDefinition;
 
-            if (!TryGetGlobalConstSymbol(type, value, out symbolDefinition))
+            if (!TryGetGlobalSymbol(type, value, out symbolDefinition, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Constant))
             {
                 symbolDefinition = CreateUnnamedSymbol(type, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Constant);
+                symbolDefinition.symbolDefaultValue = value;
+            }
+
+            return symbolDefinition;
+        }
+
+        public SymbolDefinition GetReflectionSymbol(string name, System.Type type)
+        {
+            SymbolDefinition symbolDefinition = null;
+
+            SymbolTable globalSymbols = GetGlobalSymbolTable();
+
+            foreach (SymbolDefinition currentSymbol in globalSymbols.symbolDefinitions)
+            {
+                if (currentSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Reflection) &&
+                    currentSymbol.symbolOriginalName == name &&
+                    currentSymbol.symbolCsType == type)
+                {
+                    symbolDefinition = currentSymbol;
+                    break;
+                }
+            }
+
+            return symbolDefinition;
+        }
+
+        public SymbolDefinition CreateReflectionSymbol(string name, System.Type type, object value)
+        {
+            if (value != null && !type.IsAssignableFrom(value.GetType()))
+                throw new ArgumentException($"Non-compatible value given for type {type.FullName}");
+
+            SymbolDefinition symbolDefinition = GetReflectionSymbol(name, type);
+            
+            if (symbolDefinition == null)
+            {
+                symbolDefinition = CreateNamedSymbol(name, type, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Constant | SymbolDeclTypeFlags.Reflection);
                 symbolDefinition.symbolDefaultValue = value;
             }
 
@@ -359,8 +386,13 @@ namespace UdonSharp
                 uniqueSymbolName = $"this_{uniqueSymbolName}";
                 hasGlobalDeclaration = true;
             }
+            if (declType.HasFlag(SymbolDeclTypeFlags.Reflection))
+            {
+                uniqueSymbolName = $"__refl_{uniqueSymbolName}";
+                hasGlobalDeclaration = true;
+            }
 
-            if (!declType.HasFlag(SymbolDeclTypeFlags.Public) && !declType.HasFlag(SymbolDeclTypeFlags.Private))
+            if (!declType.HasFlag(SymbolDeclTypeFlags.Public) && !declType.HasFlag(SymbolDeclTypeFlags.Private) && !declType.HasFlag(SymbolDeclTypeFlags.Reflection))
             {
                 if (appendType)
                 {
@@ -374,11 +406,7 @@ namespace UdonSharp
                     uniqueSymbolName = $"__{IncrementUniqueNameCounter(uniqueSymbolName)}_{uniqueSymbolName}";
             }
 
-            System.Type typeForName = resolvedSymbolType;
-            if (resolvedSymbolType.IsSubclassOf(typeof(UdonSharpBehaviour)))
-                typeForName = typeof(VRC.Udon.UdonBehaviour);
-            else if (resolvedSymbolType.IsArray && (resolvedSymbolType.GetElementType() == typeof(UdonSharpBehaviour) || resolvedSymbolType.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour))))
-                typeForName = typeof(Component[]); // Hack because VRC doesn't expose UdonBehaviour array type
+            System.Type typeForName = UdonSharpUtils.UserTypeToUdonType(resolvedSymbolType);
 
             string udonTypeName = resolver.GetUdonTypeName(typeForName);
 

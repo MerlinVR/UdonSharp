@@ -10,6 +10,7 @@ using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Editor.ProgramSources;
 using VRC.Udon.Editor.ProgramSources.Attributes;
+using VRC.Udon.EditorBindings;
 using VRC.Udon.Serialization.OdinSerializer;
 
 [assembly: UdonProgramSourceNewMenu(typeof(UdonSharp.UdonSharpProgramAsset), "Udon C# Program Asset")]
@@ -19,35 +20,54 @@ namespace UdonSharp
     [CreateAssetMenu(menuName = "VRChat/Udon/Udon C# Program Asset", fileName = "New Udon C# Program Asset")]
     public class UdonSharpProgramAsset : UdonAssemblyProgramAsset
     {
-        private readonly string programCsTemplate = @"
-using UdonSharp;
-using UnityEngine;
-using VRC.SDKBase;
-using VRC.Udon;
-
-[AddComponentMenu("""")]
-public class <TemplateClassName> : UdonSharpBehaviour
-{
-    void Start()
-    {
-        
-    }
-}
-";
-
         [SerializeField]
         public MonoScript sourceCsScript;
 
         [NonSerialized, OdinSerialize]
         public Dictionary<string, FieldDefinition> fieldDefinitions;
 
+        [HideInInspector]
+        public string behaviourIDHeapVarName;
+
+        [HideInInspector]
+        public List<string> compileErrors = new List<string>();
+
+        [HideInInspector]
+        public ClassDebugInfo debugInfo = null;
+
+        [SerializeField]
+        private bool hasInteractEvent = false;
+
         [SerializeField, HideInInspector]
         private SerializationData serializationData;
 
-        private static bool showProgramUasm = false;
+        private bool showProgramUasm = false;
+
+        private UdonBehaviour currentBehaviour = null;
+
+        private static GUIStyle errorTextStyle;
+
+        private void DrawCompileErrorTextArea()
+        {
+            if (compileErrors == null || compileErrors.Count == 0)
+                return;
+
+            if (errorTextStyle == null)
+            {
+                errorTextStyle = new GUIStyle(EditorStyles.textArea);
+                errorTextStyle.normal.textColor = new Color32(211, 34, 34, 255);
+                errorTextStyle.focused.textColor = errorTextStyle.normal.textColor;
+            }
+
+            // todo: convert this to a tree view that just has a list of selectable items that jump to the error
+            EditorGUILayout.LabelField($"Compile Error{(compileErrors.Count > 1 ? "s" : "")}", EditorStyles.boldLabel);
+            EditorGUILayout.TextArea(string.Join("\n", compileErrors.Select(e => e.Replace("[<color=#FF00FF>UdonSharp</color>] ", ""))), errorTextStyle);
+        }
 
         protected override void DrawProgramSourceGUI(UdonBehaviour udonBehaviour, ref bool dirty)
         {
+            currentBehaviour = udonBehaviour;
+
             EditorGUI.BeginChangeCheck();
             MonoScript newSourceCsScript = (MonoScript)EditorGUILayout.ObjectField("Source Script", sourceCsScript, typeof(MonoScript), false);
             if (EditorGUI.EndChangeCheck())
@@ -62,9 +82,58 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 DrawCreateScriptButton();
                 return;
             }
+            
+            object behaviourID = null;
+            bool shouldUseRuntimeValue = EditorApplication.isPlaying && currentBehaviour != null;
+
+            // UdonBehaviours won't have valid heap values unless they have been enabled once to run their initialization. 
+            // So we check against a value we know will exist to make sure we can use the heap variables.
+            if (shouldUseRuntimeValue)
+            {
+                behaviourID = currentBehaviour.GetProgramVariable(behaviourIDHeapVarName);
+                if (behaviourID == null)
+                    shouldUseRuntimeValue = false;
+            }
+
+            // Just manually break the disabled scope in the UdonBehaviourEditor default drawing for now
+            GUI.enabled = GUI.enabled || shouldUseRuntimeValue;
+            shouldUseRuntimeValue &= GUI.enabled;
+
+            if (currentBehaviour != null && hasInteractEvent)
+            {
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Interact", EditorStyles.boldLabel);
+                currentBehaviour.interactText = EditorGUILayout.TextField("Interaction Text", currentBehaviour.interactText);
+                currentBehaviour.proximity = EditorGUILayout.Slider("Proximity", currentBehaviour.proximity, 0f, 100f);
+            }
+
+            EditorGUILayout.Space();
 
             DrawPublicVariables(udonBehaviour, ref dirty);
 
+            if (currentBehaviour != null && !shouldUseRuntimeValue && program != null)
+            {
+                string[] exportedSymbolNames = program.SymbolTable.GetExportedSymbols();
+
+                foreach (string exportedSymbolName in exportedSymbolNames)
+                {
+                    bool foundValue = currentBehaviour.publicVariables.TryGetVariableValue(exportedSymbolName, out var variableValue);
+                    bool foundType = currentBehaviour.publicVariables.TryGetVariableType(exportedSymbolName, out var variableType);
+
+                    // Remove this variable from the publicVariable list since UdonBehaviours set all null GameObjects, UdonBehaviours, and Transforms to the current behavior's equivalent object regardless of if it's marked as a `null` heap variable or `this`
+                    // This default behavior is not the same as Unity, where the references are just left null. And more importantly, it assumes that the user has interacted with the inspector on that object at some point which cannot be guaranteed. 
+                    // Specifically, if the user adds some public variable to a class, and multiple objects in the scene reference the program asset, 
+                    //   the user will need to go through each of the objects' inspectors to make sure each UdonBehavior has its `publicVariables` variable populated by the inspector
+                    if (foundValue && foundType &&
+                        variableValue == null &&
+                        (variableType == typeof(GameObject) || variableType == typeof(UdonBehaviour) || variableType == typeof(Transform)))
+                    {
+                        currentBehaviour.publicVariables.RemoveVariable(exportedSymbolName);
+                    }
+                }
+            }
+
+            DrawCompileErrorTextArea();
             DrawAssemblyErrorTextArea();
 
             EditorGUILayout.Space();
@@ -93,11 +162,18 @@ public class <TemplateClassName> : UdonSharpBehaviour
             //EditorGUI.indentLevel--;
 
             //base.RunProgramSourceEditor(publicVariables, ref dirty);
+
+            currentBehaviour = null;
         }
 
         protected override void RefreshProgramImpl()
         {
-            if (sourceCsScript != null && !EditorApplication.isCompiling)
+            bool hasAssemblyError = typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this) != null;
+
+            if (sourceCsScript != null && 
+                !EditorApplication.isCompiling &&
+                !EditorApplication.isUpdating &&
+                !hasAssemblyError)
                 CompileCsProgram();
         }
         
@@ -112,7 +188,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
             compiler.Compile();
         }
 
-        private void CompileAllCsPrograms()
+        public static void CompileAllCsPrograms()
         {
             string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
 
@@ -127,9 +203,37 @@ public class <TemplateClassName> : UdonSharpBehaviour
             compiler.Compile();
         }
 
-        public void AssembleCsProgram()
+        public void AssembleCsProgram(uint heapSize)
         {
-            AssembleProgram();
+            // The heap size is determined by the symbol count + the unique extern string count
+            UdonSharp.HeapFactory heapFactory = new UdonSharp.HeapFactory(heapSize); 
+            UdonEditorInterface assemblerInterface = new UdonEditorInterface(null, heapFactory, null, null, null, null, null, null, null);
+            assemblerInterface.AddTypeResolver(new UdonBehaviourTypeResolver());
+
+            FieldInfo assemblyError = typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            try
+            {
+                program = assemblerInterface.Assemble(udonAssembly);
+                assemblyError.SetValue(this, null);
+
+                hasInteractEvent = false;
+
+                foreach (string entryPoint in program.EntryPoints.GetExportedSymbols())
+                {
+                    if (entryPoint == "_interact")
+                    {
+                        hasInteractEvent = true;
+                        break;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                program = null;
+                assemblyError.SetValue(this, e.Message);
+                Debug.LogException(e);
+            }
         }
 
         public void ApplyProgram()
@@ -156,13 +260,12 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 //string initialPath = Path.GetDirectoryName(thisPath);
                 string fileName = Path.GetFileNameWithoutExtension(thisPath).Replace(" Udon C# Program Asset", "").Replace(" ", "").Replace("#", "Sharp");
 
-                string chosenFilePath = EditorUtility.SaveFilePanelInProject("Save UdonScript File", fileName, "cs", "Save UdonScript file");
-
-                string chosenFileName = Path.GetFileNameWithoutExtension(chosenFilePath).Replace(" ", "").Replace("#", "Sharp");
+                string chosenFilePath = EditorUtility.SaveFilePanelInProject("Save UdonSharp File", fileName, "cs", "Save UdonSharp file");
 
                 if (chosenFilePath.Length > 0)
                 {
-                    string fileContents = programCsTemplate.Replace("<TemplateClassName>", chosenFileName);
+                    string chosenFileName = Path.GetFileNameWithoutExtension(chosenFilePath).Replace(" ", "").Replace("#", "Sharp");
+                    string fileContents = UdonSharpSettings.GetProgramTemplateString().Replace("<TemplateClassName>", chosenFileName);
 
                     File.WriteAllText(chosenFilePath, fileContents);
 
@@ -235,15 +338,13 @@ public class <TemplateClassName> : UdonSharpBehaviour
             return null;
         }
 
-        private object DrawUnityObjectField(string fieldName, string symbol, (object value, Type declaredType) publicVariable, ref bool dirty)
+        private object DrawUnityObjectField(GUIContent fieldName, string symbol, (object value, Type declaredType, FieldDefinition symbolField) publicVariable, ref bool dirty)
         {
-            (object value, Type declaredType) = publicVariable;
+            (object value, Type declaredType, FieldDefinition symbolField) = publicVariable;
 
-            FieldDefinition fieldDefinition = null;
-            if (fieldDefinitions != null)
-                fieldDefinitions.TryGetValue(symbol, out fieldDefinition);
+            FieldDefinition fieldDefinition = symbolField;
 
-            bool isNormalUnityObject = fieldDefinition == null || fieldDefinition.fieldSymbol.userCsType == null || !fieldDefinition.fieldSymbol.IsUserDefinedBehaviour();
+            bool isNormalUnityObject = !UdonSharpUtils.IsUserDefinedBehaviour(declaredType) && (fieldDefinition == null || fieldDefinition.fieldSymbol.userCsType == null || !fieldDefinition.fieldSymbol.IsUserDefinedBehaviour());
 
             if (isNormalUnityObject)
                 return EditorGUILayout.ObjectField(fieldName, (UnityEngine.Object)value, declaredType, true);
@@ -254,21 +355,22 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 throw new Exception("Could not find DoObjectField() method");
 
             Rect objectRect = EditorGUILayout.GetControlRect();
-            int id = GUIUtility.GetControlID(typeof(UnityEngine.Object).GetHashCode(), FocusType.Keyboard, objectRect);
+            Rect originalRect = objectRect;
+            int id = GUIUtility.GetControlID(typeof(UnityEngine.Object).GetHashCode(), FocusType.Keyboard, originalRect);
 
             System.Type validatorDelegateType = typeof(EditorGUI).GetNestedType("ObjectFieldValidator", BindingFlags.Static | BindingFlags.NonPublic);
             MethodInfo validateMethodInfo = typeof(UdonSharpProgramAsset).GetMethod("ValidateObjectReference", BindingFlags.NonPublic | BindingFlags.Instance);
 
-            objectRect = EditorGUI.PrefixLabel(objectRect, new GUIContent(fieldName));
+            objectRect = EditorGUI.PrefixLabel(objectRect, id, new GUIContent(fieldName));
 
             currentUserScript = fieldDefinition.userBehaviourSource;
-
+            
             UnityEngine.Object objectFieldValue = (UnityEngine.Object)doObjectFieldMethod.Invoke(null, new object[] {
                 objectRect,
                 objectRect,
                 id,
                 (UnityEngine.Object)value,
-                fieldDefinition.fieldSymbol.symbolCsType,
+                typeof(UdonBehaviour),
                 null,
                 Delegate.CreateDelegate(validatorDelegateType, this, validateMethodInfo),
                 true
@@ -276,23 +378,51 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
             currentUserScript = null;
 
+            System.Type variableRootType = fieldDefinition.fieldSymbol.userCsType;
+            while (variableRootType.IsArray)
+                variableRootType = variableRootType.GetElementType();
+
+            string labelText = "";
+            if (objectFieldValue != null)
+            {
+                labelText = $"{objectFieldValue.name} ({ObjectNames.NicifyVariableName(variableRootType.Name)})";
+            }
+            else
+            {
+                labelText = $"None ({ObjectNames.NicifyVariableName(variableRootType.Name)})";
+            }
+
+            // Manually draw this using the same ID so that we can get some of the style information to bleed over
+            objectRect = EditorGUI.PrefixLabel(originalRect, id, new GUIContent(fieldName));
+            if (Event.current.type == EventType.Repaint)
+                EditorStyles.objectField.Draw(objectRect, new GUIContent(labelText, AssetPreview.GetMiniThumbnail(this)), id);
+
             return objectFieldValue;
         }
 
         [NonSerialized]
         private Dictionary<string, bool> foldoutStates = new Dictionary<string, bool>();
 
-        private object DrawFieldForType(string fieldName, string symbol, (object value, Type declaredType) publicVariable, ref bool dirty, bool enabled)
+        private object DrawFieldForType(string fieldName, string symbol, (object value, Type declaredType, FieldDefinition symbolField) publicVariable, System.Type currentType, ref bool dirty, bool enabled)
         {
             bool isArrayElement = fieldName != null;
-            FieldDefinition fieldDefinition = null;
-            if (fieldDefinitions != null)
-                fieldDefinitions.TryGetValue(symbol, out fieldDefinition);
 
+            (object value, Type declaredType, FieldDefinition symbolField) = publicVariable;
+
+            FieldDefinition fieldDefinition = symbolField;
+            
             if (fieldName == null)
                 fieldName = ObjectNames.NicifyVariableName(symbol);
 
-            (object value, Type declaredType) = publicVariable;
+            GUIContent fieldLabel = null;
+
+            TooltipAttribute tooltip = fieldDefinition == null ? null : fieldDefinition.GetAttribute<TooltipAttribute>();
+
+            if (tooltip != null)
+                fieldLabel = new GUIContent(fieldName, tooltip.tooltip);
+            else
+                fieldLabel = new GUIContent(fieldName);
+
 
             if (declaredType.IsArray)
             {
@@ -303,14 +433,27 @@ public class <TemplateClassName> : UdonSharpBehaviour
                     foldoutStates.Add(symbol, false);
                 }
 
-                foldoutEnabled = EditorGUILayout.Foldout(foldoutEnabled, fieldName);
+                foldoutEnabled = EditorGUILayout.Foldout(foldoutEnabled, fieldLabel);
                 foldoutStates[symbol] = foldoutEnabled;
 
                 if (foldoutEnabled)
                 {
+                    Type elementType = currentType.GetElementType();
+                    Type arrayDataType = currentType;
+
+                    if (UdonSharpUtils.IsUserJaggedArray(currentType))
+                    {
+                        arrayDataType = typeof(object[]);
+                    }
+                    else if (currentType.IsArray && UdonSharpUtils.IsUserDefinedBehaviour(currentType))
+                    {
+                        arrayDataType = typeof(Component[]);
+                    }
+
+
                     if (value == null) // We can abuse that the foldout modified the outer scope when it was expanded to make sure this gets set
                     {
-                        return Activator.CreateInstance(declaredType, new object[] { 0 });
+                        return Activator.CreateInstance(arrayDataType, new object[] { 0 });
                     }
 
                     EditorGUI.indentLevel++;
@@ -320,12 +463,17 @@ public class <TemplateClassName> : UdonSharpBehaviour
                     using (EditorGUILayout.VerticalScope verticalScope = new EditorGUILayout.VerticalScope())
                     {
                         EditorGUI.BeginChangeCheck();
-                        int newLength = EditorGUILayout.IntField("Size", valueArray.Length);
+                        int newLength = EditorGUILayout.DelayedIntField("Size", valueArray.Length);
+                        if (newLength < 0)
+                        {
+                            Debug.LogError("Array size must be non-negative.");
+                            newLength = valueArray.Length;
+                        }
 
                         // We need to resize the array
                         if (EditorGUI.EndChangeCheck())
                         {
-                            Array newArray = Activator.CreateInstance(declaredType, new object[] { newLength }) as Array;
+                            Array newArray = Activator.CreateInstance(arrayDataType, new object[] { newLength }) as Array;
 
                             for (int i = 0; i < newLength && i < valueArray.Length; ++i)
                             {
@@ -338,14 +486,12 @@ public class <TemplateClassName> : UdonSharpBehaviour
                             return newArray;
                         }
 
-                        Type elementType = declaredType.GetElementType();
-
                         for (int i = 0; i < valueArray.Length; ++i)
                         {
-                            var elementData = (valueArray.GetValue(i), elementType);
+                            var elementData = (valueArray.GetValue(i), elementType, fieldDefinition);
 
                             EditorGUI.BeginChangeCheck();
-                            object newArrayVal = DrawFieldForType($"Element {i}", $"{symbol}_element{i}", elementData, ref dirty, enabled);
+                            object newArrayVal = DrawFieldForType($"Element {i}", $"{symbol}_element{i}", elementData, currentType.GetElementType(), ref dirty, enabled);
 
                             if (EditorGUI.EndChangeCheck())
                             {
@@ -362,61 +508,84 @@ public class <TemplateClassName> : UdonSharpBehaviour
             }
             else if (typeof(UnityEngine.Object).IsAssignableFrom(declaredType))
             {
-                return DrawUnityObjectField(fieldName, symbol, publicVariable, ref dirty);
+                return DrawUnityObjectField(fieldLabel, symbol, (value, declaredType, symbolField), ref dirty);
             }
             else if (declaredType == typeof(string))
             {
-                return EditorGUILayout.TextField(fieldName, (string)value);
+                TextAreaAttribute textArea = fieldDefinition == null ? null : fieldDefinition.GetAttribute<TextAreaAttribute>();
+
+                if (textArea != null)
+                {
+                    EditorGUILayout.BeginVertical();
+                    EditorGUILayout.LabelField(fieldLabel);
+                    string textAreaText = EditorGUILayout.TextArea((string)value);
+                    EditorGUILayout.EndVertical();
+
+                    return textAreaText;
+                }
+                else
+                {
+                    return EditorGUILayout.TextField(fieldLabel, (string)value);
+                }
             }
             else if (declaredType == typeof(float))
             {
-                return EditorGUILayout.FloatField(fieldName, (float?)value ?? default);
+                return EditorGUILayout.FloatField(fieldLabel, (float?)value ?? default);
             }
             else if (declaredType == typeof(double))
             {
-                return EditorGUILayout.DoubleField(fieldName, (double?)value ?? default);
+                return EditorGUILayout.DoubleField(fieldLabel, (double?)value ?? default);
             }
             else if (declaredType == typeof(int))
             {
-                return EditorGUILayout.IntField(fieldName, (int?)value ?? default);
+                return EditorGUILayout.IntField(fieldLabel, (int?)value ?? default);
             }
             else if (declaredType == typeof(long))
             {
-                return EditorGUILayout.LongField(fieldName, (long?)value ?? default);
+                return EditorGUILayout.LongField(fieldLabel, (long?)value ?? default);
             }
             else if (declaredType == typeof(bool))
             {
-                return EditorGUILayout.Toggle(fieldName, (bool?)value ?? default);
+                return EditorGUILayout.Toggle(fieldLabel, (bool?)value ?? default);
             }
             else if (declaredType == typeof(Vector2))
             {
-                return EditorGUILayout.Vector2Field(fieldName, (Vector2?)value ?? default);
+                return EditorGUILayout.Vector2Field(fieldLabel, (Vector2?)value ?? default);
             }
             else if (declaredType == typeof(Vector3))
             {
-                return EditorGUILayout.Vector3Field(fieldName, (Vector3?)value ?? default);
+                return EditorGUILayout.Vector3Field(fieldLabel, (Vector3?)value ?? default);
             }
             else if (declaredType == typeof(Vector4))
             {
-                return EditorGUILayout.Vector4Field(fieldName, (Vector4?)value ?? default);
+                return EditorGUILayout.Vector4Field(fieldLabel, (Vector4?)value ?? default);
             }
             else if (declaredType == typeof(Color))
             {
-                return EditorGUILayout.ColorField(fieldName, (Color?)value ?? default);
+                ColorUsageAttribute colorUsage = fieldDefinition == null ? null : fieldDefinition.GetAttribute<ColorUsageAttribute>();
+
+                if (colorUsage != null)
+                {
+                    return EditorGUILayout.ColorField(fieldLabel, (Color?)value ?? default, false, colorUsage.showAlpha, colorUsage.hdr);
+                }
+                else
+                {
+                    return EditorGUILayout.ColorField(fieldLabel, (Color?)value ?? default);
+                }
             }
             else if (declaredType == typeof(Color32))
             {
-                return (Color32)EditorGUILayout.ColorField(fieldName, (Color32?)value ?? default);
+                return (Color32)EditorGUILayout.ColorField(fieldLabel, (Color32?)value ?? default);
             }
             else if (declaredType == typeof(Quaternion))
             {
                 Quaternion quatVal = (Quaternion?)value ?? default;
-                Vector4 newQuat = EditorGUILayout.Vector4Field(fieldName, new Vector4(quatVal.x, quatVal.y, quatVal.z, quatVal.w));
+                Vector4 newQuat = EditorGUILayout.Vector4Field(fieldLabel, new Vector4(quatVal.x, quatVal.y, quatVal.z, quatVal.w));
                 return new Quaternion(newQuat.x, newQuat.y, newQuat.z, newQuat.w);
             }
             else if (declaredType == typeof(Bounds))
             {
-                return EditorGUILayout.BoundsField(fieldName, (Bounds?)value ?? default);
+                return EditorGUILayout.BoundsField(fieldLabel, (Bounds?)value ?? default);
             }
             else if (declaredType == typeof(ParticleSystem.MinMaxCurve))
             {
@@ -424,7 +593,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 ParticleSystem.MinMaxCurve minMaxCurve = (ParticleSystem.MinMaxCurve?)value ?? default;
 
                 EditorGUILayout.BeginVertical();
-                EditorGUILayout.LabelField(fieldName);
+                EditorGUILayout.LabelField(fieldLabel);
                 EditorGUI.indentLevel++;
                 minMaxCurve.curveMultiplier = EditorGUILayout.FloatField("Multiplier", minMaxCurve.curveMultiplier);
                 minMaxCurve.curveMin = EditorGUILayout.CurveField("Min Curve", minMaxCurve.curveMin);
@@ -436,22 +605,41 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
                 return minMaxCurve;
             }
+            else if (declaredType == typeof(LayerMask)) // Lazy layermask support, todo: make it more like the editor layer mask and also don't do all these LINQ operations and such every draw
+            {
+                return (LayerMask)EditorGUILayout.MaskField(fieldLabel, (LayerMask?)value ?? default, Enumerable.Range(0, 32).Select(e => LayerMask.LayerToName(e).Length > 0 ? e + ": " + LayerMask.LayerToName(e) : "").ToArray());
+            }
             else if (declaredType.IsEnum)
             {
-                return EditorGUILayout.EnumPopup(fieldName, (Enum)(value ?? Activator.CreateInstance(declaredType)));
+                return EditorGUILayout.EnumPopup(fieldLabel, (Enum)(value ?? Activator.CreateInstance(declaredType)));
             }
             else if (declaredType == typeof(System.Type))
             {
                 string typeName = value != null ? ((Type)value).FullName : "null";
-                EditorGUILayout.LabelField(fieldName, typeName);
+                EditorGUILayout.LabelField(fieldLabel, typeName);
             }
             else if (declaredType == typeof(Gradient))
             {
-                return EditorGUILayout.GradientField(fieldName, (Gradient)value);
+                GradientUsageAttribute gradientUsage = fieldDefinition == null ? null : fieldDefinition.GetAttribute<GradientUsageAttribute>();
+
+                if (value == null)
+                {
+                    value = new Gradient();
+                    GUI.changed = true;
+                }
+
+                if (gradientUsage != null)
+                {
+                    return EditorGUILayout.GradientField(fieldLabel, (Gradient)value, gradientUsage.hdr);
+                }
+                else
+                {
+                    return EditorGUILayout.GradientField(fieldLabel, (Gradient)value);
+                }
             }
             else if (declaredType == typeof(AnimationCurve))
             {
-                return EditorGUILayout.CurveField(fieldName, (AnimationCurve)value);
+                return EditorGUILayout.CurveField(fieldLabel, (AnimationCurve)value);
             }
             else
             {
@@ -462,10 +650,10 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
             return value;
         }
-        
+
         protected override object DrawPublicVariableField(string symbol, object variableValue, Type variableType, ref bool dirty, bool enabled)
         {
-            object newValue = variableValue;
+            bool shouldUseRuntimeValue = EditorApplication.isPlaying && currentBehaviour != null && GUI.enabled; // GUI.enabled is determined in DrawProgramSourceGUI
 
             EditorGUI.BeginDisabledGroup(!enabled);
 
@@ -481,6 +669,22 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 {
                     shouldDraw = false;
                 }
+
+                foreach (Attribute attribute in symbolField.fieldAttributes)
+                {
+                    if (attribute == null)
+                        continue;
+
+                    if (attribute is HeaderAttribute)
+                    {
+                        EditorGUILayout.Space();
+                        EditorGUILayout.LabelField((attribute as HeaderAttribute).header, EditorStyles.boldLabel);
+                    }
+                    else if (attribute is SpaceAttribute)
+                    {
+                        GUILayout.Space((attribute as SpaceAttribute).height);
+                    }
+                }
             }
             else
             {
@@ -489,16 +693,32 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
             if (shouldDraw)
             {
+                if (shouldUseRuntimeValue)
+                {
+                    variableValue = currentBehaviour.GetProgramVariable(symbol);
+                }
+
                 if (!isArray) // Drawing horizontal groups on arrays screws them up, there's probably better handling for this using a manual rect
                     EditorGUILayout.BeginHorizontal();
 
+                FieldDefinition fieldDefinition = null;
+                if (fieldDefinitions != null)
+                    fieldDefinitions.TryGetValue(symbol, out fieldDefinition);
+
                 EditorGUI.BeginChangeCheck();
-                newValue = DrawFieldForType(null, symbol, (variableValue, variableType), ref dirty, enabled);
+                object newValue = DrawFieldForType(null, symbol, (variableValue, variableType, fieldDefinition), fieldDefinition != null ? fieldDefinition.fieldSymbol.userCsType : null, ref dirty, enabled);
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    dirty = true;
-                    variableValue = newValue;
+                    if (shouldUseRuntimeValue)
+                    {
+                        currentBehaviour.SetProgramVariable(symbol, newValue);
+                    }
+                    else
+                    {
+                        dirty = true;
+                        variableValue = newValue;
+                    }
                 }
                 
                 if (symbolField.fieldSymbol != null && symbolField.fieldSymbol.syncMode != UdonSyncMode.NotSynced)

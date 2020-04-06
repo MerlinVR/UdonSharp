@@ -65,7 +65,7 @@ namespace UdonSharp
         // https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/conversions#implicit-numeric-conversions
         private static readonly IReadOnlyDictionary<System.Type, System.Type[]> implicitBuiltinConversions = new Dictionary<System.Type, System.Type[]>()
         {
-            { typeof(sbyte), new System.Type[] { typeof(short), typeof(int), typeof(long), typeof(double), typeof(decimal) } },
+            { typeof(sbyte), new System.Type[] { typeof(short), typeof(int), typeof(long), typeof(float), typeof(double), typeof(decimal) } },
             { typeof(byte), new System.Type[] { typeof(short), typeof(ushort), typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal) } },
             { typeof(short), new System.Type[] { typeof(int), typeof(long), typeof(float), typeof(double), typeof(decimal) } },
             { typeof(ushort), new System.Type[] { typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal) } },
@@ -77,12 +77,64 @@ namespace UdonSharp
             { typeof(float), new System.Type[] { typeof(double) } },
         };
 
+        private static readonly IReadOnlyDictionary<System.Type, System.Type> nextHighestPrecisionType = new Dictionary<System.Type, System.Type>()
+        {
+            { typeof(sbyte), typeof(int) },
+            { typeof(byte), typeof(int) },
+            { typeof(short), typeof(int) },
+            { typeof(ushort), typeof(int) },
+            { typeof(int), typeof(long) },
+            { typeof(uint), typeof(long) },
+        };
+
+        private static readonly HashSet<System.Type> unsignedTypes = new HashSet<System.Type>()
+        {
+            typeof(byte),
+            typeof(ushort),
+            typeof(uint),
+            typeof(ulong),
+        };
+
+        private static readonly HashSet<System.Type> signedTypes = new HashSet<System.Type>()
+        {
+            typeof(sbyte),
+            typeof(short),
+            typeof(int),
+            typeof(long),
+        };
+
+        public static bool IsSignedType(System.Type type)
+        {
+            return signedTypes.Contains(type);
+        }
+
+        public static bool IsUnsignedType(System.Type type)
+        {
+            return unsignedTypes.Contains(type);
+        }
+
+        public static bool IsNumericType(System.Type type)
+        {
+            return implicitBuiltinConversions.ContainsKey(type);
+        }
+
         public static bool IsNumericImplicitCastValid(System.Type targetType, System.Type sourceType)
         {
             if (implicitBuiltinConversions.ContainsKey(sourceType) && implicitBuiltinConversions[sourceType].Contains(targetType))
                 return true;
 
             return false;
+        }
+
+        public static System.Type GetNextHighestNumericPrecision(System.Type type)
+        {
+            if (type == null)
+                return null;
+
+            System.Type precisionType = null;
+            nextHighestPrecisionType.TryGetValue(type, out precisionType);
+
+            return precisionType;
         }
 
         public static MethodInfo GetNumericConversionMethod(System.Type targetType, System.Type sourceType)
@@ -137,7 +189,7 @@ namespace UdonSharp
 
                 foreach (MethodInfo methodInfo in methods)
                 {
-                    if (methodInfo.ReturnType == targetType && methodInfo.GetParameters()[0].ParameterType == assignee)
+                    if (methodInfo.ReturnType == targetType && (methodInfo.GetParameters()[0].ParameterType == assignee || methodInfo.GetParameters()[0].ParameterType == typeof(UnityEngine.Object)))
                         return true;
                 }
             }
@@ -195,12 +247,19 @@ namespace UdonSharp
         {
             first = first.ReflectedType == first.DeclaringType ? first : first.DeclaringType.GetMethod(first.Name, first.GetParameters().Select(p => p.ParameterType).ToArray());
             second = second.ReflectedType == second.DeclaringType ? second : second.DeclaringType.GetMethod(second.Name, second.GetParameters().Select(p => p.ParameterType).ToArray());
+
+            // Special case for comparing object functions since they need to be explicitly included in GetMethods
+            if (first.DeclaringType == typeof(object))
+                second = typeof(object).GetMethod(second.Name, second.GetParameters().Select(p => p.ParameterType).ToArray());
+            if (second.DeclaringType == typeof(object))
+                first = typeof(object).GetMethod(first.Name, first.GetParameters().Select(p => p.ParameterType).ToArray());
+
             return first == second;
         }
 
         private static readonly HashSet<System.Type> udonSyncTypes = new HashSet<System.Type>()
         {
-            typeof(bool), // bool is apparently broken despite being listed as supported, not sure if it has been fixed yet.
+            typeof(bool),
             typeof(char),
             typeof(byte), typeof(sbyte),
             typeof(int), typeof(uint),
@@ -217,16 +276,165 @@ namespace UdonSharp
         {
             return udonSyncTypes.Contains(type);
         }
+
+        private static readonly HashSet<System.Type> builtinTypes = new HashSet<System.Type>
+        {
+            typeof(string),
+            typeof(bool),
+            typeof(byte),
+            typeof(sbyte),
+            typeof(char),
+            typeof(decimal),
+            typeof(double),
+            typeof(float),
+            typeof(int),
+            typeof(uint),
+            typeof(long),
+            typeof(ulong),
+            typeof(short),
+            typeof(ushort),
+            typeof(object),
+        };
+
+        public static bool IsBuiltinType(System.Type type)
+        {
+            return builtinTypes.Contains(type);
+        }
+
+        public static MethodInfo[] GetOperators(System.Type type, BuiltinOperatorType builtinOperatorType)
+        {
+            List<MethodInfo> foundOperators = new List<MethodInfo>();
+
+            // If it's a builtin type then create a fake operator methodinfo for it.
+            // If this operator doesn't actually exist, it will get filtered by the overload finding
+            if (IsBuiltinType(type))
+                foundOperators.Add(new OperatorMethodInfo(type, builtinOperatorType));
+
+            // Now look for operators that the type defines
+            string operatorName = System.Enum.GetName(typeof(BuiltinOperatorType), builtinOperatorType);
+            if (builtinOperatorType == BuiltinOperatorType.Multiplication)
+                operatorName = "Multiply"; // Udon breaks standard naming with its multiplication overrides on base types
+            else if (builtinOperatorType == BuiltinOperatorType.UnaryMinus)
+                operatorName = "UnaryNegation";
+
+            operatorName = $"op_{operatorName}";
+
+            System.Type currentType = type;
+
+            while (currentType != null)
+            {
+                foundOperators.AddRange(currentType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == operatorName));
+                currentType = currentType.BaseType;
+            }
+
+            // Add the object equality and inequality operators if we haven't already found better matches
+            if (foundOperators.Count == 0 && type != typeof(object) && !type.IsValueType &&
+                (builtinOperatorType == BuiltinOperatorType.Equality || builtinOperatorType == BuiltinOperatorType.Inequality))
+                foundOperators.AddRange(GetOperators(typeof(object), builtinOperatorType));
+            else if (foundOperators.Count == 0 && type.IsEnum && (builtinOperatorType == BuiltinOperatorType.Equality || builtinOperatorType == BuiltinOperatorType.Inequality)) // Handle enum comparisons
+                foundOperators.Add(typeof(object).GetMethod("Equals", BindingFlags.Public | BindingFlags.Static));
+
+            return foundOperators.ToArray();
+        }
         
-        public static void LogBuildError(string message, string filePath, int line, int character)
+        public static string PrettifyTypeName(System.Type type)
+        {
+            if (type == typeof(sbyte))
+                return "sbyte";
+            else if (type == typeof(byte))
+                return "byte";
+            else if (type == typeof(short))
+                return "short";
+            else if (type == typeof(ushort))
+                return "ushort";
+            else if (type == typeof(int))
+                return "int";
+            else if (type == typeof(uint))
+                return "uint";
+            else if (type == typeof(long))
+                return "long";
+            else if (type == typeof(ulong))
+                return "ulong";
+            else if (type == typeof(char))
+                return "char";
+            else if (type == typeof(string))
+                return "string";
+            else if (type == typeof(float))
+                return "float";
+            else if (type == typeof(double))
+                return "double";
+            else if (type == typeof(bool))
+                return "bool";
+            else
+                return type.Name;
+        }
+
+        public static bool IsUserDefinedBehaviour(System.Type type)
+        {
+            return type == typeof(UdonSharpBehaviour) ||
+                   type.IsSubclassOf(typeof(UdonSharpBehaviour)) ||
+                  (type.IsArray && (type.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)) || type.GetElementType() == typeof(UdonSharpBehaviour)));
+        }
+        
+        public static bool IsUserJaggedArray(System.Type type)
+        {
+            return type.IsArray && type.GetElementType().IsArray;
+        }
+
+        public static bool IsUserDefinedType(System.Type type)
+        {
+            return IsUserDefinedBehaviour(type) ||
+                   IsUserJaggedArray(type);
+        }
+
+        private static Dictionary<System.Type, System.Type> userTypeToUdonTypeCache = new Dictionary<System.Type, System.Type>();
+
+        public static System.Type UserTypeToUdonType(System.Type type)
+        {
+            System.Type udonType;
+            if (!userTypeToUdonTypeCache.TryGetValue(type, out udonType))
+            {
+                if (IsUserDefinedType(type))
+                {
+                    if (type.IsArray)
+                    {
+                        if (!type.GetElementType().IsArray)
+                        {
+                            udonType = typeof(UnityEngine.Component[]);// Hack because VRC doesn't expose the array type of UdonBehaviour
+                        }
+                        else // Jagged arrays
+                        {
+                            udonType = typeof(object[]);
+                        }
+                    }
+                    else
+                    {
+                        udonType = typeof(VRC.Udon.UdonBehaviour);
+                    }
+                }
+
+                if (udonType == null)
+                    udonType = type;
+
+                userTypeToUdonTypeCache.Add(type, udonType);
+            }
+
+            return udonType;
+        }
+
+        public static string LogBuildError(string message, string filePath, int line, int character)
         {
             MethodInfo buildErrorLogMethod = typeof(UnityEngine.Debug).GetMethod("LogPlayerBuildError", BindingFlags.NonPublic | BindingFlags.Static);
 
+            string errorMessage = $"[<color=#FF00FF>UdonSharp</color>] {filePath}({line + 1},{character}): {message}";
+
             buildErrorLogMethod.Invoke(null, new object[] {
-                        $"[UdonSharp] {message}",
+                        errorMessage,
                         filePath,
                         line + 1,
                         character });
+
+            return errorMessage;
         }
     }
 }
