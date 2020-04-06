@@ -436,5 +436,46 @@ namespace UdonSharp
 
             return errorMessage;
         }
+
+        public static string ReadFileTextSync(string filePath, float timeoutSeconds = 2f)
+        {
+            bool sourceLoaded = false;
+
+            string fileText = "";
+
+            System.DateTime startTime = System.DateTime.Now;
+
+            while (true)
+            {
+                System.IO.IOException exception = null;
+
+                try
+                {
+                    fileText = System.IO.File.ReadAllText(filePath);
+                    sourceLoaded = true;
+                }
+                catch (System.IO.IOException e)
+                {
+                    exception = e;
+                }
+
+                if (sourceLoaded)
+                    break;
+                else
+                    System.Threading.Thread.Sleep(20);
+
+                // 2 second timeout
+                System.TimeSpan timeFromStart = System.DateTime.Now - startTime;
+
+                if (timeFromStart.TotalSeconds > timeoutSeconds)
+                {
+                    UnityEngine.Debug.LogError("Timeout when attempting to read modified C# source file");
+                    if (exception != null)
+                        throw exception;
+                }
+            }
+
+            return fileText;
+        }
     }
 }

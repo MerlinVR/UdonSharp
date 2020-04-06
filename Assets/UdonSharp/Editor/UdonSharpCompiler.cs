@@ -329,7 +329,7 @@ namespace UdonSharp
                     continue;
 
                 string sourcePath = AssetDatabase.GetAssetPath(udonSharpProgram.sourceCsScript);
-                string programSource = File.ReadAllText(sourcePath);
+                string programSource = UdonSharpUtils.ReadFileTextSync(sourcePath);
 
                 ResolverContext resolver = new ResolverContext();
                 SymbolTable classSymbols = new SymbolTable(resolver, null);

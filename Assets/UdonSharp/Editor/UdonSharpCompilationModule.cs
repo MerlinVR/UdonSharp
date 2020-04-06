@@ -49,39 +49,7 @@ namespace UdonSharp
 
             programAsset.compileErrors.Clear();
 
-            System.DateTime startTime = System.DateTime.Now;
-
-            bool sourceLoaded = false;
-
-            while (true)
-            {
-                IOException exception = null;
-
-                try
-                {
-                    sourceCode = File.ReadAllText(AssetDatabase.GetAssetPath(programAsset.sourceCsScript));
-                    sourceLoaded = true;
-                }
-                catch (IOException e)
-                {
-                    exception = e;
-                }
-
-                if (sourceLoaded)
-                    break;
-                else
-                    System.Threading.Thread.Sleep(20);
-
-                // 2 second timeout
-                System.TimeSpan timeFromStart = System.DateTime.Now - startTime;
-
-                if (timeFromStart.TotalSeconds > 2f)
-                {
-                    Debug.LogError("Timeout when attempting to read modified C# source file");
-                    if (exception != null)
-                        throw exception;
-                }
-            }
+            sourceCode = UdonSharpUtils.ReadFileTextSync(AssetDatabase.GetAssetPath(programAsset.sourceCsScript));
 
             Profiler.BeginSample("Parse AST");
             SyntaxTree tree = CSharpSyntaxTree.ParseText(sourceCode);
