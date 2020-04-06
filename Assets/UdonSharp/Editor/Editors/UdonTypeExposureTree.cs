@@ -427,7 +427,9 @@ namespace UdonSharp.Editors
                     v = 0.95f;
 
                     if (!EditorGUIUtility.isProSkin)
-                        v = 0.6f;
+                    {
+                        v = Mathf.Lerp(0.8f, 0.55f, metadata.childExposure);
+                    }
 
                     metadata.rowColor = Color.HSVToRGB(h, s, v);
 
@@ -778,7 +780,7 @@ namespace UdonSharp.Editors
 
             if (treeView != null)
             {
-                treeView.OnGUI(new Rect(0, 0, position.width, position.height - 60));
+                treeView.OnGUI(new Rect(0, 0, position.width, position.height - 80));
             }
 
             EditorGUILayout.EndScrollView();
