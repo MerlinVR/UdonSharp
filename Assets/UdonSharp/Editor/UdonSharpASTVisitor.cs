@@ -301,6 +301,13 @@ namespace UdonSharp
             visitorContext.PopTable();
         }
 
+        public override void VisitConstructorDeclaration(ConstructorDeclarationSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            throw new System.NotSupportedException("UdonSharp does not currently support constructors on UdonSharpBehaviours, use the Start() event to initialize instead.");
+        }
+
         public override void VisitPropertyDeclaration(PropertyDeclarationSyntax node)
         {
             UpdateSyntaxNode(node);
