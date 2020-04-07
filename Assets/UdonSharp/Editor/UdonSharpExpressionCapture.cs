@@ -1414,6 +1414,11 @@ namespace UdonSharp
             }
         }
 
+        public bool DoesReturnIntermediateSymbol()
+        {
+            return !IsLocalSymbol();
+        }
+
         public bool ResolveAccessToken(string accessToken)
         {
             bool resolvedToken = false;

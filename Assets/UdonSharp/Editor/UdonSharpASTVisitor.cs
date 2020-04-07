@@ -1574,15 +1574,22 @@ namespace UdonSharp
             {
                 Visit(node.Left);
 
-                // This needs to be copied because someone can do an in place assignment operator on the rhs that changes the lhs value
-                SymbolDefinition lhsCopy = visitorContext.topTable.CreateUnnamedSymbol(lhsCapture.GetReturnType(true), SymbolDeclTypeFlags.Internal);
-                using (ExpressionCaptureScope lhsCopySetter = new ExpressionCaptureScope(visitorContext, null))
+                if (lhsCapture.DoesReturnIntermediateSymbol())
                 {
-                    lhsCopySetter.SetToLocalSymbol(lhsCopy);
-                    lhsCopySetter.ExecuteSetDirect(lhsCapture);
+                    lhsValue = lhsCapture.ExecuteGet();
                 }
+                else
+                {
+                    // This needs to be copied because someone can do an in place assignment operator on the rhs that changes the lhs value
+                    SymbolDefinition lhsCopy = visitorContext.topTable.CreateUnnamedSymbol(lhsCapture.GetReturnType(true), SymbolDeclTypeFlags.Internal);
+                    using (ExpressionCaptureScope lhsCopySetter = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        lhsCopySetter.SetToLocalSymbol(lhsCopy);
+                        lhsCopySetter.ExecuteSetDirect(lhsCapture);
+                    }
 
-                lhsValue = lhsCopy;
+                    lhsValue = lhsCopy;
+                }
 
                 using (ExpressionCaptureScope rhsCapture = new ExpressionCaptureScope(visitorContext, null))
                 {
