@@ -310,6 +310,7 @@ MonoBehaviour:
       line: 20
       lineChar: 53
       spanCodeSection: 
+  hasInteractEvent: 1
   serializationData:
     SerializedFormat: 2
     SerializedBytes: 
