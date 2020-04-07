@@ -29,7 +29,7 @@ namespace UdonSharp
 
         public UdonSharpCompiler(UdonSharpProgramAsset[] programAssets)
         {
-            modules = programAssets.Select(e => new CompilationModule(e)).ToArray();
+            modules = programAssets.Where(e => e.sourceCsScript != null).Select(e => new CompilationModule(e)).ToArray();
         }
 
         public void Compile()
