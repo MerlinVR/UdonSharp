@@ -1568,20 +1568,28 @@ namespace UdonSharp
             SymbolDefinition rhsValue = null;
             SymbolDefinition lhsValue = null;
 
-            using (ExpressionCaptureScope rhsCapture = new ExpressionCaptureScope(visitorContext, null))
-            {
-                Visit(node.Right);
-
-                rhsValue = rhsCapture.ExecuteGet();
-            }
-
             ExpressionCaptureScope outerScope = visitorContext.topCaptureScope;
 
             using (ExpressionCaptureScope lhsCapture = new ExpressionCaptureScope(visitorContext, null))
             {
                 Visit(node.Left);
 
-                lhsValue = lhsCapture.ExecuteGet();
+                // This needs to be copied because someone can do an in place assignment operator on the rhs that changes the lhs value
+                SymbolDefinition lhsCopy = visitorContext.topTable.CreateUnnamedSymbol(lhsCapture.GetReturnType(true), SymbolDeclTypeFlags.Internal);
+                using (ExpressionCaptureScope lhsCopySetter = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    lhsCopySetter.SetToLocalSymbol(lhsCopy);
+                    lhsCopySetter.ExecuteSetDirect(lhsCapture);
+                }
+
+                lhsValue = lhsCopy;
+
+                using (ExpressionCaptureScope rhsCapture = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    Visit(node.Right);
+
+                    rhsValue = rhsCapture.ExecuteGet();
+                }
 
                 System.Type lhsType = lhsValue.symbolCsType;
                 System.Type rhsType = rhsValue.symbolCsType;
