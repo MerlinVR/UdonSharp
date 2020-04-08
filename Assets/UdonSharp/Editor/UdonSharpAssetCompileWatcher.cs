@@ -34,9 +34,9 @@ namespace UdonSharp
             fileSystemWatcher = new FileSystemWatcher("Assets/", "*.cs");
             fileSystemWatcher.IncludeSubdirectories = true;
 
-            fileSystemWatcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
+            fileSystemWatcher.NotifyFilter = NotifyFilters.LastWrite;
             fileSystemWatcher.Changed += OnSourceFileChanged;
-            fileSystemWatcher.Renamed += OnSourceFileRenamed;
+            //fileSystemWatcher.Renamed += OnSourceFileRenamed;
             fileSystemWatcher.EnableRaisingEvents = true;
         }
 
@@ -44,6 +44,8 @@ namespace UdonSharp
         {
             if (fileSystemWatcher != null)
             {
+                fileSystemWatcher.EnableRaisingEvents = false;
+                fileSystemWatcher.Changed -= OnSourceFileChanged;;
                 fileSystemWatcher.Dispose();
             }
         }

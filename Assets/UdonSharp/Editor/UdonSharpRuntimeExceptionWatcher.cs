@@ -97,7 +97,12 @@ namespace UdonSharp
         static void CleanupLogWatcher()
         {
             if (logDirectoryWatcher != null)
+            {
+                logDirectoryWatcher.EnableRaisingEvents = false;
+                logDirectoryWatcher.Changed -= OnLogFileChanged;
                 logDirectoryWatcher.Dispose();
+                logDirectoryWatcher = null;
+            }
         }
 
         static void OnLogFileChanged(object source, FileSystemEventArgs args)
