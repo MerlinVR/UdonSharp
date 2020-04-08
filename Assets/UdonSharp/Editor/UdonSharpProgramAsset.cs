@@ -46,6 +46,10 @@ namespace UdonSharp
         private UdonBehaviour currentBehaviour = null;
 
         private static GUIStyle errorTextStyle;
+        private static GUIStyle undoLabelStyle;
+        private static GUIContent undoArrowLight;
+        private static GUIContent undoArrowDark;
+        private static GUIContent undoArrowContent;
 
         private void DrawCompileErrorTextArea()
         {
@@ -66,6 +70,24 @@ namespace UdonSharp
 
         protected override void DrawProgramSourceGUI(UdonBehaviour udonBehaviour, ref bool dirty)
         {
+            if (undoLabelStyle == null || 
+                undoArrowDark == null || 
+                undoArrowLight == null)
+            {
+                undoLabelStyle = new GUIStyle(EditorStyles.label);
+                undoLabelStyle.alignment = TextAnchor.MiddleCenter;
+                undoLabelStyle.padding = new RectOffset(0, 0, 1, 0);
+                undoLabelStyle.margin = new RectOffset(0, 0, 0, 0);
+                undoLabelStyle.border = new RectOffset(0, 0, 0, 0);
+                undoLabelStyle.stretchWidth = false;
+                undoLabelStyle.stretchHeight = false;
+
+                undoArrowLight = new GUIContent((Texture)EditorGUIUtility.Load("Assets/UdonSharp/Editor/Resources/UndoArrowLight.png"), "Reset to default value");
+                undoArrowDark = new GUIContent((Texture)EditorGUIUtility.Load("Assets/UdonSharp/Editor/Resources/UndoArrowBlack.png"), "Reset to default value");
+            }
+            
+            undoArrowContent = EditorGUIUtility.isProSkin ? undoArrowLight : undoArrowDark;
+
             currentBehaviour = udonBehaviour;
 
             EditorGUI.BeginChangeCheck();
@@ -427,8 +449,7 @@ namespace UdonSharp
                 fieldLabel = new GUIContent(fieldName, tooltip.tooltip);
             else
                 fieldLabel = new GUIContent(fieldName);
-
-
+            
             if (declaredType.IsArray)
             {
                 bool foldoutEnabled;
@@ -713,7 +734,9 @@ namespace UdonSharp
                 EditorGUI.BeginChangeCheck();
                 object newValue = DrawFieldForType(null, symbol, (variableValue, variableType, fieldDefinition), fieldDefinition != null ? fieldDefinition.fieldSymbol.userCsType : null, ref dirty, enabled);
 
-                if (EditorGUI.EndChangeCheck())
+                bool changed = EditorGUI.EndChangeCheck();
+
+                if (changed)
                 {
                     if (shouldUseRuntimeValue)
                     {
@@ -735,7 +758,31 @@ namespace UdonSharp
                 }
 
                 if (!isArray)
+                {
+                    object originalValue = program.Heap.GetHeapVariable(program.SymbolTable.GetAddressFromSymbol(symbol));
+
+                    if (originalValue != null && !originalValue.Equals(variableValue))
+                    {
+                        int originalIndent = EditorGUI.indentLevel;
+                        EditorGUI.indentLevel = 0;
+                        // Check if changed because otherwise the UI throw an error since we changed that we want to draw the undo arrow in the middle of drawing when we're modifying stuff like colors
+                        if (!changed && GUI.Button(EditorGUILayout.GetControlRect(GUILayout.Width(14f), GUILayout.Height(11f)), undoArrowContent, undoLabelStyle))
+                        {
+                            if (shouldUseRuntimeValue)
+                            {
+                                currentBehaviour.SetProgramVariable(symbol, originalValue);
+                            }
+                            else
+                            {
+                                dirty = true;
+                                variableValue = originalValue;
+                            }
+                        }
+                        EditorGUI.indentLevel = originalIndent;
+                    }
+
                     EditorGUILayout.EndHorizontal();
+                }
             }
 
             EditorGUI.EndDisabledGroup();
