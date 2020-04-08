@@ -177,16 +177,7 @@ namespace UdonSharp
             }
 
             EditorGUILayout.Space();
-
-            showProgramUasm = EditorGUILayout.Foldout(showProgramUasm, "Compiled C# Assembly");
-            if (showProgramUasm)
-            {
-                DrawAssemblyTextArea(/*!Application.isPlaying*/ false, ref dirty);
-
-                if (program != null)
-                    DrawProgramDisassembly();
-            }
-
+            
             showExtraOptions = EditorGUILayout.Foldout(showExtraOptions, "Utilities");
             if (showExtraOptions)
             {
@@ -199,6 +190,15 @@ namespace UdonSharp
                         UdonSharpEditorUtility.UdonSharpProgramToAssemblyProgram(this, savePath);
                     }
                 }
+            }
+
+            showProgramUasm = EditorGUILayout.Foldout(showProgramUasm, "Compiled C# Assembly");
+            if (showProgramUasm)
+            {
+                DrawAssemblyTextArea(/*!Application.isPlaying*/ false, ref dirty);
+
+                if (program != null)
+                    DrawProgramDisassembly();
             }
 
             currentBehaviour = null;
