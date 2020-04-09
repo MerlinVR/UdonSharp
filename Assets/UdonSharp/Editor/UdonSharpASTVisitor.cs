@@ -2199,6 +2199,16 @@ namespace UdonSharp
                     SwitchLabelSyntax switchLabel = switchSection.Labels[j];
                     SymbolDefinition switchLabelValue = null;
 
+                    if (switchLabel is DefaultSwitchLabelSyntax)
+                    {
+                        UpdateSyntaxNode(switchLabel);
+                        defaultJump = sectionJump;
+                        continue;
+                    }
+
+                    visitorContext.uasmBuilder.AddJumpLabel(nextLabelJump);
+                    nextLabelJump = visitorContext.labelTable.GetNewJumpLabel("nextSwitchLabelJump");
+
                     using (ExpressionCaptureScope conditionValueCapture = new ExpressionCaptureScope(visitorContext, null))
                     {
                         Visit(switchLabel);
@@ -2206,15 +2216,6 @@ namespace UdonSharp
                         if (!conditionValueCapture.IsUnknownArchetype())
                             switchLabelValue = conditionValueCapture.ExecuteGet();
                     }
-
-                    if (switchLabelValue == null)
-                    {
-                        defaultJump = sectionJump;
-                        continue;
-                    }
-
-                    visitorContext.uasmBuilder.AddJumpLabel(nextLabelJump);
-                    nextLabelJump = visitorContext.labelTable.GetNewJumpLabel("nextSwitchLabelJump");
 
                     SymbolDefinition conditionEqualitySymbol = null;
                     using (ExpressionCaptureScope equalityCheckScope = new ExpressionCaptureScope(visitorContext, null))
@@ -2251,12 +2252,6 @@ namespace UdonSharp
 
             visitorContext.uasmBuilder.AddJumpLabel(switchExitLabel);
             visitorContext.breakLabelStack.Pop();
-        }
-
-        public override void VisitDefaultSwitchLabel(DefaultSwitchLabelSyntax node)
-        {
-            // Just do nothing here so the outer scope is unknown type
-            UpdateSyntaxNode(node);
         }
 
         public override void VisitCaseSwitchLabel(CaseSwitchLabelSyntax node)
