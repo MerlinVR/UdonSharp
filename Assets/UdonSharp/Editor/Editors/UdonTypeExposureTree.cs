@@ -241,7 +241,7 @@ namespace UdonSharp.Editors
             if (type.IsByRef)
                 return ShouldHideType(type.GetElementType());
 
-            if (!rootTypeCheck && typeof(Component).IsAssignableFrom(type))
+            if (!rootTypeCheck && typeof(UnityEngine.Object).IsAssignableFrom(type))
                 return false;
 
             if (type.IsGenericType || type.IsGenericParameter || type.IsGenericTypeDefinition)
@@ -258,7 +258,7 @@ namespace UdonSharp.Editors
                 shouldHideType &= ShouldHideMember(member);
             }
 
-            return shouldHideType && (rootTypeCheck || !typeof(Component).IsAssignableFrom(type));
+            return shouldHideType && (rootTypeCheck || !typeof(UnityEngine.Object).IsAssignableFrom(type));
         }
 
         bool ShouldHideMember(MemberInfo memberInfo)
@@ -428,7 +428,7 @@ namespace UdonSharp.Editors
 
                     if (!EditorGUIUtility.isProSkin)
                     {
-                        v = Mathf.Lerp(0.8f, 0.55f, metadata.childExposure);
+                        v = Mathf.Lerp(0.62f, 0.55f, metadata.childExposure);
                     }
 
                     metadata.rowColor = Color.HSVToRGB(h, s, v);
