@@ -1574,7 +1574,7 @@ namespace UdonSharp
             {
                 Visit(node.Left);
 
-                if (lhsCapture.DoesReturnIntermediateSymbol())
+                if (lhsCapture.DoesReturnIntermediateSymbol() || lhsCapture.IsConstExpression())
                 {
                     lhsValue = lhsCapture.ExecuteGet();
                 }

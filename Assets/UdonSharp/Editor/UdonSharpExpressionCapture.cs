@@ -1419,6 +1419,15 @@ namespace UdonSharp
             return !IsLocalSymbol();
         }
 
+        public bool IsConstExpression()
+        {
+            // Only basic handling for local symbols for now since we can directly reference them
+            if (IsLocalSymbol() && ExecuteGet().declarationType.HasFlag(SymbolDeclTypeFlags.Constant))
+                return true;
+
+            return false;
+        }
+
         public bool ResolveAccessToken(string accessToken)
         {
             bool resolvedToken = false;
