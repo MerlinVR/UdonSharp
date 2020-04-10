@@ -40,8 +40,9 @@ namespace UdonSharp
 
             foreach (string symbol in symbols)
             {
-                System.Type symbolType = uSharpProgram.SymbolTable.GetSymbolType(symbol);
-                object symbolValue = uSharpProgram.Heap.GetHeapVariable(uSharpProgram.SymbolTable.GetAddressFromSymbol(symbol));
+                uint symbolAddress = uSharpProgram.SymbolTable.GetAddressFromSymbol(symbol);
+                System.Type symbolType = uSharpProgram.Heap.GetHeapVariableType(symbolAddress);
+                object symbolValue = uSharpProgram.Heap.GetHeapVariable(symbolAddress);
                 
                 assemblyProgram.Heap.SetHeapVariable(assemblyProgram.SymbolTable.GetAddressFromSymbol(symbol), symbolValue, symbolType);
             }
