@@ -208,11 +208,14 @@ namespace UdonSharp
         {
             bool hasAssemblyError = typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this) != null;
 
-            if (sourceCsScript != null && 
+            if (sourceCsScript != null &&
                 !EditorApplication.isCompiling &&
                 !EditorApplication.isUpdating &&
-                !hasAssemblyError)
+                !hasAssemblyError &&
+                compileErrors.Count == 0)
+            {
                 CompileCsProgram();
+            }
         }
         
         protected override object GetPublicVariableDefaultValue(string symbol, Type type)
@@ -222,8 +225,16 @@ namespace UdonSharp
 
         public void CompileCsProgram()
         {
-            UdonSharpCompiler compiler = new UdonSharpCompiler(this);
-            compiler.Compile();
+            try
+            {
+                UdonSharpCompiler compiler = new UdonSharpCompiler(this);
+                compiler.Compile();
+            }
+            catch (Exception e)
+            {
+                compileErrors.Add(e.ToString());
+                throw e;
+            }
         }
 
         public static void CompileAllCsPrograms()
