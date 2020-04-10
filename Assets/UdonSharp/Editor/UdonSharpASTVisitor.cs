@@ -1553,6 +1553,12 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
+            if (node.Kind() == SyntaxKind.IsExpression)
+                throw new System.NotSupportedException("The `is` keyword is not yet supported by UdonSharp since Udon does not expose what is necessary (https://vrchat.canny.io/vrchat-udon-closed-alpha-feedback/p/expose-systemtypeissubclassof-isinstanceoftype-issubclassof-and-basetype)");
+
+            if (node.Kind() == SyntaxKind.AsExpression)
+                throw new System.NotSupportedException("The `as` keyword is not yet supported by UdonSharp since Udon does not expose what is necessary (https://vrchat.canny.io/vrchat-udon-closed-alpha-feedback/p/expose-systemtypeissubclassof-isinstanceoftype-issubclassof-and-basetype)");
+
             if (node.Kind() == SyntaxKind.LogicalAndExpression || node.Kind() == SyntaxKind.LogicalOrExpression)
             {
                 HandleBinaryShortCircuitConditional(node);
