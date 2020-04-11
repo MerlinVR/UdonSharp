@@ -313,8 +313,7 @@ namespace UdonSharp
 
                 if (chosenFilePath.Length > 0)
                 {
-                    string chosenFileName = Path.GetFileNameWithoutExtension(chosenFilePath).Replace(" ", "").Replace("#", "Sharp");
-                    string fileContents = UdonSharpSettings.GetProgramTemplateString().Replace("<TemplateClassName>", chosenFileName);
+                    string fileContents = UdonSharpSettings.GetProgramTemplateString(Path.GetFileNameWithoutExtension(chosenFilePath));
 
                     File.WriteAllText(chosenFilePath, fileContents);
 
