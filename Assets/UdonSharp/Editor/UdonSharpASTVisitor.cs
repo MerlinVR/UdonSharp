@@ -747,7 +747,7 @@ namespace UdonSharp
 
             List<System.Attribute> fieldAttributes = GetFieldAttributes(node);
 
-            bool isPublic = node.Modifiers.HasModifier("public") || fieldAttributes.Find(e => e is SerializeField) != null;
+            bool isPublic = (node.Modifiers.HasModifier("public") || fieldAttributes.Find(e => e is SerializeField) != null) && fieldAttributes.Find(e => e is System.NonSerializedAttribute) == null;
 
             List<SymbolDefinition> fieldSymbols = HandleVariableDeclaration(node.Declaration, isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private, fieldSyncMode);
             foreach (SymbolDefinition fieldSymbol in fieldSymbols)
