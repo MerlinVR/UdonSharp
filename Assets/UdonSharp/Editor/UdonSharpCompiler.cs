@@ -115,10 +115,12 @@ namespace UdonSharp
                         {
                             program.Heap.SetHeapVariable(symbolAddress, symbol.symbolDefaultValue, symbol.symbolCsType);
                         }
-                        else if (symbol.symbolCsType.IsArray &&
-                                (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public))) // Initialize null array fields to a 0-length array like Unity does
+                        else if (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public)) // Initialize null array fields to a 0-length array like Unity does
                         {
-                            program.Heap.SetHeapVariable(symbolAddress, System.Activator.CreateInstance(symbol.symbolCsType, new object[] { 0 }), symbol.symbolCsType);
+                            if (symbol.symbolCsType.IsArray)
+                                program.Heap.SetHeapVariable(symbolAddress, System.Activator.CreateInstance(symbol.symbolCsType, new object[] { 0 }), symbol.symbolCsType);
+                            else if (symbol.symbolCsType == typeof(string))
+                                program.Heap.SetHeapVariable(symbolAddress, "", symbol.symbolCsType);
                         }
                     }
                 }
@@ -137,14 +139,21 @@ namespace UdonSharp
                     {
                         uint symbolAddress = program.SymbolTable.GetAddressFromSymbol(symbol.symbolUniqueName);
 
-                        if (symbol.symbolCsType.IsArray &&
-                                (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public))) // Initialize null array fields to a 0-length array like Unity does
+                        if (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public)) // Initialize null array fields to a 0-length array like Unity does
                         {
-                            object currentArrayValue = program.Heap.GetHeapVariable(symbolAddress);
-
-                            if (currentArrayValue == null)
+                            if (symbol.symbolCsType.IsArray)
                             {
-                                program.Heap.SetHeapVariable(symbolAddress, System.Activator.CreateInstance(symbol.symbolCsType, new object[] { 0 }), symbol.symbolCsType);
+                                if (program.Heap.GetHeapVariable(symbolAddress) == null)
+                                {
+                                    program.Heap.SetHeapVariable(symbolAddress, System.Activator.CreateInstance(symbol.symbolCsType, new object[] { 0 }), symbol.symbolCsType);
+                                }
+                            }
+                            else if (symbol.symbolCsType == typeof(string))
+                            {
+                                if (program.Heap.GetHeapVariable(symbolAddress) == null)
+                                {
+                                    program.Heap.SetHeapVariable(symbolAddress, "", symbol.symbolCsType);
+                                }
                             }
                         }
                     }

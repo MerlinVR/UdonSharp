@@ -75,7 +75,7 @@ namespace UdonSharp
                     if (fileSystemWatcher != null)
                     {
                         fileSystemWatcher.EnableRaisingEvents = false;
-                        fileSystemWatcher.Changed -= OnSourceFileChanged; ;
+                        fileSystemWatcher.Changed -= OnSourceFileChanged;
                         fileSystemWatcher.Dispose();
                     }
                 }
