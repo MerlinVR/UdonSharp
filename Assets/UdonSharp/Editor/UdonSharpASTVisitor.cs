@@ -1311,10 +1311,13 @@ namespace UdonSharp
                 {
                     Visit(node.ExpressionBody);
 
-                    using (ExpressionCaptureScope returnSetterScope = new ExpressionCaptureScope(visitorContext, null))
+                    if (visitorContext.returnSymbol != null)
                     {
-                        returnSetterScope.SetToLocalSymbol(visitorContext.returnSymbol);
-                        returnSetterScope.ExecuteSetDirect(expressionBodyCapture);
+                        using (ExpressionCaptureScope returnSetterScope = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            returnSetterScope.SetToLocalSymbol(visitorContext.returnSymbol);
+                            returnSetterScope.ExecuteSetDirect(expressionBodyCapture);
+                        }
                     }
                 }
             }
