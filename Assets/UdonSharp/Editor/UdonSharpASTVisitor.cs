@@ -1218,6 +1218,13 @@ namespace UdonSharp
             }
         }
 
+        public override void VisitArrowExpressionClause(ArrowExpressionClauseSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            Visit(node.Expression);
+        }
+
         public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
             UpdateSyntaxNode(node);
@@ -1291,7 +1298,30 @@ namespace UdonSharp
 
             visitorContext.PushTable(functionSymbolTable);
 
-            Visit(node.Body);
+            if (node.Body != null && node.ExpressionBody != null)
+                throw new System.Exception("Block bodies and expression bodies cannot both be provided.");
+
+            if (node.Body != null)
+            {
+                Visit(node.Body);
+            }
+            else if (node.ExpressionBody != null)
+            {
+                using (ExpressionCaptureScope expressionBodyCapture = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    Visit(node.ExpressionBody);
+
+                    using (ExpressionCaptureScope returnSetterScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        returnSetterScope.SetToLocalSymbol(visitorContext.returnSymbol);
+                        returnSetterScope.ExecuteSetDirect(expressionBodyCapture);
+                    }
+                }
+            }
+            else
+            {
+                throw new System.Exception($"Method {functionName} must declare a body");
+            }
 
             visitorContext.topTable.FlattenTableCountersToGlobal();
             visitorContext.PopTable();
