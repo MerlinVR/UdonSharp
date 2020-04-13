@@ -25,7 +25,7 @@ namespace UdonSharp
         static readonly object modifiedFileLock = new object();
 
         static HashSet<string> modifiedFilePaths = new HashSet<string>();
-        static HashSet<string> renamedFilePaths = new HashSet<string>();
+        static HashSet<MonoScript> modifiedScripts = new HashSet<MonoScript>();
 
         static bool lastEnabledState = false;
 
@@ -37,7 +37,23 @@ namespace UdonSharp
         static void SetupWatchers() 
         {
             if (fileSystemWatchers != null)
+            {
+                UdonSharpSettings settings = UdonSharpSettings.GetSettings();
+
+                bool watcherEnabled = settings == null || settings.autoCompileOnModify;
+
+                if (watcherEnabled != lastEnabledState)
+                {
+                    lastEnabledState = watcherEnabled;
+                    foreach (FileSystemWatcher watcher in fileSystemWatchers)
+                    {
+                        if (watcher != null)
+                            watcher.EnableRaisingEvents = watcherEnabled;
+                    }
+                }
+
                 return;
+            }
 
             AssemblyReloadEvents.beforeAssemblyReload += CleanupWatchers;
 
@@ -82,11 +98,23 @@ namespace UdonSharp
             }
         }
 
-        static void HandleScriptModifications(List<MonoScript> scripts)
+        static void HandleScriptModifications()
         {
             UdonSharpSettings settings = UdonSharpSettings.GetSettings();
 
-            if (settings != null && !settings.autoCompileOnModify)
+            if (settings != null)
+            {
+                if (!settings.autoCompileOnModify)
+                {
+                    modifiedScripts.Clear();
+                    return;
+                }
+
+                if (settings.waitForFocus && !UnityEditorInternal.InternalEditorUtility.isApplicationActive)
+                    return;
+            }
+
+            if (modifiedScripts.Count == 0)
                 return;
 
             string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
@@ -100,7 +128,7 @@ namespace UdonSharp
 
             HashSet<UdonSharpProgramAsset> assetsToUpdate = new HashSet<UdonSharpProgramAsset>();
 
-            foreach (MonoScript script in scripts)
+            foreach (MonoScript script in modifiedScripts)
             {
                 foreach (UdonSharpProgramAsset programAsset in udonSharpPrograms)
                 {
@@ -109,46 +137,63 @@ namespace UdonSharp
                 }
             }
 
-            if (assetsToUpdate.Count > 0)
+            try
             {
-                if (settings == null || settings.compileAllScripts)
+                if (assetsToUpdate.Count > 0)
                 {
-                    UdonSharpProgramAsset.CompileAllCsPrograms();
-                }
-                else
-                {
-                    UdonSharpCompiler compiler = new UdonSharpCompiler(assetsToUpdate.ToArray());
-                    compiler.Compile();
+                    if (settings == null || settings.compileAllScripts)
+                    {
+                        UdonSharpProgramAsset.CompileAllCsPrograms();
+                    }
+                    else
+                    {
+                        UdonSharpCompiler compiler = new UdonSharpCompiler(assetsToUpdate.ToArray());
+                        compiler.Compile();
+                    }
                 }
             }
+            finally
+            {
+                modifiedScripts.Clear();
+            }
+
+            modifiedScripts.Clear();
         }
 
         static void OnEditorUpdate()
         {
             SetupWatchers();
 
-            UdonSharpSettings settings = UdonSharpSettings.GetSettings();
-
-            bool watcherEnabled = settings == null || settings.autoCompileOnModify;
-
-            if (watcherEnabled != lastEnabledState && fileSystemWatchers != null)
+            // Prevent people from entering play mode when there are compile errors, like normal Unity C#
+            if (EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)
             {
-                lastEnabledState = watcherEnabled;
-                foreach (FileSystemWatcher watcher in fileSystemWatchers)
+                string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
+
+                bool foundCompileErrors = false;
+
+                foreach (string dataGuid in udonSharpDataAssets)
                 {
-                    if (watcher != null)
-                        watcher.EnableRaisingEvents = watcherEnabled;
+                    UdonSharpProgramAsset programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid));
+
+                    if (programAsset.sourceCsScript != null && programAsset.compileErrors.Count > 0)
+                    {
+                        foundCompileErrors = true;
+                        break;
+                    }
+                }
+
+                if (foundCompileErrors)
+                {
+                    EditorApplication.isPlaying = false;
+
+                    typeof(SceneView).GetMethod("ShowNotification", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { "All U# compiler errors have to be fixed before you can enter playmode!" });
                 }
             }
-
-            List<MonoScript> modifiedScripts = null;
-
+            
             lock (modifiedFileLock)
             {
                 if (modifiedFilePaths.Count > 0)
                 {
-                    modifiedScripts = new List<MonoScript>();
-
                     foreach (string filePath in modifiedFilePaths)
                     {
                         MonoScript asset = AssetDatabase.LoadAssetAtPath<MonoScript>(filePath.Replace(Application.dataPath.Replace("/", "\\"), "Assets"));
@@ -159,8 +204,7 @@ namespace UdonSharp
                 }
             }
 
-            if (modifiedScripts != null && modifiedScripts.Count > 0)
-                HandleScriptModifications(modifiedScripts);
+            HandleScriptModifications();
         }
 
         static void OnSourceFileChanged(object source, FileSystemEventArgs args)

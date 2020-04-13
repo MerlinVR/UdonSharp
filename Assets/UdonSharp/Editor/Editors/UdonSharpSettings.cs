@@ -26,6 +26,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         public bool autoCompileOnModify = true;
         public bool compileAllScripts = true;
+        public bool waitForFocus = false;
         public TextAsset newScriptTemplateOverride = null;
 
         public bool buildDebugInfo = true;
@@ -89,6 +90,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
     {
         private static GUIContent autoCompileLabel = new GUIContent("Auto compile on modify", "Trigger a compile whenever a U# source file is modified.");
         private static GUIContent compileAllLabel = new GUIContent("Compile all scripts", "Compile all scripts when a script is modified. This prevents some potential for weird issues where classes don't match");
+        private static GUIContent waitForFocusLabel = new GUIContent("Compile on focus", "Waits for application focus to compile any changed U# scripts");
         private static GUIContent templateOverrideLabel = new GUIContent("Script template override", "A custom override file to use as a template for newly created U# files. Put \"<TemplateClassName>\" in place of a class name for it to automatically populate with the file name.");
         private static GUIContent includeDebugInfoLabel = new GUIContent("Debug build", "Include debug info in build");
         private static GUIContent includeInlineCodeLabel = new GUIContent("Inline code", "Include C# inline in generated assembly");
@@ -115,6 +117,8 @@ public class <TemplateClassName> : UdonSharpBehaviour
                         if (!settings.compileAllScripts)
                             EditorGUILayout.HelpBox("Only compiling the script that has been modified can cause issues if you have multiple scripts communicating via methods.", MessageType.Warning);
                     }
+
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.waitForFocus)), waitForFocusLabel);
 
                     EditorGUILayout.PropertyField(settingsObject.FindProperty("newScriptTemplateOverride"), templateOverrideLabel);
 
