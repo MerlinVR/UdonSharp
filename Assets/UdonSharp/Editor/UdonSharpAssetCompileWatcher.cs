@@ -15,36 +15,70 @@ namespace UdonSharp
     /// This has the downside that we expect the user to know what they're doing and have valid syntax that's getting fed into the compiler since there is no "real" compilation happening on the C#
     /// But the benefit we get is that UdonSharp scripts compile nearly instantly.
     /// So this whole class just exists to give people that option.
+    /// 
+    /// I may want to rewrite this eventually because the FileSystemWatcher polls updates too frequently and burns CPU for no reason. There is no way to slow down its internal polling as far as I know.
     /// </summary>
     [InitializeOnLoad]
     public class UdonSharpAssetCompileWatcher
     {
-        static FileSystemWatcher fileSystemWatcher;
+        static FileSystemWatcher[] fileSystemWatchers;
         static readonly object modifiedFileLock = new object();
 
         static HashSet<string> modifiedFilePaths = new HashSet<string>();
         static HashSet<string> renamedFilePaths = new HashSet<string>();
 
+        static bool lastEnabledState = false;
+
         static UdonSharpAssetCompileWatcher()
         {
             EditorApplication.update += OnEditorUpdate;
-
-            AssemblyReloadEvents.beforeAssemblyReload += CleanupWatcher;
-
-            fileSystemWatcher = new FileSystemWatcher("Assets/", "*.cs");
-            fileSystemWatcher.IncludeSubdirectories = true;
-
-            fileSystemWatcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
-            fileSystemWatcher.Changed += OnSourceFileChanged;
-            fileSystemWatcher.Renamed += OnSourceFileRenamed;
-            fileSystemWatcher.EnableRaisingEvents = true;
         }
 
-        static void CleanupWatcher()
+        static void SetupWatchers() 
         {
-            if (fileSystemWatcher != null)
+            if (fileSystemWatchers != null)
+                return;
+
+            AssemblyReloadEvents.beforeAssemblyReload += CleanupWatchers;
+
+            string[] directories = Directory.GetDirectories("Assets/", "*", SearchOption.AllDirectories);
+
+            List<string> sourceDirectories = new List<string>();
+
+            foreach (string directory in directories)
             {
-                fileSystemWatcher.Dispose();
+                if (Directory.GetFiles(directory, "*.cs").Length > 0)
+                    sourceDirectories.Add(directory.Replace('\\', '/'));
+            }
+
+            fileSystemWatchers = new FileSystemWatcher[sourceDirectories.Count];
+            
+            for (int i = 0; i < sourceDirectories.Count; ++i)
+            {
+                FileSystemWatcher fileSystemWatcher = new FileSystemWatcher(sourceDirectories[i], "*.cs");
+                fileSystemWatcher.IncludeSubdirectories = false;
+                fileSystemWatcher.InternalBufferSize = 1024; // Someone would need to modify 64 files in a single directory at once to hit this
+
+                fileSystemWatcher.NotifyFilter = NotifyFilters.LastWrite;
+                fileSystemWatcher.Changed += OnSourceFileChanged;
+
+                fileSystemWatchers[i] = fileSystemWatcher;
+            }
+        }
+
+        static void CleanupWatchers()
+        {
+            if (fileSystemWatchers != null)
+            {
+                foreach (FileSystemWatcher fileSystemWatcher in fileSystemWatchers)
+                {
+                    if (fileSystemWatcher != null)
+                    {
+                        fileSystemWatcher.EnableRaisingEvents = false;
+                        fileSystemWatcher.Changed -= OnSourceFileChanged;
+                        fileSystemWatcher.Dispose();
+                    }
+                }
             }
         }
 
@@ -91,12 +125,30 @@ namespace UdonSharp
 
         static void OnEditorUpdate()
         {
-            List<MonoScript> modifiedScripts = new List<MonoScript>();
+            SetupWatchers();
+
+            UdonSharpSettings settings = UdonSharpSettings.GetSettings();
+
+            bool watcherEnabled = settings == null || settings.autoCompileOnModify;
+
+            if (watcherEnabled != lastEnabledState && fileSystemWatchers != null)
+            {
+                lastEnabledState = watcherEnabled;
+                foreach (FileSystemWatcher watcher in fileSystemWatchers)
+                {
+                    if (watcher != null)
+                        watcher.EnableRaisingEvents = watcherEnabled;
+                }
+            }
+
+            List<MonoScript> modifiedScripts = null;
 
             lock (modifiedFileLock)
             {
                 if (modifiedFilePaths.Count > 0)
                 {
+                    modifiedScripts = new List<MonoScript>();
+
                     foreach (string filePath in modifiedFilePaths)
                     {
                         MonoScript asset = AssetDatabase.LoadAssetAtPath<MonoScript>(filePath.Replace(Application.dataPath.Replace("/", "\\"), "Assets"));
@@ -107,18 +159,8 @@ namespace UdonSharp
                 }
             }
 
-            if (modifiedScripts.Count > 0)
+            if (modifiedScripts != null && modifiedScripts.Count > 0)
                 HandleScriptModifications(modifiedScripts);
-
-            //lock (modifiedFileLock)
-            //{
-            //    foreach (string renamedFile in renamedFilePaths)
-            //    {
-            //        Debug.Log(renamedFile);
-            //    }
-
-            //    renamedFilePaths.Clear();
-            //}
         }
 
         static void OnSourceFileChanged(object source, FileSystemEventArgs args)
@@ -127,14 +169,6 @@ namespace UdonSharp
             {
                 modifiedFilePaths.Add(args.FullPath);
             }
-        }
-
-        static void OnSourceFileRenamed(object source, RenamedEventArgs args)
-        {
-            //lock (modifiedFileLock)
-            //{
-            //    renamedFilePaths.Add(args.Name);
-            //}
         }
     }
 

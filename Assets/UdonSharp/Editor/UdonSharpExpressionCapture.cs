@@ -1414,6 +1414,20 @@ namespace UdonSharp
             }
         }
 
+        public bool DoesReturnIntermediateSymbol()
+        {
+            return !IsLocalSymbol();
+        }
+
+        public bool IsConstExpression()
+        {
+            // Only basic handling for local symbols for now since we can directly reference them
+            if (IsLocalSymbol() && ExecuteGet().declarationType.HasFlag(SymbolDeclTypeFlags.Constant))
+                return true;
+
+            return false;
+        }
+
         public bool ResolveAccessToken(string accessToken)
         {
             bool resolvedToken = false;
@@ -1855,12 +1869,12 @@ namespace UdonSharp
 
             System.Type returnType = GetReturnType(true);
 
-            ClassDefinition externClass = visitorContext.externClassDefinitions.Where(e => e.userClassType == returnType).FirstOrDefault();
+            ClassDefinition externClass = visitorContext.externClassDefinitions.Find(e => e.userClassType == returnType);
 
             if (externClass == null)
                 return false;
 
-            FieldDefinition foundDefinition = externClass.fieldDefinitions.Where(e => e.fieldSymbol.symbolOriginalName == fieldToken && e.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public)).FirstOrDefault();
+            FieldDefinition foundDefinition = externClass.fieldDefinitions.Find(e => e.fieldSymbol.symbolOriginalName == fieldToken && e.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public));
 
             if (foundDefinition == null)
                 return false;
@@ -1879,12 +1893,13 @@ namespace UdonSharp
             if (accessSymbol == null || !accessSymbol.IsUserDefinedBehaviour())
                 return false;
 
-            ClassDefinition externClass = visitorContext.externClassDefinitions.Where(e => e.userClassType == accessSymbol.userCsType).FirstOrDefault();
+            System.Type returnType = GetReturnType(true);
+            ClassDefinition externClass = visitorContext.externClassDefinitions.Find(e => e.userClassType == returnType);
 
             if (externClass == null)
                 return false;
 
-            MethodDefinition foundDefinition = externClass.methodDefinitions.Where(e => e.originalMethodName == methodToken && e.declarationFlags.HasFlag(MethodDeclFlags.Public)).FirstOrDefault();
+            MethodDefinition foundDefinition = externClass.methodDefinitions.Find(e => e.originalMethodName == methodToken && e.declarationFlags.HasFlag(MethodDeclFlags.Public));
 
             if (foundDefinition == null)
                 return false;

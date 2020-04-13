@@ -32,17 +32,8 @@ namespace UdonSharp
 
             Application.logMessageReceived += OnLog;
             EditorApplication.update += OnEditorUpdate;
-            
-            // Now setup the filesystem watcher
-            string[] splitPath = Application.persistentDataPath.Split('/', '\\');
-            string VRCDataPath = string.Join("\\", splitPath.Take(splitPath.Length - 2)) + "\\VRChat\\VRChat";
 
             AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
-            logDirectoryWatcher = new FileSystemWatcher(VRCDataPath, "output_log_*.txt");
-            logDirectoryWatcher.IncludeSubdirectories = false;
-            logDirectoryWatcher.NotifyFilter = NotifyFilters.LastWrite;
-            logDirectoryWatcher.Changed += OnLogFileChanged;
-            logDirectoryWatcher.EnableRaisingEvents = false;
         }
 
         static bool InitializeScriptLookup()
@@ -52,6 +43,25 @@ namespace UdonSharp
 
             if (EditorApplication.isCompiling || EditorApplication.isUpdating)
                 return false;
+
+            UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
+            bool shouldListenForVRC = udonSharpSettings != null && udonSharpSettings.buildDebugInfo && udonSharpSettings.listenForVRCExceptions;
+
+            if (logDirectoryWatcher == null && shouldListenForVRC)
+            {
+                // Now setup the filesystem watcher
+                string[] splitPath = Application.persistentDataPath.Split('/', '\\');
+                string VRCDataPath = string.Join("\\", splitPath.Take(splitPath.Length - 2)) + "\\VRChat\\VRChat";
+
+                if (Directory.Exists(VRCDataPath))
+                {
+                    logDirectoryWatcher = new FileSystemWatcher(VRCDataPath, "output_log_*.txt");
+                    logDirectoryWatcher.IncludeSubdirectories = false;
+                    logDirectoryWatcher.NotifyFilter = NotifyFilters.LastWrite;
+                    logDirectoryWatcher.Changed += OnLogFileChanged;
+                    logDirectoryWatcher.EnableRaisingEvents = false;
+                }
+            }
 
             scriptLookup = new Dictionary<long, (string, ClassDebugInfo)>();
             string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
@@ -86,7 +96,13 @@ namespace UdonSharp
         
         static void CleanupLogWatcher()
         {
-            logDirectoryWatcher.Dispose();
+            if (logDirectoryWatcher != null)
+            {
+                logDirectoryWatcher.EnableRaisingEvents = false;
+                logDirectoryWatcher.Changed -= OnLogFileChanged;
+                logDirectoryWatcher.Dispose();
+                logDirectoryWatcher = null;
+            }
         }
 
         static void OnLogFileChanged(object source, FileSystemEventArgs args)
@@ -118,7 +134,8 @@ namespace UdonSharp
             UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
             bool shouldListenForVRC = udonSharpSettings != null && udonSharpSettings.buildDebugInfo && udonSharpSettings.listenForVRCExceptions;
 
-            logDirectoryWatcher.EnableRaisingEvents = shouldListenForVRC;
+            if (logDirectoryWatcher != null)
+                logDirectoryWatcher.EnableRaisingEvents = shouldListenForVRC;
 
             if (shouldListenForVRC)
             {

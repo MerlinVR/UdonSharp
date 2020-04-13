@@ -14,34 +14,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   serializedUdonProgramAsset: {fileID: 11400000, guid: 99f631f84e22b8c4ca4281d014362514,
     type: 2}
-  udonAssembly: ".data_start\r\n\r\n    .export useLegacyLocomotion\r\n    .export
-    jumpHeight\r\n    .export runSpeed\r\n    .export walkSpeed\r\n\r\n    __refl_const_intnl_udonTypeID:
-    %SystemInt64, null\r\n    __refl_const_intnl_udonTypeName: %SystemString, null\r\n
-    \   useLegacyLocomotion: %SystemBoolean, null\r\n    jumpHeight: %SystemSingle,
-    null\r\n    runSpeed: %SystemSingle, null\r\n    walkSpeed: %SystemSingle, null\r\n
-    \   __0_this_intnl_UnityEngineGameObject: %UnityEngineGameObject, this\r\n    __0_this_intnl_UdonSharpExamplesUtilitiesPlayerModSetter:
+  udonAssembly: ".data_start\r\n\r\n    .export jumpHeight\r\n    .export runSpeed\r\n
+    \   .export walkSpeed\r\n    .export gravity\r\n    .export useLegacyLocomotion\r\n\r\n
+    \   __refl_const_intnl_udonTypeID: %SystemInt64, null\r\n    __refl_const_intnl_udonTypeName:
+    %SystemString, null\r\n    useLegacyLocomotion: %SystemBoolean, null\r\n    gravity:
+    %SystemSingle, null\r\n    jumpHeight: %SystemSingle, null\r\n    runSpeed: %SystemSingle,
+    null\r\n    walkSpeed: %SystemSingle, null\r\n    __0_this_intnl_UdonSharpExamplesUtilitiesPlayerModSetter:
     %VRCUdonUdonBehaviour, this\r\n    __0_playerApi_VRCPlayerApi: %VRCSDKBaseVRCPlayerApi,
     null\r\n    __0_const_intnl_SystemObject: %SystemObject, null\r\n    __0_const_intnl_SystemUInt32:
     %SystemUInt32, null\r\n    __0_const_intnl_VRCSDKBaseVRCPlayerApi: %VRCSDKBaseVRCPlayerApi,
     null\r\n    __0_intnl_SystemBoolean: %SystemBoolean, null\r\n    __0_intnl_returnTarget_UInt32:
     %SystemUInt32, null\r\n    __0_intnl_VRCSDKBaseVRCPlayerApi: %VRCSDKBaseVRCPlayerApi,
-    null\r\n\r\n.data_end\r\n\r\n        \r\n         # using UnityEngine;\r\n        \r\n
-    \        # using UdonSharp;\r\n        \r\n         # using VRC.SDKBase;\r\n        \r\n
-    \        # namespace UdonSharp.Examples.Utilities\r\n        \r\n         # [AddComponentMenu(\"Udon
+    null\r\n    __1_intnl_VRCSDKBaseVRCPlayerApi: %VRCSDKBaseVRCPlayerApi, null\r\n\r\n.data_end\r\n\r\n
+    \       \r\n         # using UnityEngine;\r\n        \r\n         # using UdonSharp;\r\n
+    \       \r\n         # using VRC.SDKBase;\r\n        \r\n         # namespace
+    UdonSharp.Examples.Utilities\r\n        \r\n         # [AddComponentMenu(\"Udon
     Sharp/Utilities/Player Mod Setter\")]\r\n        \r\n         # public class PlayerModSetter
-    : UdonSharpBehaviour\r\n.code_start\r\n        \r\n         # public bool useLegacyLocomotion
-    = false;\r\n        \r\n         # public float jumpHeight = 3f;\r\n        \r\n
-    \        # public float runSpeed = 4f;\r\n        \r\n         # public float
-    walkSpeed = 2f;\r\n        \r\n         # void Start()\r\n    .export _start\r\n
-    \       \r\n    _start:\r\n        \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n
-    \       PUSH, __0_intnl_returnTarget_UInt32\r\n        COPY\r\n        \r\n         #
-    {\r\n        \r\n         # var playerApi = Networking.LocalPlayer;\r\n        PUSH,
-    __0_intnl_VRCSDKBaseVRCPlayerApi\r\n        EXTERN, \"VRCSDKBaseNetworking.__get_LocalPlayer__VRCSDKBaseVRCPlayerApi\"\r\n
+    : UdonSharpBehaviour\r\n.code_start\r\n        \r\n         # public float jumpHeight
+    = 3f;\r\n        \r\n         # public float runSpeed = 4f;\r\n        \r\n         #
+    public float walkSpeed = 2f;\r\n        \r\n         # public float gravity =
+    1f;\r\n        \r\n         # public bool useLegacyLocomotion = false;\r\n        \r\n
+    \        # void Start()\r\n    .export _start\r\n        \r\n    _start:\r\n        \r\n
+    \       PUSH, __0_const_intnl_SystemUInt32\r\n        PUSH, __0_intnl_returnTarget_UInt32\r\n
+    \       COPY\r\n        \r\n         # {\r\n        \r\n         # var playerApi
+    = Networking.LocalPlayer;\r\n        PUSH, __0_intnl_VRCSDKBaseVRCPlayerApi\r\n
+    \       EXTERN, \"VRCSDKBaseNetworking.__get_LocalPlayer__VRCSDKBaseVRCPlayerApi\"\r\n
     \       PUSH, __0_intnl_VRCSDKBaseVRCPlayerApi\r\n        PUSH, __0_playerApi_VRCPlayerApi\r\n
     \       COPY\r\n        \r\n         # if (playerApi != null)\r\n        PUSH,
-    __0_playerApi_VRCPlayerApi\r\n        PUSH, __0_const_intnl_VRCSDKBaseVRCPlayerApi\r\n
-    \       PUSH, __0_intnl_SystemBoolean\r\n        EXTERN, \"SystemObject.__op_Inequality__SystemObject_SystemObject__SystemBoolean\"\r\n
-    \       PUSH, __0_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x000000D0\r\n
+    __0_playerApi_VRCPlayerApi\r\n        PUSH, __1_intnl_VRCSDKBaseVRCPlayerApi\r\n
+    \       COPY\r\n        PUSH, __1_intnl_VRCSDKBaseVRCPlayerApi\r\n        PUSH,
+    __0_const_intnl_VRCSDKBaseVRCPlayerApi\r\n        PUSH, __0_intnl_SystemBoolean\r\n
+    \       EXTERN, \"SystemObject.__op_Inequality__SystemObject_SystemObject__SystemBoolean\"\r\n
+    \       PUSH, __0_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x000000FC\r\n
     \       \r\n         # {\r\n        \r\n         # playerApi.SetJumpImpulse(jumpHeight);\r\n
     \       PUSH, __0_playerApi_VRCPlayerApi\r\n        PUSH, jumpHeight\r\n        EXTERN,
     \"VRCSDKBaseVRCPlayerApi.__SetJumpImpulse__SystemSingle__SystemVoid\"\r\n        \r\n
@@ -49,10 +53,12 @@ MonoBehaviour:
     \       PUSH, runSpeed\r\n        EXTERN, \"VRCSDKBaseVRCPlayerApi.__SetRunSpeed__SystemSingle__SystemVoid\"\r\n
     \       \r\n         # playerApi.SetWalkSpeed(walkSpeed);\r\n        PUSH, __0_playerApi_VRCPlayerApi\r\n
     \       PUSH, walkSpeed\r\n        EXTERN, \"VRCSDKBaseVRCPlayerApi.__SetWalkSpeed__SystemSingle__SystemVoid\"\r\n
+    \       \r\n         # playerApi.SetGravityStrength(gravity);\r\n        PUSH,
+    __0_playerApi_VRCPlayerApi\r\n        PUSH, gravity\r\n        EXTERN, \"VRCSDKBaseVRCPlayerApi.__SetGravityStrength__SystemSingle__SystemVoid\"\r\n
     \       \r\n         # if (useLegacyLocomotion)\r\n        PUSH, useLegacyLocomotion\r\n
-    \       JUMP_IF_FALSE, 0x000000D0\r\n        \r\n         # playerApi.UseLegacyLocomotion();\r\n
+    \       JUMP_IF_FALSE, 0x000000FC\r\n        \r\n         # playerApi.UseLegacyLocomotion();\r\n
     \       PUSH, __0_playerApi_VRCPlayerApi\r\n        EXTERN, \"VRCSDKBaseVRCPlayerApi.__UseLegacyLocomotion__SystemVoid\"\r\n
-    \       \r\n         # Destroy(gameObject);\r\n        PUSH, __0_this_intnl_UnityEngineGameObject\r\n
+    \       \r\n         # Destroy(this);\r\n        PUSH, __0_this_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n
     \       EXTERN, \"UnityEngineObject.__Destroy__UnityEngineObject__SystemVoid\"\r\n
     \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n.code_end\r\n"
   assemblyError: 
@@ -184,298 +190,348 @@ MonoBehaviour:
     - startInstruction: 0
       endInstruction: -1
       startSourceChar: 248
-      endSourceChar: 293
+      endSourceChar: 280
       line: 10
-      lineChar: 15
-      spanCodeSection: "bool useLegacyLocomotion = false;\r\n\r\n        "
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 293
-      endSourceChar: 300
-      line: 12
-      lineChar: 8
-      spanCodeSection: 'public '
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 300
-      endSourceChar: 300
-      line: 12
-      lineChar: 15
-      spanCodeSection: 
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 300
-      endSourceChar: 332
-      line: 12
       lineChar: 15
       spanCodeSection: "float jumpHeight = 3f;\r\n        "
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 332
-      endSourceChar: 339
-      line: 13
+      startSourceChar: 280
+      endSourceChar: 287
+      line: 11
       lineChar: 8
       spanCodeSection: 'public '
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 339
-      endSourceChar: 339
-      line: 13
+      startSourceChar: 287
+      endSourceChar: 287
+      line: 11
       lineChar: 15
       spanCodeSection: 
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 339
-      endSourceChar: 369
-      line: 13
+      startSourceChar: 287
+      endSourceChar: 317
+      line: 11
       lineChar: 15
       spanCodeSection: "float runSpeed = 4f;\r\n        "
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 369
-      endSourceChar: 376
-      line: 14
+      startSourceChar: 317
+      endSourceChar: 324
+      line: 12
       lineChar: 8
       spanCodeSection: 'public '
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 376
-      endSourceChar: 376
-      line: 14
+      startSourceChar: 324
+      endSourceChar: 324
+      line: 12
       lineChar: 15
       spanCodeSection: 
     - startInstruction: 0
       endInstruction: -1
-      startSourceChar: 376
-      endSourceChar: 409
-      line: 14
+      startSourceChar: 324
+      endSourceChar: 355
+      line: 12
       lineChar: 15
-      spanCodeSection: "float walkSpeed = 2f;\r\n\r\n        "
+      spanCodeSection: "float walkSpeed = 2f;\r\n        "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 355
+      endSourceChar: 362
+      line: 13
+      lineChar: 8
+      spanCodeSection: 'public '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 362
+      endSourceChar: 362
+      line: 13
+      lineChar: 15
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 362
+      endSourceChar: 393
+      line: 13
+      lineChar: 15
+      spanCodeSection: "float gravity = 1f;\r\n\r\n        "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 393
+      endSourceChar: 400
+      line: 15
+      lineChar: 8
+      spanCodeSection: 'public '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 400
+      endSourceChar: 400
+      line: 15
+      lineChar: 15
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 400
+      endSourceChar: 445
+      line: 15
+      lineChar: 15
+      spanCodeSection: "bool useLegacyLocomotion = false;\r\n\r\n        "
     - startInstruction: 0
       endInstruction: 19
-      startSourceChar: 409
-      endSourceChar: 431
-      line: 16
+      startSourceChar: 445
+      endSourceChar: 467
+      line: 17
       lineChar: 8
       spanCodeSection: "void Start()\r\n        "
     - startInstruction: 20
       endInstruction: 19
-      startSourceChar: 431
-      endSourceChar: 446
-      line: 17
+      startSourceChar: 467
+      endSourceChar: 482
+      line: 18
       lineChar: 8
       spanCodeSection: "{\r\n            "
     - startInstruction: 20
       endInstruction: 19
-      startSourceChar: 446
-      endSourceChar: 446
-      line: 18
+      startSourceChar: 482
+      endSourceChar: 482
+      line: 19
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 20
       endInstruction: 19
-      startSourceChar: 446
-      endSourceChar: 446
-      line: 18
+      startSourceChar: 482
+      endSourceChar: 482
+      line: 19
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 20
       endInstruction: 19
-      startSourceChar: 446
-      endSourceChar: 460
-      line: 18
+      startSourceChar: 482
+      endSourceChar: 496
+      line: 19
       lineChar: 12
       spanCodeSection: 'var playerApi '
     - startInstruction: 20
       endInstruction: 19
-      startSourceChar: 460
-      endSourceChar: 462
-      line: 18
+      startSourceChar: 496
+      endSourceChar: 498
+      line: 19
       lineChar: 26
       spanCodeSection: '= '
     - startInstruction: 20
       endInstruction: 19
-      startSourceChar: 462
-      endSourceChar: 462
-      line: 18
+      startSourceChar: 498
+      endSourceChar: 498
+      line: 19
       lineChar: 28
       spanCodeSection: 
     - startInstruction: 20
       endInstruction: 19
-      startSourceChar: 462
-      endSourceChar: 473
-      line: 18
+      startSourceChar: 498
+      endSourceChar: 509
+      line: 19
       lineChar: 28
       spanCodeSection: Networking.
     - startInstruction: 20
       endInstruction: 55
-      startSourceChar: 473
-      endSourceChar: 562
-      line: 18
+      startSourceChar: 509
+      endSourceChar: 598
+      line: 19
       lineChar: 39
       spanCodeSection: "LocalPlayer;\r\n\r\n            // Prevent error in editor
         from null player API\r\n            "
     - startInstruction: 56
       endInstruction: 55
-      startSourceChar: 562
-      endSourceChar: 566
-      line: 21
+      startSourceChar: 598
+      endSourceChar: 602
+      line: 22
       lineChar: 12
       spanCodeSection: if (
     - startInstruction: 56
       endInstruction: 55
-      startSourceChar: 566
-      endSourceChar: 579
-      line: 21
+      startSourceChar: 602
+      endSourceChar: 602
+      line: 22
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 56
+      endInstruction: 75
+      startSourceChar: 602
+      endSourceChar: 615
+      line: 22
       lineChar: 16
       spanCodeSection: 'playerApi != '
-    - startInstruction: 56
-      endInstruction: 103
-      startSourceChar: 579
-      endSourceChar: 598
-      line: 21
+    - startInstruction: 76
+      endInstruction: 123
+      startSourceChar: 615
+      endSourceChar: 634
+      line: 22
       lineChar: 29
       spanCodeSection: "null)\r\n            "
-    - startInstruction: 104
-      endInstruction: 103
-      startSourceChar: 598
-      endSourceChar: 617
-      line: 22
+    - startInstruction: 124
+      endInstruction: 123
+      startSourceChar: 634
+      endSourceChar: 653
+      line: 23
       lineChar: 12
       spanCodeSection: "{\r\n                "
-    - startInstruction: 104
-      endInstruction: 103
-      startSourceChar: 617
-      endSourceChar: 617
-      line: 23
+    - startInstruction: 124
+      endInstruction: 123
+      startSourceChar: 653
+      endSourceChar: 653
+      line: 24
       lineChar: 16
       spanCodeSection: 
-    - startInstruction: 104
-      endInstruction: 103
-      startSourceChar: 617
-      endSourceChar: 642
-      line: 23
+    - startInstruction: 124
+      endInstruction: 123
+      startSourceChar: 653
+      endSourceChar: 678
+      line: 24
       lineChar: 16
       spanCodeSection: playerApi.SetJumpImpulse(
-    - startInstruction: 104
-      endInstruction: 127
-      startSourceChar: 642
-      endSourceChar: 672
-      line: 23
+    - startInstruction: 124
+      endInstruction: 147
+      startSourceChar: 678
+      endSourceChar: 708
+      line: 24
       lineChar: 41
       spanCodeSection: "jumpHeight);\r\n                "
-    - startInstruction: 128
-      endInstruction: 127
-      startSourceChar: 672
-      endSourceChar: 672
-      line: 24
+    - startInstruction: 148
+      endInstruction: 147
+      startSourceChar: 708
+      endSourceChar: 708
+      line: 25
       lineChar: 16
       spanCodeSection: 
-    - startInstruction: 128
-      endInstruction: 127
-      startSourceChar: 672
-      endSourceChar: 694
-      line: 24
+    - startInstruction: 148
+      endInstruction: 147
+      startSourceChar: 708
+      endSourceChar: 730
+      line: 25
       lineChar: 16
       spanCodeSection: playerApi.SetRunSpeed(
-    - startInstruction: 128
-      endInstruction: 151
-      startSourceChar: 694
-      endSourceChar: 722
-      line: 24
+    - startInstruction: 148
+      endInstruction: 171
+      startSourceChar: 730
+      endSourceChar: 758
+      line: 25
       lineChar: 38
       spanCodeSection: "runSpeed);\r\n                "
-    - startInstruction: 152
-      endInstruction: 151
-      startSourceChar: 722
-      endSourceChar: 722
-      line: 25
+    - startInstruction: 172
+      endInstruction: 171
+      startSourceChar: 758
+      endSourceChar: 758
+      line: 26
       lineChar: 16
       spanCodeSection: 
-    - startInstruction: 152
-      endInstruction: 151
-      startSourceChar: 722
-      endSourceChar: 745
-      line: 25
+    - startInstruction: 172
+      endInstruction: 171
+      startSourceChar: 758
+      endSourceChar: 781
+      line: 26
       lineChar: 16
       spanCodeSection: playerApi.SetWalkSpeed(
-    - startInstruction: 152
-      endInstruction: 175
-      startSourceChar: 745
-      endSourceChar: 776
-      line: 25
+    - startInstruction: 172
+      endInstruction: 195
+      startSourceChar: 781
+      endSourceChar: 810
+      line: 26
       lineChar: 39
-      spanCodeSection: "walkSpeed);\r\n\r\n                "
-    - startInstruction: 176
-      endInstruction: 175
-      startSourceChar: 776
-      endSourceChar: 780
+      spanCodeSection: "walkSpeed);\r\n                "
+    - startInstruction: 196
+      endInstruction: 195
+      startSourceChar: 810
+      endSourceChar: 810
       line: 27
       lineChar: 16
-      spanCodeSection: if (
-    - startInstruction: 176
-      endInstruction: 191
-      startSourceChar: 780
-      endSourceChar: 822
+      spanCodeSection: 
+    - startInstruction: 196
+      endInstruction: 195
+      startSourceChar: 810
+      endSourceChar: 839
       line: 27
+      lineChar: 16
+      spanCodeSection: playerApi.SetGravityStrength(
+    - startInstruction: 196
+      endInstruction: 219
+      startSourceChar: 839
+      endSourceChar: 868
+      line: 27
+      lineChar: 45
+      spanCodeSection: "gravity);\r\n\r\n                "
+    - startInstruction: 220
+      endInstruction: 219
+      startSourceChar: 868
+      endSourceChar: 872
+      line: 29
+      lineChar: 16
+      spanCodeSection: if (
+    - startInstruction: 220
+      endInstruction: 235
+      startSourceChar: 872
+      endSourceChar: 914
+      line: 29
       lineChar: 20
       spanCodeSection: "useLegacyLocomotion)\r\n                    "
-    - startInstruction: 192
-      endInstruction: 191
-      startSourceChar: 822
-      endSourceChar: 822
-      line: 28
+    - startInstruction: 236
+      endInstruction: 235
+      startSourceChar: 914
+      endSourceChar: 914
+      line: 30
       lineChar: 20
       spanCodeSection: 
-    - startInstruction: 192
-      endInstruction: 191
-      startSourceChar: 822
-      endSourceChar: 822
-      line: 28
+    - startInstruction: 236
+      endInstruction: 235
+      startSourceChar: 914
+      endSourceChar: 914
+      line: 30
       lineChar: 20
       spanCodeSection: 
-    - startInstruction: 192
-      endInstruction: 191
-      startSourceChar: 822
-      endSourceChar: 822
-      line: 28
+    - startInstruction: 236
+      endInstruction: 235
+      startSourceChar: 914
+      endSourceChar: 914
+      line: 30
       lineChar: 20
       spanCodeSection: 
-    - startInstruction: 192
-      endInstruction: 191
-      startSourceChar: 822
-      endSourceChar: 832
-      line: 28
+    - startInstruction: 236
+      endInstruction: 235
+      startSourceChar: 914
+      endSourceChar: 924
+      line: 30
       lineChar: 20
       spanCodeSection: playerApi.
-    - startInstruction: 192
-      endInstruction: 207
-      startSourceChar: 832
-      endSourceChar: 885
-      line: 28
+    - startInstruction: 236
+      endInstruction: 251
+      startSourceChar: 924
+      endSourceChar: 977
+      line: 30
       lineChar: 30
       spanCodeSection: "UseLegacyLocomotion();\r\n            }\r\n\r\n            "
-    - startInstruction: 208
-      endInstruction: 207
-      startSourceChar: 885
-      endSourceChar: 885
-      line: 31
+    - startInstruction: 252
+      endInstruction: 251
+      startSourceChar: 977
+      endSourceChar: 977
+      line: 33
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 208
-      endInstruction: 207
-      startSourceChar: 885
-      endSourceChar: 893
-      line: 31
+    - startInstruction: 252
+      endInstruction: 251
+      startSourceChar: 977
+      endSourceChar: 985
+      line: 33
       lineChar: 12
       spanCodeSection: Destroy(
-    - startInstruction: 208
-      endInstruction: 208
-      startSourceChar: 893
-      endSourceChar: 893
-      line: 31
+    - startInstruction: 252
+      endInstruction: 252
+      startSourceChar: 985
+      endSourceChar: 985
+      line: 33
       lineChar: 20
       spanCodeSection: 
+  hasInteractEvent: 0
   serializationData:
     SerializedFormat: 2
     SerializedBytes: 
@@ -498,13 +554,13 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 12
-      Data: 4
+      Data: 5
     - Name: 
       Entry: 7
       Data: 
     - Name: $k
       Entry: 1
-      Data: useLegacyLocomotion
+      Data: jumpHeight
     - Name: $v
       Entry: 7
       Data: 2|UdonSharp.FieldDefinition, UdonSharp.Editor
@@ -516,7 +572,7 @@ MonoBehaviour:
       Data: 4|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: System.Boolean, mscorlib
+      Data: System.Single, mscorlib
     - Name: 
       Entry: 8
       Data: 
@@ -528,13 +584,13 @@ MonoBehaviour:
       Data: 0
     - Name: symbolResolvedTypeName
       Entry: 1
-      Data: SystemBoolean
+      Data: SystemSingle
     - Name: symbolOriginalName
       Entry: 1
-      Data: useLegacyLocomotion
+      Data: jumpHeight
     - Name: symbolUniqueName
       Entry: 1
-      Data: useLegacyLocomotion
+      Data: jumpHeight
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -567,7 +623,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: jumpHeight
+      Data: runSpeed
     - Name: $v
       Entry: 7
       Data: 6|UdonSharp.FieldDefinition, UdonSharp.Editor
@@ -575,71 +631,8 @@ MonoBehaviour:
       Entry: 7
       Data: 7|UdonSharp.SymbolDefinition, UdonSharp.Editor
     - Name: internalType
-      Entry: 7
-      Data: 8|System.RuntimeType, mscorlib
-    - Name: 
-      Entry: 1
-      Data: System.Single, mscorlib
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: declarationType
-      Entry: 3
-      Data: 1
-    - Name: syncMode
-      Entry: 3
-      Data: 0
-    - Name: symbolResolvedTypeName
-      Entry: 1
-      Data: SystemSingle
-    - Name: symbolOriginalName
-      Entry: 1
-      Data: jumpHeight
-    - Name: symbolUniqueName
-      Entry: 1
-      Data: jumpHeight
-    - Name: symbolDefaultValue
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: fieldAttributes
-      Entry: 7
-      Data: 9|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
-    - Name: 
-      Entry: 12
-      Data: 0
-    - Name: 
-      Entry: 13
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: userBehaviourSource
-      Entry: 6
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 8
-      Data: 
-    - Name: 
-      Entry: 7
-      Data: 
-    - Name: $k
-      Entry: 1
-      Data: runSpeed
-    - Name: $v
-      Entry: 7
-      Data: 10|UdonSharp.FieldDefinition, UdonSharp.Editor
-    - Name: fieldSymbol
-      Entry: 7
-      Data: 11|UdonSharp.SymbolDefinition, UdonSharp.Editor
-    - Name: internalType
       Entry: 9
-      Data: 8
+      Data: 4
     - Name: declarationType
       Entry: 3
       Data: 1
@@ -663,7 +656,7 @@ MonoBehaviour:
       Data: 
     - Name: fieldAttributes
       Entry: 7
-      Data: 12|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+      Data: 8|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
     - Name: 
       Entry: 12
       Data: 0
@@ -690,13 +683,13 @@ MonoBehaviour:
       Data: walkSpeed
     - Name: $v
       Entry: 7
-      Data: 13|UdonSharp.FieldDefinition, UdonSharp.Editor
+      Data: 9|UdonSharp.FieldDefinition, UdonSharp.Editor
     - Name: fieldSymbol
       Entry: 7
-      Data: 14|UdonSharp.SymbolDefinition, UdonSharp.Editor
+      Data: 10|UdonSharp.SymbolDefinition, UdonSharp.Editor
     - Name: internalType
       Entry: 9
-      Data: 8
+      Data: 4
     - Name: declarationType
       Entry: 3
       Data: 1
@@ -720,7 +713,127 @@ MonoBehaviour:
       Data: 
     - Name: fieldAttributes
       Entry: 7
-      Data: 15|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+      Data: 11|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: gravity
+    - Name: $v
+      Entry: 7
+      Data: 12|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 13|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 4
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemSingle
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: gravity
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: gravity
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 14|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: useLegacyLocomotion
+    - Name: $v
+      Entry: 7
+      Data: 15|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 16|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 7
+      Data: 17|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: System.Boolean, mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemBoolean
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: useLegacyLocomotion
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: useLegacyLocomotion
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 18|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
     - Name: 
       Entry: 12
       Data: 0

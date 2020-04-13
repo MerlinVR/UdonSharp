@@ -34,13 +34,13 @@ MonoBehaviour:
     \       COPY\r\n        \r\n         # {\r\n        \r\n         # transform.Rotate(Vector3.up,
     signal.speed * Time.deltaTime);\r\n        PUSH, __0_intnl_UnityEngineVector3\r\n
     \       EXTERN, \"UnityEngineVector3.__get_up__UnityEngineVector3\"\r\n        PUSH,
-    __0_intnl_SystemSingle\r\n        EXTERN, \"UnityEngineTime.__get_deltaTime__SystemSingle\"\r\n
-    \       PUSH, signal\r\n        PUSH, __0_const_intnl_SystemString\r\n        PUSH,
-    __0_intnl_SystemObject\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__GetProgramVariable__SystemString__SystemObject\"\r\n
-    \       PUSH, __0_intnl_SystemObject\r\n        PUSH, __2_intnl_SystemSingle\r\n
+    signal\r\n        PUSH, __0_const_intnl_SystemString\r\n        PUSH, __0_intnl_SystemObject\r\n
+    \       EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__GetProgramVariable__SystemString__SystemObject\"\r\n
+    \       PUSH, __0_intnl_SystemObject\r\n        PUSH, __1_intnl_SystemSingle\r\n
     \       EXTERN, \"SystemConvert.__ToSingle__SystemObject__SystemSingle\"\r\n        PUSH,
-    __2_intnl_SystemSingle\r\n        PUSH, __0_intnl_SystemSingle\r\n        PUSH,
-    __3_intnl_SystemSingle\r\n        EXTERN, \"SystemSingle.__op_Multiplication__SystemSingle_SystemSingle__SystemSingle\"\r\n
+    __2_intnl_SystemSingle\r\n        EXTERN, \"UnityEngineTime.__get_deltaTime__SystemSingle\"\r\n
+    \       PUSH, __1_intnl_SystemSingle\r\n        PUSH, __2_intnl_SystemSingle\r\n
+    \       PUSH, __3_intnl_SystemSingle\r\n        EXTERN, \"SystemSingle.__op_Multiplication__SystemSingle_SystemSingle__SystemSingle\"\r\n
     \       PUSH, __0_this_intnl_UnityEngineTransform\r\n        PUSH, __0_intnl_UnityEngineVector3\r\n
     \       PUSH, __3_intnl_SystemSingle\r\n        EXTERN, \"UnityEngineTransform.__Rotate__UnityEngineVector3_SystemSingle__SystemVoid\"\r\n
     \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n.code_end\r\n"
@@ -287,31 +287,53 @@ MonoBehaviour:
     - startInstruction: 36
       endInstruction: 35
       startSourceChar: 561
-      endSourceChar: 576
+      endSourceChar: 561
       line: 18
       lineChar: 41
-      spanCodeSection: 'signal.speed * '
+      spanCodeSection: 
     - startInstruction: 36
       endInstruction: 35
+      startSourceChar: 561
+      endSourceChar: 561
+      line: 18
+      lineChar: 41
+      spanCodeSection: 
+    - startInstruction: 36
+      endInstruction: 35
+      startSourceChar: 561
+      endSourceChar: 568
+      line: 18
+      lineChar: 41
+      spanCodeSection: signal.
+    - startInstruction: 36
+      endInstruction: 91
+      startSourceChar: 568
+      endSourceChar: 576
+      line: 18
+      lineChar: 48
+      spanCodeSection: 'speed * '
+    - startInstruction: 92
+      endInstruction: 91
       startSourceChar: 576
       endSourceChar: 576
       line: 18
       lineChar: 56
       spanCodeSection: 
-    - startInstruction: 36
-      endInstruction: 35
+    - startInstruction: 92
+      endInstruction: 91
       startSourceChar: 576
       endSourceChar: 581
       line: 18
       lineChar: 56
       spanCodeSection: Time.
-    - startInstruction: 36
-      endInstruction: 36
+    - startInstruction: 92
+      endInstruction: 92
       startSourceChar: 581
       endSourceChar: 581
       line: 18
       lineChar: 61
       spanCodeSection: 
+  hasInteractEvent: 0
   serializationData:
     SerializedFormat: 2
     SerializedBytes: 

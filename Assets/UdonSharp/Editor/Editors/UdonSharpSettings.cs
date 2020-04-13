@@ -59,14 +59,29 @@ public class <TemplateClassName> : UdonSharpBehaviour
             return new SerializedObject(GetOrCreateSettings());
         }
 
-        public static string GetProgramTemplateString()
+        public static string GetProgramTemplateString(string scriptName)
         {
+            scriptName = scriptName.Replace(" ", "")
+                                   .Replace("#", "Sharp")
+                                   .Replace("(", "")
+                                   .Replace(")", "")
+                                   .Replace("*", "")
+                                   .Replace("<", "")
+                                   .Replace(">", "")
+                                   .Replace("-", "_");
+
             UdonSharpSettings settings = GetSettings();
 
-            if (settings != null && settings.newScriptTemplateOverride != null)
-                return settings.newScriptTemplateOverride.ToString();
+            string templateStr;
 
-            return DefaultProgramTemplate;
+            if (settings != null && settings.newScriptTemplateOverride != null)
+                templateStr = settings.newScriptTemplateOverride.ToString();
+            else
+                templateStr = DefaultProgramTemplate;
+
+            templateStr = templateStr.Replace("<TemplateClassName>", scriptName);
+
+            return templateStr;
         }
     }
     

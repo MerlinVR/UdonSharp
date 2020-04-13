@@ -42,10 +42,15 @@ namespace UdonSharp
         private SerializationData serializationData;
 
         private bool showProgramUasm = false;
+        private bool showExtraOptions = false;
 
         private UdonBehaviour currentBehaviour = null;
 
         private static GUIStyle errorTextStyle;
+        private static GUIStyle undoLabelStyle;
+        private static GUIContent undoArrowLight;
+        private static GUIContent undoArrowDark;
+        private static GUIContent undoArrowContent;
 
         private void DrawCompileErrorTextArea()
         {
@@ -66,6 +71,24 @@ namespace UdonSharp
 
         protected override void DrawProgramSourceGUI(UdonBehaviour udonBehaviour, ref bool dirty)
         {
+            if (undoLabelStyle == null || 
+                undoArrowDark == null || 
+                undoArrowLight == null)
+            {
+                undoLabelStyle = new GUIStyle(EditorStyles.label);
+                undoLabelStyle.alignment = TextAnchor.MiddleCenter;
+                undoLabelStyle.padding = new RectOffset(0, 0, 1, 0);
+                undoLabelStyle.margin = new RectOffset(0, 0, 0, 0);
+                undoLabelStyle.border = new RectOffset(0, 0, 0, 0);
+                undoLabelStyle.stretchWidth = false;
+                undoLabelStyle.stretchHeight = false;
+
+                undoArrowLight = new GUIContent((Texture)EditorGUIUtility.Load("Assets/UdonSharp/Editor/Resources/UndoArrowLight.png"), "Reset to default value");
+                undoArrowDark = new GUIContent((Texture)EditorGUIUtility.Load("Assets/UdonSharp/Editor/Resources/UndoArrowBlack.png"), "Reset to default value");
+            }
+            
+            undoArrowContent = EditorGUIUtility.isProSkin ? undoArrowLight : undoArrowDark;
+
             currentBehaviour = udonBehaviour;
 
             EditorGUI.BeginChangeCheck();
@@ -105,6 +128,11 @@ namespace UdonSharp
                 EditorGUILayout.LabelField("Interact", EditorStyles.boldLabel);
                 currentBehaviour.interactText = EditorGUILayout.TextField("Interaction Text", currentBehaviour.interactText);
                 currentBehaviour.proximity = EditorGUILayout.Slider("Proximity", currentBehaviour.proximity, 0f, 100f);
+
+                EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
+                if (GUILayout.Button("Trigger Interact"))
+                    currentBehaviour.SendCustomEvent("_interact");
+                EditorGUI.EndDisabledGroup();
             }
 
             EditorGUILayout.Space();
@@ -149,9 +177,22 @@ namespace UdonSharp
             }
 
             EditorGUILayout.Space();
+            
+            showExtraOptions = EditorGUILayout.Foldout(showExtraOptions, "Utilities");
+            if (showExtraOptions)
+            {
+                if (GUILayout.Button("Export to Assembly Asset"))
+                {
+                    string savePath = EditorUtility.SaveFilePanelInProject("Assembly asset save location", Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(sourceCsScript)), "asset", "Choose a save location for the assembly asset");
+
+                    if (savePath.Length > 0)
+                    {
+                        UdonSharpEditorUtility.UdonSharpProgramToAssemblyProgram(this, savePath);
+                    }
+                }
+            }
 
             showProgramUasm = EditorGUILayout.Foldout(showProgramUasm, "Compiled C# Assembly");
-            //EditorGUI.indentLevel++;
             if (showProgramUasm)
             {
                 DrawAssemblyTextArea(/*!Application.isPlaying*/ false, ref dirty);
@@ -159,9 +200,6 @@ namespace UdonSharp
                 if (program != null)
                     DrawProgramDisassembly();
             }
-            //EditorGUI.indentLevel--;
-
-            //base.RunProgramSourceEditor(publicVariables, ref dirty);
 
             currentBehaviour = null;
         }
@@ -170,11 +208,14 @@ namespace UdonSharp
         {
             bool hasAssemblyError = typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this) != null;
 
-            if (sourceCsScript != null && 
+            if (sourceCsScript != null &&
                 !EditorApplication.isCompiling &&
                 !EditorApplication.isUpdating &&
-                !hasAssemblyError)
+                !hasAssemblyError &&
+                compileErrors.Count == 0)
+            {
                 CompileCsProgram();
+            }
         }
         
         protected override object GetPublicVariableDefaultValue(string symbol, Type type)
@@ -184,8 +225,16 @@ namespace UdonSharp
 
         public void CompileCsProgram()
         {
-            UdonSharpCompiler compiler = new UdonSharpCompiler(this);
-            compiler.Compile();
+            try
+            {
+                UdonSharpCompiler compiler = new UdonSharpCompiler(this);
+                compiler.Compile();
+            }
+            catch (Exception e)
+            {
+                compileErrors.Add(e.ToString());
+                throw e;
+            }
         }
 
         public static void CompileAllCsPrograms()
@@ -264,8 +313,7 @@ namespace UdonSharp
 
                 if (chosenFilePath.Length > 0)
                 {
-                    string chosenFileName = Path.GetFileNameWithoutExtension(chosenFilePath).Replace(" ", "").Replace("#", "Sharp");
-                    string fileContents = UdonSharpSettings.GetProgramTemplateString().Replace("<TemplateClassName>", chosenFileName);
+                    string fileContents = UdonSharpSettings.GetProgramTemplateString(Path.GetFileNameWithoutExtension(chosenFilePath));
 
                     File.WriteAllText(chosenFilePath, fileContents);
 
@@ -422,8 +470,7 @@ namespace UdonSharp
                 fieldLabel = new GUIContent(fieldName, tooltip.tooltip);
             else
                 fieldLabel = new GUIContent(fieldName);
-
-
+            
             if (declaredType.IsArray)
             {
                 bool foldoutEnabled;
@@ -708,7 +755,9 @@ namespace UdonSharp
                 EditorGUI.BeginChangeCheck();
                 object newValue = DrawFieldForType(null, symbol, (variableValue, variableType, fieldDefinition), fieldDefinition != null ? fieldDefinition.fieldSymbol.userCsType : null, ref dirty, enabled);
 
-                if (EditorGUI.EndChangeCheck())
+                bool changed = EditorGUI.EndChangeCheck();
+
+                if (changed)
                 {
                     if (shouldUseRuntimeValue)
                     {
@@ -730,7 +779,31 @@ namespace UdonSharp
                 }
 
                 if (!isArray)
+                {
+                    object originalValue = program.Heap.GetHeapVariable(program.SymbolTable.GetAddressFromSymbol(symbol));
+
+                    if (originalValue != null && !originalValue.Equals(variableValue))
+                    {
+                        int originalIndent = EditorGUI.indentLevel;
+                        EditorGUI.indentLevel = 0;
+                        // Check if changed because otherwise the UI throw an error since we changed that we want to draw the undo arrow in the middle of drawing when we're modifying stuff like colors
+                        if (!changed && GUI.Button(EditorGUILayout.GetControlRect(GUILayout.Width(14f), GUILayout.Height(11f)), undoArrowContent, undoLabelStyle))
+                        {
+                            if (shouldUseRuntimeValue)
+                            {
+                                currentBehaviour.SetProgramVariable(symbol, originalValue);
+                            }
+                            else
+                            {
+                                dirty = true;
+                                variableValue = originalValue;
+                            }
+                        }
+                        EditorGUI.indentLevel = originalIndent;
+                    }
+
                     EditorGUILayout.EndHorizontal();
+                }
             }
 
             EditorGUI.EndDisabledGroup();

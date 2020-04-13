@@ -51,7 +51,7 @@ namespace UdonSharp
                         return;
                 }
 
-                string fileContents = UdonSharpSettings.GetProgramTemplateString().Replace("<TemplateClassName>", chosenFileName);
+                string fileContents = UdonSharpSettings.GetProgramTemplateString(chosenFileName);
 
                 File.WriteAllText(chosenFilePath, fileContents);
 

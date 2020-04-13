@@ -49,7 +49,7 @@ namespace UdonSharp
 
             programAsset.compileErrors.Clear();
 
-            sourceCode = File.ReadAllText(AssetDatabase.GetAssetPath(programAsset.sourceCsScript));
+            sourceCode = UdonSharpUtils.ReadFileTextSync(AssetDatabase.GetAssetPath(programAsset.sourceCsScript));
 
             Profiler.BeginSample("Parse AST");
             SyntaxTree tree = CSharpSyntaxTree.ParseText(sourceCode);
