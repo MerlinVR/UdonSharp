@@ -286,6 +286,11 @@ namespace UdonSharp
             }
         }
 
+        public override void VisitEmptyStatement(EmptyStatementSyntax node)
+        {
+            UpdateSyntaxNode(node);
+        }
+
         public override void VisitBlock(BlockSyntax node)
         {
             UpdateSyntaxNode(node);
@@ -564,7 +569,7 @@ namespace UdonSharp
                 Visit(node.Expression);
 
                 if (node.ArgumentList.Arguments.Count != 1)
-                    throw new System.NotSupportedException("UdonSharp does not support multidimensional or jagged array accesses yet");
+                    throw new System.NotSupportedException("UdonSharp does not support multidimensional accesses yet");
 
                 SymbolDefinition indexerSymbol = null;
 
@@ -1050,6 +1055,13 @@ namespace UdonSharp
             using (ExpressionCaptureScope operandCapture = new ExpressionCaptureScope(visitorContext, null))
             {
                 Visit(node.Operand);
+
+                if (node.OperatorToken.Kind() == SyntaxKind.PlusToken || node.OperatorToken.Kind() == SyntaxKind.UnaryPlusExpression)
+                {
+                    if (topScope != null)
+                        topScope.SetToLocalSymbol(operandCapture.ExecuteGet());
+                    return;
+                }
 
                 List<MethodInfo> operatorMethods = new List<MethodInfo>();
 
@@ -2006,15 +2018,18 @@ namespace UdonSharp
 
             JumpLabel forLoopEnd = visitorContext.labelTable.GetNewJumpLabel("forLoopEnd");
 
-            SymbolDefinition conditionSymbol = null;
-            using (ExpressionCaptureScope conditionScope = new ExpressionCaptureScope(visitorContext, null))
+            if (node.Condition != null)
             {
-                Visit(node.Condition);
-                conditionSymbol = HandleImplicitBoolCast(conditionScope.ExecuteGet());
-            }
+                SymbolDefinition conditionSymbol = null;
+                using (ExpressionCaptureScope conditionScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    Visit(node.Condition);
+                    conditionSymbol = HandleImplicitBoolCast(conditionScope.ExecuteGet());
+                }
 
-            visitorContext.uasmBuilder.AddPush(conditionSymbol);
-            visitorContext.uasmBuilder.AddJumpIfFalse(forLoopEnd);
+                visitorContext.uasmBuilder.AddPush(conditionSymbol);
+                visitorContext.uasmBuilder.AddJumpIfFalse(forLoopEnd);
+            }
 
             visitorContext.continueLabelStack.Push(forLoopContinue);
             visitorContext.breakLabelStack.Push(forLoopEnd);

@@ -48,27 +48,30 @@ namespace UdonSharp
                 if (classDefinitions == null)
                     totalErrorCount++;
 
-                foreach (CompilationModule module in modules)
-                {
-                    EditorUtility.DisplayProgressBar("UdonSharp Compile",
-                                                    $"Compiling {AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript)}...",
-                                                    Mathf.Clamp01((moduleCounter++ / (float)modules.Length) + Random.Range(0.01f, 1f / modules.Length))); // Make it look like we're doing work :D
-
-                    int moduleErrorCount = module.Compile(classDefinitions);
-                    totalErrorCount += moduleErrorCount;
-                }
-
                 if (totalErrorCount == 0)
                 {
-                    EditorUtility.DisplayProgressBar("UdonSharp Compile", "Assigning constants...", 1f);
-                    int initializerErrorCount = AssignHeapConstants();
-                    totalErrorCount += initializerErrorCount;
-
-                    if (initializerErrorCount == 0)
+                    foreach (CompilationModule module in modules)
                     {
-                        foreach (CompilationModule module in modules)
+                        EditorUtility.DisplayProgressBar("UdonSharp Compile",
+                                                        $"Compiling {AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript)}...",
+                                                        Mathf.Clamp01((moduleCounter++ / (float)modules.Length) + Random.Range(0.01f, 1f / modules.Length))); // Make it look like we're doing work :D
+
+                        int moduleErrorCount = module.Compile(classDefinitions);
+                        totalErrorCount += moduleErrorCount;
+                    }
+
+                    if (totalErrorCount == 0)
+                    {
+                        EditorUtility.DisplayProgressBar("UdonSharp Compile", "Assigning constants...", 1f);
+                        int initializerErrorCount = AssignHeapConstants();
+                        totalErrorCount += initializerErrorCount;
+
+                        if (initializerErrorCount == 0)
                         {
-                            module.programAsset.ApplyProgram();
+                            foreach (CompilationModule module in modules)
+                            {
+                                module.programAsset.ApplyProgram();
+                            }
                         }
                     }
                 }

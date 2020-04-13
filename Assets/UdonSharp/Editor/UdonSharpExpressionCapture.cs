@@ -106,7 +106,7 @@ namespace UdonSharp
         public void Dispose()
         {
             if (parentScope != null)
-                parentScope.InheretScope(this);
+                parentScope.InheritScope(this);
             
             Debug.Assert(visitorContext.topCaptureScope == this);
             if (visitorContext.topCaptureScope == this)
@@ -115,10 +115,9 @@ namespace UdonSharp
             disposed = true;
         }
 
-        private void InheretScope(ExpressionCaptureScope childScope)
+        private void InheritScope(ExpressionCaptureScope childScope)
         {
             if (captureArchetype != ExpressionCaptureArchetype.Unknown ||
-                childScope.captureArchetype == ExpressionCaptureArchetype.Unknown ||
                 childScope.captureArchetype == ExpressionCaptureArchetype.This ||
                 childScope.captureArchetype == ExpressionCaptureArchetype.Method ||
                 childScope.captureArchetype == ExpressionCaptureArchetype.Namespace)
@@ -136,6 +135,17 @@ namespace UdonSharp
             captureExternUserField = childScope.captureExternUserField;
             captureExternUserMethod = childScope.captureExternUserMethod;
             InternalMethodHandler = childScope.InternalMethodHandler;
+            unresolvedAccessChain = childScope.unresolvedAccessChain;
+        }
+
+        private void CheckScopeValidity()
+        {
+            if (IsUnknownArchetype())
+            {
+                string[] unresolvedTokens = unresolvedAccessChain.Split('.');
+                string invalidName = unresolvedTokens.Length > 1 ? unresolvedTokens[unresolvedTokens.Length - 2] : unresolvedTokens[0];
+                throw new System.Exception($"The name '{invalidName}' does not exist in the current context");
+            }
         }
 
         public void SetToLocalSymbol(SymbolDefinition symbol)
@@ -292,6 +302,8 @@ namespace UdonSharp
                 return captureLocalSymbol;
 
             SymbolDefinition outSymbol = null;
+            
+            CheckScopeValidity();
 
             if (captureArchetype == ExpressionCaptureArchetype.Property)
             {
@@ -376,12 +388,6 @@ namespace UdonSharp
                 // Capture type should still be valid from the last transition
                 outSymbol = visitorContext.topTable.CreateConstSymbol(captureType, GetEnumValue());
             }
-            else if (captureArchetype == ExpressionCaptureArchetype.Unknown)
-            {
-                string[] unresolvedTokens = unresolvedAccessChain.Split('.');
-                string invalidName = unresolvedTokens.Length > 1 ? unresolvedTokens[unresolvedTokens.Length - 2] : unresolvedTokens[0];
-                throw new System.Exception($"The name '{invalidName}' does not exist in the current context");
-            }
             else
             {
                 throw new System.Exception("Get can only be run on Fields, Properties, Local Symbols, array indexers, and the `this` keyword");
@@ -392,6 +398,8 @@ namespace UdonSharp
 
         public void ExecuteSet(SymbolDefinition value, bool explicitCast = false)
         {
+            CheckScopeValidity();
+
             SymbolDefinition convertedValue = CastSymbolToType(value, GetReturnType(true), explicitCast);
 
             // If it's a local symbol, it's just a simple COPY
@@ -472,6 +480,8 @@ namespace UdonSharp
         // Just a stub for now that will be extended to avoid the COPY instruction when possible
         public void ExecuteSetDirect(ExpressionCaptureScope valueExpression, bool explicitCast = false)
         {
+            CheckScopeValidity();
+
             ExecuteSet(valueExpression.ExecuteGet(), explicitCast);
         }
 
@@ -1354,12 +1364,15 @@ namespace UdonSharp
             }
             else
             {
+                CheckScopeValidity();
                 throw new System.Exception($"Cannot call invoke on archetype {captureArchetype}");
             }
         }
 
         public System.Type GetReturnType(bool getUserType = false)
         {
+            CheckScopeValidity();
+
             if (captureArchetype == ExpressionCaptureArchetype.Method)
                 throw new System.Exception("Cannot infer return type from method without function arguments");
 
