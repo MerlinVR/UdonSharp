@@ -49,7 +49,7 @@ namespace UdonSharp
         LogicalAnd, 
         LogicalOr, 
         LogicalXor,
-        LogicalNot, // Not implemented yet
+        BitwiseNot, // Not implemented yet
     }
 
     /// <summary>

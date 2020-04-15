@@ -1075,6 +1075,7 @@ namespace UdonSharp
                     case SyntaxKind.PreDecrementExpression:
                         operatorMethods.AddRange(GetOperators(operandCapture.GetReturnType(), node.OperatorToken.Kind()));
                         break;
+                    case SyntaxKind.LogicalNotExpression:
                     case SyntaxKind.ExclamationToken:
                         operatorMethods.AddRange(GetOperators(operandCapture.GetReturnType(), node.OperatorToken.Kind()));
 
@@ -1085,53 +1086,62 @@ namespace UdonSharp
                         operatorMethods.AddRange(GetOperators(operandCapture.GetReturnType(), node.OperatorToken.Kind()));
                         operatorMethods.AddRange(GetImplicitHigherPrecisionOperator(operandCapture.GetReturnType(), null, SyntaxKindToBuiltinOperator(node.OperatorToken.Kind()), true));
                         break;
+                    case SyntaxKind.BitwiseNotExpression:
                     case SyntaxKind.TildeToken:
                         throw new System.NotSupportedException("Udon does not support BitwiseNot at the moment (https://vrchat.canny.io/vrchat-udon-closed-alpha-feedback/p/bitwisenot-for-integer-built-in-types)");
                     default:
                         throw new System.NotImplementedException($"Handling for prefix token {node.OperatorToken.Kind()} is not implemented");
                 }
-
-                try
+                
+                using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
                 {
-                    using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
+                    operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
+
+                    BuiltinOperatorType operatorType = SyntaxKindToBuiltinOperator(node.OperatorToken.Kind());
+
+                    SymbolDefinition resultSymbol = null;
+
+                    if (operatorType == BuiltinOperatorType.UnaryNegation ||
+                        operatorType == BuiltinOperatorType.UnaryMinus || 
+                        operatorType == BuiltinOperatorType.BitwiseNot)
                     {
-                        operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
+                        SymbolDefinition operandResult = operandCapture.ExecuteGet();
 
-                        BuiltinOperatorType operatorType = SyntaxKindToBuiltinOperator(node.OperatorToken.Kind());
+                        if (operatorType == BuiltinOperatorType.UnaryNegation &&
+                            operandResult.symbolCsType != typeof(bool) &&
+                            operatorMethods.Count == 1) // If the count isn't 1 it means we found an override for `!` for the specific type so we skip attempting the implicit cast
+                            operandResult = HandleImplicitBoolCast(operandResult);
 
-                        SymbolDefinition resultSymbol = null;
-
-                        if (operatorType == BuiltinOperatorType.UnaryNegation ||
-                            operatorType == BuiltinOperatorType.UnaryMinus)
+                        try
                         {
-                            SymbolDefinition operandResult = operandCapture.ExecuteGet();
-
-                            if (operatorType == BuiltinOperatorType.UnaryNegation &&
-                                operandResult.symbolCsType != typeof(bool) &&
-                                operatorMethods.Count == 1) // If the count isn't 1 it means we found an override for `!` for the specific type so we skip attempting the implicit cast
-                                operandResult = HandleImplicitBoolCast(operandResult);
-
                             resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandResult });
-
-                            if (topScope != null)
-                                topScope.SetToLocalSymbol(resultSymbol);
                         }
-                        else
+                        catch (System.Exception)
                         {
-                            SymbolDefinition valueConstant = visitorContext.topTable.CreateConstSymbol(operandCapture.GetReturnType(), System.Convert.ChangeType(1, operandCapture.GetReturnType()));
+                            throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operand of type '{UdonSharpUtils.PrettifyTypeName(operandCapture.GetReturnType())}'");
+                        }
 
+                        if (topScope != null)
+                            topScope.SetToLocalSymbol(resultSymbol);
+                    }
+                    else
+                    {
+                        SymbolDefinition valueConstant = visitorContext.topTable.CreateConstSymbol(operandCapture.GetReturnType(), System.Convert.ChangeType(1, operandCapture.GetReturnType()));
+
+                        try
+                        {
                             resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandCapture.ExecuteGet(), valueConstant });
 
                             operandCapture.ExecuteSet(resultSymbol);
-
-                            if (topScope != null)
-                                topScope.SetToLocalSymbol(operandCapture.ExecuteGet());
                         }
+                        catch (System.Exception)
+                        {
+                            throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operand of type '{UdonSharpUtils.PrettifyTypeName(operandCapture.GetReturnType())}'");
+                        }
+
+                        if (topScope != null)
+                            topScope.SetToLocalSymbol(operandCapture.ExecuteGet());
                     }
-                }
-                catch (System.Exception)
-                {
-                    throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operand of type '{UdonSharpUtils.PrettifyTypeName(operandCapture.GetReturnType())}'");
                 }
             }
         }
@@ -1449,7 +1459,7 @@ namespace UdonSharp
                 case SyntaxKind.BarEqualsToken:
                     return BuiltinOperatorType.LogicalOr;
                 case SyntaxKind.BitwiseNotExpression:
-                    return BuiltinOperatorType.LogicalNot;
+                    return BuiltinOperatorType.BitwiseNot;
                 case SyntaxKind.ExclusiveOrExpression:
                 case SyntaxKind.ExclusiveOrAssignmentExpression:
                 case SyntaxKind.CaretEqualsToken:
