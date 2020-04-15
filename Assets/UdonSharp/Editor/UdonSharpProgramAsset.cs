@@ -102,7 +102,10 @@ namespace UdonSharp
 
             if (sourceCsScript == null)
             {
-                DrawCreateScriptButton();
+                if (DrawCreateScriptButton())
+                {
+                    dirty = true;
+                }
                 return;
             }
             
@@ -301,7 +304,7 @@ namespace UdonSharp
             return program;
         }
 
-        private void DrawCreateScriptButton()
+        private bool DrawCreateScriptButton()
         {
             if (GUILayout.Button("Create Script"))
             {
@@ -321,8 +324,12 @@ namespace UdonSharp
                     AssetDatabase.Refresh();
 
                     sourceCsScript = AssetDatabase.LoadAssetAtPath<MonoScript>(chosenFilePath);
+
+                    return true;
                 }
             }
+
+            return false;
         }
 
         private static MonoScript currentUserScript = null;
