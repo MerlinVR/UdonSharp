@@ -13,27 +13,18 @@ namespace UdonSharp
     [InitializeOnLoad]
     public static class RuntimeExceptionWatcher
     {
-        static Queue<string> debugOutputQueue;
+        static Queue<string> debugOutputQueue = new Queue<string>();
         static Dictionary<long, (string, ClassDebugInfo)> scriptLookup;
         
         // Log watcher vars
         static FileSystemWatcher logDirectoryWatcher;
-        static object logModifiedLock;
-        static Dictionary<string, long> lastLogOffsets;
-        static HashSet<string> modifiedLogPaths;
+        static object logModifiedLock = new object();
+        static Dictionary<string, long> lastLogOffsets = new Dictionary<string, long>();
+        static HashSet<string> modifiedLogPaths = new HashSet<string>();
 
         static RuntimeExceptionWatcher()
         {
-            debugOutputQueue = new Queue<string>();
-
-            logModifiedLock = new object();
-            lastLogOffsets = new Dictionary<string, long>();
-            modifiedLogPaths = new HashSet<string>();
-
-            Application.logMessageReceived += OnLog;
             EditorApplication.update += OnEditorUpdate;
-
-            AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
         }
 
         static bool InitializeScriptLookup()
@@ -43,6 +34,9 @@ namespace UdonSharp
 
             if (EditorApplication.isCompiling || EditorApplication.isUpdating)
                 return false;
+            
+            Application.logMessageReceived += OnLog;
+            AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
 
             UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
             bool shouldListenForVRC = udonSharpSettings != null && udonSharpSettings.buildDebugInfo && udonSharpSettings.listenForVRCExceptions;
@@ -103,6 +97,10 @@ namespace UdonSharp
                 logDirectoryWatcher.Dispose();
                 logDirectoryWatcher = null;
             }
+
+            EditorApplication.update -= OnEditorUpdate;
+            Application.logMessageReceived -= OnLog;
+            AssemblyReloadEvents.beforeAssemblyReload -= CleanupLogWatcher;
         }
 
         static void OnLogFileChanged(object source, FileSystemEventArgs args)
