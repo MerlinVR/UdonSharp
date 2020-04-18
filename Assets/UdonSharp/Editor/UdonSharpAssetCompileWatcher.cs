@@ -57,7 +57,7 @@ namespace UdonSharp
 
             AssemblyReloadEvents.beforeAssemblyReload += CleanupWatchers;
 
-            string[] directories = Directory.GetDirectories("Assets/", "*", SearchOption.AllDirectories);
+            string[] directories = Directory.GetDirectories("Assets/", "*", SearchOption.AllDirectories).Append("Assets/").ToArray();
 
             List<string> sourceDirectories = new List<string>();
 
@@ -96,6 +96,9 @@ namespace UdonSharp
                     }
                 }
             }
+
+            EditorApplication.update -= OnEditorUpdate;
+            AssemblyReloadEvents.beforeAssemblyReload -= CleanupWatchers;
         }
 
         static void HandleScriptModifications()
