@@ -465,7 +465,7 @@ namespace UdonSharp
             }
 
             // Copy the result back into the array if it's a value type
-            if (captureArchetype != ExpressionCaptureArchetype.ArrayIndexer && arrayBacktraceSymbol != null && accessSymbol.symbolCsType.IsValueType)
+            if (NeedsArrayCopySet())
             {
                 using (ExpressionCaptureScope arraySetScope = new ExpressionCaptureScope(visitorContext, null))
                 {
@@ -1439,6 +1439,17 @@ namespace UdonSharp
                 return true;
 
             return false;
+        }
+
+        /// <summary>
+        /// Value types need to be copied back to the array if you change a field on them. 
+        /// For instance if you have an array of Vector3, and do vecArray[0].x += 4f;, the vector result needs to be copied back to that index in the array since you're modifying an intermediate copy of it.
+        /// This function tells you if that copy is necessary.
+        /// </summary>
+        /// <returns></returns>
+        public bool NeedsArrayCopySet()
+        {
+            return !IsArrayIndexer() && arrayBacktraceSymbol != null && accessSymbol.symbolCsType.IsValueType;
         }
 
         public bool ResolveAccessToken(string accessToken)

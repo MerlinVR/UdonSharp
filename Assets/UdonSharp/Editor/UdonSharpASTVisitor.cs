@@ -972,11 +972,15 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
+            //visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
+
             SymbolDefinition rhsValue = null;
 
             using (ExpressionCaptureScope rhsCapture = new ExpressionCaptureScope(visitorContext, null))
             {
+                //visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
                 Visit(node.Right);
+                //visitorContext.PopTable();
 
                 rhsValue = rhsCapture.ExecuteGet();
             }
@@ -985,6 +989,9 @@ namespace UdonSharp
             using (ExpressionCaptureScope lhsCapture = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
             {
                 Visit(node.Left);
+
+                // Done before anything modifies the state of the lhsCapture which will make this turn false
+                bool needsCopy = lhsCapture.NeedsArrayCopySet();
 
                 if (node.OperatorToken.Kind() == SyntaxKind.SimpleAssignmentExpression || node.OperatorToken.Kind() == SyntaxKind.EqualsToken)
                 {
@@ -1028,22 +1035,30 @@ namespace UdonSharp
                     using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
                     {
                         operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
-
+                        
                         SymbolDefinition resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { lhsCapture.ExecuteGet(), rhsValue });
 
-                        BuiltinOperatorType operatorType = SyntaxKindToBuiltinOperator(node.Kind());
-
-                        // Create a new set scope to maintain array setter handling for structs
-                        using (ExpressionCaptureScope lhsSetScope = new ExpressionCaptureScope(visitorContext, null))
+                        if (needsCopy)
                         {
-                            Visit(node.Left);
+                            // Create a new set scope to maintain array setter handling for structs
+                            using (ExpressionCaptureScope lhsSetScope = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                Visit(node.Left);
 
-                            // In place arithmetic operators for lower precision types will return int, but C# will normaally cast the result back to the target type 
-                            lhsSetScope.ExecuteSet(resultSymbol, true);
+                                // In place arithmetic operators for lower precision types will return int, but C# will normally cast the result back to the target type, so do a force cast here
+                                lhsSetScope.ExecuteSet(resultSymbol, true);
+                            }
+                        }
+                        else
+                        {
+                            // In place arithmetic operators for lower precision types will return int, but C# will normally cast the result back to the target type, so do a force cast here
+                            lhsCapture.ExecuteSet(resultSymbol, true);
                         }
                     }
                 }
             }
+
+            //visitorContext.PopTable();
         }
 
         public override void VisitPrefixUnaryExpression(PrefixUnaryExpressionSyntax node)
@@ -1651,13 +1666,17 @@ namespace UdonSharp
 
                     lhsValue = lhsCopy;
                 }
+                
 
                 using (ExpressionCaptureScope rhsCapture = new ExpressionCaptureScope(visitorContext, null))
                 {
+                    //visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
                     Visit(node.Right);
+                    //visitorContext.PopTable();
 
                     rhsValue = rhsCapture.ExecuteGet();
                 }
+
 
                 System.Type lhsType = lhsValue.symbolCsType;
                 System.Type rhsType = rhsValue.symbolCsType;
@@ -2308,10 +2327,15 @@ namespace UdonSharp
             for (int i = 0; i < node.Sections.Count; ++i)
             {
                 visitorContext.uasmBuilder.AddJumpLabel(sectionJumps[i]);
+
+                visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
+
                 foreach (StatementSyntax statment in node.Sections[i].Statements)
                 {
                     Visit(statment);
                 }
+
+                visitorContext.PopTable();
             }
 
             visitorContext.uasmBuilder.AddJumpLabel(switchExitLabel);
@@ -2375,22 +2399,6 @@ namespace UdonSharp
         public override void VisitInvocationExpression(InvocationExpressionSyntax node)
         {
             UpdateSyntaxNode(node);
-
-            List<SymbolDefinition> invocationArgs = new List<SymbolDefinition>();
-
-            //visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
-
-            foreach (ArgumentSyntax argument in node.ArgumentList.Arguments)
-            {
-                using (ExpressionCaptureScope captureScope = new ExpressionCaptureScope(visitorContext, null))
-                {
-                    Visit(argument.Expression);
-
-                    invocationArgs.Add(captureScope.ExecuteGet());
-                }
-            }
-
-            //visitorContext.PopTable();
             
             // Grab the external scope so that the method call can propagate its output upwards
             ExpressionCaptureScope externalScope = visitorContext.PopCaptureScope();
@@ -2404,6 +2412,22 @@ namespace UdonSharp
                 
                 if (!methodCaptureScope.IsMethod())
                     throw new System.Exception("Invocation requires method expression!");
+                
+                List<SymbolDefinition> invocationArgs = new List<SymbolDefinition>();
+
+                //visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
+
+                foreach (ArgumentSyntax argument in node.ArgumentList.Arguments)
+                {
+                    using (ExpressionCaptureScope captureScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        Visit(argument.Expression);
+
+                        invocationArgs.Add(captureScope.ExecuteGet());
+                    }
+                }
+
+                //visitorContext.PopTable();
 
                 SymbolDefinition functionReturnValue = methodCaptureScope.Invoke(invocationArgs.ToArray());
 
