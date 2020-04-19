@@ -154,6 +154,11 @@ namespace UdonSharp
             return foundMethods.FirstOrDefault();
         }
 
+        public static bool IsNumericExplicitCastValid(System.Type targetType, System.Type sourceType)
+        {
+            return IsNumericType(sourceType) && GetNumericConversionMethod(targetType, sourceType) != null;
+        }
+
         public static bool IsImplicitlyAssignableFrom(this System.Type targetType, System.Type assignee)
         {
             // Normal explicit assign

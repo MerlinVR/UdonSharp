@@ -1147,7 +1147,7 @@ namespace UdonSharp
                         {
                             resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandCapture.ExecuteGet(), valueConstant });
 
-                            operandCapture.ExecuteSet(resultSymbol);
+                            operandCapture.ExecuteSet(resultSymbol, true);
                         }
                         catch (System.Exception)
                         {
@@ -1205,7 +1205,7 @@ namespace UdonSharp
 
                         SymbolDefinition resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandCapture.ExecuteGet(), valueConstant });
 
-                        operandCapture.ExecuteSet(resultSymbol);
+                        operandCapture.ExecuteSet(resultSymbol, true);
                     }
                 }
                 catch (System.Exception)
@@ -2292,22 +2292,43 @@ namespace UdonSharp
                     visitorContext.uasmBuilder.AddJumpLabel(nextLabelJump);
                     nextLabelJump = visitorContext.labelTable.GetNewJumpLabel("nextSwitchLabelJump");
 
+                    SymbolDefinition conditionEqualitySymbol = null;
+
                     using (ExpressionCaptureScope conditionValueCapture = new ExpressionCaptureScope(visitorContext, null))
                     {
                         Visit(switchLabel);
 
-                        if (!conditionValueCapture.IsUnknownArchetype())
-                            switchLabelValue = conditionValueCapture.ExecuteGet();
-                    }
+                        using (ExpressionCaptureScope equalityCheckScope = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            List<MethodInfo> operatorMethods = new List<MethodInfo>();
+                            operatorMethods.AddRange(UdonSharpUtils.GetOperators(switchExpressionSymbol.symbolCsType, BuiltinOperatorType.Equality));
+                            operatorMethods.AddRange(GetImplicitHigherPrecisionOperator(switchExpressionSymbol.symbolCsType, conditionValueCapture.GetReturnType(), BuiltinOperatorType.Equality));
 
-                    SymbolDefinition conditionEqualitySymbol = null;
-                    using (ExpressionCaptureScope equalityCheckScope = new ExpressionCaptureScope(visitorContext, null))
-                    {
-                        List<MethodInfo> operatorMethods = new List<MethodInfo>();
-                        operatorMethods.AddRange(UdonSharpUtils.GetOperators(switchExpressionSymbol.symbolCsType, BuiltinOperatorType.Equality));
-                        operatorMethods.AddRange(GetImplicitHigherPrecisionOperator(switchExpressionSymbol.symbolCsType, switchLabelValue.symbolCsType, BuiltinOperatorType.Equality));
-                        equalityCheckScope.SetToMethods(operatorMethods.ToArray());
-                        conditionEqualitySymbol = equalityCheckScope.Invoke(new SymbolDefinition[] { switchExpressionSymbol, switchLabelValue });
+                            // The condition has a numeric value that needs to be converted for the condition
+                            // This is done on the condition symbol because once constant folding is implemented, this will turn into a nop at runtime
+                            if (visitorContext.resolverContext.FindBestOverloadFunction(operatorMethods.ToArray(), new List<System.Type> { switchExpressionSymbol.symbolCsType, conditionValueCapture.GetReturnType() }) == null && 
+                                UdonSharpUtils.IsNumericExplicitCastValid(conditionValueCapture.GetReturnType(), switchExpressionSymbol.symbolCsType))
+                            {
+                                SymbolDefinition convertedNumericType = visitorContext.topTable.CreateUnnamedSymbol(conditionValueCapture.GetReturnType(), SymbolDeclTypeFlags.Internal);
+
+                                using (ExpressionCaptureScope numericConversionScope = new ExpressionCaptureScope(visitorContext, null))
+                                {
+                                    numericConversionScope.SetToLocalSymbol(convertedNumericType);
+                                    numericConversionScope.ExecuteSetDirect(conditionValueCapture, true);
+                                }
+
+                                switchLabelValue = convertedNumericType;
+                                operatorMethods.AddRange(UdonSharpUtils.GetOperators(switchLabelValue.symbolCsType, BuiltinOperatorType.Equality));
+                                operatorMethods.AddRange(GetImplicitHigherPrecisionOperator(switchExpressionSymbol.symbolCsType, switchLabelValue.symbolCsType, BuiltinOperatorType.Equality));
+                            }
+                            else
+                            {
+                                switchLabelValue = conditionValueCapture.ExecuteGet();
+                            }
+
+                            equalityCheckScope.SetToMethods(operatorMethods.ToArray());
+                            conditionEqualitySymbol = equalityCheckScope.Invoke(new SymbolDefinition[] { switchExpressionSymbol, switchLabelValue });
+                        }
                     }
 
                     // Jump past the jump to the section if false
