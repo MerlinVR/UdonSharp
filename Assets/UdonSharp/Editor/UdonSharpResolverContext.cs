@@ -858,8 +858,9 @@ namespace UdonSharp
                 scoredMethods.Add(new System.Tuple<MethodBase, float>(methodInfo, finalScore));
             }
 
-            scoredMethods.OrderBy(e => e.Item1);
+            scoredMethods = scoredMethods.OrderBy(e => e.Item2).ToList();
 
+            //Debug.Log("Scoring");
             //foreach (var scoredMethod in scoredMethods)
             //    Debug.Log($"Score: {scoredMethod.Item2},{scoredMethod.Item1}");
 
