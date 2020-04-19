@@ -189,7 +189,7 @@ namespace UdonSharp
                 {
                     EditorApplication.isPlaying = false;
 
-                    typeof(SceneView).GetMethod("ShowNotification", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { "All U# compiler errors have to be fixed before you can enter playmode!" });
+                    typeof(SceneView).GetMethod("ShowNotification", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { "All U# compile errors have to be fixed before you can enter playmode!" });
                 }
             }
             
