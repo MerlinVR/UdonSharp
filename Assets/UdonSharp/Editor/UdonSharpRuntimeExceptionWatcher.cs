@@ -25,6 +25,7 @@ namespace UdonSharp
         static RuntimeExceptionWatcher()
         {
             EditorApplication.update += OnEditorUpdate;
+            Application.logMessageReceived += OnLog;
         }
 
         static bool InitializeScriptLookup()
@@ -35,7 +36,6 @@ namespace UdonSharp
             if (EditorApplication.isCompiling || EditorApplication.isUpdating)
                 return false;
             
-            Application.logMessageReceived += OnLog;
             AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
 
             UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
