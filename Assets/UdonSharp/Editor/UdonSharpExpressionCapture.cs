@@ -1531,7 +1531,10 @@ namespace UdonSharp
         {
             SymbolDefinition symbol = null;
 
-            symbol = visitorContext.topTable.FindUserDefinedSymbol(localSymbolName);
+            if (IsThis())
+                symbol = visitorContext.topTable.GetGlobalSymbolTable().FindUserDefinedSymbol(localSymbolName);
+            else
+                symbol = visitorContext.topTable.FindUserDefinedSymbol(localSymbolName);
 
             // Allow user to mask built-in lookups
             if (symbol == null)
