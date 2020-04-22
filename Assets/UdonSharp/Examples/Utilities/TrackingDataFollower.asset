@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: TrackingDataFollower
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 50e509231b92ae24589a13ab6d363aec,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 221f9b3723e4e484099d1f7b84dc7ff1,
     type: 2}
   udonAssembly: ".data_start\r\n\r\n    .export trackingTarget\r\n\r\n    __refl_const_intnl_udonTypeID:
     %SystemInt64, null\r\n    __refl_const_intnl_udonTypeName: %SystemString, null\r\n
@@ -45,13 +45,15 @@ MonoBehaviour:
     __0_const_intnl_VRCSDKBaseVRCPlayerApi\r\n        PUSH, __0_intnl_SystemBoolean\r\n
     \       EXTERN, \"SystemObject.__op_Equality__SystemObject_SystemObject__SystemBoolean\"\r\n
     \       PUSH, __0_intnl_SystemBoolean\r\n        PUSH, isInEditor\r\n        COPY\r\n
-    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n
-    \        # private void LateUpdate()\r\n    .export _lateUpdate\r\n        \r\n
-    \   _lateUpdate:\r\n        \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n
-    \       PUSH, __0_intnl_returnTarget_UInt32\r\n        COPY\r\n        \r\n         #
-    {\r\n        \r\n         # if (isInEditor)\r\n        PUSH, isInEditor\r\n        JUMP_IF_FALSE,
-    0x000000B4\r\n        \r\n         # return;\r\n        JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n
-    \       \r\n         # VRCPlayerApi.TrackingData trackingData = playerApi.GetTrackingData(trackingTarget);\r\n
+    \       PUSH, __0_intnl_returnTarget_UInt32\r\n        COPY\r\n        JUMP_INDIRECT,
+    __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n         # private void
+    LateUpdate()\r\n    .export _lateUpdate\r\n        \r\n    _lateUpdate:\r\n        \r\n
+    \       PUSH, __0_const_intnl_SystemUInt32\r\n        PUSH, __0_intnl_returnTarget_UInt32\r\n
+    \       COPY\r\n        \r\n         # {\r\n        \r\n         # if (isInEditor)\r\n
+    \       PUSH, isInEditor\r\n        JUMP_IF_FALSE, 0x000000CC\r\n        \r\n
+    \        # return;\r\n        PUSH, __0_intnl_returnTarget_UInt32\r\n        COPY\r\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n         #
+    VRCPlayerApi.TrackingData trackingData = playerApi.GetTrackingData(trackingTarget);\r\n
     \       PUSH, playerApi\r\n        PUSH, trackingTarget\r\n        PUSH, __0_intnl_VRCSDKBaseVRCPlayerApiTrackingData\r\n
     \       EXTERN, \"VRCSDKBaseVRCPlayerApi.__GetTrackingData__VRCSDKBaseVRCPlayerApiTrackingDataType__VRCSDKBaseVRCPlayerApiTrackingData\"\r\n
     \       PUSH, __0_intnl_VRCSDKBaseVRCPlayerApiTrackingData\r\n        PUSH, __0_trackingData_TrackingData\r\n
@@ -62,7 +64,8 @@ MonoBehaviour:
     \       EXTERN, \"VRCSDKBaseVRCPlayerApiTrackingData.__get_rotation__UnityEngineQuaternion\"\r\n
     \       PUSH, __0_this_intnl_UnityEngineTransform\r\n        PUSH, __0_intnl_UnityEngineVector3\r\n
     \       PUSH, __0_intnl_UnityEngineQuaternion\r\n        EXTERN, \"UnityEngineTransform.__SetPositionAndRotation__UnityEngineVector3_UnityEngineQuaternion__SystemVoid\"\r\n
-    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n.code_end\r\n"
+    \       PUSH, __0_intnl_returnTarget_UInt32\r\n        COPY\r\n        JUMP_INDIRECT,
+    __0_intnl_returnTarget_UInt32\r\n        \r\n.code_end\r\n"
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: cfa6b6afca5fc44419a259edec93cea2, type: 3}
   behaviourIDHeapVarName: __refl_const_intnl_udonTypeID
@@ -318,163 +321,205 @@ MonoBehaviour:
       lineChar: 25
       spanCodeSection: 'playerApi == '
     - startInstruction: 76
-      endInstruction: 135
+      endInstruction: 147
       startSourceChar: 580
       endSourceChar: 644
       line: 20
       lineChar: 38
       spanCodeSection: "null; // PlayerApi will be null in editor\r\n        }\r\n\r\n
         \       "
-    - startInstruction: 136
-      endInstruction: 155
+    - startInstruction: 148
+      endInstruction: 167
       startSourceChar: 644
       endSourceChar: 679
       line: 23
       lineChar: 8
       spanCodeSection: "private void LateUpdate()\r\n        "
-    - startInstruction: 156
-      endInstruction: 155
+    - startInstruction: 168
+      endInstruction: 167
       startSourceChar: 679
       endSourceChar: 798
       line: 24
       lineChar: 8
       spanCodeSection: "{\r\n            // PlayerApi data will only be valid in game
         so we don't run the update if we're in editor\r\n            "
-    - startInstruction: 156
-      endInstruction: 155
+    - startInstruction: 168
+      endInstruction: 167
       startSourceChar: 798
       endSourceChar: 802
       line: 26
       lineChar: 12
       spanCodeSection: if (
-    - startInstruction: 156
-      endInstruction: 171
+    - startInstruction: 168
+      endInstruction: 183
       startSourceChar: 802
       endSourceChar: 831
       line: 26
       lineChar: 16
       spanCodeSection: "isInEditor)\r\n                "
-    - startInstruction: 172
-      endInstruction: 179
+    - startInstruction: 184
+      endInstruction: 203
       startSourceChar: 831
       endSourceChar: 854
       line: 27
       lineChar: 16
       spanCodeSection: "return;\r\n\r\n            "
-    - startInstruction: 180
-      endInstruction: 179
+    - startInstruction: 204
+      endInstruction: 203
       startSourceChar: 854
       endSourceChar: 854
       line: 29
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 180
-      endInstruction: 179
+    - startInstruction: 204
+      endInstruction: 203
       startSourceChar: 854
       endSourceChar: 854
       line: 29
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 180
-      endInstruction: 179
+    - startInstruction: 204
+      endInstruction: 203
       startSourceChar: 854
       endSourceChar: 854
       line: 29
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 180
-      endInstruction: 179
+    - startInstruction: 204
+      endInstruction: 203
       startSourceChar: 854
       endSourceChar: 854
       line: 29
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 180
-      endInstruction: 179
+    - startInstruction: 204
+      endInstruction: 203
       startSourceChar: 854
       endSourceChar: 867
       line: 29
       lineChar: 12
       spanCodeSection: VRCPlayerApi.
-    - startInstruction: 180
-      endInstruction: 179
+    - startInstruction: 204
+      endInstruction: 203
       startSourceChar: 867
       endSourceChar: 893
       line: 29
       lineChar: 25
       spanCodeSection: 'TrackingData trackingData '
-    - startInstruction: 180
-      endInstruction: 179
+    - startInstruction: 204
+      endInstruction: 203
       startSourceChar: 893
       endSourceChar: 895
       line: 29
       lineChar: 51
       spanCodeSection: '= '
-    - startInstruction: 180
-      endInstruction: 179
+    - startInstruction: 204
+      endInstruction: 203
       startSourceChar: 895
-      endSourceChar: 921
+      endSourceChar: 895
       line: 29
       lineChar: 53
-      spanCodeSection: playerApi.GetTrackingData(
-    - startInstruction: 180
-      endInstruction: 231
+      spanCodeSection: 
+    - startInstruction: 204
+      endInstruction: 203
+      startSourceChar: 895
+      endSourceChar: 895
+      line: 29
+      lineChar: 53
+      spanCodeSection: 
+    - startInstruction: 204
+      endInstruction: 203
+      startSourceChar: 895
+      endSourceChar: 905
+      line: 29
+      lineChar: 53
+      spanCodeSection: playerApi.
+    - startInstruction: 204
+      endInstruction: 203
+      startSourceChar: 905
+      endSourceChar: 921
+      line: 29
+      lineChar: 63
+      spanCodeSection: GetTrackingData(
+    - startInstruction: 204
+      endInstruction: 255
       startSourceChar: 921
       endSourceChar: 951
       line: 29
       lineChar: 79
       spanCodeSection: "trackingTarget);\r\n            "
-    - startInstruction: 232
-      endInstruction: 231
+    - startInstruction: 256
+      endInstruction: 255
       startSourceChar: 951
       endSourceChar: 951
       line: 30
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 232
-      endInstruction: 231
+    - startInstruction: 256
+      endInstruction: 255
       startSourceChar: 951
-      endSourceChar: 984
+      endSourceChar: 951
       line: 30
       lineChar: 12
-      spanCodeSection: transform.SetPositionAndRotation(
-    - startInstruction: 232
-      endInstruction: 231
+      spanCodeSection: 
+    - startInstruction: 256
+      endInstruction: 255
+      startSourceChar: 951
+      endSourceChar: 951
+      line: 30
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 256
+      endInstruction: 255
+      startSourceChar: 951
+      endSourceChar: 961
+      line: 30
+      lineChar: 12
+      spanCodeSection: transform.
+    - startInstruction: 256
+      endInstruction: 255
+      startSourceChar: 961
+      endSourceChar: 984
+      line: 30
+      lineChar: 22
+      spanCodeSection: SetPositionAndRotation(
+    - startInstruction: 256
+      endInstruction: 255
       startSourceChar: 984
       endSourceChar: 984
       line: 30
       lineChar: 45
       spanCodeSection: 
-    - startInstruction: 232
-      endInstruction: 231
+    - startInstruction: 256
+      endInstruction: 255
       startSourceChar: 984
       endSourceChar: 997
       line: 30
       lineChar: 45
       spanCodeSection: trackingData.
-    - startInstruction: 232
-      endInstruction: 255
+    - startInstruction: 256
+      endInstruction: 279
       startSourceChar: 997
       endSourceChar: 1007
       line: 30
       lineChar: 58
       spanCodeSection: 'position, '
-    - startInstruction: 256
-      endInstruction: 255
+    - startInstruction: 280
+      endInstruction: 279
       startSourceChar: 1007
       endSourceChar: 1007
       line: 30
       lineChar: 68
       spanCodeSection: 
-    - startInstruction: 256
-      endInstruction: 255
+    - startInstruction: 280
+      endInstruction: 279
       startSourceChar: 1007
       endSourceChar: 1020
       line: 30
       lineChar: 68
       spanCodeSection: trackingData.
-    - startInstruction: 256
-      endInstruction: 256
+    - startInstruction: 280
+      endInstruction: 280
       startSourceChar: 1020
       endSourceChar: 1020
       line: 30

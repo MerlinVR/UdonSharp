@@ -53,8 +53,8 @@ MonoBehaviour:
     \       PUSH, __0_intnl_SystemInt32\r\n        PUSH, __1_const_intnl_SystemInt32\r\n
     \       PUSH, __2_intnl_SystemInt32\r\n        EXTERN, \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n
     \       PUSH, __2_intnl_SystemInt32\r\n        PUSH, __0_intnl_SystemInt32\r\n
-    \       COPY\r\n        JUMP, 0x00000040\r\n        JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n
-    \       \r\n.code_end\r\n"
+    \       COPY\r\n        JUMP, 0x00000040\r\n        PUSH, __0_intnl_returnTarget_UInt32\r\n
+    \       COPY\r\n        JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n.code_end\r\n"
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: c145dd4792c31da4b83d542b11ca2b66, type: 3}
   behaviourIDHeapVarName: __refl_const_intnl_udonTypeID
@@ -278,10 +278,31 @@ MonoBehaviour:
     - startInstruction: 164
       endInstruction: 163
       startSourceChar: 689
-      endSourceChar: 712
+      endSourceChar: 689
       line: 20
       lineChar: 16
-      spanCodeSection: toggleObject.SetActive(
+      spanCodeSection: 
+    - startInstruction: 164
+      endInstruction: 163
+      startSourceChar: 689
+      endSourceChar: 689
+      line: 20
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 164
+      endInstruction: 163
+      startSourceChar: 689
+      endSourceChar: 702
+      line: 20
+      lineChar: 16
+      spanCodeSection: toggleObject.
+    - startInstruction: 164
+      endInstruction: 163
+      startSourceChar: 702
+      endSourceChar: 712
+      line: 20
+      lineChar: 29
+      spanCodeSection: SetActive(
     - startInstruction: 164
       endInstruction: 163
       startSourceChar: 712
