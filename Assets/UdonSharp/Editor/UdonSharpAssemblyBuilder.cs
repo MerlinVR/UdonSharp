@@ -197,6 +197,14 @@ namespace UdonSharp
             programCounter += UdonSharpUtils.GetUdonInstructionSize("JUMP_INDIRECT");
         }
 
+        public void AddReturnSequence(SymbolDefinition returnTrampolineSymbol, string comment = "")
+        {
+            AddPush(returnTrampolineSymbol, comment);
+            AddCopy();
+            AppendCommentedLine($"JUMP_INDIRECT, {returnTrampolineSymbol.symbolUniqueName}", "");
+            programCounter += UdonSharpUtils.GetUdonInstructionSize("JUMP_INDIRECT");
+        }
+
         public void AddJumpLabel(JumpLabel jumpLabel, string comment = "")
         {
             if (jumpLabel.IsResolved)

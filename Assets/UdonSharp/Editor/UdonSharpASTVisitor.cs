@@ -1296,9 +1296,8 @@ namespace UdonSharp
 
             using (ExpressionCaptureScope jumpResetScope = new ExpressionCaptureScope(visitorContext, null))
             {
-                jumpResetScope.SetToLocalSymbol(visitorContext.returnJumpTarget);
                 SymbolDefinition constEndAddrVal = visitorContext.topTable.CreateConstSymbol(typeof(uint), 0xFFFFFFFF);
-                jumpResetScope.ExecuteSet(constEndAddrVal);
+                visitorContext.uasmBuilder.AddPush(constEndAddrVal);
             }
 
             if (isBuiltinEvent)
@@ -1368,7 +1367,7 @@ namespace UdonSharp
 
             visitorContext.uasmBuilder.AddJumpLabel(returnLabel);
             visitorContext.uasmBuilder.AddJumpLabel(definition.methodReturnPoint);
-            visitorContext.uasmBuilder.AddJumpIndirect(visitorContext.returnJumpTarget);
+            visitorContext.uasmBuilder.AddReturnSequence(visitorContext.returnJumpTarget, "Function epilogue");
             //visitorContext.uasmBuilder.AddJumpToExit();
             visitorContext.uasmBuilder.AppendLine("");
 
@@ -1886,7 +1885,7 @@ namespace UdonSharp
                 }
             }
 
-            visitorContext.uasmBuilder.AddJumpIndirect(visitorContext.returnJumpTarget);
+            visitorContext.uasmBuilder.AddReturnSequence(visitorContext.returnJumpTarget, "Explicit return sequence");
             //visitorContext.uasmBuilder.AddJumpToExit();
         }
 
