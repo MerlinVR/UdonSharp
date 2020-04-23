@@ -192,7 +192,6 @@ namespace UdonSharp
 
         public void AddJumpIndirect(SymbolDefinition addressSymbol, string comment = "")
         {
-            //throw new System.NotImplementedException("Jump indirect instruction is not implemented in UdonSharp yet."); // I'm not sure why JUMP_INDIRECT both takes an address and pops an address from the stack
             AppendCommentedLine($"JUMP_INDIRECT, {addressSymbol.symbolUniqueName}", comment);
             programCounter += UdonSharpUtils.GetUdonInstructionSize("JUMP_INDIRECT");
         }
@@ -201,8 +200,7 @@ namespace UdonSharp
         {
             AddPush(returnTrampolineSymbol, comment);
             AddCopy();
-            AppendCommentedLine($"JUMP_INDIRECT, {returnTrampolineSymbol.symbolUniqueName}", "");
-            programCounter += UdonSharpUtils.GetUdonInstructionSize("JUMP_INDIRECT");
+            AddJumpIndirect(returnTrampolineSymbol);
         }
 
         public void AddJumpLabel(JumpLabel jumpLabel, string comment = "")

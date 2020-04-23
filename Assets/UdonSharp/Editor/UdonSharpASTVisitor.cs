@@ -1293,12 +1293,9 @@ namespace UdonSharp
             visitorContext.returnSymbol = definition.returnSymbol;
 
             visitorContext.uasmBuilder.AddJumpLabel(definition.methodUdonEntryPoint);
-
-            using (ExpressionCaptureScope jumpResetScope = new ExpressionCaptureScope(visitorContext, null))
-            {
-                SymbolDefinition constEndAddrVal = visitorContext.topTable.CreateConstSymbol(typeof(uint), 0xFFFFFFFF);
-                visitorContext.uasmBuilder.AddPush(constEndAddrVal);
-            }
+            
+            SymbolDefinition constEndAddrVal = visitorContext.topTable.CreateConstSymbol(typeof(uint), 0xFFFFFFFF);
+            visitorContext.uasmBuilder.AddPush(constEndAddrVal);
 
             if (isBuiltinEvent)
             {
