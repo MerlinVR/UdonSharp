@@ -1240,20 +1240,8 @@ namespace UdonSharp
             }
 
             SymbolDefinition exitJumpLocation = visitorContext.topTable.CreateNamedSymbol("exitJumpLoc", typeof(uint), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Constant);
-            SymbolDefinition oldReturnLocation = visitorContext.topTable.CreateNamedSymbol("oldReturnLoc", typeof(uint), SymbolDeclTypeFlags.Internal);
 
-            using (ExpressionCaptureScope oldReturnLocationSetScope = new ExpressionCaptureScope(visitorContext, null))
-            {
-                oldReturnLocationSetScope.SetToLocalSymbol(oldReturnLocation);
-                oldReturnLocationSetScope.ExecuteSet(visitorContext.returnJumpTarget);
-            }
-
-            using (ExpressionCaptureScope newReturnPointSetScope = new ExpressionCaptureScope(visitorContext, null))
-            {
-                newReturnPointSetScope.SetToLocalSymbol(visitorContext.returnJumpTarget);
-                newReturnPointSetScope.ExecuteSet(exitJumpLocation);
-            }
-
+            visitorContext.uasmBuilder.AddPush(exitJumpLocation);
             visitorContext.uasmBuilder.AddJump(captureLocalMethod.methodUserCallStart);
 
             JumpLabel exitLabel = visitorContext.labelTable.GetNewJumpLabel("returnLocation");
@@ -1261,12 +1249,6 @@ namespace UdonSharp
             // Now we can set this value after we have found the exit address
             visitorContext.uasmBuilder.AddJumpLabel(exitLabel);
             exitJumpLocation.symbolDefaultValue = exitLabel.resolvedAddress;
-
-            using (ExpressionCaptureScope restoreReturnLocationScope = new ExpressionCaptureScope(visitorContext, null))
-            {
-                restoreReturnLocationScope.SetToLocalSymbol(visitorContext.returnJumpTarget);
-                restoreReturnLocationScope.ExecuteSet(oldReturnLocation);
-            }
 
             SymbolDefinition returnValue = null;
 

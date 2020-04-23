@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: PlayerModSetter
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 99f631f84e22b8c4ca4281d014362514,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 59b4c331699de724196efb9fbc604b89,
     type: 2}
   udonAssembly: ".data_start\r\n\r\n    .export jumpHeight\r\n    .export runSpeed\r\n
     \   .export walkSpeed\r\n    .export gravity\r\n    .export useLegacyLocomotion\r\n\r\n
@@ -60,7 +60,8 @@ MonoBehaviour:
     \       PUSH, __0_playerApi_VRCPlayerApi\r\n        EXTERN, \"VRCSDKBaseVRCPlayerApi.__UseLegacyLocomotion__SystemVoid\"\r\n
     \       \r\n         # Destroy(this);\r\n        PUSH, __0_this_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n
     \       EXTERN, \"UnityEngineObject.__Destroy__UnityEngineObject__SystemVoid\"\r\n
-    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n.code_end\r\n"
+    \       PUSH, __0_intnl_returnTarget_UInt32\r\n        COPY\r\n        JUMP_INDIRECT,
+    __0_intnl_returnTarget_UInt32\r\n        \r\n.code_end\r\n"
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: b8c59fc0a015dcc4b86d7e90312acf63, type: 3}
   behaviourIDHeapVarName: __refl_const_intnl_udonTypeID
@@ -387,10 +388,31 @@ MonoBehaviour:
     - startInstruction: 124
       endInstruction: 123
       startSourceChar: 653
-      endSourceChar: 678
+      endSourceChar: 653
       line: 24
       lineChar: 16
-      spanCodeSection: playerApi.SetJumpImpulse(
+      spanCodeSection: 
+    - startInstruction: 124
+      endInstruction: 123
+      startSourceChar: 653
+      endSourceChar: 653
+      line: 24
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 124
+      endInstruction: 123
+      startSourceChar: 653
+      endSourceChar: 663
+      line: 24
+      lineChar: 16
+      spanCodeSection: playerApi.
+    - startInstruction: 124
+      endInstruction: 123
+      startSourceChar: 663
+      endSourceChar: 678
+      line: 24
+      lineChar: 26
+      spanCodeSection: SetJumpImpulse(
     - startInstruction: 124
       endInstruction: 147
       startSourceChar: 678
@@ -408,10 +430,31 @@ MonoBehaviour:
     - startInstruction: 148
       endInstruction: 147
       startSourceChar: 708
-      endSourceChar: 730
+      endSourceChar: 708
       line: 25
       lineChar: 16
-      spanCodeSection: playerApi.SetRunSpeed(
+      spanCodeSection: 
+    - startInstruction: 148
+      endInstruction: 147
+      startSourceChar: 708
+      endSourceChar: 708
+      line: 25
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 148
+      endInstruction: 147
+      startSourceChar: 708
+      endSourceChar: 718
+      line: 25
+      lineChar: 16
+      spanCodeSection: playerApi.
+    - startInstruction: 148
+      endInstruction: 147
+      startSourceChar: 718
+      endSourceChar: 730
+      line: 25
+      lineChar: 26
+      spanCodeSection: SetRunSpeed(
     - startInstruction: 148
       endInstruction: 171
       startSourceChar: 730
@@ -429,10 +472,31 @@ MonoBehaviour:
     - startInstruction: 172
       endInstruction: 171
       startSourceChar: 758
-      endSourceChar: 781
+      endSourceChar: 758
       line: 26
       lineChar: 16
-      spanCodeSection: playerApi.SetWalkSpeed(
+      spanCodeSection: 
+    - startInstruction: 172
+      endInstruction: 171
+      startSourceChar: 758
+      endSourceChar: 758
+      line: 26
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 172
+      endInstruction: 171
+      startSourceChar: 758
+      endSourceChar: 768
+      line: 26
+      lineChar: 16
+      spanCodeSection: playerApi.
+    - startInstruction: 172
+      endInstruction: 171
+      startSourceChar: 768
+      endSourceChar: 781
+      line: 26
+      lineChar: 26
+      spanCodeSection: SetWalkSpeed(
     - startInstruction: 172
       endInstruction: 195
       startSourceChar: 781
@@ -450,10 +514,31 @@ MonoBehaviour:
     - startInstruction: 196
       endInstruction: 195
       startSourceChar: 810
-      endSourceChar: 839
+      endSourceChar: 810
       line: 27
       lineChar: 16
-      spanCodeSection: playerApi.SetGravityStrength(
+      spanCodeSection: 
+    - startInstruction: 196
+      endInstruction: 195
+      startSourceChar: 810
+      endSourceChar: 810
+      line: 27
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 196
+      endInstruction: 195
+      startSourceChar: 810
+      endSourceChar: 820
+      line: 27
+      lineChar: 16
+      spanCodeSection: playerApi.
+    - startInstruction: 196
+      endInstruction: 195
+      startSourceChar: 820
+      endSourceChar: 839
+      line: 27
+      lineChar: 26
+      spanCodeSection: SetGravityStrength(
     - startInstruction: 196
       endInstruction: 219
       startSourceChar: 839
@@ -510,6 +595,13 @@ MonoBehaviour:
       line: 30
       lineChar: 30
       spanCodeSection: "UseLegacyLocomotion();\r\n            }\r\n\r\n            "
+    - startInstruction: 252
+      endInstruction: 251
+      startSourceChar: 977
+      endSourceChar: 977
+      line: 33
+      lineChar: 12
+      spanCodeSection: 
     - startInstruction: 252
       endInstruction: 251
       startSourceChar: 977
