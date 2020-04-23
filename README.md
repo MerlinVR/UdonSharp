@@ -46,7 +46,7 @@ This compiler is in an early state and I have no prior experience making compile
 ## Setup
 
 ### Requirements
-- Unity 2018.4.14 or greater
+- Unity 2018.4.20f1 or greater
 - VRCSDK3
 - UdonSDK
 - The latest [release](https://github.com/Merlin-san/UdonSharp/releases/latest) of UdonSharp
@@ -85,6 +85,8 @@ public class RotatingCubeBehaviour : UdonSharpBehaviour
 
 ## Credits
 [**Toocanzs**](https://github.com/Toocanzs) - Implementing field initializers and helping with miscellaneous things
+
+[**PhaxeNor**](https://github.com/PhaxeNor) - Help with wiki and documentation
 
 [**UdonPie Compiler**](https://github.com/zz-roba/UdonPieCompiler) - For demonstrating how straightforward it can be to write a compiler for Udon
 
