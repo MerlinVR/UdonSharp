@@ -1679,8 +1679,6 @@ namespace UdonSharp
 
                 List<MethodInfo> operatorMethods = new List<MethodInfo>();
 
-                bool isAssignment = false;
-
                 switch (node.Kind())
                 {
                     case SyntaxKind.AddExpression:
@@ -1708,21 +1706,6 @@ namespace UdonSharp
                         operatorMethods.AddRange(GetOperators(rhsType, node.Kind()));
                         operatorMethods.AddRange(GetImplicitHigherPrecisionOperator(lhsType, rhsType, SyntaxKindToBuiltinOperator(node.Kind())));
                         operatorMethods = operatorMethods.Distinct().ToList();
-                        isAssignment = false;
-                        break;
-                    case SyntaxKind.AddAssignmentExpression:
-                    case SyntaxKind.SubtractAssignmentExpression:
-                    case SyntaxKind.MultiplyAssignmentExpression:
-                    case SyntaxKind.DivideAssignmentExpression:
-                    case SyntaxKind.ModuloAssignmentExpression:
-                    case SyntaxKind.LeftShiftAssignmentExpression:
-                    case SyntaxKind.RightShiftAssignmentExpression:
-                    case SyntaxKind.AndAssignmentExpression:
-                    case SyntaxKind.OrAssignmentExpression:
-                    case SyntaxKind.ExclusiveOrAssignmentExpression:
-                        operatorMethods.AddRange(GetOperators(lhsType, node.Kind()));
-                        operatorMethods.AddRange(GetImplicitHigherPrecisionOperator(lhsType, rhsType, SyntaxKindToBuiltinOperator(node.Kind())));
-                        isAssignment = true;
                         break;
                     default:
                         throw new System.NotImplementedException($"Binary expression {node.Kind()} is not implemented");
@@ -1810,11 +1793,6 @@ namespace UdonSharp
                                 resultSymbol = negationScope.Invoke(new SymbolDefinition[] { resultSymbol });
                             }
                         }
-                    }
-
-                    if (isAssignment)
-                    {
-                        lhsCapture.ExecuteSet(resultSymbol);
                     }
 
                     if (outerScope != null)
