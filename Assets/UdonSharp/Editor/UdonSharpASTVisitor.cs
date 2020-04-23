@@ -235,7 +235,7 @@ namespace UdonSharp
             UpdateSyntaxNode(node);
             
             if (node.BaseList == null)
-                throw new System.NotSupportedException("UdonSharp only supports classes that  from 'UdonSharpBehaviour' at the moment");
+                throw new System.NotSupportedException("UdonSharp only supports classes that inherit from 'UdonSharpBehaviour' at the moment");
             
             using (ExpressionCaptureScope selfTypeCaptureScope = new ExpressionCaptureScope(visitorContext, null))
             {
