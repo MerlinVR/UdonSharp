@@ -211,13 +211,30 @@ namespace UdonSharp
                         FieldDefinition fieldDef = module.compiledClassDefinition?.fieldDefinitions?.Find(e => (e.fieldSymbol.declarationType == SymbolDeclTypeFlags.Private || e.fieldSymbol.declarationType == SymbolDeclTypeFlags.Public) &&
                                                                                                                 e.fieldSymbol.symbolOriginalName == variable.Identifier.ToString());
 
-                        string typeQualifiedName = type.ToString();
+                        string typeQualifiedName = type.ToString().Replace('+', '.');
                         if (fieldDef != null)
                         {
-                            if (fieldDef.fieldSymbol.symbolCsType.Namespace.Length == 0)
-                                typeQualifiedName = fieldDef.fieldSymbol.symbolCsType.Name;
-                            else
-                                typeQualifiedName = fieldDef.fieldSymbol.symbolCsType.Namespace + "." + fieldDef.fieldSymbol.symbolCsType.Name;
+                            string namespaceStr = "";
+
+                            System.Type symbolType = fieldDef.fieldSymbol.symbolCsType;
+
+                            if (symbolType.Namespace != null &&
+                                symbolType.Namespace.Length > 0)
+                            {
+                                namespaceStr = symbolType.Namespace + ".";
+                            }
+
+                            string nestedTypeStr = "";
+
+                            System.Type declaringType = symbolType.DeclaringType;
+
+                            while (declaringType != null)
+                            {
+                                nestedTypeStr = $"{declaringType.Name}.{nestedTypeStr}";
+                                declaringType = declaringType.DeclaringType;
+                            }
+
+                            typeQualifiedName = namespaceStr + nestedTypeStr + fieldDef.fieldSymbol.symbolCsType.Name;
                         }
 
                         if (variable.Initializer != null)
