@@ -524,10 +524,28 @@ namespace UdonSharp
             
             if (conversionFunction != null && (isExplicit || isNumericCastValid))
             {
+                SymbolDefinition sourceNumericSymbol = sourceSymbol;
+
+                // System.Convert.ToIntXX with a floating point argument will not be truncated, instead it will be rounded using Banker's Rounding.
+                // This is not what we want for casts, so we first floor the input before running the conversion
+                if (UdonSharpUtils.IsFloatType(sourceSymbol.symbolCsType) && UdonSharpUtils.IsIntegerType(targetType))
+                {
+                    // Mathf.Floor only works on floats so if it's a double we need to convert it first.
+                    // This does lose a small amount of accuracy on gigantic numbers, but it should hopefully be enough until Udon has dedicated cast instructions at some point in the future
+                    SymbolDefinition inputFloat = CastSymbolToType(sourceSymbol, typeof(float), true);
+                    conversionFunction = UdonSharpUtils.GetNumericConversionMethod(targetType, typeof(float));
+
+                    using (ExpressionCaptureScope floatFloorMethodCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        floatFloorMethodCaptureScope.SetToMethods(new[] { typeof(Mathf).GetMethod("Floor", BindingFlags.Static | BindingFlags.Public) });
+                        sourceNumericSymbol = floatFloorMethodCaptureScope.Invoke(new SymbolDefinition[] { inputFloat });
+                    }
+                }
+
                 // This code is copied 3 times, todo: find a decent way to refactor it
                 SymbolDefinition castOutput = visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
 
-                visitorContext.uasmBuilder.AddPush(sourceSymbol);
+                visitorContext.uasmBuilder.AddPush(sourceNumericSymbol);
                 visitorContext.uasmBuilder.AddPush(castOutput);
                 visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(conversionFunction));
 

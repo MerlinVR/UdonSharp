@@ -103,6 +103,25 @@ namespace UdonSharp
             typeof(long),
         };
 
+        private static readonly HashSet<System.Type> integerTypes = new HashSet<System.Type>()
+        {
+            typeof(byte),
+            typeof(sbyte),
+            typeof(short),
+            typeof(ushort),
+            typeof(int),
+            typeof(uint),
+            typeof(long),
+            typeof(ulong),
+        };
+
+        private static readonly HashSet<System.Type> floatTypes = new HashSet<System.Type>()
+        {
+            typeof(float),
+            typeof(double),
+            typeof(decimal),
+        };
+
         public static bool IsSignedType(System.Type type)
         {
             return signedTypes.Contains(type);
@@ -111,6 +130,16 @@ namespace UdonSharp
         public static bool IsUnsignedType(System.Type type)
         {
             return unsignedTypes.Contains(type);
+        }
+
+        public static bool IsIntegerType(System.Type type)
+        {
+            return integerTypes.Contains(type);
+        }
+
+        public static bool IsFloatType(System.Type type)
+        {
+            return floatTypes.Contains(type);
         }
 
         public static bool IsNumericType(System.Type type)
