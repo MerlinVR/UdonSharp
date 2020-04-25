@@ -1,0 +1,206 @@
+
+using UdonSharp;
+using UnityEngine;
+using VRC.SDKBase;
+using VRC.Udon;
+
+namespace UdonSharp.Tests
+{
+    [AddComponentMenu("Udon Sharp/Tests/ArithmeticTest")]
+    public class ArithmeticTest : UdonSharpBehaviour
+    {
+        [System.NonSerialized]
+        public IntegrationTestSuite tester;
+
+        public void ExecuteTests()
+        {
+            IntBinaryOps();
+            SByteBinaryOps();
+            LongBinaryOps();
+            IntIncrement();
+            IntAssignment();
+            LongAssignment();
+            ByteIncrement();
+            LongIncrement();
+            IntTruncate();
+        }
+
+        void IntBinaryOps()
+        {
+            int result = 4 + 6;
+            tester.TestAssertion("Integer Addition", result == 10);
+
+            result = 3 - 5;
+            tester.TestAssertion("Integer Subtraction", result == -2);
+
+            result = 20 / 3;
+            tester.TestAssertion("Integer Division", result == 6);
+            
+            result = 5 % 2;
+            tester.TestAssertion("Integer Remainder", result == 1);
+
+            result = 2 | 8;
+            tester.TestAssertion("Integer OR", result == 10);
+
+            result = 2 & 10;
+            tester.TestAssertion("Integer AND", result == 2);
+
+            tester.TestAssertion("Integer Left Shift", 1 << 2 == 4);
+            tester.TestAssertion("Integer Right Shift", 4 >> 2 == 1);
+            tester.TestAssertion("Integer XOR", (0x499602D3 ^ 0x132C10CB) == 0x5ABA1218); // Randomly chosen numbers
+
+        }
+
+        void SByteBinaryOps()
+        {
+            // Explicit cast because we don't have constant folding yet
+            sbyte result = (sbyte)(4 + 6);
+            tester.TestAssertion("sByte Addition", result == 10);
+
+            result = (sbyte)(3 - 5);
+            tester.TestAssertion("sByte Subtraction", result == -2);
+
+            result = (sbyte)(20 / 3);
+            tester.TestAssertion("sByte Division", result == 6);
+
+            result = (sbyte)(5 % 2);
+            tester.TestAssertion("sByte Remainder", result == 1);
+
+            result = (sbyte)((sbyte)2 | 8);
+            tester.TestAssertion("sByte OR", result == 10);
+
+            result = (sbyte)((sbyte)2 & 10);
+            tester.TestAssertion("sByte AND", result == 2);
+
+            tester.TestAssertion("sByte Left Shift", (sbyte)1 << 2 == 4);
+            tester.TestAssertion("sByte Right Shift", (sbyte)4 >> 2 == 1);
+            tester.TestAssertion("sByte XOR", ((sbyte)0x03 ^ 0x0B) == 0x08); // Randomly chosen numbers
+        }
+
+        void LongBinaryOps() 
+        {
+            long result = (long)4 + 6;
+            tester.TestAssertion("Long Addition", result == 10);
+
+            result = (long)3 - 5; 
+            tester.TestAssertion("Long Subtraction", result == -2);
+
+            result = (long)20 / 3;
+            tester.TestAssertion("Long Division", result == 6);
+
+            // udonsupport: https://vrchat.canny.io/vrchat-udon-closed-alpha-feedback/p/long-remainder
+            //result = (long)5 % 2;
+            //tester.TestAssertion("Long Remainder", result == 1);
+
+            result = ((long)2 | 8);
+            tester.TestAssertion("Long OR", result == 10);
+
+            result = ((long)2 & 10);
+            tester.TestAssertion("Long AND", result == 2);
+
+            tester.TestAssertion("Long Left Shift", (long)1 << 2 == 4);
+            tester.TestAssertion("Long Right Shift", (long)4 >> 2 == 1);
+            tester.TestAssertion("Long XOR", (0x499602D3499602D3 ^ 0x132C10CB132C10CB) == 0x5ABA12185ABA1218); // Randomly chosen numbers
+        }
+
+        void IntIncrement()
+        {
+            int testVal = 4;
+
+            tester.TestAssertion("Integer Prefix Increment", ++testVal == 5);
+            tester.TestAssertion("Integer Postfix Increment", testVal++ == 5);
+            tester.TestAssertion("Integer Postfix Increment 2", testVal == 6);
+            tester.TestAssertion("Integer Prefix Decrement", --testVal == 5);
+            tester.TestAssertion("Integer Postfix Decrement", testVal-- == 5);
+            tester.TestAssertion("Integer Postfix Decrement 2", testVal == 4);
+        }
+
+        void IntAssignment()
+        {
+            int testVal = 5;
+
+            tester.TestAssertion("Integer Add Assign", (testVal += 4) == 9);
+            tester.TestAssertion("Integer Subtract Assign", (testVal -= 20) == -11);
+            tester.TestAssertion("Integer Multiply Assign", (testVal *= 8) == -88);
+            tester.TestAssertion("Integer Divide Assign", (testVal /= 8) == -11);
+
+            testVal = -testVal;
+            tester.TestAssertion("Integer Unary Negation", testVal == 11);
+
+            tester.TestAssertion("Integer Remainder Assign", (testVal %= 5) == 1);
+            tester.TestAssertion("Integer OR Assign", (testVal |= 2) == 3);
+            tester.TestAssertion("Integer AND Assign", (testVal &= 1) == 1);
+        }
+
+        void ByteAssignment()
+        {
+            sbyte testVal = 5;
+
+            tester.TestAssertion("sByte Add Assign", (testVal += 4) == 9);
+            tester.TestAssertion("sByte Subtract Assign", (testVal -= 20) == -11);
+            tester.TestAssertion("sByte Multiply Assign", (testVal *= 8) == -88);
+            tester.TestAssertion("sByte Divide Assign", (testVal /= 8) == -11);
+
+            testVal = (sbyte)-testVal;
+            tester.TestAssertion("sByte Unary Negation", testVal == 11);
+
+            // udonsupport: https://vrchat.canny.io/vrchat-udon-closed-alpha-feedback/p/long-remainder
+            //tester.TestAssertion("sByte Remainder Assign", (testVal %= 5) == 1);
+            testVal = 1;
+            tester.TestAssertion("sByte OR Assign", (testVal |= 2) == 3);
+            tester.TestAssertion("sByte AND Assign", (testVal &= 1) == 1);
+        }
+
+        void LongAssignment()
+        {
+            long testVal = 5;
+
+            tester.TestAssertion("Long Add Assign", (testVal += 4) == 9);
+            tester.TestAssertion("Long Subtract Assign", (testVal -= 20) == -11);
+            tester.TestAssertion("Long Multiply Assign", (testVal *= 8) == -88);
+            tester.TestAssertion("Long Divide Assign", (testVal /= 8) == -11);
+
+            testVal = -testVal;
+            tester.TestAssertion("Long Unary Negation", testVal == 11);
+            
+            // udonsupport: https://vrchat.canny.io/vrchat-udon-closed-alpha-feedback/p/long-remainder
+            //tester.TestAssertion("Long Remainder Assign", (testVal %= 5) == 1);
+            testVal = 1;
+            tester.TestAssertion("Long OR Assign", (testVal |= 2) == 3);
+            tester.TestAssertion("Long AND Assign", (testVal &= 1) == 1);
+        }
+
+        void ByteIncrement()
+        {
+            byte testVal = 4;
+
+            tester.TestAssertion("Byte Prefix Increment", ++testVal == 5);
+            tester.TestAssertion("Byte Postfix Increment", testVal++ == 5);
+            tester.TestAssertion("Byte Postfix Increment 2", testVal == 6);
+            tester.TestAssertion("Byte Prefix Decrement", --testVal == 5);
+            tester.TestAssertion("Byte Postfix Decrement", testVal-- == 5);
+            tester.TestAssertion("Byte Postfix Decrement 2", testVal == 4);
+        }
+
+        void LongIncrement()
+        {
+            long testVal = 4;
+
+            tester.TestAssertion("Long Prefix Increment", ++testVal == 5);
+            tester.TestAssertion("Long Postfix Increment", testVal++ == 5);
+            tester.TestAssertion("Long Postfix Increment 2", testVal == 6);
+            tester.TestAssertion("Long Prefix Decrement", --testVal == 5);
+            tester.TestAssertion("Long Postfix Decrement", testVal-- == 5);
+            tester.TestAssertion("Long Postfix Decrement 2", testVal == 4);
+        }
+
+        void IntTruncate()
+        {
+            int truncatedValue = (int)4.7f;
+            tester.TestAssertion("Float to Int Truncation", truncatedValue == 4);
+
+            truncatedValue = (int)4.7;
+            tester.TestAssertion("Double to Int Truncation", truncatedValue == 4);
+        }
+    }
+}
