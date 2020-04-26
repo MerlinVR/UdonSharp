@@ -51,6 +51,9 @@ namespace UdonSharp
         private static GUIContent undoArrowLight;
         private static GUIContent undoArrowDark;
         private static GUIContent undoArrowContent;
+        private static Texture2D clearColorLight;
+        private static Texture2D clearColorDark;
+        private static GUIStyle clearColorStyle;
 
         private void DrawCompileErrorTextArea()
         {
@@ -73,7 +76,10 @@ namespace UdonSharp
         {
             if (undoLabelStyle == null || 
                 undoArrowDark == null || 
-                undoArrowLight == null)
+                undoArrowLight == null ||
+                clearColorDark == null ||
+                clearColorLight == null ||
+                clearColorStyle == null)
             {
                 undoLabelStyle = new GUIStyle(EditorStyles.label);
                 undoLabelStyle.alignment = TextAnchor.MiddleCenter;
@@ -85,9 +91,24 @@ namespace UdonSharp
 
                 undoArrowLight = new GUIContent((Texture)EditorGUIUtility.Load("Assets/UdonSharp/Editor/Resources/UndoArrowLight.png"), "Reset to default value");
                 undoArrowDark = new GUIContent((Texture)EditorGUIUtility.Load("Assets/UdonSharp/Editor/Resources/UndoArrowBlack.png"), "Reset to default value");
+
+                Texture2D clearColorLightTex = new Texture2D(1, 1);
+                clearColorLightTex.SetPixel(0, 0, new Color32(194, 194, 194, 255));
+                clearColorLightTex.Apply();
+
+                clearColorLight = clearColorLightTex;
+
+                Texture2D clearColorDarkTex = new Texture2D(1, 1);
+                clearColorDarkTex.SetPixel(0, 0, new Color32(56, 56, 56, 255));
+                clearColorDarkTex.Apply();
+
+                clearColorDark = clearColorDarkTex;
+
+                clearColorStyle = new GUIStyle();
             }
             
             undoArrowContent = EditorGUIUtility.isProSkin ? undoArrowLight : undoArrowDark;
+            clearColorStyle.normal.background = EditorGUIUtility.isProSkin ? clearColorDark : clearColorLight;
 
             currentBehaviour = udonBehaviour;
 
@@ -446,6 +467,9 @@ namespace UdonSharp
             {
                 labelText = $"None ({ObjectNames.NicifyVariableName(variableRootType.Name)})";
             }
+            
+            // Overwrite any content already on the background from drawing the normal object field
+            GUI.Box(originalRect, GUIContent.none, clearColorStyle);
 
             // Manually draw this using the same ID so that we can get some of the style information to bleed over
             objectRect = EditorGUI.PrefixLabel(originalRect, id, new GUIContent(fieldName));
