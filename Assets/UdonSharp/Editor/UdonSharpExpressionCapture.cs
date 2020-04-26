@@ -65,11 +65,74 @@ namespace UdonSharp
         // possibility of any user code running in the context of the expression.
         public SymbolDefinition requestedDestination { get; private set; } = null;
 
+        // If the caller requested a copy-on-write read, we'll store the COW reference here and clean it up on disposal.
+        // Note that this is only a cache used to help with cleanup, and is not considered to be the value of the object
+        // (and therefore is not inherited).
+        private SymbolDefinition.COWValue cowValue = null;
+
         public SymbolDefinition accessSymbol { get; private set; } = null;
 
+        private SymbolDefinition.COWValue _accessValue = null;
+        public SymbolDefinition.COWValue accessValue {
+            get
+            {
+                return _accessValue;
+            }
+            private set {
+                if (_accessValue != null)
+                {
+                    _accessValue.Dispose();
+                }
+                if (value != null)
+                {
+                    value.AddRef();
+                }
+                _accessValue = value;
+            }
+        }
+
         // Used for array indexers
-        private SymbolDefinition arrayBacktraceSymbol = null;
-        private SymbolDefinition arrayIndexerIndexSymbol = null;
+        private SymbolDefinition.COWValue _arrayBacktraceValue = null;
+        private SymbolDefinition.COWValue arrayBacktraceValue
+        {
+            get
+            {
+                return _arrayBacktraceValue;
+            }
+            set
+            {
+                if (_arrayBacktraceValue != null)
+                {
+                    _arrayBacktraceValue.Dispose();
+                }
+                if (value != null)
+                {
+                    value.AddRef();
+                }
+                _arrayBacktraceValue = value;
+            }
+        }
+
+        private SymbolDefinition.COWValue _arrayIndexerIndexValue = null;
+        private SymbolDefinition.COWValue arrayIndexerIndexValue
+        {
+            get
+            {
+                return _arrayIndexerIndexValue;
+            }
+            set
+            {
+                if (_arrayIndexerIndexValue != null)
+                {
+                    _arrayIndexerIndexValue.Dispose();
+                }
+                if (value != null)
+                {
+                    value.AddRef();
+                }
+                _arrayIndexerIndexValue = value;
+            }
+        }
 
         // Used for resolving generic methods, and eventually types when Udon adds support
         private List<System.Type> genericTypeArguments = null;
@@ -123,6 +186,16 @@ namespace UdonSharp
             if (visitorContext.topCaptureScope == this)
                 visitorContext.PopCaptureScope();
 
+            if (cowValue != null)
+            {
+                cowValue.Dispose();
+                cowValue = null;
+            }
+
+            accessValue = null;
+            arrayIndexerIndexValue = null;
+            arrayBacktraceValue = null;
+
             disposed = true;
         }
 
@@ -140,8 +213,9 @@ namespace UdonSharp
             captureProperty = childScope.captureProperty;
             captureType = childScope.captureType;
             accessSymbol = childScope.accessSymbol;
+            accessValue = childScope.accessValue;
             captureEnum = childScope.captureEnum;
-            arrayIndexerIndexSymbol = childScope.arrayIndexerIndexSymbol;
+            arrayIndexerIndexValue = childScope.arrayIndexerIndexValue;
             captureLocalMethod = childScope.captureLocalMethod;
             captureExternUserField = childScope.captureExternUserField;
             captureExternUserMethod = childScope.captureExternUserMethod;
@@ -304,10 +378,20 @@ namespace UdonSharp
             return captureProperty.GetSetMethod();
         }
 
+        public SymbolDefinition.COWValue ExecuteGetCOW()
+        {
+            if (cowValue == null)
+            {
+                cowValue = ExecuteGet().GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable);
+            }
+
+            return cowValue;
+        }
+
         // Inserts uasm instructions to get the value stored in the current localSymbol, property, or field
         public SymbolDefinition ExecuteGet()
         {
-            arrayBacktraceSymbol = null;
+            arrayBacktraceValue = null;
 
             if (captureArchetype == ExpressionCaptureArchetype.LocalSymbol)
                 return captureLocalSymbol;
@@ -367,26 +451,27 @@ namespace UdonSharp
             }
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
             {
+                SymbolDefinition arraySymbol = accessValue.symbol;
                 System.Type elementType = null;
 
                 string getIndexerUdonName;
-                if (accessSymbol.symbolCsType == typeof(string))
+                if (arraySymbol.symbolCsType == typeof(string))
                 {
-                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(accessSymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "get_Chars").First());
+                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "get_Chars").First());
                     elementType = typeof(char);
                 }
                 else
                 {
-                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(accessSymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Get").First());
-                    elementType = accessSymbol.userCsType.GetElementType();
+                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Get").First());
+                    elementType = arraySymbol.userCsType.GetElementType();
                 }
 
-                arrayBacktraceSymbol = accessSymbol;
+                arrayBacktraceValue = accessValue.AddRef();
 
                 outSymbol = visitorContext.topTable.CreateUnnamedSymbol(elementType, SymbolDeclTypeFlags.Internal);
 
-                visitorContext.uasmBuilder.AddPush(accessSymbol);
-                visitorContext.uasmBuilder.AddPush(arrayIndexerIndexSymbol);
+                visitorContext.uasmBuilder.AddPush(arraySymbol);
+                visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
                 visitorContext.uasmBuilder.AddPush(outSymbol);
                 visitorContext.uasmBuilder.AddExternCall(getIndexerUdonName);
             }
@@ -435,6 +520,7 @@ namespace UdonSharp
             {
                 if (destinationSymbolForSet != convertedValue)
                 {
+                    destinationSymbol.MarkDirty();
                     visitorContext.uasmBuilder.AddCopy(destinationSymbol, convertedValue);
                 }
             }
@@ -480,10 +566,11 @@ namespace UdonSharp
             }
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
             {
-                string setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(accessSymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Set").First());
+                SymbolDefinition arraySymbol = accessValue.symbol;
+                string setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Set").First());
 
-                visitorContext.uasmBuilder.AddPush(accessSymbol);
-                visitorContext.uasmBuilder.AddPush(arrayIndexerIndexSymbol);
+                visitorContext.uasmBuilder.AddPush(arraySymbol);
+                visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
                 visitorContext.uasmBuilder.AddPush(convertedValue);
                 visitorContext.uasmBuilder.AddExternCall(setIndexerUdonName);
             }
@@ -497,8 +584,8 @@ namespace UdonSharp
             {
                 using (ExpressionCaptureScope arraySetScope = new ExpressionCaptureScope(visitorContext, null))
                 {
-                    arraySetScope.SetToLocalSymbol(arrayBacktraceSymbol);
-                    arraySetScope.HandleArrayIndexerAccess(arrayIndexerIndexSymbol);
+                    arraySetScope.SetToLocalSymbol(arrayBacktraceValue.symbol);
+                    arraySetScope.HandleArrayIndexerAccess(arrayIndexerIndexValue);
 
                     arraySetScope.ExecuteSet(accessSymbol);
                 }
@@ -525,6 +612,8 @@ namespace UdonSharp
 
                 return returnSymbol;
             }
+
+            requestedDestination.MarkDirty();
 
             return requestedDestination;
         }
@@ -735,7 +824,9 @@ namespace UdonSharp
                             using (ExpressionCaptureScope paramArraySetterScope = new ExpressionCaptureScope(visitorContext, null))
                             {
                                 paramArraySetterScope.SetToLocalSymbol(paramsArraySymbol);
-                                paramArraySetterScope.HandleArrayIndexerAccess(arrayIndexSymbol);
+                                using (SymbolDefinition.COWValue arrayIndex = arrayIndexSymbol.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable)) {
+                                    paramArraySetterScope.HandleArrayIndexerAccess(arrayIndex);
+                                }
                                 paramArraySetterScope.ExecuteSet(invokeParams[j]);
                             }
                         }
@@ -854,7 +945,10 @@ namespace UdonSharp
             using (ExpressionCaptureScope componentArrayGetter = new ExpressionCaptureScope(visitorContext, null))
             {
                 componentArrayGetter.SetToLocalSymbol(componentArray);
-                componentArrayGetter.HandleArrayIndexerAccess(arrayIndex);
+                using (SymbolDefinition.COWValue arrayIndexValue = arrayIndex.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                {
+                    componentArrayGetter.HandleArrayIndexerAccess(arrayIndexValue);
+                }
                 
                 componentValue = CastSymbolToType(componentArrayGetter.ExecuteGet(), udonSharpType, true, true);
             }
@@ -973,7 +1067,10 @@ namespace UdonSharp
                 using (ExpressionCaptureScope componentArrayGetter = new ExpressionCaptureScope(visitorContext, null))
                 {
                     componentArrayGetter.SetToLocalSymbol(componentArray);
-                    componentArrayGetter.HandleArrayIndexerAccess(arrayIndex);
+                    using (SymbolDefinition.COWValue arrayIndexValue = arrayIndex.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                    {
+                        componentArrayGetter.HandleArrayIndexerAccess(arrayIndexValue);
+                    }
 
                     componentValue = CastSymbolToType(componentArrayGetter.ExecuteGet(), udonSharpType, true, true);
                 }
@@ -1082,11 +1179,14 @@ namespace UdonSharp
                 visitorContext.uasmBuilder.AddJumpIfFalse(loopExitJumpPoint, loopConditionSymbol);
 
                 SymbolDefinition componentValue = null;
-
+                
                 using (ExpressionCaptureScope componentArrayGetter = new ExpressionCaptureScope(visitorContext, null))
                 {
                     componentArrayGetter.SetToLocalSymbol(componentArray);
-                    componentArrayGetter.HandleArrayIndexerAccess(arrayIndex);
+                    using (SymbolDefinition.COWValue arrayIndexValue = arrayIndex.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                    {
+                        componentArrayGetter.HandleArrayIndexerAccess(arrayIndexValue);
+                    }
 
                     componentValue = CastSymbolToType(componentArrayGetter.ExecuteGet(), udonSharpType, true, true);
                 }
@@ -1116,12 +1216,17 @@ namespace UdonSharp
                 using (ExpressionCaptureScope setArrayValueScope = new ExpressionCaptureScope(visitorContext, null))
                 {
                     setArrayValueScope.SetToLocalSymbol(resultSymbol);
-                    setArrayValueScope.HandleArrayIndexerAccess(destIdxSymbol);
+                    using (SymbolDefinition.COWValue destIdxValue = destIdxSymbol.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                    {
+                        setArrayValueScope.HandleArrayIndexerAccess(destIdxValue);
+                    }
 
                     using (ExpressionCaptureScope sourceValueGetScope = new ExpressionCaptureScope(visitorContext, null))
                     {
                         sourceValueGetScope.SetToLocalSymbol(componentArray);
-                        sourceValueGetScope.HandleArrayIndexerAccess(arrayIndex);
+                        using (SymbolDefinition.COWValue arrayIndexValue = arrayIndex.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable)) {
+                            sourceValueGetScope.HandleArrayIndexerAccess(arrayIndexValue);
+                        }
 
                         SymbolDefinition arrayValue = sourceValueGetScope.ExecuteGet();
                         arrayValue.symbolCsType = udonSharpType;
@@ -1238,6 +1343,21 @@ namespace UdonSharp
                 }
             }
 
+            if (accessSymbol != null && (typeof(UdonSharpBehaviour).IsAssignableFrom(accessSymbol.symbolCsType) || typeof(VRC.Udon.UdonBehaviour).IsAssignableFrom(accessSymbol.symbolCsType)))
+            {
+                switch (targetMethod.Name)
+                {
+                    case "RunProgram":
+                    case "SendCustomEvent":
+                    case "SendCustomNetworkEvent":
+                        // We might be recursing back into the same UdonBehavior, assume any non-local fields might be modified.
+                        visitorContext.topTable.DirtyEverything(true);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
             SymbolDefinition returnSymbol = null;
 
             System.Type returnType = typeof(void);
@@ -1297,6 +1417,10 @@ namespace UdonSharp
                 }
             }
 
+            // Capture any COW'd values here in case they're modified during the function.
+            // TODO: Keep local variables as-is?
+            visitorContext.topTable.DirtyEverything(true);
+
             SymbolDefinition exitJumpLocation = visitorContext.topTable.CreateNamedSymbol("exitJumpLoc", typeof(uint), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Constant);
 
             visitorContext.uasmBuilder.AddPush(exitJumpLocation);
@@ -1350,6 +1474,9 @@ namespace UdonSharp
                     });
                 }
             }
+
+            // We might recurse back into this UdonBehavior and change locals, so capture any COW'd values here
+            visitorContext.topTable.DirtyEverything(true);
 
             using (ExpressionCaptureScope externInvokeScope = new ExpressionCaptureScope(visitorContext, null))
             {
@@ -1440,22 +1567,24 @@ namespace UdonSharp
             }
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
             {
-                if (!accessSymbol.symbolCsType.IsArray)
+                SymbolDefinition arraySymbol = accessValue.symbol;
+
+                if (!arraySymbol.symbolCsType.IsArray)
                     throw new System.Exception("Type is not an array type");
 
                 if (getUserType)
-                    return accessSymbol.userCsType.GetElementType();
+                    return arraySymbol.userCsType.GetElementType();
 
-                if (accessSymbol.IsUserDefinedBehaviour() && accessSymbol.userCsType.IsArray && accessSymbol.symbolCsType == typeof(Component[]))
+                if (arraySymbol.IsUserDefinedBehaviour() && arraySymbol.userCsType.IsArray && arraySymbol.symbolCsType == typeof(Component[]))
                 {
                     // Special case for arrays since the symbolCsType needs to return a Component[], but we need to get the element type of the UdonBehaviour[]
                     return typeof(VRC.Udon.UdonBehaviour);
                 }
 
-                if (accessSymbol.userCsType.GetElementType().IsArray)
+                if (arraySymbol.userCsType.GetElementType().IsArray)
                     return typeof(object[]);
 
-                return accessSymbol.symbolCsType.GetElementType();
+                return arraySymbol.symbolCsType.GetElementType();
             }
             else if (captureArchetype == ExpressionCaptureArchetype.Enum)
             {
@@ -1489,7 +1618,7 @@ namespace UdonSharp
         /// <returns></returns>
         public bool NeedsArrayCopySet()
         {
-            return !IsArrayIndexer() && arrayBacktraceSymbol != null && accessSymbol.symbolCsType.IsValueType;
+            return !IsArrayIndexer() && arrayBacktraceValue != null && accessSymbol.symbolCsType.IsValueType;
         }
 
         public bool ResolveAccessToken(string accessToken)
@@ -1996,7 +2125,7 @@ namespace UdonSharp
             return true;
         }
 
-        public void HandleArrayIndexerAccess(SymbolDefinition indexerSymbol)
+        public void HandleArrayIndexerAccess(SymbolDefinition.COWValue indexerValue)
         {
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
                 captureArchetype != ExpressionCaptureArchetype.Property &&
@@ -2011,6 +2140,9 @@ namespace UdonSharp
             if (!returnType.IsArray/* && returnType != typeof(string)*/) // Uncomment the check for string when VRC has added the actual indexer function to Udon. 
                 throw new System.Exception("Can only run array indexers on array types");
 
+            SymbolDefinition cowIndexerSymbol = indexerValue.symbol;
+            SymbolDefinition indexerSymbol = cowIndexerSymbol;
+
             bool isCastValid = (indexerSymbol.symbolCsType == typeof(int) || UdonSharpUtils.GetNumericConversionMethod(typeof(int), indexerSymbol.symbolCsType) != null) &&
                                 indexerSymbol.symbolCsType.IsValueType &&
                                 indexerSymbol.symbolCsType != typeof(float) && indexerSymbol.symbolCsType != typeof(float) && indexerSymbol.symbolCsType != typeof(decimal);
@@ -2021,11 +2153,17 @@ namespace UdonSharp
             else
                 indexerSymbol = CastSymbolToType(indexerSymbol, typeof(int), false); // Non-explicit cast to handle if any types have implicit conversion operators and throw an error otherwise
 
-            SymbolDefinition newAccessSymbol = ExecuteGet();
+            accessValue = ExecuteGetCOW(); // implicitly adds refcount
+            cowValue = null; // Move ownership to accessValue here
 
-            accessSymbol = newAccessSymbol;
+            accessSymbol = null;
+
             captureArchetype = ExpressionCaptureArchetype.ArrayIndexer;
-            arrayIndexerIndexSymbol = indexerSymbol;
+            // If we didn't need to cast, use the original symbol's COW value as-is.
+            // Otherwise, (for consistency) COW-ify the post-cast value.
+            arrayIndexerIndexValue = cowIndexerSymbol == indexerSymbol ? indexerValue.AddRef() : indexerSymbol.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable);
+            // Note that setting arrayIndexerIndexValue implicitly increments reference count. Since we added a refcount (via AddRef or GetCOWValue) we need to re-decrement it.
+            arrayIndexerIndexValue.Dispose();
         }
 
         public void HandleGenericAccess(List<System.Type> genericArguments)

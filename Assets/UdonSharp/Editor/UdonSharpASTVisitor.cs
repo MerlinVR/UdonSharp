@@ -484,7 +484,10 @@ namespace UdonSharp
                         using (ExpressionCaptureScope arraySetIdxScope = new ExpressionCaptureScope(visitorContext, null))
                         {
                             arraySetIdxScope.SetToLocalSymbol(arraySymbol);
-                            arraySetIdxScope.HandleArrayIndexerAccess(visitorContext.topTable.CreateConstSymbol(typeof(int), i));
+                            using (SymbolDefinition.COWValue arrayIndex = visitorContext.topTable.CreateConstSymbol(typeof(int), i).GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                            {
+                                arraySetIdxScope.HandleArrayIndexerAccess(arrayIndex);
+                            }
 
                             using (ExpressionCaptureScope initializerExpressionCapture = new ExpressionCaptureScope(visitorContext, null))
                             {
@@ -578,7 +581,10 @@ namespace UdonSharp
                 using (ExpressionCaptureScope arrayIdxSetScope = new ExpressionCaptureScope(visitorContext, null))
                 {
                     arrayIdxSetScope.SetToLocalSymbol(arraySymbol);
-                    arrayIdxSetScope.HandleArrayIndexerAccess(visitorContext.topTable.CreateConstSymbol(typeof(int), i));
+                    using (SymbolDefinition.COWValue arrayIndex = visitorContext.topTable.CreateConstSymbol(typeof(int), i).GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                    {
+                        arrayIdxSetScope.HandleArrayIndexerAccess(arrayIndex);
+                    }
                     arrayIdxSetScope.ExecuteSet(initializerSymbols[i]);
                 }
             }
@@ -595,15 +601,11 @@ namespace UdonSharp
                 if (node.ArgumentList.Arguments.Count != 1)
                     throw new System.NotSupportedException("UdonSharp does not support multidimensional accesses yet");
 
-                SymbolDefinition indexerSymbol = null;
-
                 using (ExpressionCaptureScope indexerCaptureScope = new ExpressionCaptureScope(visitorContext, null))
                 {
                     Visit(node.ArgumentList.Arguments[0]);
-                    indexerSymbol = indexerCaptureScope.ExecuteGet();
+                    elementAccessExpression.HandleArrayIndexerAccess(indexerCaptureScope.ExecuteGetCOW());
                 }
-
-                elementAccessExpression.HandleArrayIndexerAccess(indexerSymbol);
             }
         }
 
@@ -1246,7 +1248,7 @@ namespace UdonSharp
                         operandCapture.ExecuteSet(resultSymbol, true);
                     }
                 }
-                catch (System.Exception)
+                catch (System.Exception e)
                 {
                     throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operand of type '{UdonSharpUtils.PrettifyTypeName(operandCapture.GetReturnType())}'");
                 }
@@ -1678,7 +1680,7 @@ namespace UdonSharp
             }
 
             SymbolDefinition rhsValue = null;
-            SymbolDefinition lhsValue = null;
+            SymbolDefinition.COWValue lhsValueCOW = null;
 
             ExpressionCaptureScope outerScope = visitorContext.topCaptureScope;
 
@@ -1686,22 +1688,7 @@ namespace UdonSharp
             {
                 Visit(node.Left);
 
-                if (lhsCapture.DoesReturnIntermediateSymbol() || lhsCapture.IsConstExpression())
-                {
-                    lhsValue = lhsCapture.ExecuteGet();
-                }
-                else
-                {
-                    // This needs to be copied because someone can do an in place assignment operator on the rhs that changes the lhs value
-                    SymbolDefinition lhsCopy = visitorContext.topTable.CreateUnnamedSymbol(lhsCapture.GetReturnType(true), SymbolDeclTypeFlags.Internal);
-                    using (ExpressionCaptureScope lhsCopySetter = new ExpressionCaptureScope(visitorContext, null))
-                    {
-                        lhsCopySetter.SetToLocalSymbol(lhsCopy);
-                        lhsCopySetter.ExecuteSetDirect(lhsCapture);
-                    }
-
-                    lhsValue = lhsCopy;
-                }
+                lhsValueCOW = lhsCapture.ExecuteGetCOW();
 
                 using (ExpressionCaptureScope rhsCapture = new ExpressionCaptureScope(visitorContext, null))
                 {
@@ -1712,6 +1699,7 @@ namespace UdonSharp
                     rhsValue = rhsCapture.ExecuteGet();
                 }
 
+                SymbolDefinition lhsValue = lhsValueCOW.symbol;
 
                 System.Type lhsType = lhsValue.symbolCsType;
                 System.Type rhsType = rhsValue.symbolCsType;
@@ -2171,7 +2159,10 @@ namespace UdonSharp
             using (ExpressionCaptureScope indexAccessExecuteScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 indexAccessExecuteScope.SetToLocalSymbol(arraySymbol);
-                indexAccessExecuteScope.HandleArrayIndexerAccess(indexSymbol);
+                using (SymbolDefinition.COWValue arrayIndex = indexSymbol.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                {
+                    indexAccessExecuteScope.HandleArrayIndexerAccess(arrayIndex);
+                }
 
                 // This should be a direct set instead of a copy, but that hasn't been implemented yet
                 using (ExpressionCaptureScope valueSetScope = new ExpressionCaptureScope(visitorContext, null))
@@ -2446,7 +2437,7 @@ namespace UdonSharp
                 if (!methodCaptureScope.IsMethod())
                     throw new System.Exception("Invocation requires method expression!");
                 
-                List<SymbolDefinition> invocationArgs = new List<SymbolDefinition>();
+                List<SymbolDefinition.COWValue> invocationArgs = new List<SymbolDefinition.COWValue>();
 
                 //visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
 
@@ -2456,18 +2447,22 @@ namespace UdonSharp
                     {
                         Visit(argument.Expression);
 
-                        invocationArgs.Add(captureScope.ExecuteGet());
+                        invocationArgs.Add(captureScope.ExecuteGetCOW().AddRef());
                     }
                 }
 
                 //visitorContext.PopTable();
 
-                SymbolDefinition functionReturnValue = methodCaptureScope.Invoke(invocationArgs.ToArray());
+                SymbolDefinition functionReturnValue = methodCaptureScope.Invoke(
+                    invocationArgs.Select((arg) => arg.symbol).ToArray()
+                );
 
                 using (ExpressionCaptureScope returnValPropagationScope = new ExpressionCaptureScope(visitorContext, externalScope))
                 {
                     returnValPropagationScope.SetToLocalSymbol(functionReturnValue);
                 }
+
+                invocationArgs.ForEach((arg) => arg.Dispose());
             }
         }
 
@@ -2500,14 +2495,14 @@ namespace UdonSharp
             {
                 // Use the default constructor by just making a constant of the correct type in Udon
                 
-                SymbolDefinition[] argSymbols = new SymbolDefinition[node.ArgumentList.Arguments.Count];
+                SymbolDefinition.COWValue[] argValues = new SymbolDefinition.COWValue[node.ArgumentList.Arguments.Count];
 
-                for (int i = 0; i < argSymbols.Length; ++i)
+                for (int i = 0; i < argValues.Length; ++i)
                 {
                     using (ExpressionCaptureScope argCaptureScope = new ExpressionCaptureScope(visitorContext, null))
                     {
                         Visit(node.ArgumentList.Arguments[i]);
-                        argSymbols[i] = argCaptureScope.ExecuteGet();
+                        argValues[i] = argCaptureScope.ExecuteGetCOW().AddRef();
                     }
                 }
 
@@ -2518,6 +2513,7 @@ namespace UdonSharp
                     try
                     {
                         constructorMethodScope.SetToMethods(constructors);
+                        SymbolDefinition[] argSymbols = argValues.Select((v) => v.symbol).ToArray();
                         creationCaptureScope.SetToLocalSymbol(constructorMethodScope.Invoke(argSymbols));
                     }
                     catch (System.Exception e)
@@ -2525,11 +2521,16 @@ namespace UdonSharp
                         // Udon will default initialize structs and such so it doesn't expose default constructors for stuff like Vector3
                         // This is a weird case, we could technically check if the type exists in Udon here, 
                         //   but it's totally valid to store a type that's undefined by Udon on the heap since they are all object.
-                        if (argSymbols.Length > 0 || !newType.IsValueType)
+                        if (argValues.Length > 0 || !newType.IsValueType)
                             throw e;
 
                         creationCaptureScope.SetToLocalSymbol(visitorContext.topTable.CreateConstSymbol(newType, null));
                     }
+                }
+
+                foreach (SymbolDefinition.COWValue val in argValues)
+                {
+                    val.Dispose();
                 }
             }
         }
