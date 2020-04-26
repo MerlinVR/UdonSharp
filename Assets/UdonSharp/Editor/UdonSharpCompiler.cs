@@ -159,6 +159,15 @@ namespace UdonSharp
                                 }
                             }
                         }
+
+                        // Default to empty string on synced strings to prevent Udon sync from throwing errors
+                        if (symbol.symbolCsType == typeof(string) &&
+                            symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Private) &&
+                            symbol.syncMode != UdonSyncMode.NotSynced)
+                        {
+                            if (program.Heap.GetHeapVariable(symbolAddress) == null)
+                                program.Heap.SetHeapVariable(symbolAddress, "");
+                        }
                     }
                 }
             }

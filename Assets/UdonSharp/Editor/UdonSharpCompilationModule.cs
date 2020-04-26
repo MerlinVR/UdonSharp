@@ -135,7 +135,7 @@ namespace UdonSharp
 
             if (errorCount == 0)
             {
-                compiledClassDefinition = classDefinitions.Where(e => e.userClassType == visitor.visitorContext.behaviourUserType).FirstOrDefault();
+                compiledClassDefinition = classDefinitions.Find(e => e.userClassType == visitor.visitorContext.behaviourUserType);
 
                 Profiler.BeginSample("Build assembly");
                 string dataBlock = BuildHeapDataBlock();
