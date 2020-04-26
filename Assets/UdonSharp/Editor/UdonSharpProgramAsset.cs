@@ -474,7 +474,7 @@ namespace UdonSharp
             // Manually draw this using the same ID so that we can get some of the style information to bleed over
             objectRect = EditorGUI.PrefixLabel(originalRect, id, new GUIContent(fieldName));
             if (Event.current.type == EventType.Repaint)
-                EditorStyles.objectField.Draw(objectRect, new GUIContent(labelText, AssetPreview.GetMiniThumbnail(this)), id);
+                EditorStyles.objectField.Draw(objectRect, new GUIContent(labelText, objectFieldValue == null ? null : AssetPreview.GetMiniThumbnail(this)), id);
 
             return objectFieldValue;
         }
