@@ -355,6 +355,20 @@ namespace UdonSharp
             throw new System.NotSupportedException("Try/Catch/Finally is not supported by UdonSharp since Udon does not have a way to handle exceptions");
         }
 
+        public override void VisitThrowStatement(ThrowStatementSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            throw new System.NotSupportedException("UdonSharp does not support throwing exceptions since Udon does not have support for exception throwing at the moment");
+        }
+
+        public override void VisitThrowExpression(ThrowExpressionSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            throw new System.NotSupportedException("UdonSharp does not support throwing exceptions since Udon does not have support for exception throwing at the moment");
+        }
+
         public override void VisitIncompleteMember(IncompleteMemberSyntax node)
         {
             UpdateSyntaxNode(node);
