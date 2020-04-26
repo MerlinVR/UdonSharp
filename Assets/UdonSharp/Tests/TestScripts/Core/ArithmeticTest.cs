@@ -18,10 +18,13 @@ namespace UdonSharp.Tests
             SByteBinaryOps();
             LongBinaryOps();
             IntIncrement();
+            UIntIncrement();
             IntAssignment();
             LongAssignment();
             ByteIncrement();
             LongIncrement();
+            ShortIncrement();
+            UShortIncrement();
             IntTruncate();
         }
 
@@ -115,6 +118,18 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Integer Postfix Decrement 2", testVal == 4);
         }
 
+        void UIntIncrement()
+        {
+            uint testVal = 4;
+
+            tester.TestAssertion("Unsigned Integer Prefix Increment", ++testVal == 5);
+            tester.TestAssertion("Unsigned Integer Postfix Increment", testVal++ == 5);
+            tester.TestAssertion("Unsigned Integer Postfix Increment 2", testVal == 6);
+            tester.TestAssertion("Unsigned Integer Prefix Decrement", --testVal == 5);
+            tester.TestAssertion("Unsigned Integer Postfix Decrement", testVal-- == 5);
+            tester.TestAssertion("Unsigned Integer Postfix Decrement 2", testVal == 4);
+        }
+
         void IntAssignment()
         {
             int testVal = 5;
@@ -192,6 +207,30 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Long Prefix Decrement", --testVal == 5);
             tester.TestAssertion("Long Postfix Decrement", testVal-- == 5);
             tester.TestAssertion("Long Postfix Decrement 2", testVal == 4);
+        }
+
+        void ShortIncrement()
+        {
+            short testVal = 4;
+
+            tester.TestAssertion("Short Prefix Increment", ++testVal == 5);
+            tester.TestAssertion("Short Postfix Increment", testVal++ == 5);
+            tester.TestAssertion("Short Postfix Increment 2", testVal == 6);
+            tester.TestAssertion("Short Prefix Decrement", --testVal == 5);
+            tester.TestAssertion("Short Postfix Decrement", testVal-- == 5);
+            tester.TestAssertion("Short Postfix Decrement 2", testVal == 4);
+        }
+
+        void UShortIncrement()
+        {
+            ushort testVal = 4;
+
+            tester.TestAssertion("UShort Prefix Increment", ++testVal == 5);
+            tester.TestAssertion("UShort Postfix Increment", testVal++ == 5);
+            tester.TestAssertion("UShort Postfix Increment 2", testVal == 6);
+            tester.TestAssertion("UShort Prefix Decrement", --testVal == 5);
+            tester.TestAssertion("UShort Postfix Decrement", testVal-- == 5);
+            tester.TestAssertion("UShort Postfix Decrement 2", testVal == 4);
         }
 
         void IntTruncate()

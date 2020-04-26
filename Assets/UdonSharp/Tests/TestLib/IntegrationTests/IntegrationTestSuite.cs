@@ -14,8 +14,11 @@ namespace UdonSharp.Tests
 
 #pragma warning disable CS0649
         [SerializeField] string testSuiteName;
+        [SerializeField] bool forcePrintPassedTests = false;
         [SerializeField] UdonSharpBehaviour[] tests;
 #pragma warning restore CS0649
+
+
         int testTotalCount;
         int testSuccessCount;
         readonly string whitespaceStr = new string(' ', 4);
@@ -43,7 +46,7 @@ namespace UdonSharp.Tests
         {
             string testPrefixText = assertion ? "[<color=#008000>Pass</color>]: " : "[<color=#FF0000>Fail</color>]: ";
 
-            if (!assertion || printPassedTests)
+            if (!assertion || printPassedTests || forcePrintPassedTests)
                 Debug.Log(whitespaceStr + whitespaceStr + testPrefixText + testName);
 
             ++testTotalCount;
