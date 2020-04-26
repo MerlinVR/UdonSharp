@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
 namespace UdonSharp
@@ -55,6 +56,15 @@ namespace UdonSharp
         public MethodDefinition captureExternUserMethod { get; private set; } = null;
         public InternalMethodHandler InternalMethodHandler { get; private set; } = null;
 
+        // In some cases, we know ahead of time that we want to store a particular value in a particular symbol.
+        // For example, this applies when performing an assignment (x = foo())
+        // In this case, we pass in a requested destination field, and if the expression is capable of writing directly to that
+        // field, we can avoid an extra copy.
+        // It should be noted that the expression MUST NOT write any intermediate values to this expression, as they could be observed
+        // with function calls or recursive invocations of the UdonBehavior. The field can only be written to when there is no longer any 
+        // possibility of any user code running in the context of the expression.
+        public SymbolDefinition requestedDestination { get; private set; } = null;
+
         public SymbolDefinition accessSymbol { get; private set; } = null;
 
         // Used for array indexers
@@ -87,12 +97,13 @@ namespace UdonSharp
             }
         }
 
-        public ExpressionCaptureScope(ASTVisitorContext context, ExpressionCaptureScope parentScopeIn)
+        public ExpressionCaptureScope(ASTVisitorContext context, ExpressionCaptureScope parentScopeIn, SymbolDefinition requestedDestinationIn = null)
         {
             FindValidNamespaces();
 
             visitorContext = context;
             parentScope = parentScopeIn;
+            requestedDestination = requestedDestinationIn;
             InternalMethodHandler = new InternalMethodHandler(context, this);
 
             visitorContext.PushCaptureScope(this);
@@ -396,19 +407,36 @@ namespace UdonSharp
             return outSymbol;
         }
 
+        public SymbolDefinition destinationSymbolForSet { 
+            get
+            {
+                if (captureArchetype == ExpressionCaptureArchetype.LocalSymbol)
+                {
+                    if (captureLocalSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) || captureLocalSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.This))
+                        return null;
+
+                    return captureLocalSymbol;
+                } else
+                {
+                    return null;
+                }
+            } 
+        }
+
         public void ExecuteSet(SymbolDefinition value, bool explicitCast = false)
         {
             CheckScopeValidity();
 
             SymbolDefinition convertedValue = CastSymbolToType(value, GetReturnType(true), explicitCast);
+            SymbolDefinition destinationSymbol = this.destinationSymbolForSet;
 
             // If it's a local symbol, it's just a simple COPY
-            if (captureArchetype == ExpressionCaptureArchetype.LocalSymbol)
+            if (destinationSymbolForSet != null)
             {
-                if (captureLocalSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) || captureLocalSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.This))
-                    throw new System.Exception("Cannot execute set on constant or this symbols");
-
-                visitorContext.uasmBuilder.AddCopy(captureLocalSymbol, convertedValue);
+                if (destinationSymbolForSet != convertedValue)
+                {
+                    visitorContext.uasmBuilder.AddCopy(destinationSymbol, convertedValue);
+                }
             }
             else if (captureArchetype == ExpressionCaptureArchetype.Property)
             {
@@ -483,6 +511,22 @@ namespace UdonSharp
             CheckScopeValidity();
 
             ExecuteSet(valueExpression.ExecuteGet(), explicitCast);
+        }
+
+        public SymbolDefinition AllocateOutputSymbol(System.Type returnType)
+        {
+            SymbolDefinition requestedDestination = this.requestedDestination;
+
+            if (requestedDestination == null || requestedDestination.symbolCsType != returnType)
+            {
+                SymbolDefinition returnSymbol = visitorContext.topTable.CreateUnnamedSymbol(returnType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local); ;
+                if (visitorContext.topCaptureScope != null && visitorContext.topCaptureScope.IsUnknownArchetype())
+                    visitorContext.topCaptureScope.SetToLocalSymbol(returnSymbol);
+
+                return returnSymbol;
+            }
+
+            return requestedDestination;
         }
 
         // There's probably a better place for this function...
@@ -1228,13 +1272,9 @@ namespace UdonSharp
                         visitorContext.uasmBuilder.AddPush(visitorContext.topTable.CreateConstSymbol(typeof(System.Type), genericType));
                     }
 
-                    //returnSymbol = visitorContext.topTable.CreateNamedSymbol("returnVal", returnType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
-                    returnSymbol = visitorContext.topTable.CreateUnnamedSymbol(returnType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
+                    returnSymbol = AllocateOutputSymbol(returnType);
 
                     visitorContext.uasmBuilder.AddPush(returnSymbol);
-
-                    if (visitorContext.topCaptureScope != null && visitorContext.topCaptureScope.IsUnknownArchetype())
-                        visitorContext.topCaptureScope.SetToLocalSymbol(returnSymbol);
                 }
 
                 visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(targetMethod, true, genericTypeArguments));
@@ -1368,7 +1408,7 @@ namespace UdonSharp
                 throw new System.Exception($"Cannot call invoke on archetype {captureArchetype}");
             }
         }
-
+        
         public System.Type GetReturnType(bool getUserType = false)
         {
             CheckScopeValidity();

@@ -87,6 +87,16 @@ namespace UdonSharp
 
             return expressionCaptureStack.Pop();
         }
+
+        public SymbolDefinition requestedDestination
+        {
+            get
+            {
+                if (expressionCaptureStack.Count == 0)
+                    return null;
+                return topCaptureScope.requestedDestination;
+            }
+        }
     }
 
     /// <summary>
@@ -990,15 +1000,6 @@ namespace UdonSharp
 
             SymbolDefinition rhsValue = null;
 
-            using (ExpressionCaptureScope rhsCapture = new ExpressionCaptureScope(visitorContext, null))
-            {
-                //visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
-                Visit(node.Right);
-                //visitorContext.PopTable();
-
-                rhsValue = rhsCapture.ExecuteGet();
-            }
-
             // Set parent to allow capture propagation for stuff like x = y = z;
             using (ExpressionCaptureScope lhsCapture = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
             {
@@ -1007,7 +1008,16 @@ namespace UdonSharp
                 // Done before anything modifies the state of the lhsCapture which will make this turn false
                 bool needsCopy = lhsCapture.NeedsArrayCopySet();
 
-                if (node.OperatorToken.Kind() == SyntaxKind.SimpleAssignmentExpression || node.OperatorToken.Kind() == SyntaxKind.EqualsToken)
+                bool isSimpleAssignment = node.OperatorToken.Kind() == SyntaxKind.SimpleAssignmentExpression || node.OperatorToken.Kind() == SyntaxKind.EqualsToken;
+
+                using (ExpressionCaptureScope rhsCapture = new ExpressionCaptureScope(visitorContext, null, isSimpleAssignment ? lhsCapture.destinationSymbolForSet : null))
+                {
+                    Visit(node.Right);
+
+                    rhsValue = rhsCapture.ExecuteGet();
+                }
+
+                if (isSimpleAssignment)
                 {
                     lhsCapture.ExecuteSet(rhsValue);
                 }
@@ -1645,6 +1655,8 @@ namespace UdonSharp
 
         public override void VisitBinaryExpression(BinaryExpressionSyntax node)
         {
+            SymbolDefinition requestedDestination = visitorContext.topCaptureScope.requestedDestination;
+
             UpdateSyntaxNode(node);
 
             if (node.Kind() == SyntaxKind.IsExpression)
@@ -1690,7 +1702,6 @@ namespace UdonSharp
 
                     lhsValue = lhsCopy;
                 }
-                
 
                 using (ExpressionCaptureScope rhsCapture = new ExpressionCaptureScope(visitorContext, null))
                 {
@@ -1741,8 +1752,8 @@ namespace UdonSharp
 
                 if (operatorMethods.Count == 0)
                     throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operands of type '{UdonSharpUtils.PrettifyTypeName(lhsType)}' and '{UdonSharpUtils.PrettifyTypeName(rhsType)}'");
-                
-                using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
+
+                using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null, requestedDestination))
                 {
                     operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
 
@@ -2200,6 +2211,7 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
+            SymbolDefinition requestedResultSymbol = visitorContext.topCaptureScope.requestedDestination;
             SymbolDefinition conditionSymbol = null;
 
             using (ExpressionCaptureScope conditionCapture = new ExpressionCaptureScope(visitorContext, null))
@@ -2212,39 +2224,35 @@ namespace UdonSharp
 
             JumpLabel falseConditionStart = visitorContext.labelTable.GetNewJumpLabel("conditionFailStart");
 
-            using (ExpressionCaptureScope outputScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
+            using (ExpressionCaptureScope outputScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope, requestedResultSymbol))
             {
                 visitorContext.uasmBuilder.AddPush(conditionSymbol);
                 visitorContext.uasmBuilder.AddJumpIfFalse(falseConditionStart);
 
-                SymbolDefinition resultSymbol = null;
+                SymbolDefinition resultSymbol = requestedResultSymbol;
 
-                using (ExpressionCaptureScope lhsScope = new ExpressionCaptureScope(visitorContext, null))
+                using (ExpressionCaptureScope lhsScope = new ExpressionCaptureScope(visitorContext, null, resultSymbol))
                 {
                     Visit(node.WhenTrue);
-                    resultSymbol = visitorContext.topTable.CreateUnnamedSymbol(lhsScope.GetReturnType(), SymbolDeclTypeFlags.Internal);
 
-                    using (ExpressionCaptureScope resultSetScope = new ExpressionCaptureScope(visitorContext, null))
+                    if (resultSymbol == null)
                     {
-                        resultSetScope.SetToLocalSymbol(resultSymbol);
-                        resultSetScope.ExecuteSet(lhsScope.ExecuteGet());
+                        // We didn't have a requested output symbol, so allocate one now.
+                        resultSymbol = outputScope.AllocateOutputSymbol(lhsScope.GetReturnType());
                     }
+                    
+                    outputScope.SetToLocalSymbol(resultSymbol);
+                    outputScope.ExecuteSet(lhsScope.ExecuteGet());
                 }
-
-                outputScope.SetToLocalSymbol(resultSymbol);
 
                 visitorContext.uasmBuilder.AddJump(conditionExpressionEnd);
                 visitorContext.uasmBuilder.AddJumpLabel(falseConditionStart);
 
-                using (ExpressionCaptureScope rhsScope = new ExpressionCaptureScope(visitorContext, null))
+                using (ExpressionCaptureScope rhsScope = new ExpressionCaptureScope(visitorContext, null, resultSymbol))
                 {
                     Visit(node.WhenFalse);
 
-                    using (ExpressionCaptureScope resultSetScope = new ExpressionCaptureScope(visitorContext, null))
-                    {
-                        resultSetScope.SetToLocalSymbol(resultSymbol);
-                        resultSetScope.ExecuteSet(rhsScope.ExecuteGet());
-                    }
+                    outputScope.ExecuteSet(rhsScope.ExecuteGet());
                 }
 
                 visitorContext.uasmBuilder.AddJumpLabel(conditionExpressionEnd);
@@ -2422,14 +2430,16 @@ namespace UdonSharp
         public override void VisitInvocationExpression(InvocationExpressionSyntax node)
         {
             UpdateSyntaxNode(node);
-            
+
+            SymbolDefinition requestedDestination = visitorContext.requestedDestination;
+
             // Grab the external scope so that the method call can propagate its output upwards
             ExpressionCaptureScope externalScope = visitorContext.PopCaptureScope();
 
             if (externalScope != null)
                 visitorContext.PushCaptureScope(externalScope);
 
-            using (ExpressionCaptureScope methodCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+            using (ExpressionCaptureScope methodCaptureScope = new ExpressionCaptureScope(visitorContext, null, requestedDestination))
             {
                 Visit(node.Expression);
                 
@@ -2473,6 +2483,8 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
+            SymbolDefinition requestedDestination = visitorContext.requestedDestination;
+
             System.Type newType = null;
 
             using (ExpressionCaptureScope constructorTypeScope = new ExpressionCaptureScope(visitorContext, null))
@@ -2499,7 +2511,7 @@ namespace UdonSharp
                     }
                 }
 
-                using (ExpressionCaptureScope constructorMethodScope = new ExpressionCaptureScope(visitorContext, null))
+                using (ExpressionCaptureScope constructorMethodScope = new ExpressionCaptureScope(visitorContext, null, requestedDestination))
                 {
                     MethodBase[] constructors = newType.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
 
