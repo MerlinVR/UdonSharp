@@ -105,6 +105,10 @@ namespace UdonSharp
             {
                 visitor.Visit(tree.GetRoot());
                 visitor.VerifyIntegrity();
+                foreach (SymbolDefinition d in visitor.visitorContext.topTable.GetAllSymbols(true))
+                {
+                    d.AssertCOWClosed();
+                }
             }
             catch (System.Exception e)
             {
@@ -126,6 +130,10 @@ namespace UdonSharp
                     logMessage = e.ToString();
                     Debug.LogException(e);
                 }
+#if UDONSHARP_DEBUG
+                Debug.LogException(e);
+                Debug.LogError(e.StackTrace);
+#endif
 
                 programAsset.compileErrors.Add(logMessage);
 

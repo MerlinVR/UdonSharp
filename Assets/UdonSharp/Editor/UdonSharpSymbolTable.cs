@@ -1,9 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 using VRC.Udon.Serialization.OdinSerializer;
 
@@ -57,6 +54,10 @@ namespace UdonSharp
 
         private COWValueInternal cowValue = null;
 
+#if UDONSHARP_DEBUG
+        private List<COWValueInternal> priorCowValues = new List<COWValueInternal>();
+#endif
+
         public override string ToString()
         {
             return $"Symbol#{symbolUniqueName}";
@@ -80,15 +81,31 @@ namespace UdonSharp
         {
             if (cowValue != null)
             {
+#if UDONSHARP_DEBUG
+                priorCowValues.Add(cowValue);
+#endif
                 cowValue.MarkDirty();
             }
+        }
+        public void AssertCOWClosed()
+        {
+            if (cowValue != null)
+            {
+                cowValue.AssertNoLeaks();
+            }
+#if UDONSHARP_DEBUG
+            foreach (COWValueInternal prior in priorCowValues)
+            {
+                prior.AssertNoLeaks();
+            }
+#endif
         }
 
         public COWValue GetCOWValue(AssemblyBuilder assemblyBuilder, SymbolTable symbolTable)
         {
             if (cowValue != null)
             {
-                if (cowValue.assemblyBuilder != assemblyBuilder || cowValue.symbolTable != symbolTable)
+                if (cowValue.assemblyBuilder != assemblyBuilder)
                 {
                     // Hmm... new compilation context? Dirty it and get a new one.
                     cowValue.MarkDirty();
@@ -96,7 +113,6 @@ namespace UdonSharp
                 } else if (cowValue.isDirty) {
                     cowValue = null;
                 } else {
-                    cowValue.referenceCount++;
                     return new COWValue(cowValue);
                 }
             }
@@ -123,18 +139,55 @@ namespace UdonSharp
 
             public AssemblyBuilder assemblyBuilder;
 
-            public int referenceCount = 1;
+            public int referenceCount = 0;
             public bool isDirty = false;
 
             public SymbolDefinition symbol { get; private set; } = null;
+            public SymbolDefinition originalSymbol { get; private set; } = null;
 
             public SymbolTable symbolTable;
+
+#if UDONSHARP_DEBUG
+            private HashSet<COWValue> holders = new HashSet<COWValue>();
+#endif
 
             public COWValueInternal(AssemblyBuilder assemblyBuilder, SymbolDefinition symbol, SymbolTable table)
             {
                 this.assemblyBuilder = assemblyBuilder;
-                this.symbol = symbol;
+                this.symbol = this.originalSymbol = symbol;
                 this.symbolTable = table;
+            }
+
+            public void AddRef(COWValue holder)
+            {
+                referenceCount++;
+#if UDONSHARP_DEBUG
+                holders.Add(holder);
+#endif
+            }
+
+            public void ClearRef(COWValue holder)
+            {
+                referenceCount--;
+#if UDONSHARP_DEBUG
+                if (!holders.Remove(holder))
+                {
+                    throw new Exception("No matching holder for COWValue");
+                }
+#endif
+            }
+
+            public void AssertNoLeaks()
+            {
+                if (referenceCount != 0)
+                {
+#if UDONSHARP_DEBUG
+                    foreach (COWValue holder in holders) {
+                        Debug.LogError($"Value reference for symbol {originalSymbol} leaked at:\n\n{holder.stackTrace}");
+                    }
+#endif
+                    throw new Exception($"UdonSharp internal error: Leaked COWValue reference for symbol {originalSymbol}");
+                }
             }
 
             public void MarkDirty()
@@ -158,20 +211,28 @@ namespace UdonSharp
 
         public class COWValue : IDisposable
         {
+            private bool isDisposed = false;
             private COWValueInternal backer;
+#if UDONSHARP_DEBUG
+            public System.Diagnostics.StackTrace stackTrace;
+#endif
 
             internal COWValue(COWValueInternal backer)
             {
                 this.backer = backer;
+#if UDONSHARP_DEBUG
+                stackTrace = new System.Diagnostics.StackTrace(true);
+#endif
+                backer.AddRef(this);
             }
 
             public SymbolDefinition symbol
             {
                 get
                 {
-                    if (backer.referenceCount == 0)
+                    if (isDisposed)
                     {
-                        throw new Exception("COWSymbolValue has been disposed");
+                        throw new Exception($"COWSymbolValue for {backer.originalSymbol} has been disposed");
                     }
                     return backer.symbol;
                 }
@@ -179,19 +240,21 @@ namespace UdonSharp
 
             public COWValue AddRef()
             {
-                if (backer.referenceCount == 0)
+                if (isDisposed)
                 {
-                    throw new Exception("COWSymbolValue has been disposed");
+                    throw new Exception($"COWSymbolValue for {backer.originalSymbol} has been disposed");
                 }
 
-                backer.referenceCount++;
-
-                return this;
+                return new COWValue(backer);
             }
 
             public void Dispose()
             {
-                backer.referenceCount--;
+                if (isDisposed) return;
+
+                isDisposed = true;
+
+                backer.ClearRef(this);
             }
         }
     }
