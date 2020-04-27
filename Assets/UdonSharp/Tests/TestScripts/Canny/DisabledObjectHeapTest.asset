@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: DisabledObjectHeapTest
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: e3869cd8f8a9d0a4aa5ba6019e35e041,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 3b5ed4489308d84499840de493b3e2f5,
     type: 2}
   udonAssembly: ".data_start\r\n\r\n    .export referenceScript\r\n\r\n    __refl_const_intnl_udonTypeID:
     %SystemInt64, null\r\n    __refl_const_intnl_udonTypeName: %SystemString, null\r\n
@@ -35,14 +35,12 @@ MonoBehaviour:
     null\r\n    __0_intnl_SystemBoolean: %SystemBoolean, null\r\n    __1_intnl_SystemBoolean:
     %SystemBoolean, null\r\n    __2_intnl_SystemBoolean: %SystemBoolean, null\r\n
     \   __3_intnl_SystemBoolean: %SystemBoolean, null\r\n    __0_intnl_SystemInt32:
-    %SystemInt32, null\r\n    __1_intnl_SystemInt32: %SystemInt32, null\r\n    __2_intnl_SystemInt32:
-    %SystemInt32, null\r\n    __0_intnl_SystemObject: %SystemObject, null\r\n    __1_intnl_SystemObject:
-    %SystemObject, null\r\n    __0_intnl_SystemString: %SystemString, null\r\n    __1_intnl_SystemString:
-    %SystemString, null\r\n    __2_intnl_SystemString: %SystemString, null\r\n    __3_intnl_SystemString:
-    %SystemString, null\r\n    __0_intnl_UdonSharpTestsInstantiatedObjectTesterScript:
-    %VRCUdonUdonBehaviour, null\r\n    __0_intnl_returnTarget_UInt32: %SystemUInt32,
-    null\r\n\r\n.data_end\r\n\r\n        \r\n         # using UdonSharp;\r\n        \r\n
-    \        # using UnityEngine;\r\n        \r\n         # using VRC.SDKBase;\r\n
+    %SystemInt32, null\r\n    __1_intnl_SystemInt32: %SystemInt32, null\r\n    __0_intnl_SystemObject:
+    %SystemObject, null\r\n    __1_intnl_SystemObject: %SystemObject, null\r\n    __0_intnl_SystemString:
+    %SystemString, null\r\n    __1_intnl_SystemString: %SystemString, null\r\n    __2_intnl_SystemString:
+    %SystemString, null\r\n    __3_intnl_SystemString: %SystemString, null\r\n    __0_intnl_returnTarget_UInt32:
+    %SystemUInt32, null\r\n\r\n.data_end\r\n\r\n        \r\n         # using UdonSharp;\r\n
+    \       \r\n         # using UnityEngine;\r\n        \r\n         # using VRC.SDKBase;\r\n
     \       \r\n         # using VRC.Udon;\r\n        \r\n         # namespace UdonSharp.Tests\r\n
     \       \r\n         # [AddComponentMenu(\"Udon Sharp/Tests/DisabledObjectHeapTest\")]\r\n
     \       \r\n         # public class DisabledObjectHeapTest : UdonSharpBehaviour\r\n.code_start\r\n
@@ -51,19 +49,17 @@ MonoBehaviour:
     referenceScript;\r\n        \r\n         # public void ExecuteTests()\r\n    .export
     ExecuteTests\r\n        \r\n    ExecuteTests:\r\n        \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n
     \       \r\n         # {\r\n        \r\n         # if (referenceScript == null)\r\n
-    \       PUSH, referenceScript\r\n        PUSH, __0_intnl_UdonSharpTestsInstantiatedObjectTesterScript\r\n
-    \       COPY\r\n        PUSH, __0_intnl_UdonSharpTestsInstantiatedObjectTesterScript\r\n
-    \       PUSH, __0_const_intnl_VRCUdonCommonInterfacesIUdonEventReceiver\r\n        PUSH,
-    __0_intnl_SystemBoolean\r\n        EXTERN, \"UnityEngineObject.__op_Equality__UnityEngineObject_UnityEngineObject__SystemBoolean\"\r\n
-    \       PUSH, __0_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x0000005C\r\n
+    \       PUSH, referenceScript\r\n        PUSH, __0_const_intnl_VRCUdonCommonInterfacesIUdonEventReceiver\r\n
+    \       PUSH, __0_intnl_SystemBoolean\r\n        EXTERN, \"UnityEngineObject.__op_Equality__UnityEngineObject_UnityEngineObject__SystemBoolean\"\r\n
+    \       PUSH, __0_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000048\r\n
     \       \r\n         # Debug.LogError(\"[DisabledObjectHeapTest] Reference script
     cannot be null\");\r\n        PUSH, __0_const_intnl_SystemString\r\n        EXTERN,
     \"UnityEngineDebug.__LogError__SystemObject__SystemVoid\"\r\n        \r\n         #
     TestHeapVariableGet();\r\n        PUSH, __0_const_intnl_exitJumpLoc_UInt32\r\n
-    \       JUMP, 0x000000A8\r\n        \r\n         # TestHeapVariableSet();\r\n
-    \       PUSH, __1_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x00000174\r\n
+    \       JUMP, 0x00000094\r\n        \r\n         # TestHeapVariableSet();\r\n
+    \       PUSH, __1_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x00000160\r\n
     \       \r\n         # TestCustomEvent();\r\n        PUSH, __2_const_intnl_exitJumpLoc_UInt32\r\n
-    \       JUMP, 0x000002C4\r\n        PUSH, __0_intnl_returnTarget_UInt32 #Function
+    \       JUMP, 0x000002B0\r\n        PUSH, __0_intnl_returnTarget_UInt32 #Function
     epilogue\r\n        COPY\r\n        JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n
     \       \r\n        \r\n         # void TestHeapVariableGet()\r\n    TestHeapVariableGet:\r\n
     \       \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n        \r\n         #
@@ -124,8 +120,7 @@ MonoBehaviour:
     referenceScript\r\n        PUSH, __10_const_intnl_SystemString\r\n        EXTERN,
     \"VRCUdonCommonInterfacesIUdonEventReceiver.__SendCustomEvent__SystemString__SystemVoid\"\r\n
     \       \r\n         # tester.TestAssertion(\"Disabled Object Send Custom Event\",
-    callCounter == 1);\r\n        PUSH, callCounter\r\n        PUSH, __2_intnl_SystemInt32\r\n
-    \       COPY\r\n        PUSH, __2_intnl_SystemInt32\r\n        PUSH, __0_const_intnl_SystemInt32\r\n
+    callCounter == 1);\r\n        PUSH, callCounter\r\n        PUSH, __0_const_intnl_SystemInt32\r\n
     \       PUSH, __3_intnl_SystemBoolean\r\n        EXTERN, \"SystemInt32.__op_Equality__SystemInt32_SystemInt32__SystemBoolean\"\r\n
     \       PUSH, tester\r\n        PUSH, __4_const_intnl_SystemString\r\n        PUSH,
     __11_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
@@ -377,540 +372,589 @@ MonoBehaviour:
       lineChar: 16
       spanCodeSection: 
     - startInstruction: 8
-      endInstruction: 27
+      endInstruction: 7
       startSourceChar: 739
       endSourceChar: 758
       line: 22
       lineChar: 16
       spanCodeSection: 'referenceScript == '
-    - startInstruction: 28
-      endInstruction: 75
+    - startInstruction: 8
+      endInstruction: 55
       startSourceChar: 758
       endSourceChar: 781
       line: 22
       lineChar: 35
       spanCodeSection: "null)\r\n                "
-    - startInstruction: 76
-      endInstruction: 75
+    - startInstruction: 56
+      endInstruction: 55
       startSourceChar: 781
       endSourceChar: 781
       line: 23
       lineChar: 16
       spanCodeSection: 
-    - startInstruction: 76
-      endInstruction: 75
+    - startInstruction: 56
+      endInstruction: 55
       startSourceChar: 781
       endSourceChar: 781
       line: 23
       lineChar: 16
       spanCodeSection: 
-    - startInstruction: 76
-      endInstruction: 75
+    - startInstruction: 56
+      endInstruction: 55
       startSourceChar: 781
       endSourceChar: 781
       line: 23
       lineChar: 16
       spanCodeSection: 
-    - startInstruction: 76
-      endInstruction: 75
+    - startInstruction: 56
+      endInstruction: 55
       startSourceChar: 781
       endSourceChar: 787
       line: 23
       lineChar: 16
       spanCodeSection: Debug.
-    - startInstruction: 76
-      endInstruction: 75
+    - startInstruction: 56
+      endInstruction: 55
       startSourceChar: 787
       endSourceChar: 796
       line: 23
       lineChar: 22
       spanCodeSection: LogError(
-    - startInstruction: 76
-      endInstruction: 91
+    - startInstruction: 56
+      endInstruction: 71
       startSourceChar: 796
       endSourceChar: 872
       line: 23
       lineChar: 31
       spanCodeSection: "\"[DisabledObjectHeapTest] Reference script cannot be null\");\r\n\r\n
         \           "
-    - startInstruction: 92
-      endInstruction: 91
+    - startInstruction: 72
+      endInstruction: 71
       startSourceChar: 872
       endSourceChar: 872
       line: 25
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 92
-      endInstruction: 91
+    - startInstruction: 72
+      endInstruction: 71
       startSourceChar: 872
       endSourceChar: 872
       line: 25
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 92
-      endInstruction: 107
+    - startInstruction: 72
+      endInstruction: 87
       startSourceChar: 872
       endSourceChar: 908
       line: 25
       lineChar: 12
       spanCodeSection: "TestHeapVariableGet();\r\n            "
-    - startInstruction: 108
-      endInstruction: 107
+    - startInstruction: 88
+      endInstruction: 87
       startSourceChar: 908
       endSourceChar: 908
       line: 26
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 108
-      endInstruction: 107
+    - startInstruction: 88
+      endInstruction: 87
       startSourceChar: 908
       endSourceChar: 908
       line: 26
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 108
-      endInstruction: 123
+    - startInstruction: 88
+      endInstruction: 103
       startSourceChar: 908
       endSourceChar: 944
       line: 26
       lineChar: 12
       spanCodeSection: "TestHeapVariableSet();\r\n            "
-    - startInstruction: 124
-      endInstruction: 123
+    - startInstruction: 104
+      endInstruction: 103
       startSourceChar: 944
       endSourceChar: 944
       line: 27
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 124
-      endInstruction: 123
+    - startInstruction: 104
+      endInstruction: 103
       startSourceChar: 944
       endSourceChar: 944
       line: 27
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 124
-      endInstruction: 159
+    - startInstruction: 104
+      endInstruction: 139
       startSourceChar: 944
       endSourceChar: 985
       line: 27
       lineChar: 12
       spanCodeSection: "TestCustomEvent();\r\n        }\r\n\r\n        "
-    - startInstruction: 160
-      endInstruction: 167
+    - startInstruction: 140
+      endInstruction: 147
       startSourceChar: 985
       endSourceChar: 1021
       line: 30
       lineChar: 8
       spanCodeSection: "void TestHeapVariableGet()\r\n        "
-    - startInstruction: 168
-      endInstruction: 167
+    - startInstruction: 148
+      endInstruction: 147
       startSourceChar: 1021
       endSourceChar: 1036
       line: 31
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 168
-      endInstruction: 167
+    - startInstruction: 148
+      endInstruction: 147
       startSourceChar: 1036
       endSourceChar: 1036
       line: 32
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 168
-      endInstruction: 167
+    - startInstruction: 148
+      endInstruction: 147
       startSourceChar: 1036
       endSourceChar: 1036
       line: 32
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 168
-      endInstruction: 167
+    - startInstruction: 148
+      endInstruction: 147
       startSourceChar: 1036
       endSourceChar: 1036
       line: 32
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 168
-      endInstruction: 167
+    - startInstruction: 148
+      endInstruction: 147
       startSourceChar: 1036
       endSourceChar: 1043
       line: 32
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 168
-      endInstruction: 167
+    - startInstruction: 148
+      endInstruction: 147
       startSourceChar: 1043
       endSourceChar: 1057
       line: 32
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 168
-      endInstruction: 167
+    - startInstruction: 148
+      endInstruction: 147
       startSourceChar: 1057
       endSourceChar: 1091
       line: 32
       lineChar: 33
       spanCodeSection: '"Disabled Object Heap Get Value", '
-    - startInstruction: 168
-      endInstruction: 167
+    - startInstruction: 148
+      endInstruction: 147
       startSourceChar: 1091
       endSourceChar: 1091
       line: 32
       lineChar: 67
       spanCodeSection: 
-    - startInstruction: 168
-      endInstruction: 167
+    - startInstruction: 148
+      endInstruction: 147
       startSourceChar: 1091
       endSourceChar: 1091
       line: 32
       lineChar: 67
       spanCodeSection: 
-    - startInstruction: 168
-      endInstruction: 167
+    - startInstruction: 148
+      endInstruction: 147
       startSourceChar: 1091
       endSourceChar: 1107
       line: 32
       lineChar: 67
       spanCodeSection: referenceScript.
-    - startInstruction: 168
-      endInstruction: 223
+    - startInstruction: 148
+      endInstruction: 203
       startSourceChar: 1107
       endSourceChar: 1123
       line: 32
       lineChar: 83
       spanCodeSection: 'testValueStr == '
-    - startInstruction: 224
-      endInstruction: 363
+    - startInstruction: 204
+      endInstruction: 343
       startSourceChar: 1123
       endSourceChar: 1154
       line: 32
       lineChar: 99
       spanCodeSection: "\"test\");\r\n        }\r\n\r\n        "
-    - startInstruction: 364
-      endInstruction: 371
+    - startInstruction: 344
+      endInstruction: 351
       startSourceChar: 1154
       endSourceChar: 1190
       line: 35
       lineChar: 8
       spanCodeSection: "void TestHeapVariableSet()\r\n        "
-    - startInstruction: 372
-      endInstruction: 371
+    - startInstruction: 352
+      endInstruction: 351
       startSourceChar: 1190
       endSourceChar: 1205
       line: 36
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 372
-      endInstruction: 371
+    - startInstruction: 352
+      endInstruction: 351
       startSourceChar: 1205
       endSourceChar: 1205
       line: 37
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 372
-      endInstruction: 371
+    - startInstruction: 352
+      endInstruction: 351
       startSourceChar: 1205
-      endSourceChar: 1236
+      endSourceChar: 1205
       line: 37
       lineChar: 12
-      spanCodeSection: 'referenceScript.testValueStr = '
-    - startInstruction: 372
-      endInstruction: 403
+      spanCodeSection: 
+    - startInstruction: 352
+      endInstruction: 351
+      startSourceChar: 1205
+      endSourceChar: 1205
+      line: 37
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 352
+      endInstruction: 351
+      startSourceChar: 1205
+      endSourceChar: 1221
+      line: 37
+      lineChar: 12
+      spanCodeSection: referenceScript.
+    - startInstruction: 352
+      endInstruction: 351
+      startSourceChar: 1221
+      endSourceChar: 1236
+      line: 37
+      lineChar: 28
+      spanCodeSection: 'testValueStr = '
+    - startInstruction: 352
+      endInstruction: 383
       startSourceChar: 1236
       endSourceChar: 1267
       line: 37
       lineChar: 43
       spanCodeSection: "\"test set value\";\r\n            "
-    - startInstruction: 404
-      endInstruction: 403
+    - startInstruction: 384
+      endInstruction: 383
       startSourceChar: 1267
       endSourceChar: 1267
       line: 38
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 404
-      endInstruction: 403
+    - startInstruction: 384
+      endInstruction: 383
       startSourceChar: 1267
       endSourceChar: 1267
       line: 38
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 404
-      endInstruction: 403
+    - startInstruction: 384
+      endInstruction: 383
       startSourceChar: 1267
       endSourceChar: 1267
       line: 38
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 404
-      endInstruction: 403
+    - startInstruction: 384
+      endInstruction: 383
       startSourceChar: 1267
       endSourceChar: 1274
       line: 38
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 404
-      endInstruction: 403
+    - startInstruction: 384
+      endInstruction: 383
       startSourceChar: 1274
       endSourceChar: 1288
       line: 38
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 404
-      endInstruction: 403
+    - startInstruction: 384
+      endInstruction: 383
       startSourceChar: 1288
       endSourceChar: 1322
       line: 38
       lineChar: 33
       spanCodeSection: '"Disabled Object Heap Set Value", '
-    - startInstruction: 404
-      endInstruction: 403
+    - startInstruction: 384
+      endInstruction: 383
       startSourceChar: 1322
       endSourceChar: 1322
       line: 38
       lineChar: 67
       spanCodeSection: 
-    - startInstruction: 404
-      endInstruction: 403
+    - startInstruction: 384
+      endInstruction: 383
       startSourceChar: 1322
       endSourceChar: 1322
       line: 38
       lineChar: 67
       spanCodeSection: 
-    - startInstruction: 404
-      endInstruction: 403
+    - startInstruction: 384
+      endInstruction: 383
       startSourceChar: 1322
       endSourceChar: 1338
       line: 38
       lineChar: 67
       spanCodeSection: referenceScript.
-    - startInstruction: 404
-      endInstruction: 459
+    - startInstruction: 384
+      endInstruction: 439
       startSourceChar: 1338
       endSourceChar: 1354
       line: 38
       lineChar: 83
       spanCodeSection: 'testValueStr == '
-    - startInstruction: 460
-      endInstruction: 599
+    - startInstruction: 440
+      endInstruction: 579
       startSourceChar: 1354
       endSourceChar: 1395
       line: 38
       lineChar: 99
       spanCodeSection: "\"test set value\");\r\n        }\r\n\r\n        "
-    - startInstruction: 600
-      endInstruction: 599
+    - startInstruction: 580
+      endInstruction: 579
       startSourceChar: 1395
       endSourceChar: 1395
       line: 41
       lineChar: 8
       spanCodeSection: 
-    - startInstruction: 600
-      endInstruction: 599
+    - startInstruction: 580
+      endInstruction: 579
       startSourceChar: 1395
       endSourceChar: 1395
       line: 41
       lineChar: 8
       spanCodeSection: 
-    - startInstruction: 600
-      endInstruction: 599
+    - startInstruction: 580
+      endInstruction: 579
       startSourceChar: 1395
       endSourceChar: 1427
       line: 41
       lineChar: 8
       spanCodeSection: "int callCounter = 0;\r\n\r\n        "
-    - startInstruction: 600
-      endInstruction: 607
+    - startInstruction: 580
+      endInstruction: 587
       startSourceChar: 1427
       endSourceChar: 1460
       line: 43
       lineChar: 8
       spanCodeSection: "public void CallEvent()\r\n        "
-    - startInstruction: 608
-      endInstruction: 607
+    - startInstruction: 588
+      endInstruction: 587
       startSourceChar: 1460
       endSourceChar: 1475
       line: 44
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 608
-      endInstruction: 607
+    - startInstruction: 588
+      endInstruction: 587
       startSourceChar: 1475
       endSourceChar: 1475
       line: 45
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 608
-      endInstruction: 607
+    - startInstruction: 588
+      endInstruction: 587
       startSourceChar: 1475
       endSourceChar: 1475
       line: 45
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 608
-      endInstruction: 699
+    - startInstruction: 588
+      endInstruction: 679
       startSourceChar: 1475
       endSourceChar: 1512
       line: 45
       lineChar: 12
       spanCodeSection: "callCounter++;\r\n        }\r\n\r\n        "
-    - startInstruction: 700
-      endInstruction: 707
+    - startInstruction: 680
+      endInstruction: 687
       startSourceChar: 1512
       endSourceChar: 1544
       line: 48
       lineChar: 8
       spanCodeSection: "void TestCustomEvent()\r\n        "
-    - startInstruction: 708
-      endInstruction: 707
+    - startInstruction: 688
+      endInstruction: 687
       startSourceChar: 1544
       endSourceChar: 1559
       line: 49
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 708
-      endInstruction: 707
+    - startInstruction: 688
+      endInstruction: 687
       startSourceChar: 1559
       endSourceChar: 1559
       line: 50
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 708
-      endInstruction: 707
+    - startInstruction: 688
+      endInstruction: 687
+      startSourceChar: 1559
+      endSourceChar: 1559
+      line: 50
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 688
+      endInstruction: 687
       startSourceChar: 1559
       endSourceChar: 1573
       line: 50
       lineChar: 12
       spanCodeSection: 'callCounter = '
-    - startInstruction: 708
-      endInstruction: 727
+    - startInstruction: 688
+      endInstruction: 707
       startSourceChar: 1573
       endSourceChar: 1591
       line: 50
       lineChar: 26
       spanCodeSection: "0;\r\n\r\n            "
-    - startInstruction: 728
-      endInstruction: 727
+    - startInstruction: 708
+      endInstruction: 707
       startSourceChar: 1591
       endSourceChar: 1591
       line: 52
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 728
-      endInstruction: 727
+    - startInstruction: 708
+      endInstruction: 707
       startSourceChar: 1591
-      endSourceChar: 1626
+      endSourceChar: 1591
       line: 52
       lineChar: 12
-      spanCodeSection: 'referenceScript.spawnerBehaviour = '
-    - startInstruction: 728
-      endInstruction: 759
+      spanCodeSection: 
+    - startInstruction: 708
+      endInstruction: 707
+      startSourceChar: 1591
+      endSourceChar: 1591
+      line: 52
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 708
+      endInstruction: 707
+      startSourceChar: 1591
+      endSourceChar: 1607
+      line: 52
+      lineChar: 12
+      spanCodeSection: referenceScript.
+    - startInstruction: 708
+      endInstruction: 707
+      startSourceChar: 1607
+      endSourceChar: 1626
+      line: 52
+      lineChar: 28
+      spanCodeSection: 'spawnerBehaviour = '
+    - startInstruction: 708
+      endInstruction: 739
       startSourceChar: 1626
       endSourceChar: 1645
       line: 52
       lineChar: 47
       spanCodeSection: "this;\r\n            "
-    - startInstruction: 760
-      endInstruction: 759
+    - startInstruction: 740
+      endInstruction: 739
       startSourceChar: 1645
       endSourceChar: 1645
       line: 53
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 760
-      endInstruction: 759
+    - startInstruction: 740
+      endInstruction: 739
       startSourceChar: 1645
       endSourceChar: 1645
       line: 53
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 760
-      endInstruction: 759
+    - startInstruction: 740
+      endInstruction: 739
       startSourceChar: 1645
       endSourceChar: 1645
       line: 53
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 760
-      endInstruction: 759
+    - startInstruction: 740
+      endInstruction: 739
       startSourceChar: 1645
       endSourceChar: 1661
       line: 53
       lineChar: 12
       spanCodeSection: referenceScript.
-    - startInstruction: 760
-      endInstruction: 759
+    - startInstruction: 740
+      endInstruction: 739
       startSourceChar: 1661
       endSourceChar: 1677
       line: 53
       lineChar: 28
       spanCodeSection: SendCustomEvent(
-    - startInstruction: 760
-      endInstruction: 783
+    - startInstruction: 740
+      endInstruction: 763
       startSourceChar: 1677
       endSourceChar: 1706
       line: 53
       lineChar: 44
       spanCodeSection: "\"CallEvent\");\r\n\r\n            "
-    - startInstruction: 784
-      endInstruction: 783
+    - startInstruction: 764
+      endInstruction: 763
       startSourceChar: 1706
       endSourceChar: 1706
       line: 55
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 784
-      endInstruction: 783
+    - startInstruction: 764
+      endInstruction: 763
       startSourceChar: 1706
       endSourceChar: 1706
       line: 55
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 784
-      endInstruction: 783
+    - startInstruction: 764
+      endInstruction: 763
       startSourceChar: 1706
       endSourceChar: 1706
       line: 55
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 784
-      endInstruction: 783
+    - startInstruction: 764
+      endInstruction: 763
       startSourceChar: 1706
       endSourceChar: 1713
       line: 55
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 784
-      endInstruction: 783
+    - startInstruction: 764
+      endInstruction: 763
       startSourceChar: 1713
       endSourceChar: 1727
       line: 55
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 784
-      endInstruction: 783
+    - startInstruction: 764
+      endInstruction: 763
       startSourceChar: 1727
       endSourceChar: 1764
       line: 55
       lineChar: 33
       spanCodeSection: '"Disabled Object Send Custom Event", '
-    - startInstruction: 784
-      endInstruction: 783
+    - startInstruction: 764
+      endInstruction: 763
       startSourceChar: 1764
       endSourceChar: 1764
       line: 55
       lineChar: 70
       spanCodeSection: 
-    - startInstruction: 784
-      endInstruction: 803
+    - startInstruction: 764
+      endInstruction: 763
       startSourceChar: 1764
       endSourceChar: 1779
       line: 55
       lineChar: 70
       spanCodeSection: 'callCounter == '
-    - startInstruction: 804
-      endInstruction: 804
+    - startInstruction: 764
+      endInstruction: 764
       startSourceChar: 1779
       endSourceChar: 1779
       line: 55

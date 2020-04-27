@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: DefaultHeapValueTest
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 7f5c4106b35fc7b49b9661198d028d0b,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 9f369825f7300224c98dec940b656c5e,
     type: 2}
   udonAssembly: ".data_start\r\n\r\n    .export defaultPublicArr\r\n    .export defaultString\r\n
     \   .sync networkSyncedString, none\r\n\r\n    __refl_const_intnl_udonTypeID:
@@ -38,10 +38,7 @@ MonoBehaviour:
     %SystemBoolean, null\r\n    __4_intnl_SystemBoolean: %SystemBoolean, null\r\n
     \   __5_intnl_SystemBoolean: %SystemBoolean, null\r\n    __6_intnl_SystemBoolean:
     %SystemBoolean, null\r\n    __7_intnl_SystemBoolean: %SystemBoolean, null\r\n
-    \   __0_intnl_SystemInt32: %SystemInt32, null\r\n    __0_intnl_SystemString: %SystemString,
-    null\r\n    __1_intnl_SystemString: %SystemString, null\r\n    __2_intnl_SystemString:
-    %SystemString, null\r\n    __0_intnl_SystemStringArray: %SystemStringArray, null\r\n
-    \   __1_intnl_SystemStringArray: %SystemStringArray, null\r\n    __0_intnl_returnTarget_UInt32:
+    \   __0_intnl_SystemInt32: %SystemInt32, null\r\n    __0_intnl_returnTarget_UInt32:
     %SystemUInt32, null\r\n\r\n.data_end\r\n\r\n        \r\n         # using UdonSharp;\r\n
     \       \r\n         # using UnityEngine;\r\n        \r\n         # using VRC.SDKBase;\r\n
     \       \r\n         # using VRC.Udon;\r\n        \r\n         # namespace UdonSharp.Tests\r\n
@@ -53,23 +50,22 @@ MonoBehaviour:
     __0_const_intnl_SystemUInt32\r\n        \r\n         # {\r\n        \r\n         #
     TestPublicArray();\r\n        PUSH, __0_const_intnl_exitJumpLoc_UInt32\r\n        JUMP,
     0x00000074\r\n        \r\n         # TestPublicString();\r\n        PUSH, __1_const_intnl_exitJumpLoc_UInt32\r\n
-    \       JUMP, 0x000001AC\r\n        \r\n         # TestSyncedString();\r\n        PUSH,
-    __2_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x00000254\r\n        \r\n
+    \       JUMP, 0x00000198\r\n        \r\n         # TestSyncedString();\r\n        PUSH,
+    __2_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x0000022C\r\n        \r\n
     \        # TestPrivateArr();\r\n        PUSH, __3_const_intnl_exitJumpLoc_UInt32\r\n
-    \       JUMP, 0x000002FC\r\n        \r\n         # TestPrivateStr();\r\n        PUSH,
-    __4_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x000003A4\r\n        PUSH,
+    \       JUMP, 0x000002C0\r\n        \r\n         # TestPrivateStr();\r\n        PUSH,
+    __4_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x00000354\r\n        PUSH,
     __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n        JUMP_INDIRECT,
     __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n         # [HideInInspector]\r\n
     \       \r\n         # public string[] defaultPublicArr;\r\n        \r\n         #
     void TestPublicArray()\r\n    TestPublicArray:\r\n        \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n
     \       \r\n         # {\r\n        \r\n         # tester.TestAssertion(\"Default
     Public Array Initialized\", defaultPublicArr != null && defaultPublicArr.Length
-    == 0);\r\n        PUSH, defaultPublicArr\r\n        PUSH, __0_intnl_SystemStringArray\r\n
-    \       COPY\r\n        PUSH, __0_intnl_SystemStringArray\r\n        PUSH, __0_const_intnl_SystemStringArray\r\n
+    == 0);\r\n        PUSH, defaultPublicArr\r\n        PUSH, __0_const_intnl_SystemStringArray\r\n
     \       PUSH, __1_intnl_SystemBoolean\r\n        EXTERN, \"SystemObject.__op_Inequality__SystemObject_SystemObject__SystemBoolean\"\r\n
     \       PUSH, __1_intnl_SystemBoolean\r\n        PUSH, __0_intnl_SystemBoolean\r\n
     \       COPY\r\n        PUSH, __0_intnl_SystemBoolean\r\n        JUMP_IF_FALSE,
-    0x00000138\r\n        PUSH, defaultPublicArr\r\n        PUSH, __0_intnl_SystemInt32\r\n
+    0x00000124\r\n        PUSH, defaultPublicArr\r\n        PUSH, __0_intnl_SystemInt32\r\n
     \       EXTERN, \"SystemStringArray.__get_Length__SystemInt32\"\r\n        PUSH,
     __0_intnl_SystemInt32\r\n        PUSH, __0_const_intnl_SystemInt32\r\n        PUSH,
     __2_intnl_SystemBoolean\r\n        EXTERN, \"SystemInt32.__op_Equality__SystemInt32_SystemInt32__SystemBoolean\"\r\n
@@ -88,8 +84,7 @@ MonoBehaviour:
     \       \r\n         # void TestPublicString()\r\n    TestPublicString:\r\n        \r\n
     \       PUSH, __0_const_intnl_SystemUInt32\r\n        \r\n         # {\r\n        \r\n
     \        # tester.TestAssertion(\"Default String Value\", defaultString == \"\");\r\n
-    \       PUSH, defaultString\r\n        PUSH, __0_intnl_SystemString\r\n        COPY\r\n
-    \       PUSH, __0_intnl_SystemString\r\n        PUSH, __5_const_intnl_SystemString\r\n
+    \       PUSH, defaultString\r\n        PUSH, __5_const_intnl_SystemString\r\n
     \       PUSH, __4_intnl_SystemBoolean\r\n        EXTERN, \"SystemString.__op_Equality__SystemString_SystemString__SystemBoolean\"\r\n
     \       PUSH, tester\r\n        PUSH, __1_const_intnl_SystemString\r\n        PUSH,
     __4_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
@@ -103,8 +98,7 @@ MonoBehaviour:
     \       \r\n         # void TestSyncedString()\r\n    TestSyncedString:\r\n        \r\n
     \       PUSH, __0_const_intnl_SystemUInt32\r\n        \r\n         # {\r\n        \r\n
     \        # tester.TestAssertion(\"Default Synced String Value\", networkSyncedString
-    == \"\");\r\n        PUSH, networkSyncedString\r\n        PUSH, __1_intnl_SystemString\r\n
-    \       COPY\r\n        PUSH, __1_intnl_SystemString\r\n        PUSH, __5_const_intnl_SystemString\r\n
+    == \"\");\r\n        PUSH, networkSyncedString\r\n        PUSH, __5_const_intnl_SystemString\r\n
     \       PUSH, __5_intnl_SystemBoolean\r\n        EXTERN, \"SystemString.__op_Equality__SystemString_SystemString__SystemBoolean\"\r\n
     \       PUSH, tester\r\n        PUSH, __1_const_intnl_SystemString\r\n        PUSH,
     __6_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
@@ -118,7 +112,6 @@ MonoBehaviour:
     \   TestPrivateArr:\r\n        \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n
     \       \r\n         # {\r\n        \r\n         # tester.TestAssertion(\"Private
     Array Default Null\", privateStrArr == null);\r\n        PUSH, privateStrArr\r\n
-    \       PUSH, __1_intnl_SystemStringArray\r\n        COPY\r\n        PUSH, __1_intnl_SystemStringArray\r\n
     \       PUSH, __0_const_intnl_SystemStringArray\r\n        PUSH, __6_intnl_SystemBoolean\r\n
     \       EXTERN, \"SystemObject.__op_Equality__SystemObject_SystemObject__SystemBoolean\"\r\n
     \       PUSH, tester\r\n        PUSH, __1_const_intnl_SystemString\r\n        PUSH,
@@ -133,11 +126,10 @@ MonoBehaviour:
     \   TestPrivateStr:\r\n        \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n
     \       \r\n         # {\r\n        \r\n         # tester.TestAssertion(\"Private
     String Default Null\", privateStr == null);\r\n        PUSH, privateStr\r\n        PUSH,
-    __2_intnl_SystemString\r\n        COPY\r\n        PUSH, __2_intnl_SystemString\r\n
-    \       PUSH, __9_const_intnl_SystemString\r\n        PUSH, __7_intnl_SystemBoolean\r\n
-    \       EXTERN, \"SystemString.__op_Equality__SystemString_SystemString__SystemBoolean\"\r\n
-    \       PUSH, tester\r\n        PUSH, __1_const_intnl_SystemString\r\n        PUSH,
-    __8_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
+    __9_const_intnl_SystemString\r\n        PUSH, __7_intnl_SystemBoolean\r\n        EXTERN,
+    \"SystemString.__op_Equality__SystemString_SystemString__SystemBoolean\"\r\n        PUSH,
+    tester\r\n        PUSH, __1_const_intnl_SystemString\r\n        PUSH, __8_const_intnl_SystemString\r\n
+    \       EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
     \       PUSH, tester\r\n        PUSH, __2_const_intnl_SystemString\r\n        PUSH,
     __7_intnl_SystemBoolean\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
     \       PUSH, tester\r\n        PUSH, __3_const_intnl_SystemString\r\n        EXTERN,
@@ -565,476 +557,476 @@ MonoBehaviour:
       lineChar: 69
       spanCodeSection: 
     - startInstruction: 116
-      endInstruction: 135
+      endInstruction: 115
       startSourceChar: 724
       endSourceChar: 744
       line: 28
       lineChar: 69
       spanCodeSection: 'defaultPublicArr != '
-    - startInstruction: 136
-      endInstruction: 203
+    - startInstruction: 116
+      endInstruction: 183
       startSourceChar: 744
       endSourceChar: 752
       line: 28
       lineChar: 89
       spanCodeSection: 'null && '
-    - startInstruction: 204
-      endInstruction: 203
+    - startInstruction: 184
+      endInstruction: 183
       startSourceChar: 752
       endSourceChar: 752
       line: 28
       lineChar: 97
       spanCodeSection: 
-    - startInstruction: 204
-      endInstruction: 203
+    - startInstruction: 184
+      endInstruction: 183
       startSourceChar: 752
       endSourceChar: 752
       line: 28
       lineChar: 97
       spanCodeSection: 
-    - startInstruction: 204
-      endInstruction: 203
+    - startInstruction: 184
+      endInstruction: 183
       startSourceChar: 752
       endSourceChar: 769
       line: 28
       lineChar: 97
       spanCodeSection: defaultPublicArr.
-    - startInstruction: 204
-      endInstruction: 227
+    - startInstruction: 184
+      endInstruction: 207
       startSourceChar: 769
       endSourceChar: 779
       line: 28
       lineChar: 114
       spanCodeSection: 'Length == '
-    - startInstruction: 228
-      endInstruction: 419
+    - startInstruction: 208
+      endInstruction: 399
       startSourceChar: 779
       endSourceChar: 805
       line: 28
       lineChar: 124
       spanCodeSection: "0);\r\n        }\r\n\r\n        "
-    - startInstruction: 420
-      endInstruction: 419
+    - startInstruction: 400
+      endInstruction: 399
       startSourceChar: 805
       endSourceChar: 806
       line: 31
       lineChar: 8
       spanCodeSection: '['
-    - startInstruction: 420
-      endInstruction: 419
+    - startInstruction: 400
+      endInstruction: 399
       startSourceChar: 806
       endSourceChar: 806
       line: 31
       lineChar: 9
       spanCodeSection: 
-    - startInstruction: 420
-      endInstruction: 419
+    - startInstruction: 400
+      endInstruction: 399
       startSourceChar: 806
       endSourceChar: 839
       line: 31
       lineChar: 9
       spanCodeSection: "HideInInspector]\r\n        public "
-    - startInstruction: 420
-      endInstruction: 419
+    - startInstruction: 400
+      endInstruction: 399
       startSourceChar: 839
       endSourceChar: 839
       line: 32
       lineChar: 15
       spanCodeSection: 
-    - startInstruction: 420
-      endInstruction: 419
+    - startInstruction: 400
+      endInstruction: 399
       startSourceChar: 839
       endSourceChar: 872
       line: 32
       lineChar: 15
       spanCodeSection: "string defaultString;\r\n\r\n        "
-    - startInstruction: 420
-      endInstruction: 427
+    - startInstruction: 400
+      endInstruction: 407
       startSourceChar: 872
       endSourceChar: 905
       line: 34
       lineChar: 8
       spanCodeSection: "void TestPublicString()\r\n        "
-    - startInstruction: 428
-      endInstruction: 427
+    - startInstruction: 408
+      endInstruction: 407
       startSourceChar: 905
       endSourceChar: 920
       line: 35
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 428
-      endInstruction: 427
+    - startInstruction: 408
+      endInstruction: 407
       startSourceChar: 920
       endSourceChar: 920
       line: 36
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 428
-      endInstruction: 427
+    - startInstruction: 408
+      endInstruction: 407
       startSourceChar: 920
       endSourceChar: 920
       line: 36
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 428
-      endInstruction: 427
+    - startInstruction: 408
+      endInstruction: 407
       startSourceChar: 920
       endSourceChar: 920
       line: 36
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 428
-      endInstruction: 427
+    - startInstruction: 408
+      endInstruction: 407
       startSourceChar: 920
       endSourceChar: 927
       line: 36
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 428
-      endInstruction: 427
+    - startInstruction: 408
+      endInstruction: 407
       startSourceChar: 927
       endSourceChar: 941
       line: 36
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 428
-      endInstruction: 427
+    - startInstruction: 408
+      endInstruction: 407
       startSourceChar: 941
       endSourceChar: 965
       line: 36
       lineChar: 33
       spanCodeSection: '"Default String Value", '
-    - startInstruction: 428
-      endInstruction: 427
+    - startInstruction: 408
+      endInstruction: 407
       startSourceChar: 965
       endSourceChar: 965
       line: 36
       lineChar: 57
       spanCodeSection: 
-    - startInstruction: 428
-      endInstruction: 447
+    - startInstruction: 408
+      endInstruction: 407
       startSourceChar: 965
       endSourceChar: 982
       line: 36
       lineChar: 57
       spanCodeSection: 'defaultString == '
-    - startInstruction: 448
-      endInstruction: 587
+    - startInstruction: 408
+      endInstruction: 547
       startSourceChar: 982
       endSourceChar: 1009
       line: 36
       lineChar: 74
       spanCodeSection: "\"\");\r\n        }\r\n\r\n        "
-    - startInstruction: 588
-      endInstruction: 587
+    - startInstruction: 548
+      endInstruction: 547
       startSourceChar: 1009
       endSourceChar: 1010
       line: 39
       lineChar: 8
       spanCodeSection: '['
-    - startInstruction: 588
-      endInstruction: 587
+    - startInstruction: 548
+      endInstruction: 547
       startSourceChar: 1010
       endSourceChar: 1010
       line: 39
       lineChar: 9
       spanCodeSection: 
-    - startInstruction: 588
-      endInstruction: 587
+    - startInstruction: 548
+      endInstruction: 547
       startSourceChar: 1010
       endSourceChar: 1031
       line: 39
       lineChar: 9
       spanCodeSection: "UdonSynced]\r\n        "
-    - startInstruction: 588
-      endInstruction: 587
+    - startInstruction: 548
+      endInstruction: 547
       startSourceChar: 1031
       endSourceChar: 1031
       line: 40
       lineChar: 8
       spanCodeSection: 
-    - startInstruction: 588
-      endInstruction: 587
+    - startInstruction: 548
+      endInstruction: 547
       startSourceChar: 1031
       endSourceChar: 1070
       line: 40
       lineChar: 8
       spanCodeSection: "string networkSyncedString;\r\n\r\n        "
-    - startInstruction: 588
-      endInstruction: 595
+    - startInstruction: 548
+      endInstruction: 555
       startSourceChar: 1070
       endSourceChar: 1103
       line: 42
       lineChar: 8
       spanCodeSection: "void TestSyncedString()\r\n        "
-    - startInstruction: 596
-      endInstruction: 595
+    - startInstruction: 556
+      endInstruction: 555
       startSourceChar: 1103
       endSourceChar: 1118
       line: 43
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 596
-      endInstruction: 595
+    - startInstruction: 556
+      endInstruction: 555
       startSourceChar: 1118
       endSourceChar: 1118
       line: 44
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 596
-      endInstruction: 595
+    - startInstruction: 556
+      endInstruction: 555
       startSourceChar: 1118
       endSourceChar: 1118
       line: 44
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 596
-      endInstruction: 595
+    - startInstruction: 556
+      endInstruction: 555
       startSourceChar: 1118
       endSourceChar: 1118
       line: 44
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 596
-      endInstruction: 595
+    - startInstruction: 556
+      endInstruction: 555
       startSourceChar: 1118
       endSourceChar: 1125
       line: 44
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 596
-      endInstruction: 595
+    - startInstruction: 556
+      endInstruction: 555
       startSourceChar: 1125
       endSourceChar: 1139
       line: 44
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 596
-      endInstruction: 595
+    - startInstruction: 556
+      endInstruction: 555
       startSourceChar: 1139
       endSourceChar: 1170
       line: 44
       lineChar: 33
       spanCodeSection: '"Default Synced String Value", '
-    - startInstruction: 596
-      endInstruction: 595
+    - startInstruction: 556
+      endInstruction: 555
       startSourceChar: 1170
       endSourceChar: 1170
       line: 44
       lineChar: 64
       spanCodeSection: 
-    - startInstruction: 596
-      endInstruction: 615
+    - startInstruction: 556
+      endInstruction: 555
       startSourceChar: 1170
       endSourceChar: 1193
       line: 44
       lineChar: 64
       spanCodeSection: 'networkSyncedString == '
-    - startInstruction: 616
-      endInstruction: 755
+    - startInstruction: 556
+      endInstruction: 695
       startSourceChar: 1193
       endSourceChar: 1220
       line: 44
       lineChar: 87
       spanCodeSection: "\"\");\r\n        }\r\n\r\n        "
-    - startInstruction: 756
-      endInstruction: 755
+    - startInstruction: 696
+      endInstruction: 695
       startSourceChar: 1220
       endSourceChar: 1220
       line: 47
       lineChar: 8
       spanCodeSection: 
-    - startInstruction: 756
-      endInstruction: 755
+    - startInstruction: 696
+      endInstruction: 695
       startSourceChar: 1220
       endSourceChar: 1220
       line: 47
       lineChar: 8
       spanCodeSection: 
-    - startInstruction: 756
-      endInstruction: 755
+    - startInstruction: 696
+      endInstruction: 695
       startSourceChar: 1220
       endSourceChar: 1220
       line: 47
       lineChar: 8
       spanCodeSection: 
-    - startInstruction: 756
-      endInstruction: 755
+    - startInstruction: 696
+      endInstruction: 695
       startSourceChar: 1220
       endSourceChar: 1255
       line: 47
       lineChar: 8
       spanCodeSection: "string[] privateStrArr;\r\n\r\n        "
-    - startInstruction: 756
-      endInstruction: 763
+    - startInstruction: 696
+      endInstruction: 703
       startSourceChar: 1255
       endSourceChar: 1286
       line: 49
       lineChar: 8
       spanCodeSection: "void TestPrivateArr()\r\n        "
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 704
+      endInstruction: 703
       startSourceChar: 1286
       endSourceChar: 1301
       line: 50
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 704
+      endInstruction: 703
       startSourceChar: 1301
       endSourceChar: 1301
       line: 51
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 704
+      endInstruction: 703
       startSourceChar: 1301
       endSourceChar: 1301
       line: 51
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 704
+      endInstruction: 703
       startSourceChar: 1301
       endSourceChar: 1301
       line: 51
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 704
+      endInstruction: 703
       startSourceChar: 1301
       endSourceChar: 1308
       line: 51
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 704
+      endInstruction: 703
       startSourceChar: 1308
       endSourceChar: 1322
       line: 51
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 704
+      endInstruction: 703
       startSourceChar: 1322
       endSourceChar: 1352
       line: 51
       lineChar: 33
       spanCodeSection: '"Private Array Default Null", '
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 704
+      endInstruction: 703
       startSourceChar: 1352
       endSourceChar: 1352
       line: 51
       lineChar: 63
       spanCodeSection: 
-    - startInstruction: 764
-      endInstruction: 783
+    - startInstruction: 704
+      endInstruction: 703
       startSourceChar: 1352
       endSourceChar: 1369
       line: 51
       lineChar: 63
       spanCodeSection: 'privateStrArr == '
-    - startInstruction: 784
-      endInstruction: 923
+    - startInstruction: 704
+      endInstruction: 843
       startSourceChar: 1369
       endSourceChar: 1398
       line: 51
       lineChar: 80
       spanCodeSection: "null);\r\n        }\r\n\r\n        "
-    - startInstruction: 924
-      endInstruction: 923
+    - startInstruction: 844
+      endInstruction: 843
       startSourceChar: 1398
       endSourceChar: 1398
       line: 54
       lineChar: 8
       spanCodeSection: 
-    - startInstruction: 924
-      endInstruction: 923
+    - startInstruction: 844
+      endInstruction: 843
       startSourceChar: 1398
       endSourceChar: 1398
       line: 54
       lineChar: 8
       spanCodeSection: 
-    - startInstruction: 924
-      endInstruction: 923
+    - startInstruction: 844
+      endInstruction: 843
       startSourceChar: 1398
       endSourceChar: 1428
       line: 54
       lineChar: 8
       spanCodeSection: "string privateStr;\r\n\r\n        "
-    - startInstruction: 924
-      endInstruction: 931
+    - startInstruction: 844
+      endInstruction: 851
       startSourceChar: 1428
       endSourceChar: 1459
       line: 56
       lineChar: 8
       spanCodeSection: "void TestPrivateStr()\r\n        "
-    - startInstruction: 932
-      endInstruction: 931
+    - startInstruction: 852
+      endInstruction: 851
       startSourceChar: 1459
       endSourceChar: 1474
       line: 57
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 932
-      endInstruction: 931
+    - startInstruction: 852
+      endInstruction: 851
       startSourceChar: 1474
       endSourceChar: 1474
       line: 58
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 932
-      endInstruction: 931
+    - startInstruction: 852
+      endInstruction: 851
       startSourceChar: 1474
       endSourceChar: 1474
       line: 58
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 932
-      endInstruction: 931
+    - startInstruction: 852
+      endInstruction: 851
       startSourceChar: 1474
       endSourceChar: 1474
       line: 58
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 932
-      endInstruction: 931
+    - startInstruction: 852
+      endInstruction: 851
       startSourceChar: 1474
       endSourceChar: 1481
       line: 58
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 932
-      endInstruction: 931
+    - startInstruction: 852
+      endInstruction: 851
       startSourceChar: 1481
       endSourceChar: 1495
       line: 58
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 932
-      endInstruction: 931
+    - startInstruction: 852
+      endInstruction: 851
       startSourceChar: 1495
       endSourceChar: 1526
       line: 58
       lineChar: 33
       spanCodeSection: '"Private String Default Null", '
-    - startInstruction: 932
-      endInstruction: 931
+    - startInstruction: 852
+      endInstruction: 851
       startSourceChar: 1526
       endSourceChar: 1526
       line: 58
       lineChar: 64
       spanCodeSection: 
-    - startInstruction: 932
-      endInstruction: 951
+    - startInstruction: 852
+      endInstruction: 851
       startSourceChar: 1526
       endSourceChar: 1540
       line: 58
       lineChar: 64
       spanCodeSection: 'privateStr == '
-    - startInstruction: 952
-      endInstruction: 952
+    - startInstruction: 852
+      endInstruction: 852
       startSourceChar: 1540
       endSourceChar: 1540
       line: 58

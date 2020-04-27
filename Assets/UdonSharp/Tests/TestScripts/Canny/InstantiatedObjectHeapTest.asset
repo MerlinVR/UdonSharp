@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: InstantiatedObjectHeapTest
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: fdfc96bcbb39abc4ba08ffd833d60b1b,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: d5cf646c90f5787498d967df1aa95a82,
     type: 2}
   udonAssembly: ".data_start\r\n\r\n    .export referenceSpawnObject\r\n\r\n    __refl_const_intnl_udonTypeID:
     %SystemInt64, null\r\n    __refl_const_intnl_udonTypeName: %SystemString, null\r\n
@@ -54,12 +54,12 @@ MonoBehaviour:
     %UnityEngineGameObject, null\r\n    __3_intnl_UnityEngineGameObject: %UnityEngineGameObject,
     null\r\n    __0_intnl_SystemInt32: %SystemInt32, null\r\n    __1_intnl_SystemInt32:
     %SystemInt32, null\r\n    __2_intnl_SystemInt32: %SystemInt32, null\r\n    __3_intnl_SystemInt32:
-    %SystemInt32, null\r\n    __4_intnl_SystemInt32: %SystemInt32, null\r\n    __5_intnl_SystemInt32:
-    %SystemInt32, null\r\n    __0_intnl_SystemInt64: %SystemInt64, null\r\n    __1_intnl_SystemInt64:
-    %SystemInt64, null\r\n    __0_intnl_SystemObject: %SystemObject, null\r\n    __1_intnl_SystemObject:
-    %SystemObject, null\r\n    __2_intnl_SystemObject: %SystemObject, null\r\n    __0_intnl_SystemString:
-    %SystemString, null\r\n    __1_intnl_SystemString: %SystemString, null\r\n    __2_intnl_SystemString:
-    %SystemString, null\r\n    __3_intnl_SystemString: %SystemString, null\r\n    __0_intnl_UdonSharpTestsInstantiatedObjectTesterScript:
+    %SystemInt32, null\r\n    __4_intnl_SystemInt32: %SystemInt32, null\r\n    __0_intnl_SystemInt64:
+    %SystemInt64, null\r\n    __1_intnl_SystemInt64: %SystemInt64, null\r\n    __0_intnl_SystemObject:
+    %SystemObject, null\r\n    __1_intnl_SystemObject: %SystemObject, null\r\n    __2_intnl_SystemObject:
+    %SystemObject, null\r\n    __0_intnl_SystemString: %SystemString, null\r\n    __1_intnl_SystemString:
+    %SystemString, null\r\n    __2_intnl_SystemString: %SystemString, null\r\n    __3_intnl_SystemString:
+    %SystemString, null\r\n    __0_intnl_UdonSharpTestsInstantiatedObjectTesterScript:
     %VRCUdonUdonBehaviour, null\r\n    __1_intnl_UdonSharpTestsInstantiatedObjectTesterScript:
     %VRCUdonUdonBehaviour, null\r\n    __2_intnl_UdonSharpTestsInstantiatedObjectTesterScript:
     %VRCUdonUdonBehaviour, null\r\n    __3_intnl_UdonSharpTestsInstantiatedObjectTesterScript:
@@ -77,10 +77,10 @@ MonoBehaviour:
     \       \r\n         # {\r\n        \r\n         # TestHeapVariableGetComponent();\r\n
     \       PUSH, __0_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x00000064\r\n
     \       \r\n         # TestHeapVariableGet();\r\n        PUSH, __1_const_intnl_exitJumpLoc_UInt32\r\n
-    \       JUMP, 0x00000340\r\n        \r\n         # TestHeapVariableSet();\r\n
-    \       PUSH, __2_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x00000490\r\n
+    \       JUMP, 0x0000032C\r\n        \r\n         # TestHeapVariableSet();\r\n
+    \       PUSH, __2_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x0000047C\r\n
     \       \r\n         # TestCustomEvent();\r\n        PUSH, __3_const_intnl_exitJumpLoc_UInt32\r\n
-    \       JUMP, 0x00000664\r\n        PUSH, __0_intnl_returnTarget_UInt32 #Function
+    \       JUMP, 0x00000650\r\n        PUSH, __0_intnl_returnTarget_UInt32 #Function
     epilogue\r\n        COPY\r\n        JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n
     \       \r\n        \r\n         # void TestHeapVariableGetComponent()\r\n    TestHeapVariableGetComponent:\r\n
     \       \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n        \r\n         #
@@ -126,10 +126,8 @@ MonoBehaviour:
     \       PUSH, __0_testScript_InstantiatedObjectTesterScript\r\n        COPY\r\n
     \       \r\n         # tester.TestAssertion(\"Instantiated Object GetComponent<T>()\",
     testScript != null);\r\n        PUSH, __0_testScript_InstantiatedObjectTesterScript\r\n
-    \       PUSH, __1_intnl_UdonSharpTestsInstantiatedObjectTesterScript\r\n        COPY\r\n
-    \       PUSH, __1_intnl_UdonSharpTestsInstantiatedObjectTesterScript\r\n        PUSH,
-    __0_const_intnl_UdonSharpTestsInstantiatedObjectTesterScript\r\n        PUSH,
-    __0_intnl_SystemBoolean\r\n        EXTERN, \"UnityEngineObject.__op_Inequality__UnityEngineObject_UnityEngineObject__SystemBoolean\"\r\n
+    \       PUSH, __0_const_intnl_UdonSharpTestsInstantiatedObjectTesterScript\r\n
+    \       PUSH, __0_intnl_SystemBoolean\r\n        EXTERN, \"UnityEngineObject.__op_Inequality__UnityEngineObject_UnityEngineObject__SystemBoolean\"\r\n
     \       PUSH, tester\r\n        PUSH, __2_const_intnl_SystemString\r\n        PUSH,
     __1_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
     \       PUSH, tester\r\n        PUSH, __3_const_intnl_SystemString\r\n        PUSH,
@@ -234,8 +232,7 @@ MonoBehaviour:
     \       \r\n         # testScript.CallEvent();\r\n        PUSH, __3_testScript_InstantiatedObjectTesterScript\r\n
     \       PUSH, __11_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SendCustomEvent__SystemString__SystemVoid\"\r\n
     \       \r\n         # tester.TestAssertion(\"Instantiated Object Send Event\",
-    spawnCounter == 1);\r\n        PUSH, spawnCounter\r\n        PUSH, __5_intnl_SystemInt32\r\n
-    \       COPY\r\n        PUSH, __5_intnl_SystemInt32\r\n        PUSH, __1_const_intnl_SystemInt32\r\n
+    spawnCounter == 1);\r\n        PUSH, spawnCounter\r\n        PUSH, __1_const_intnl_SystemInt32\r\n
     \       PUSH, __5_intnl_SystemBoolean\r\n        EXTERN, \"SystemInt32.__op_Equality__SystemInt32_SystemInt32__SystemBoolean\"\r\n
     \       PUSH, tester\r\n        PUSH, __2_const_intnl_SystemString\r\n        PUSH,
     __12_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
@@ -757,112 +754,112 @@ MonoBehaviour:
       lineChar: 74
       spanCodeSection: 
     - startInstruction: 648
-      endInstruction: 667
+      endInstruction: 647
       startSourceChar: 1373
       endSourceChar: 1387
       line: 35
       lineChar: 74
       spanCodeSection: 'testScript != '
-    - startInstruction: 668
-      endInstruction: 787
+    - startInstruction: 648
+      endInstruction: 767
       startSourceChar: 1387
       endSourceChar: 1409
       line: 35
       lineChar: 88
       spanCodeSection: "null);\r\n\r\n            "
-    - startInstruction: 788
-      endInstruction: 787
+    - startInstruction: 768
+      endInstruction: 767
       startSourceChar: 1409
       endSourceChar: 1409
       line: 37
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 788
-      endInstruction: 787
+    - startInstruction: 768
+      endInstruction: 767
       startSourceChar: 1409
       endSourceChar: 1409
       line: 37
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 788
-      endInstruction: 787
+    - startInstruction: 768
+      endInstruction: 767
       startSourceChar: 1409
       endSourceChar: 1417
       line: 37
       lineChar: 12
       spanCodeSection: Destroy(
-    - startInstruction: 788
-      endInstruction: 823
+    - startInstruction: 768
+      endInstruction: 803
       startSourceChar: 1417
       endSourceChar: 1451
       line: 37
       lineChar: 20
       spanCodeSection: "newObject);\r\n        }\r\n\r\n        "
-    - startInstruction: 824
-      endInstruction: 831
+    - startInstruction: 804
+      endInstruction: 811
       startSourceChar: 1451
       endSourceChar: 1487
       line: 40
       lineChar: 8
       spanCodeSection: "void TestHeapVariableGet()\r\n        "
-    - startInstruction: 832
-      endInstruction: 831
+    - startInstruction: 812
+      endInstruction: 811
       startSourceChar: 1487
       endSourceChar: 1502
       line: 41
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 832
-      endInstruction: 831
+    - startInstruction: 812
+      endInstruction: 811
       startSourceChar: 1502
       endSourceChar: 1502
       line: 42
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 832
-      endInstruction: 831
+    - startInstruction: 812
+      endInstruction: 811
       startSourceChar: 1502
       endSourceChar: 1502
       line: 42
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 832
-      endInstruction: 831
+    - startInstruction: 812
+      endInstruction: 811
       startSourceChar: 1502
       endSourceChar: 1502
       line: 42
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 832
-      endInstruction: 831
+    - startInstruction: 812
+      endInstruction: 811
       startSourceChar: 1502
       endSourceChar: 1523
       line: 42
       lineChar: 12
       spanCodeSection: 'GameObject newObject '
-    - startInstruction: 832
-      endInstruction: 831
+    - startInstruction: 812
+      endInstruction: 811
       startSourceChar: 1523
       endSourceChar: 1525
       line: 42
       lineChar: 33
       spanCodeSection: '= '
-    - startInstruction: 832
-      endInstruction: 831
+    - startInstruction: 812
+      endInstruction: 811
       startSourceChar: 1525
       endSourceChar: 1525
       line: 42
       lineChar: 35
       spanCodeSection: 
-    - startInstruction: 832
-      endInstruction: 831
+    - startInstruction: 812
+      endInstruction: 811
       startSourceChar: 1525
       endSourceChar: 1540
       line: 42
       lineChar: 35
       spanCodeSection: VRCInstantiate(
-    - startInstruction: 832
-      endInstruction: 875
+    - startInstruction: 812
+      endInstruction: 855
       startSourceChar: 1540
       endSourceChar: 1805
       line: 42
@@ -871,848 +868,897 @@ MonoBehaviour:
         case that will force find the script because of the above issue. We know in
         this specific test case that the only UdonBehaviour on the object will be
         of the type `InstantiatedObjectTesterScript`\r\n            "
-    - startInstruction: 876
-      endInstruction: 875
+    - startInstruction: 856
+      endInstruction: 855
       startSourceChar: 1805
       endSourceChar: 1805
       line: 45
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 876
-      endInstruction: 875
+    - startInstruction: 856
+      endInstruction: 855
       startSourceChar: 1805
       endSourceChar: 1805
       line: 45
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 876
-      endInstruction: 875
+    - startInstruction: 856
+      endInstruction: 855
       startSourceChar: 1805
       endSourceChar: 1805
       line: 45
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 876
-      endInstruction: 875
+    - startInstruction: 856
+      endInstruction: 855
       startSourceChar: 1805
       endSourceChar: 1847
       line: 45
       lineChar: 12
       spanCodeSection: 'InstantiatedObjectTesterScript testScript '
-    - startInstruction: 876
-      endInstruction: 875
+    - startInstruction: 856
+      endInstruction: 855
       startSourceChar: 1847
       endSourceChar: 1849
       line: 45
       lineChar: 54
       spanCodeSection: '= '
-    - startInstruction: 876
-      endInstruction: 875
+    - startInstruction: 856
+      endInstruction: 855
       startSourceChar: 1849
       endSourceChar: 1881
       line: 45
       lineChar: 56
       spanCodeSection: (InstantiatedObjectTesterScript)
-    - startInstruction: 876
-      endInstruction: 875
+    - startInstruction: 856
+      endInstruction: 855
       startSourceChar: 1881
       endSourceChar: 1881
       line: 45
       lineChar: 88
       spanCodeSection: 
-    - startInstruction: 876
-      endInstruction: 875
+    - startInstruction: 856
+      endInstruction: 855
       startSourceChar: 1881
       endSourceChar: 1881
       line: 45
       lineChar: 88
       spanCodeSection: 
-    - startInstruction: 876
-      endInstruction: 875
+    - startInstruction: 856
+      endInstruction: 855
       startSourceChar: 1881
       endSourceChar: 1891
       line: 45
       lineChar: 88
       spanCodeSection: newObject.
-    - startInstruction: 876
-      endInstruction: 875
+    - startInstruction: 856
+      endInstruction: 855
       startSourceChar: 1891
       endSourceChar: 1904
       line: 45
       lineChar: 98
       spanCodeSection: GetComponent(
-    - startInstruction: 876
-      endInstruction: 875
+    - startInstruction: 856
+      endInstruction: 855
       startSourceChar: 1904
       endSourceChar: 1911
       line: 45
       lineChar: 111
       spanCodeSection: typeof(
-    - startInstruction: 876
-      endInstruction: 947
+    - startInstruction: 856
+      endInstruction: 927
       startSourceChar: 1911
       endSourceChar: 1943
       line: 45
       lineChar: 118
       spanCodeSection: "UdonBehaviour));\r\n\r\n            "
-    - startInstruction: 948
-      endInstruction: 947
+    - startInstruction: 928
+      endInstruction: 927
       startSourceChar: 1943
       endSourceChar: 1943
       line: 47
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 948
-      endInstruction: 947
+    - startInstruction: 928
+      endInstruction: 927
       startSourceChar: 1943
       endSourceChar: 1943
       line: 47
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 948
-      endInstruction: 947
+    - startInstruction: 928
+      endInstruction: 927
       startSourceChar: 1943
       endSourceChar: 1943
       line: 47
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 948
-      endInstruction: 947
+    - startInstruction: 928
+      endInstruction: 927
       startSourceChar: 1943
       endSourceChar: 1950
       line: 47
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 948
-      endInstruction: 947
+    - startInstruction: 928
+      endInstruction: 927
       startSourceChar: 1950
       endSourceChar: 1964
       line: 47
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 948
-      endInstruction: 947
+    - startInstruction: 928
+      endInstruction: 927
       startSourceChar: 1964
       endSourceChar: 1997
       line: 47
       lineChar: 33
       spanCodeSection: '"Instantiated Object Get Field", '
-    - startInstruction: 948
-      endInstruction: 947
+    - startInstruction: 928
+      endInstruction: 927
       startSourceChar: 1997
       endSourceChar: 1997
       line: 47
       lineChar: 66
       spanCodeSection: 
-    - startInstruction: 948
-      endInstruction: 947
+    - startInstruction: 928
+      endInstruction: 927
       startSourceChar: 1997
       endSourceChar: 1997
       line: 47
       lineChar: 66
       spanCodeSection: 
-    - startInstruction: 948
-      endInstruction: 947
+    - startInstruction: 928
+      endInstruction: 927
       startSourceChar: 1997
       endSourceChar: 2008
       line: 47
       lineChar: 66
       spanCodeSection: testScript.
-    - startInstruction: 948
-      endInstruction: 1003
+    - startInstruction: 928
+      endInstruction: 983
       startSourceChar: 2008
       endSourceChar: 2024
       line: 47
       lineChar: 77
       spanCodeSection: 'testValueStr == '
-    - startInstruction: 1004
-      endInstruction: 1123
+    - startInstruction: 984
+      endInstruction: 1103
       startSourceChar: 2024
       endSourceChar: 2048
       line: 47
       lineChar: 93
       spanCodeSection: "\"test\");\r\n\r\n            "
-    - startInstruction: 1124
-      endInstruction: 1123
+    - startInstruction: 1104
+      endInstruction: 1103
       startSourceChar: 2048
       endSourceChar: 2048
       line: 49
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1124
-      endInstruction: 1123
+    - startInstruction: 1104
+      endInstruction: 1103
       startSourceChar: 2048
       endSourceChar: 2048
       line: 49
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1124
-      endInstruction: 1123
+    - startInstruction: 1104
+      endInstruction: 1103
       startSourceChar: 2048
       endSourceChar: 2056
       line: 49
       lineChar: 12
       spanCodeSection: Destroy(
-    - startInstruction: 1124
-      endInstruction: 1159
+    - startInstruction: 1104
+      endInstruction: 1139
       startSourceChar: 2056
       endSourceChar: 2090
       line: 49
       lineChar: 20
       spanCodeSection: "newObject);\r\n        }\r\n\r\n        "
-    - startInstruction: 1160
-      endInstruction: 1167
+    - startInstruction: 1140
+      endInstruction: 1147
       startSourceChar: 2090
       endSourceChar: 2126
       line: 52
       lineChar: 8
       spanCodeSection: "void TestHeapVariableSet()\r\n        "
-    - startInstruction: 1168
-      endInstruction: 1167
+    - startInstruction: 1148
+      endInstruction: 1147
       startSourceChar: 2126
       endSourceChar: 2141
       line: 53
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 1168
-      endInstruction: 1167
+    - startInstruction: 1148
+      endInstruction: 1147
       startSourceChar: 2141
       endSourceChar: 2141
       line: 54
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1168
-      endInstruction: 1167
+    - startInstruction: 1148
+      endInstruction: 1147
       startSourceChar: 2141
       endSourceChar: 2141
       line: 54
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1168
-      endInstruction: 1167
+    - startInstruction: 1148
+      endInstruction: 1147
       startSourceChar: 2141
       endSourceChar: 2141
       line: 54
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1168
-      endInstruction: 1167
+    - startInstruction: 1148
+      endInstruction: 1147
       startSourceChar: 2141
       endSourceChar: 2162
       line: 54
       lineChar: 12
       spanCodeSection: 'GameObject newObject '
-    - startInstruction: 1168
-      endInstruction: 1167
+    - startInstruction: 1148
+      endInstruction: 1147
       startSourceChar: 2162
       endSourceChar: 2164
       line: 54
       lineChar: 33
       spanCodeSection: '= '
-    - startInstruction: 1168
-      endInstruction: 1167
+    - startInstruction: 1148
+      endInstruction: 1147
       startSourceChar: 2164
       endSourceChar: 2164
       line: 54
       lineChar: 35
       spanCodeSection: 
-    - startInstruction: 1168
-      endInstruction: 1167
+    - startInstruction: 1148
+      endInstruction: 1147
       startSourceChar: 2164
       endSourceChar: 2179
       line: 54
       lineChar: 35
       spanCodeSection: VRCInstantiate(
-    - startInstruction: 1168
-      endInstruction: 1211
+    - startInstruction: 1148
+      endInstruction: 1191
       startSourceChar: 2179
       endSourceChar: 2229
       line: 54
       lineChar: 50
       spanCodeSection: "referenceSpawnObject);\r\n            \r\n            "
-    - startInstruction: 1212
-      endInstruction: 1211
+    - startInstruction: 1192
+      endInstruction: 1191
       startSourceChar: 2229
       endSourceChar: 2229
       line: 56
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1212
-      endInstruction: 1211
+    - startInstruction: 1192
+      endInstruction: 1191
       startSourceChar: 2229
       endSourceChar: 2229
       line: 56
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1212
-      endInstruction: 1211
+    - startInstruction: 1192
+      endInstruction: 1191
       startSourceChar: 2229
       endSourceChar: 2229
       line: 56
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1212
-      endInstruction: 1211
+    - startInstruction: 1192
+      endInstruction: 1191
       startSourceChar: 2229
       endSourceChar: 2271
       line: 56
       lineChar: 12
       spanCodeSection: 'InstantiatedObjectTesterScript testScript '
-    - startInstruction: 1212
-      endInstruction: 1211
+    - startInstruction: 1192
+      endInstruction: 1191
       startSourceChar: 2271
       endSourceChar: 2273
       line: 56
       lineChar: 54
       spanCodeSection: '= '
-    - startInstruction: 1212
-      endInstruction: 1211
+    - startInstruction: 1192
+      endInstruction: 1191
       startSourceChar: 2273
       endSourceChar: 2305
       line: 56
       lineChar: 56
       spanCodeSection: (InstantiatedObjectTesterScript)
-    - startInstruction: 1212
-      endInstruction: 1211
+    - startInstruction: 1192
+      endInstruction: 1191
       startSourceChar: 2305
       endSourceChar: 2305
       line: 56
       lineChar: 88
       spanCodeSection: 
-    - startInstruction: 1212
-      endInstruction: 1211
+    - startInstruction: 1192
+      endInstruction: 1191
       startSourceChar: 2305
       endSourceChar: 2305
       line: 56
       lineChar: 88
       spanCodeSection: 
-    - startInstruction: 1212
-      endInstruction: 1211
+    - startInstruction: 1192
+      endInstruction: 1191
       startSourceChar: 2305
       endSourceChar: 2315
       line: 56
       lineChar: 88
       spanCodeSection: newObject.
-    - startInstruction: 1212
-      endInstruction: 1211
+    - startInstruction: 1192
+      endInstruction: 1191
       startSourceChar: 2315
       endSourceChar: 2328
       line: 56
       lineChar: 98
       spanCodeSection: GetComponent(
-    - startInstruction: 1212
-      endInstruction: 1211
+    - startInstruction: 1192
+      endInstruction: 1191
       startSourceChar: 2328
       endSourceChar: 2335
       line: 56
       lineChar: 111
       spanCodeSection: typeof(
-    - startInstruction: 1212
-      endInstruction: 1283
+    - startInstruction: 1192
+      endInstruction: 1263
       startSourceChar: 2335
       endSourceChar: 2367
       line: 56
       lineChar: 118
       spanCodeSection: "UdonBehaviour));\r\n\r\n            "
-    - startInstruction: 1284
-      endInstruction: 1283
+    - startInstruction: 1264
+      endInstruction: 1263
       startSourceChar: 2367
       endSourceChar: 2367
       line: 58
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1284
-      endInstruction: 1283
+    - startInstruction: 1264
+      endInstruction: 1263
       startSourceChar: 2367
-      endSourceChar: 2393
+      endSourceChar: 2367
       line: 58
       lineChar: 12
-      spanCodeSection: 'testScript.testValueStr = '
-    - startInstruction: 1284
-      endInstruction: 1315
+      spanCodeSection: 
+    - startInstruction: 1264
+      endInstruction: 1263
+      startSourceChar: 2367
+      endSourceChar: 2367
+      line: 58
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 1264
+      endInstruction: 1263
+      startSourceChar: 2367
+      endSourceChar: 2378
+      line: 58
+      lineChar: 12
+      spanCodeSection: testScript.
+    - startInstruction: 1264
+      endInstruction: 1263
+      startSourceChar: 2378
+      endSourceChar: 2393
+      line: 58
+      lineChar: 23
+      spanCodeSection: 'testValueStr = '
+    - startInstruction: 1264
+      endInstruction: 1295
       startSourceChar: 2393
       endSourceChar: 2420
       line: 58
       lineChar: 38
       spanCodeSection: "\"test set\";\r\n\r\n            "
-    - startInstruction: 1316
-      endInstruction: 1315
+    - startInstruction: 1296
+      endInstruction: 1295
       startSourceChar: 2420
       endSourceChar: 2420
       line: 60
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1316
-      endInstruction: 1315
+    - startInstruction: 1296
+      endInstruction: 1295
       startSourceChar: 2420
       endSourceChar: 2420
       line: 60
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1316
-      endInstruction: 1315
+    - startInstruction: 1296
+      endInstruction: 1295
       startSourceChar: 2420
       endSourceChar: 2420
       line: 60
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1316
-      endInstruction: 1315
+    - startInstruction: 1296
+      endInstruction: 1295
       startSourceChar: 2420
       endSourceChar: 2427
       line: 60
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 1316
-      endInstruction: 1315
+    - startInstruction: 1296
+      endInstruction: 1295
       startSourceChar: 2427
       endSourceChar: 2441
       line: 60
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 1316
-      endInstruction: 1315
+    - startInstruction: 1296
+      endInstruction: 1295
       startSourceChar: 2441
       endSourceChar: 2474
       line: 60
       lineChar: 33
       spanCodeSection: '"Instantiated Object Set Field", '
-    - startInstruction: 1316
-      endInstruction: 1315
+    - startInstruction: 1296
+      endInstruction: 1295
       startSourceChar: 2474
       endSourceChar: 2474
       line: 60
       lineChar: 66
       spanCodeSection: 
-    - startInstruction: 1316
-      endInstruction: 1315
+    - startInstruction: 1296
+      endInstruction: 1295
       startSourceChar: 2474
       endSourceChar: 2474
       line: 60
       lineChar: 66
       spanCodeSection: 
-    - startInstruction: 1316
-      endInstruction: 1315
+    - startInstruction: 1296
+      endInstruction: 1295
       startSourceChar: 2474
       endSourceChar: 2485
       line: 60
       lineChar: 66
       spanCodeSection: testScript.
-    - startInstruction: 1316
-      endInstruction: 1371
+    - startInstruction: 1296
+      endInstruction: 1351
       startSourceChar: 2485
       endSourceChar: 2501
       line: 60
       lineChar: 77
       spanCodeSection: 'testValueStr == '
-    - startInstruction: 1372
-      endInstruction: 1491
+    - startInstruction: 1352
+      endInstruction: 1471
       startSourceChar: 2501
       endSourceChar: 2529
       line: 60
       lineChar: 93
       spanCodeSection: "\"test set\");\r\n\r\n            "
-    - startInstruction: 1492
-      endInstruction: 1491
+    - startInstruction: 1472
+      endInstruction: 1471
       startSourceChar: 2529
       endSourceChar: 2529
       line: 62
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1492
-      endInstruction: 1491
+    - startInstruction: 1472
+      endInstruction: 1471
       startSourceChar: 2529
       endSourceChar: 2529
       line: 62
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1492
-      endInstruction: 1491
+    - startInstruction: 1472
+      endInstruction: 1471
       startSourceChar: 2529
       endSourceChar: 2537
       line: 62
       lineChar: 12
       spanCodeSection: Destroy(
-    - startInstruction: 1492
-      endInstruction: 1527
+    - startInstruction: 1472
+      endInstruction: 1507
       startSourceChar: 2537
       endSourceChar: 2571
       line: 62
       lineChar: 20
       spanCodeSection: "newObject);\r\n        }\r\n\r\n        "
-    - startInstruction: 1528
-      endInstruction: 1527
+    - startInstruction: 1508
+      endInstruction: 1507
       startSourceChar: 2571
       endSourceChar: 2571
       line: 65
       lineChar: 8
       spanCodeSection: 
-    - startInstruction: 1528
-      endInstruction: 1527
+    - startInstruction: 1508
+      endInstruction: 1507
       startSourceChar: 2571
       endSourceChar: 2571
       line: 65
       lineChar: 8
       spanCodeSection: 
-    - startInstruction: 1528
-      endInstruction: 1527
+    - startInstruction: 1508
+      endInstruction: 1507
       startSourceChar: 2571
       endSourceChar: 2604
       line: 65
       lineChar: 8
       spanCodeSection: "int spawnCounter = 0;\r\n\r\n        "
-    - startInstruction: 1528
-      endInstruction: 1535
+    - startInstruction: 1508
+      endInstruction: 1515
       startSourceChar: 2604
       endSourceChar: 2638
       line: 67
       lineChar: 8
       spanCodeSection: "public void SpawnEvent()\r\n        "
-    - startInstruction: 1536
-      endInstruction: 1535
+    - startInstruction: 1516
+      endInstruction: 1515
       startSourceChar: 2638
       endSourceChar: 2653
       line: 68
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 1536
-      endInstruction: 1535
+    - startInstruction: 1516
+      endInstruction: 1515
       startSourceChar: 2653
       endSourceChar: 2653
       line: 69
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1536
-      endInstruction: 1535
+    - startInstruction: 1516
+      endInstruction: 1515
       startSourceChar: 2653
       endSourceChar: 2653
       line: 69
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1536
-      endInstruction: 1627
+    - startInstruction: 1516
+      endInstruction: 1607
       startSourceChar: 2653
       endSourceChar: 2691
       line: 69
       lineChar: 12
       spanCodeSection: "spawnCounter++;\r\n        }\r\n\r\n        "
-    - startInstruction: 1628
-      endInstruction: 1635
+    - startInstruction: 1608
+      endInstruction: 1615
       startSourceChar: 2691
       endSourceChar: 2723
       line: 72
       lineChar: 8
       spanCodeSection: "void TestCustomEvent()\r\n        "
-    - startInstruction: 1636
-      endInstruction: 1635
+    - startInstruction: 1616
+      endInstruction: 1615
       startSourceChar: 2723
       endSourceChar: 2738
       line: 73
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 1636
-      endInstruction: 1635
+    - startInstruction: 1616
+      endInstruction: 1615
       startSourceChar: 2738
       endSourceChar: 2738
       line: 74
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1636
-      endInstruction: 1635
+    - startInstruction: 1616
+      endInstruction: 1615
+      startSourceChar: 2738
+      endSourceChar: 2738
+      line: 74
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 1616
+      endInstruction: 1615
       startSourceChar: 2738
       endSourceChar: 2753
       line: 74
       lineChar: 12
       spanCodeSection: 'spawnCounter = '
-    - startInstruction: 1636
-      endInstruction: 1655
+    - startInstruction: 1616
+      endInstruction: 1635
       startSourceChar: 2753
       endSourceChar: 2771
       line: 74
       lineChar: 27
       spanCodeSection: "0;\r\n\r\n            "
-    - startInstruction: 1656
-      endInstruction: 1655
+    - startInstruction: 1636
+      endInstruction: 1635
       startSourceChar: 2771
       endSourceChar: 2771
       line: 76
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1656
-      endInstruction: 1655
+    - startInstruction: 1636
+      endInstruction: 1635
       startSourceChar: 2771
       endSourceChar: 2771
       line: 76
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1656
-      endInstruction: 1655
+    - startInstruction: 1636
+      endInstruction: 1635
       startSourceChar: 2771
       endSourceChar: 2771
       line: 76
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1656
-      endInstruction: 1655
+    - startInstruction: 1636
+      endInstruction: 1635
       startSourceChar: 2771
       endSourceChar: 2792
       line: 76
       lineChar: 12
       spanCodeSection: 'GameObject newObject '
-    - startInstruction: 1656
-      endInstruction: 1655
+    - startInstruction: 1636
+      endInstruction: 1635
       startSourceChar: 2792
       endSourceChar: 2794
       line: 76
       lineChar: 33
       spanCodeSection: '= '
-    - startInstruction: 1656
-      endInstruction: 1655
+    - startInstruction: 1636
+      endInstruction: 1635
       startSourceChar: 2794
       endSourceChar: 2794
       line: 76
       lineChar: 35
       spanCodeSection: 
-    - startInstruction: 1656
-      endInstruction: 1655
+    - startInstruction: 1636
+      endInstruction: 1635
       startSourceChar: 2794
       endSourceChar: 2809
       line: 76
       lineChar: 35
       spanCodeSection: VRCInstantiate(
-    - startInstruction: 1656
-      endInstruction: 1699
+    - startInstruction: 1636
+      endInstruction: 1679
       startSourceChar: 2809
       endSourceChar: 2847
       line: 76
       lineChar: 50
       spanCodeSection: "referenceSpawnObject);\r\n\r\n            "
-    - startInstruction: 1700
-      endInstruction: 1699
+    - startInstruction: 1680
+      endInstruction: 1679
       startSourceChar: 2847
       endSourceChar: 2847
       line: 78
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1700
-      endInstruction: 1699
+    - startInstruction: 1680
+      endInstruction: 1679
       startSourceChar: 2847
       endSourceChar: 2847
       line: 78
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1700
-      endInstruction: 1699
+    - startInstruction: 1680
+      endInstruction: 1679
       startSourceChar: 2847
       endSourceChar: 2847
       line: 78
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1700
-      endInstruction: 1699
+    - startInstruction: 1680
+      endInstruction: 1679
       startSourceChar: 2847
       endSourceChar: 2889
       line: 78
       lineChar: 12
       spanCodeSection: 'InstantiatedObjectTesterScript testScript '
-    - startInstruction: 1700
-      endInstruction: 1699
+    - startInstruction: 1680
+      endInstruction: 1679
       startSourceChar: 2889
       endSourceChar: 2891
       line: 78
       lineChar: 54
       spanCodeSection: '= '
-    - startInstruction: 1700
-      endInstruction: 1699
+    - startInstruction: 1680
+      endInstruction: 1679
       startSourceChar: 2891
       endSourceChar: 2923
       line: 78
       lineChar: 56
       spanCodeSection: (InstantiatedObjectTesterScript)
-    - startInstruction: 1700
-      endInstruction: 1699
+    - startInstruction: 1680
+      endInstruction: 1679
       startSourceChar: 2923
       endSourceChar: 2923
       line: 78
       lineChar: 88
       spanCodeSection: 
-    - startInstruction: 1700
-      endInstruction: 1699
+    - startInstruction: 1680
+      endInstruction: 1679
       startSourceChar: 2923
       endSourceChar: 2923
       line: 78
       lineChar: 88
       spanCodeSection: 
-    - startInstruction: 1700
-      endInstruction: 1699
+    - startInstruction: 1680
+      endInstruction: 1679
       startSourceChar: 2923
       endSourceChar: 2933
       line: 78
       lineChar: 88
       spanCodeSection: newObject.
-    - startInstruction: 1700
-      endInstruction: 1699
+    - startInstruction: 1680
+      endInstruction: 1679
       startSourceChar: 2933
       endSourceChar: 2946
       line: 78
       lineChar: 98
       spanCodeSection: GetComponent(
-    - startInstruction: 1700
-      endInstruction: 1699
+    - startInstruction: 1680
+      endInstruction: 1679
       startSourceChar: 2946
       endSourceChar: 2953
       line: 78
       lineChar: 111
       spanCodeSection: typeof(
-    - startInstruction: 1700
-      endInstruction: 1771
+    - startInstruction: 1680
+      endInstruction: 1751
       startSourceChar: 2953
       endSourceChar: 2985
       line: 78
       lineChar: 118
       spanCodeSection: "UdonBehaviour));\r\n\r\n            "
-    - startInstruction: 1772
-      endInstruction: 1771
+    - startInstruction: 1752
+      endInstruction: 1751
       startSourceChar: 2985
       endSourceChar: 2985
       line: 80
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1772
-      endInstruction: 1771
+    - startInstruction: 1752
+      endInstruction: 1751
       startSourceChar: 2985
-      endSourceChar: 3015
+      endSourceChar: 2985
       line: 80
       lineChar: 12
-      spanCodeSection: 'testScript.spawnerBehaviour = '
-    - startInstruction: 1772
-      endInstruction: 1803
+      spanCodeSection: 
+    - startInstruction: 1752
+      endInstruction: 1751
+      startSourceChar: 2985
+      endSourceChar: 2985
+      line: 80
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 1752
+      endInstruction: 1751
+      startSourceChar: 2985
+      endSourceChar: 2996
+      line: 80
+      lineChar: 12
+      spanCodeSection: testScript.
+    - startInstruction: 1752
+      endInstruction: 1751
+      startSourceChar: 2996
+      endSourceChar: 3015
+      line: 80
+      lineChar: 23
+      spanCodeSection: 'spawnerBehaviour = '
+    - startInstruction: 1752
+      endInstruction: 1783
       startSourceChar: 3015
       endSourceChar: 3034
       line: 80
       lineChar: 42
       spanCodeSection: "this;\r\n            "
-    - startInstruction: 1804
-      endInstruction: 1803
+    - startInstruction: 1784
+      endInstruction: 1783
       startSourceChar: 3034
       endSourceChar: 3034
       line: 81
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1804
-      endInstruction: 1803
+    - startInstruction: 1784
+      endInstruction: 1783
       startSourceChar: 3034
       endSourceChar: 3034
       line: 81
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1804
-      endInstruction: 1803
+    - startInstruction: 1784
+      endInstruction: 1783
       startSourceChar: 3034
       endSourceChar: 3034
       line: 81
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1804
-      endInstruction: 1803
+    - startInstruction: 1784
+      endInstruction: 1783
       startSourceChar: 3034
       endSourceChar: 3045
       line: 81
       lineChar: 12
       spanCodeSection: testScript.
-    - startInstruction: 1804
-      endInstruction: 1827
+    - startInstruction: 1784
+      endInstruction: 1807
       startSourceChar: 3045
       endSourceChar: 3073
       line: 81
       lineChar: 23
       spanCodeSection: "CallEvent();\r\n\r\n            "
-    - startInstruction: 1828
-      endInstruction: 1827
+    - startInstruction: 1808
+      endInstruction: 1807
       startSourceChar: 3073
       endSourceChar: 3073
       line: 83
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1828
-      endInstruction: 1827
+    - startInstruction: 1808
+      endInstruction: 1807
       startSourceChar: 3073
       endSourceChar: 3073
       line: 83
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1828
-      endInstruction: 1827
+    - startInstruction: 1808
+      endInstruction: 1807
       startSourceChar: 3073
       endSourceChar: 3073
       line: 83
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1828
-      endInstruction: 1827
+    - startInstruction: 1808
+      endInstruction: 1807
       startSourceChar: 3073
       endSourceChar: 3080
       line: 83
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 1828
-      endInstruction: 1827
+    - startInstruction: 1808
+      endInstruction: 1807
       startSourceChar: 3080
       endSourceChar: 3094
       line: 83
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 1828
-      endInstruction: 1827
+    - startInstruction: 1808
+      endInstruction: 1807
       startSourceChar: 3094
       endSourceChar: 3128
       line: 83
       lineChar: 33
       spanCodeSection: '"Instantiated Object Send Event", '
-    - startInstruction: 1828
-      endInstruction: 1827
+    - startInstruction: 1808
+      endInstruction: 1807
       startSourceChar: 3128
       endSourceChar: 3128
       line: 83
       lineChar: 67
       spanCodeSection: 
-    - startInstruction: 1828
-      endInstruction: 1847
+    - startInstruction: 1808
+      endInstruction: 1807
       startSourceChar: 3128
       endSourceChar: 3144
       line: 83
       lineChar: 67
       spanCodeSection: 'spawnCounter == '
-    - startInstruction: 1848
-      endInstruction: 1967
+    - startInstruction: 1808
+      endInstruction: 1927
       startSourceChar: 3144
       endSourceChar: 3163
       line: 83
       lineChar: 83
       spanCodeSection: "1);\r\n\r\n            "
-    - startInstruction: 1968
-      endInstruction: 1967
+    - startInstruction: 1928
+      endInstruction: 1927
       startSourceChar: 3163
       endSourceChar: 3163
       line: 85
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1968
-      endInstruction: 1967
+    - startInstruction: 1928
+      endInstruction: 1927
       startSourceChar: 3163
       endSourceChar: 3163
       line: 85
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1968
-      endInstruction: 1967
+    - startInstruction: 1928
+      endInstruction: 1927
       startSourceChar: 3163
       endSourceChar: 3171
       line: 85
       lineChar: 12
       spanCodeSection: Destroy(
-    - startInstruction: 1968
-      endInstruction: 1968
+    - startInstruction: 1928
+      endInstruction: 1928
       startSourceChar: 3171
       endSourceChar: 3171
       line: 85

@@ -26,6 +26,7 @@ namespace UdonSharp.Tests
             ShortIncrement();
             UShortIncrement();
             IntTruncate();
+            StringAddition();
         }
 
         void IntBinaryOps()
@@ -240,6 +241,15 @@ namespace UdonSharp.Tests
 
             truncatedValue = (int)4.7;
             tester.TestAssertion("Double to Int Truncation", truncatedValue == 4);
+        }
+
+        void StringAddition()
+        {
+            string s = "ab";
+            s = s + "cd";
+            s += "ef";
+            s += string.Format("{0:x2}", 0x42);
+            tester.TestAssertion("String addition", s == "abcdef42");
         }
     }
 }

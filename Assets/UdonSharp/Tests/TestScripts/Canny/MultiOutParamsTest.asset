@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: MultiOutParamsTest
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 8aa6a7a5fa9203446b89c72532991c7c,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 06cfb65263342a249968d390ce617ae8,
     type: 2}
   udonAssembly: ".data_start\r\n\r\n\r\n    __refl_const_intnl_udonTypeID: %SystemInt64,
     null\r\n    __refl_const_intnl_udonTypeName: %SystemString, null\r\n    tester:
@@ -30,15 +30,14 @@ MonoBehaviour:
     \   __3_intnl_SystemBoolean: %SystemBoolean, null\r\n    __4_intnl_SystemBoolean:
     %SystemBoolean, null\r\n    __0_intnl_UnityEngineQuaternion: %UnityEngineQuaternion,
     null\r\n    __0_intnl_SystemSingle: %SystemSingle, null\r\n    __1_intnl_SystemSingle:
-    %SystemSingle, null\r\n    __2_intnl_SystemSingle: %SystemSingle, null\r\n    __3_intnl_SystemSingle:
-    %SystemSingle, null\r\n    __0_intnl_returnTarget_UInt32: %SystemUInt32, null\r\n
-    \   __0_intnl_UnityEngineVector3: %UnityEngineVector3, null\r\n    __1_intnl_UnityEngineVector3:
-    %UnityEngineVector3, null\r\n    __2_intnl_UnityEngineVector3: %UnityEngineVector3,
-    null\r\n    __3_intnl_UnityEngineVector3: %UnityEngineVector3, null\r\n    __4_intnl_UnityEngineVector3:
-    %UnityEngineVector3, null\r\n\r\n.data_end\r\n\r\n        \r\n         # using
-    UdonSharp;\r\n        \r\n         # using UnityEngine;\r\n        \r\n         #
-    using VRC.SDKBase;\r\n        \r\n         # using VRC.Udon;\r\n        \r\n         #
-    namespace UdonSharp.Tests\r\n        \r\n         # [AddComponentMenu(\"Udon Sharp/Tests/MultiOutParamsTest\")]\r\n
+    %SystemSingle, null\r\n    __2_intnl_SystemSingle: %SystemSingle, null\r\n    __0_intnl_returnTarget_UInt32:
+    %SystemUInt32, null\r\n    __0_intnl_UnityEngineVector3: %UnityEngineVector3,
+    null\r\n    __1_intnl_UnityEngineVector3: %UnityEngineVector3, null\r\n    __2_intnl_UnityEngineVector3:
+    %UnityEngineVector3, null\r\n    __3_intnl_UnityEngineVector3: %UnityEngineVector3,
+    null\r\n\r\n.data_end\r\n\r\n        \r\n         # using UdonSharp;\r\n        \r\n
+    \        # using UnityEngine;\r\n        \r\n         # using VRC.SDKBase;\r\n
+    \       \r\n         # using VRC.Udon;\r\n        \r\n         # namespace UdonSharp.Tests\r\n
+    \       \r\n         # [AddComponentMenu(\"Udon Sharp/Tests/MultiOutParamsTest\")]\r\n
     \       \r\n         # public class MultiOutParamsTest : UdonSharpBehaviour\r\n.code_start\r\n
     \       \r\n         # [System.NonSerialized]\r\n        \r\n         # public
     IntegrationTestSuite tester;\r\n        \r\n         # public void ExecuteTests()\r\n
@@ -72,18 +71,15 @@ MonoBehaviour:
     \       PUSH, __0_axis_Vector3\r\n        EXTERN, \"UnityEngineQuaternion.__ToAngleAxis__SystemSingleRef_UnityEngineVector3Ref__SystemVoid\"\r\n
     \       \r\n         # tester.TestAssertion(\"Angle Axis double out params\",
     angle != 0f || axis != Vector3.zero);\r\n        PUSH, __0_angle_Single\r\n        PUSH,
-    __3_intnl_SystemSingle\r\n        COPY\r\n        PUSH, __3_intnl_SystemSingle\r\n
-    \       PUSH, __1_const_intnl_SystemSingle\r\n        PUSH, __1_intnl_SystemBoolean\r\n
-    \       EXTERN, \"SystemSingle.__op_Inequality__SystemSingle_SystemSingle__SystemBoolean\"\r\n
+    __1_const_intnl_SystemSingle\r\n        PUSH, __1_intnl_SystemBoolean\r\n        EXTERN,
+    \"SystemSingle.__op_Inequality__SystemSingle_SystemSingle__SystemBoolean\"\r\n
     \       PUSH, __1_intnl_SystemBoolean\r\n        PUSH, __0_intnl_SystemBoolean\r\n
     \       COPY\r\n        PUSH, __0_intnl_SystemBoolean\r\n        PUSH, __2_intnl_SystemBoolean\r\n
     \       EXTERN, \"SystemBoolean.__op_UnaryNegation__SystemBoolean__SystemBoolean\"\r\n
-    \       PUSH, __2_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000230\r\n
+    \       PUSH, __2_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000208\r\n
+    \       PUSH, __3_intnl_UnityEngineVector3\r\n        EXTERN, \"UnityEngineVector3.__get_zero__UnityEngineVector3\"\r\n
     \       PUSH, __0_axis_Vector3\r\n        PUSH, __3_intnl_UnityEngineVector3\r\n
-    \       COPY\r\n        PUSH, __4_intnl_UnityEngineVector3\r\n        EXTERN,
-    \"UnityEngineVector3.__get_zero__UnityEngineVector3\"\r\n        PUSH, __3_intnl_UnityEngineVector3\r\n
-    \       PUSH, __4_intnl_UnityEngineVector3\r\n        PUSH, __3_intnl_SystemBoolean\r\n
-    \       EXTERN, \"UnityEngineVector3.__op_Inequality__UnityEngineVector3_UnityEngineVector3__SystemBoolean\"\r\n
+    \       PUSH, __3_intnl_SystemBoolean\r\n        EXTERN, \"UnityEngineVector3.__op_Inequality__UnityEngineVector3_UnityEngineVector3__SystemBoolean\"\r\n
     \       PUSH, __0_intnl_SystemBoolean\r\n        PUSH, __3_intnl_SystemBoolean\r\n
     \       PUSH, __4_intnl_SystemBoolean\r\n        EXTERN, \"SystemBoolean.__op_ConditionalOr__SystemBoolean_SystemBoolean__SystemBoolean\"\r\n
     \       PUSH, __4_intnl_SystemBoolean\r\n        PUSH, __0_intnl_SystemBoolean\r\n
@@ -680,49 +676,49 @@ MonoBehaviour:
       lineChar: 65
       spanCodeSection: 
     - startInstruction: 328
-      endInstruction: 347
+      endInstruction: 327
       startSourceChar: 1006
       endSourceChar: 1015
       line: 31
       lineChar: 65
       spanCodeSection: 'angle != '
-    - startInstruction: 348
-      endInstruction: 439
+    - startInstruction: 328
+      endInstruction: 419
       startSourceChar: 1015
       endSourceChar: 1021
       line: 31
       lineChar: 74
       spanCodeSection: '0f || '
-    - startInstruction: 440
-      endInstruction: 439
+    - startInstruction: 420
+      endInstruction: 419
       startSourceChar: 1021
       endSourceChar: 1021
       line: 31
       lineChar: 80
       spanCodeSection: 
-    - startInstruction: 440
-      endInstruction: 459
+    - startInstruction: 420
+      endInstruction: 419
       startSourceChar: 1021
       endSourceChar: 1029
       line: 31
       lineChar: 80
       spanCodeSection: 'axis != '
-    - startInstruction: 460
-      endInstruction: 459
+    - startInstruction: 420
+      endInstruction: 419
       startSourceChar: 1029
       endSourceChar: 1029
       line: 31
       lineChar: 88
       spanCodeSection: 
-    - startInstruction: 460
-      endInstruction: 459
+    - startInstruction: 420
+      endInstruction: 419
       startSourceChar: 1029
       endSourceChar: 1037
       line: 31
       lineChar: 88
       spanCodeSection: Vector3.
-    - startInstruction: 460
-      endInstruction: 460
+    - startInstruction: 420
+      endInstruction: 420
       startSourceChar: 1037
       endSourceChar: 1037
       line: 31
