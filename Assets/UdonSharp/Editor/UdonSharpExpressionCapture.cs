@@ -440,13 +440,13 @@ namespace UdonSharp
             {
                 outSymbol = visitorContext.topTable.CreateUnnamedSymbol(captureExternUserField.fieldSymbol.symbolCsType, SymbolDeclTypeFlags.Internal);
 
-                using (ExpressionCaptureScope getVariableMethodScope = new ExpressionCaptureScope(visitorContext, null))
+                using (ExpressionCaptureScope getVariableMethodScope = new ExpressionCaptureScope(visitorContext, null, requestedDestination))
                 {
                     getVariableMethodScope.SetToLocalSymbol(accessSymbol);
                     getVariableMethodScope.ResolveAccessToken("GetProgramVariable");
 
                     SymbolDefinition externVarReturn = getVariableMethodScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserField.fieldSymbol.symbolUniqueName) });
-                    outSymbol = CastSymbolToType(externVarReturn, captureExternUserField.fieldSymbol.userCsType, true, true);
+                    outSymbol = CastSymbolToType(externVarReturn, captureExternUserField.fieldSymbol.userCsType, true, true, requestedDestination);
                 }
             }
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
@@ -512,8 +512,8 @@ namespace UdonSharp
         {
             CheckScopeValidity();
 
-            SymbolDefinition convertedValue = CastSymbolToType(value, GetReturnType(true), explicitCast);
             SymbolDefinition destinationSymbol = this.destinationSymbolForSet;
+            SymbolDefinition convertedValue = CastSymbolToType(value, GetReturnType(true), explicitCast, false, destinationSymbol);
 
             // If it's a local symbol, it's just a simple COPY
             if (destinationSymbolForSet != null)
@@ -784,6 +784,11 @@ namespace UdonSharp
             ParameterInfo[] methodParams = targetMethod.GetParameters();
 
             List<SymbolDefinition> newInvokeParams = new List<SymbolDefinition>();
+            SymbolDefinition[] argDestinationSymbols = GetLocalMethodArgumentSymbols();
+            if (argDestinationSymbols == null)
+            {
+                argDestinationSymbols = new SymbolDefinition[methodParams.Length];
+            }
 
             for (int i = 0; i < methodParams.Length; ++i)
             {
@@ -835,7 +840,7 @@ namespace UdonSharp
                     break;
                 }
 
-                newInvokeParams.Add(CastSymbolToType(invokeParams[i], methodParams[i].ParameterType, false));
+                newInvokeParams.Add(CastSymbolToType(invokeParams[i], methodParams[i].ParameterType, false, false, argDestinationSymbols[i]));
             }
 
             return newInvokeParams.ToArray();
@@ -1402,6 +1407,16 @@ namespace UdonSharp
             return returnSymbol;
         }
 
+        public SymbolDefinition[] GetLocalMethodArgumentSymbols()
+        {
+            if (captureArchetype != ExpressionCaptureArchetype.LocalMethod)
+            {
+                return null;
+            }
+
+            return captureLocalMethod.parameters.Select((param) => param.paramSymbol).ToArray();
+        }
+
         private SymbolDefinition InvokeLocalMethod(SymbolDefinition[] invokeParams)
         {
             if (invokeParams.Length != captureLocalMethod.parameters.Length)
@@ -1431,23 +1446,7 @@ namespace UdonSharp
             visitorContext.uasmBuilder.AddJumpLabel(exitLabel);
             exitJumpLocation.symbolDefaultValue = exitLabel.resolvedAddress;
 
-            SymbolDefinition returnValue = null;
-
-            if (captureLocalMethod.returnSymbol != null)
-            {
-                returnValue = visitorContext.topTable.CreateUnnamedSymbol(captureLocalMethod.returnSymbol.userCsType, SymbolDeclTypeFlags.Internal);
-
-                using (ExpressionCaptureScope returnValSetScope = new ExpressionCaptureScope(visitorContext, null))
-                {
-                    returnValSetScope.SetToLocalSymbol(returnValue);
-                    returnValSetScope.ExecuteSet(captureLocalMethod.returnSymbol);
-                }
-
-                if (visitorContext.topCaptureScope != null && visitorContext.topCaptureScope.IsUnknownArchetype())
-                    visitorContext.topCaptureScope.SetToLocalSymbol(returnValue);
-            }
-
-            return returnValue;
+            return captureLocalMethod.returnSymbol;
         }
 
         private SymbolDefinition InvokeUserExtern(SymbolDefinition[] invokeParams)

@@ -674,9 +674,14 @@ namespace UdonSharp
 
         public void DirtyEverything(bool skipLocals = false)
         {
-            foreach (SymbolDefinition symbol in GetAllSymbols(false))
+            foreach (SymbolDefinition symbol in GetAllSymbols(true))
             {
                 if (skipLocals && (symbol.declarationType & SymbolDeclTypeFlags.Local) != 0)
+                {
+                    continue;
+                }
+
+                if ((symbol.declarationType & SymbolDeclTypeFlags.Constant) != 0)
                 {
                     continue;
                 }

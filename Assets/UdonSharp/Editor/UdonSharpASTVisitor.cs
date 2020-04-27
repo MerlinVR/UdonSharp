@@ -844,10 +844,10 @@ namespace UdonSharp
 
                 using (ExpressionCaptureScope symbolCreationScope = new ExpressionCaptureScope(visitorContext, null))
                 {
-                    newSymbol = visitorContext.topTable.CreateNamedSymbol(variableDeclarator.Identifier.ValueText, variableType, symbolType);
-                    newSymbol.syncMode = syncMode;
-
-                    symbolCreationScope.SetToLocalSymbol(newSymbol);
+                    if (!isVar)
+                    {
+                        newSymbol = visitorContext.topTable.CreateNamedSymbol(variableDeclarator.Identifier.ValueText, variableType, symbolType);
+                    }
 
                     // Run the initializer if it exists
                     // Todo: Run the set on the new symbol scope from within the initializer scope for direct setting
@@ -855,12 +855,16 @@ namespace UdonSharp
                     {
                         using (ExpressionCaptureScope initializerCapture = new ExpressionCaptureScope(visitorContext, null, newSymbol))
                         {
-                            Debug.Log($"IC {newSymbol} {variableDeclarator.Initializer}");
                             Visit(variableDeclarator.Initializer);
 
-                            if (isVar)
+                            if (newSymbol == null)
+                            {
+                                // TODO: Find a way to determine the return type before generating initializer code, to avoid a copy on 'var' local initializers
                                 variableType = initializerCapture.GetReturnType(true);
+                                newSymbol = visitorContext.topTable.CreateNamedSymbol(variableDeclarator.Identifier.ValueText, variableType, symbolType);
+                            }
 
+                            symbolCreationScope.SetToLocalSymbol(newSymbol);
                             symbolCreationScope.ExecuteSet(initializerCapture.ExecuteGet());
                         }
                     }
@@ -1815,7 +1819,7 @@ namespace UdonSharp
             System.Type targetType = null;
             SymbolDefinition expressionSymbol = null;
 
-            using (ExpressionCaptureScope castExpressionCapture = new ExpressionCaptureScope(visitorContext, null))
+            using (ExpressionCaptureScope castExpressionCapture = new ExpressionCaptureScope(visitorContext, null, visitorContext.requestedDestination))
             {
                 Visit(node.Expression);
 
@@ -1832,9 +1836,15 @@ namespace UdonSharp
                 targetType = castTypeCapture.captureType;
             }
 
+
+            SymbolDefinition castOutSymbol = visitorContext.requestedDestination;
+
             using (ExpressionCaptureScope castOutCapture = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
             {
-                SymbolDefinition castOutSymbol = visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
+                if (castOutSymbol == null)
+                {
+                    castOutSymbol = visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
+                }
 
                 castOutCapture.SetToLocalSymbol(castOutSymbol);
 
@@ -1855,7 +1865,7 @@ namespace UdonSharp
 
             if (visitorContext.returnSymbol != null)
             {
-                using (ExpressionCaptureScope returnCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+                using (ExpressionCaptureScope returnCaptureScope = new ExpressionCaptureScope(visitorContext, null, visitorContext.returnSymbol))
                 {
                     Visit(node.Expression);
 
@@ -2421,9 +2431,14 @@ namespace UdonSharp
 
                 //visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
 
-                foreach (ArgumentSyntax argument in node.ArgumentList.Arguments)
+                SymbolDefinition[] argDestinations = methodCaptureScope.GetLocalMethodArgumentSymbols();
+
+                for (int i = 0; i < node.ArgumentList.Arguments.Count; i++)
                 {
-                    using (ExpressionCaptureScope captureScope = new ExpressionCaptureScope(visitorContext, null))
+                    ArgumentSyntax argument = node.ArgumentList.Arguments[i];
+                    SymbolDefinition argDestination = argDestinations != null ? argDestinations[i] : null;
+
+                    using (ExpressionCaptureScope captureScope = new ExpressionCaptureScope(visitorContext, null, argDestination))
                     {
                         Visit(argument.Expression);
 
