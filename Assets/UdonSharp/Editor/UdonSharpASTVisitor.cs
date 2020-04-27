@@ -163,7 +163,10 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
-            Visit(node.Expression);
+            using (ExpressionCaptureScope scope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                Visit(node.Expression);
+            }
         }
 
         public override void VisitParenthesizedExpression(ParenthesizedExpressionSyntax node)
@@ -1098,6 +1101,7 @@ namespace UdonSharp
             UpdateSyntaxNode(node);
 
             ExpressionCaptureScope topScope = visitorContext.topCaptureScope;
+            SymbolDefinition requestedDestination = visitorContext.requestedDestination;
 
             using (ExpressionCaptureScope operandCapture = new ExpressionCaptureScope(visitorContext, null))
             {
@@ -1120,6 +1124,8 @@ namespace UdonSharp
                     case SyntaxKind.PreIncrementExpression:
                     case SyntaxKind.MinusMinusToken:
                     case SyntaxKind.PreDecrementExpression:
+                        // Write back the result of the change directly to the original symbol.
+                        requestedDestination = operandCapture.destinationSymbolForSet;
                         operatorMethods.AddRange(GetOperators(operandCapture.GetReturnType(), node.OperatorToken.Kind()));
                         break;
                     case SyntaxKind.LogicalNotExpression:
@@ -1140,7 +1146,7 @@ namespace UdonSharp
                         throw new System.NotImplementedException($"Handling for prefix token {node.OperatorToken.Kind()} is not implemented");
                 }
                 
-                using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
+                using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null, requestedDestination))
                 {
                     operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
 
@@ -1198,6 +1204,7 @@ namespace UdonSharp
             UpdateSyntaxNode(node);
 
             ExpressionCaptureScope topScope = visitorContext.topCaptureScope;
+            SymbolDefinition preIncrementStore = visitorContext.requestedDestination;
 
             using (ExpressionCaptureScope operandCapture = new ExpressionCaptureScope(visitorContext, null))
             {
@@ -1221,13 +1228,15 @@ namespace UdonSharp
 
                 try
                 {
-                    using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
+                    using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null, operandCapture.destinationSymbolForSet))
                     {
                         operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
 
                         using (ExpressionCaptureScope preIncrementValueReturn = new ExpressionCaptureScope(visitorContext, topScope))
                         {
-                            SymbolDefinition preIncrementStore = visitorContext.topTable.CreateUnnamedSymbol(operandCapture.GetReturnType(), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
+                            if (preIncrementStore == null) {
+                                preIncrementStore = visitorContext.topTable.CreateUnnamedSymbol(operandCapture.GetReturnType(), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
+                            }
                             preIncrementValueReturn.SetToLocalSymbol(preIncrementStore);
 
                             preIncrementValueReturn.ExecuteSet(operandCapture.ExecuteGet());
@@ -2037,7 +2046,12 @@ namespace UdonSharp
             Visit(node.Declaration);
 
             foreach (ExpressionSyntax initializer in node.Initializers)
-                Visit(initializer);
+            {
+                using (ExpressionCaptureScope voidReturnScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    Visit(initializer);
+                }
+            }
 
             JumpLabel forLoopStart = visitorContext.labelTable.GetNewJumpLabel("forLoopStart");
             visitorContext.uasmBuilder.AddJumpLabel(forLoopStart);
@@ -2070,7 +2084,12 @@ namespace UdonSharp
             visitorContext.uasmBuilder.AddJumpLabel(forLoopContinue);
 
             foreach (ExpressionSyntax incrementor in node.Incrementors)
-                Visit(incrementor);
+            {
+                using (ExpressionCaptureScope voidReturnScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    Visit(incrementor);
+                }
+            }
 
             visitorContext.uasmBuilder.AddJump(forLoopStart);
 
