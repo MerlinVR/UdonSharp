@@ -85,9 +85,12 @@ namespace UdonSharp
                 }
                 if (value != null)
                 {
-                    value.AddRef();
+                    _accessValue = value.AddRef();
                 }
-                _accessValue = value;
+                else
+                {
+                    _accessValue = null;
+                }
             }
         }
 
@@ -107,9 +110,12 @@ namespace UdonSharp
                 }
                 if (value != null)
                 {
-                    value.AddRef();
+                    _arrayBacktraceValue = value.AddRef();
                 }
-                _arrayBacktraceValue = value;
+                else
+                {
+                    _arrayBacktraceValue = null;
+                }
             }
         }
 
@@ -128,9 +134,11 @@ namespace UdonSharp
                 }
                 if (value != null)
                 {
-                    value.AddRef();
+                    _arrayIndexerIndexValue = value.AddRef();
+                } else
+                {
+                    _arrayIndexerIndexValue = null;
                 }
-                _arrayIndexerIndexValue = value;
             }
         }
 
@@ -409,8 +417,8 @@ namespace UdonSharp
 
                 if (getMethod.ReturnType == typeof(void))
                     throw new System.TypeLoadException("Cannot return type of void from a get statement");
-                
-                outSymbol = visitorContext.topTable.CreateUnnamedSymbol(getMethod.ReturnType, SymbolDeclTypeFlags.Internal);
+
+                outSymbol = AllocateOutputSymbol(getMethod.ReturnType);
 
                 string methodUdonString = visitorContext.resolverContext.GetUdonMethodName(getMethod);
 
@@ -424,7 +432,7 @@ namespace UdonSharp
             }
             else if (captureArchetype == ExpressionCaptureArchetype.Field)
             {
-                outSymbol = visitorContext.topTable.CreateUnnamedSymbol(captureField.FieldType, SymbolDeclTypeFlags.Internal);
+                outSymbol = AllocateOutputSymbol(captureField.FieldType);
 
                 string fieldAccessorUdonName = visitorContext.resolverContext.GetUdonFieldAccessorName(captureField, FieldAccessorType.Get);
 
@@ -438,7 +446,7 @@ namespace UdonSharp
             }
             else if (captureArchetype == ExpressionCaptureArchetype.ExternUserField)
             {
-                outSymbol = visitorContext.topTable.CreateUnnamedSymbol(captureExternUserField.fieldSymbol.symbolCsType, SymbolDeclTypeFlags.Internal);
+                outSymbol = AllocateOutputSymbol(captureExternUserField.fieldSymbol.symbolCsType);
 
                 using (ExpressionCaptureScope getVariableMethodScope = new ExpressionCaptureScope(visitorContext, null, requestedDestination))
                 {
@@ -466,9 +474,9 @@ namespace UdonSharp
                     elementType = arraySymbol.userCsType.GetElementType();
                 }
 
-                arrayBacktraceValue = accessValue.AddRef();
+                arrayBacktraceValue = accessValue;
 
-                outSymbol = visitorContext.topTable.CreateUnnamedSymbol(elementType, SymbolDeclTypeFlags.Internal);
+                outSymbol = AllocateOutputSymbol(elementType);
 
                 visitorContext.uasmBuilder.AddPush(arraySymbol);
                 visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
@@ -2123,7 +2131,7 @@ namespace UdonSharp
             return true;
         }
 
-        public void HandleArrayIndexerAccess(SymbolDefinition.COWValue indexerValue)
+        public void HandleArrayIndexerAccess(SymbolDefinition.COWValue indexerValue, SymbolDefinition requestedDestination = null)
         {
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
                 captureArchetype != ExpressionCaptureArchetype.Property &&
@@ -2151,7 +2159,7 @@ namespace UdonSharp
             else
                 indexerSymbol = CastSymbolToType(indexerSymbol, typeof(int), false); // Non-explicit cast to handle if any types have implicit conversion operators and throw an error otherwise
 
-            accessValue = ExecuteGetCOW(); // implicitly adds refcount
+            _accessValue = ExecuteGetCOW(); // implicitly adds refcount
             cowValue = null; // Move ownership to accessValue here
 
             accessSymbol = null;
@@ -2159,9 +2167,21 @@ namespace UdonSharp
             captureArchetype = ExpressionCaptureArchetype.ArrayIndexer;
             // If we didn't need to cast, use the original symbol's COW value as-is.
             // Otherwise, (for consistency) COW-ify the post-cast value.
-            arrayIndexerIndexValue = cowIndexerSymbol == indexerSymbol ? indexerValue.AddRef() : indexerSymbol.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable);
-            // Note that setting arrayIndexerIndexValue implicitly increments reference count. Since we added a refcount (via AddRef or GetCOWValue) we need to re-decrement it.
-            arrayIndexerIndexValue.Dispose();
+            if (cowIndexerSymbol == indexerSymbol)
+            {
+                // We didn't need to do a conversion, so retain the existing COW value
+                arrayIndexerIndexValue = indexerValue; // implicitly creates a new reference
+            }
+            else
+            {
+                // We needed to do a cast, so create a COW value for the post-cast value
+                using (SymbolDefinition.COWValue cowIndex = indexerSymbol.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                {
+                    arrayIndexerIndexValue = cowIndex;
+                }
+            }
+
+            this.requestedDestination = requestedDestination;
         }
 
         public void HandleGenericAccess(List<System.Type> genericArguments)

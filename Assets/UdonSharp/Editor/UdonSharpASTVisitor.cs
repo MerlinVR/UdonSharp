@@ -422,6 +422,8 @@ namespace UdonSharp
             
             bool hasInitializer = node.Initializer != null;
 
+            SymbolDefinition arraySymbol = visitorContext.requestedDestination;
+
             using (ExpressionCaptureScope arrayTypeScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 Visit(node.Type);
@@ -430,7 +432,11 @@ namespace UdonSharp
 
             using (ExpressionCaptureScope varCaptureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
             {
-                SymbolDefinition arraySymbol = visitorContext.topTable.CreateUnnamedSymbol(arrayType, SymbolDeclTypeFlags.Internal);
+                if (arraySymbol == null)
+                {
+                    arraySymbol = visitorContext.topTable.CreateUnnamedSymbol(arrayType, SymbolDeclTypeFlags.Internal);
+                }
+
                 varCaptureScope.SetToLocalSymbol(arraySymbol);
 
                 foreach (ArrayRankSpecifierSyntax rankSpecifierSyntax in node.Type.RankSpecifiers)
@@ -466,7 +472,7 @@ namespace UdonSharp
                     throw new System.ArgumentException("A constant value is expected");
                 }
 
-                using (ExpressionCaptureScope constructorCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+                using (ExpressionCaptureScope constructorCaptureScope = new ExpressionCaptureScope(visitorContext, null, arraySymbol))
                 {
                     constructorCaptureScope.SetToMethods(arraySymbol.symbolCsType.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
 
@@ -594,6 +600,8 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
+            SymbolDefinition requestedDestination = visitorContext.requestedDestination;
+
             using (ExpressionCaptureScope elementAccessExpression = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
             {
                 Visit(node.Expression);
@@ -604,7 +612,7 @@ namespace UdonSharp
                 using (ExpressionCaptureScope indexerCaptureScope = new ExpressionCaptureScope(visitorContext, null))
                 {
                     Visit(node.ArgumentList.Arguments[0]);
-                    elementAccessExpression.HandleArrayIndexerAccess(indexerCaptureScope.ExecuteGetCOW());
+                    elementAccessExpression.HandleArrayIndexerAccess(indexerCaptureScope.ExecuteGetCOW(), requestedDestination);
                 }
             }
         }
@@ -2151,10 +2159,10 @@ namespace UdonSharp
                 indexAccessExecuteScope.SetToLocalSymbol(arraySymbol);
                 using (SymbolDefinition.COWValue arrayIndex = indexSymbol.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
                 {
-                    indexAccessExecuteScope.HandleArrayIndexerAccess(arrayIndex);
+                    indexAccessExecuteScope.HandleArrayIndexerAccess(arrayIndex, valueSymbol);
                 }
 
-                // This should be a direct set instead of a copy, but that hasn't been implemented yet
+                // Copy elision should make this a no-op unless conversion is required
                 using (ExpressionCaptureScope valueSetScope = new ExpressionCaptureScope(visitorContext, null))
                 {
                     valueSetScope.SetToLocalSymbol(valueSymbol);
@@ -2172,14 +2180,19 @@ namespace UdonSharp
 
             visitorContext.uasmBuilder.AddJumpLabel(loopContinueLabel);
 
-            using (ExpressionCaptureScope incrementExecuteScope = new ExpressionCaptureScope(visitorContext, null))
+            using (ExpressionCaptureScope incrementExecuteScope = new ExpressionCaptureScope(visitorContext, null, indexSymbol))
             {
                 incrementExecuteScope.SetToMethods(GetOperators(typeof(int), BuiltinOperatorType.Addition));
                 SymbolDefinition constIntIncrement = visitorContext.topTable.CreateConstSymbol(typeof(int), 1);
 
                 // This should be a direct set, but I haven't implemented that yet so we do a wasteful copy here
                 SymbolDefinition incrementResultSymbol = incrementExecuteScope.Invoke(new SymbolDefinition[] { indexSymbol, constIntIncrement });
-                visitorContext.uasmBuilder.AddCopy(indexSymbol, incrementResultSymbol);
+
+                using (ExpressionCaptureScope indexSetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    indexSetScope.SetToLocalSymbol(indexSymbol);
+                    indexSetScope.ExecuteSet(incrementResultSymbol);
+                }
             }
 
             visitorContext.uasmBuilder.AddJump(loopStartLabel);
@@ -2445,8 +2458,6 @@ namespace UdonSharp
                         invocationArgs.Add(captureScope.ExecuteGetCOW().AddRef());
                     }
                 }
-
-                //visitorContext.PopTable();
 
                 SymbolDefinition functionReturnValue = methodCaptureScope.Invoke(
                     invocationArgs.Select((arg) => arg.symbol).ToArray()
