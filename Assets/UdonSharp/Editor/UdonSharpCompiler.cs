@@ -48,27 +48,30 @@ namespace UdonSharp
                 if (classDefinitions == null)
                     totalErrorCount++;
 
-                foreach (CompilationModule module in modules)
-                {
-                    EditorUtility.DisplayProgressBar("UdonSharp Compile",
-                                                    $"Compiling {AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript)}...",
-                                                    Mathf.Clamp01((moduleCounter++ / (float)modules.Length) + Random.Range(0.01f, 1f / modules.Length))); // Make it look like we're doing work :D
-
-                    int moduleErrorCount = module.Compile(classDefinitions);
-                    totalErrorCount += moduleErrorCount;
-                }
-
                 if (totalErrorCount == 0)
                 {
-                    EditorUtility.DisplayProgressBar("UdonSharp Compile", "Assigning constants...", 1f);
-                    int initializerErrorCount = AssignHeapConstants();
-                    totalErrorCount += initializerErrorCount;
-
-                    if (initializerErrorCount == 0)
+                    foreach (CompilationModule module in modules)
                     {
-                        foreach (CompilationModule module in modules)
+                        EditorUtility.DisplayProgressBar("UdonSharp Compile",
+                                                        $"Compiling {AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript)}...",
+                                                        Mathf.Clamp01((moduleCounter++ / (float)modules.Length) + Random.Range(0.01f, 1f / modules.Length))); // Make it look like we're doing work :D
+
+                        int moduleErrorCount = module.Compile(classDefinitions);
+                        totalErrorCount += moduleErrorCount;
+                    }
+
+                    if (totalErrorCount == 0)
+                    {
+                        EditorUtility.DisplayProgressBar("UdonSharp Compile", "Assigning constants...", 1f);
+                        int initializerErrorCount = AssignHeapConstants();
+                        totalErrorCount += initializerErrorCount;
+
+                        if (initializerErrorCount == 0)
                         {
-                            module.programAsset.ApplyProgram();
+                            foreach (CompilationModule module in modules)
+                            {
+                                module.programAsset.ApplyProgram();
+                            }
                         }
                     }
                 }
@@ -156,6 +159,15 @@ namespace UdonSharp
                                 }
                             }
                         }
+
+                        // Default to empty string on synced strings to prevent Udon sync from throwing errors
+                        if (symbol.symbolCsType == typeof(string) &&
+                            symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Private) &&
+                            symbol.syncMode != UdonSyncMode.NotSynced)
+                        {
+                            if (program.Heap.GetHeapVariable(symbolAddress) == null)
+                                program.Heap.SetHeapVariable(symbolAddress, "");
+                        }
                     }
                 }
             }
@@ -208,13 +220,30 @@ namespace UdonSharp
                         FieldDefinition fieldDef = module.compiledClassDefinition?.fieldDefinitions?.Find(e => (e.fieldSymbol.declarationType == SymbolDeclTypeFlags.Private || e.fieldSymbol.declarationType == SymbolDeclTypeFlags.Public) &&
                                                                                                                 e.fieldSymbol.symbolOriginalName == variable.Identifier.ToString());
 
-                        string typeQualifiedName = type.ToString();
+                        string typeQualifiedName = type.ToString().Replace('+', '.');
                         if (fieldDef != null)
                         {
-                            if (fieldDef.fieldSymbol.symbolCsType.Namespace.Length == 0)
-                                typeQualifiedName = fieldDef.fieldSymbol.symbolCsType.Name;
-                            else
-                                typeQualifiedName = fieldDef.fieldSymbol.symbolCsType.Namespace + "." + fieldDef.fieldSymbol.symbolCsType.Name;
+                            string namespaceStr = "";
+
+                            System.Type symbolType = fieldDef.fieldSymbol.symbolCsType;
+
+                            if (symbolType.Namespace != null &&
+                                symbolType.Namespace.Length > 0)
+                            {
+                                namespaceStr = symbolType.Namespace + ".";
+                            }
+
+                            string nestedTypeStr = "";
+
+                            System.Type declaringType = symbolType.DeclaringType;
+
+                            while (declaringType != null)
+                            {
+                                nestedTypeStr = $"{declaringType.Name}.{nestedTypeStr}";
+                                declaringType = declaringType.DeclaringType;
+                            }
+
+                            typeQualifiedName = namespaceStr + nestedTypeStr + fieldDef.fieldSymbol.symbolCsType.Name;
                         }
 
                         if (variable.Initializer != null)

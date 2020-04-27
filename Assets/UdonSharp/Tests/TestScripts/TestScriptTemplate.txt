@@ -1,0 +1,20 @@
+
+using UdonSharp;
+using UnityEngine;
+using VRC.SDKBase;
+using VRC.Udon;
+
+namespace UdonSharp.Tests
+{
+    [AddComponentMenu("Udon Sharp/Tests/<TemplateClassName>")]
+    public class <TemplateClassName> : UdonSharpBehaviour
+    {
+        [System.NonSerialized]
+        public IntegrationTestSuite tester;
+
+        public void ExecuteTests()
+        {
+            
+        }
+    }
+}

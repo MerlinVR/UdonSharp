@@ -63,6 +63,8 @@ crashlytics-build.properties
 # VRC stuff
 /Assets/[Uu]don/
 /Assets/VRCSDK/
+/Assets/VRChat Examples
+/Assets/VRChat Examples.meta
 /Assets/UdonSharp/Scripts/Editor/
 Assets/VRCSDK.meta
 Assets/UdonSharp/Scripts/Editor.meta

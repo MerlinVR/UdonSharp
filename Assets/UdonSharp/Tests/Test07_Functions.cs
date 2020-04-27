@@ -36,9 +36,16 @@ public class Test07_Functions : UdonSharpBehaviour
         return false;
     }
 
+    private bool CheckIfCorrectInt()
+    {
+        Debug.Log("CheckIfCorrectInt");
+
+        return GetInt() == 45;
+    }
+
     private void Start()
     {
-        Debug.Log(true && CheckIfTrue() && CheckIfTrue());
+        Debug.Log(true && CheckIfCorrectInt() && CheckIfTrue());
 
         //PrintTest();
         //LogTestVar("Hello 2");

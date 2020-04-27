@@ -106,7 +106,7 @@ namespace UdonSharp
         public void Dispose()
         {
             if (parentScope != null)
-                parentScope.InheretScope(this);
+                parentScope.InheritScope(this);
             
             Debug.Assert(visitorContext.topCaptureScope == this);
             if (visitorContext.topCaptureScope == this)
@@ -115,10 +115,9 @@ namespace UdonSharp
             disposed = true;
         }
 
-        private void InheretScope(ExpressionCaptureScope childScope)
+        private void InheritScope(ExpressionCaptureScope childScope)
         {
             if (captureArchetype != ExpressionCaptureArchetype.Unknown ||
-                childScope.captureArchetype == ExpressionCaptureArchetype.Unknown ||
                 childScope.captureArchetype == ExpressionCaptureArchetype.This ||
                 childScope.captureArchetype == ExpressionCaptureArchetype.Method ||
                 childScope.captureArchetype == ExpressionCaptureArchetype.Namespace)
@@ -136,6 +135,17 @@ namespace UdonSharp
             captureExternUserField = childScope.captureExternUserField;
             captureExternUserMethod = childScope.captureExternUserMethod;
             InternalMethodHandler = childScope.InternalMethodHandler;
+            unresolvedAccessChain = childScope.unresolvedAccessChain;
+        }
+
+        private void CheckScopeValidity()
+        {
+            if (IsUnknownArchetype())
+            {
+                string[] unresolvedTokens = unresolvedAccessChain.Split('.');
+                string invalidName = unresolvedTokens.Length > 1 ? unresolvedTokens[unresolvedTokens.Length - 2] : unresolvedTokens[0];
+                throw new System.Exception($"The name '{invalidName}' does not exist in the current context");
+            }
         }
 
         public void SetToLocalSymbol(SymbolDefinition symbol)
@@ -292,6 +302,8 @@ namespace UdonSharp
                 return captureLocalSymbol;
 
             SymbolDefinition outSymbol = null;
+            
+            CheckScopeValidity();
 
             if (captureArchetype == ExpressionCaptureArchetype.Property)
             {
@@ -376,12 +388,6 @@ namespace UdonSharp
                 // Capture type should still be valid from the last transition
                 outSymbol = visitorContext.topTable.CreateConstSymbol(captureType, GetEnumValue());
             }
-            else if (captureArchetype == ExpressionCaptureArchetype.Unknown)
-            {
-                string[] unresolvedTokens = unresolvedAccessChain.Split('.');
-                string invalidName = unresolvedTokens.Length > 1 ? unresolvedTokens[unresolvedTokens.Length - 2] : unresolvedTokens[0];
-                throw new System.Exception($"The name '{invalidName}' does not exist in the current context");
-            }
             else
             {
                 throw new System.Exception("Get can only be run on Fields, Properties, Local Symbols, array indexers, and the `this` keyword");
@@ -392,6 +398,8 @@ namespace UdonSharp
 
         public void ExecuteSet(SymbolDefinition value, bool explicitCast = false)
         {
+            CheckScopeValidity();
+
             SymbolDefinition convertedValue = CastSymbolToType(value, GetReturnType(true), explicitCast);
 
             // If it's a local symbol, it's just a simple COPY
@@ -457,7 +465,7 @@ namespace UdonSharp
             }
 
             // Copy the result back into the array if it's a value type
-            if (captureArchetype != ExpressionCaptureArchetype.ArrayIndexer && arrayBacktraceSymbol != null && accessSymbol.symbolCsType.IsValueType)
+            if (NeedsArrayCopySet())
             {
                 using (ExpressionCaptureScope arraySetScope = new ExpressionCaptureScope(visitorContext, null))
                 {
@@ -472,6 +480,8 @@ namespace UdonSharp
         // Just a stub for now that will be extended to avoid the COPY instruction when possible
         public void ExecuteSetDirect(ExpressionCaptureScope valueExpression, bool explicitCast = false)
         {
+            CheckScopeValidity();
+
             ExecuteSet(valueExpression.ExecuteGet(), explicitCast);
         }
 
@@ -514,10 +524,28 @@ namespace UdonSharp
             
             if (conversionFunction != null && (isExplicit || isNumericCastValid))
             {
+                SymbolDefinition sourceNumericSymbol = sourceSymbol;
+
+                // System.Convert.ToIntXX with a floating point argument will not be truncated, instead it will be rounded using Banker's Rounding.
+                // This is not what we want for casts, so we first floor the input before running the conversion
+                if (UdonSharpUtils.IsFloatType(sourceSymbol.symbolCsType) && UdonSharpUtils.IsIntegerType(targetType))
+                {
+                    // Mathf.Floor only works on floats so if it's a double we need to convert it first.
+                    // This does lose a small amount of accuracy on gigantic numbers, but it should hopefully be enough until Udon has dedicated cast instructions at some point in the future
+                    SymbolDefinition inputFloat = CastSymbolToType(sourceSymbol, typeof(float), true);
+                    conversionFunction = UdonSharpUtils.GetNumericConversionMethod(targetType, typeof(float));
+
+                    using (ExpressionCaptureScope floatFloorMethodCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        floatFloorMethodCaptureScope.SetToMethods(new[] { typeof(Mathf).GetMethod("Floor", BindingFlags.Static | BindingFlags.Public) });
+                        sourceNumericSymbol = floatFloorMethodCaptureScope.Invoke(new SymbolDefinition[] { inputFloat });
+                    }
+                }
+
                 // This code is copied 3 times, todo: find a decent way to refactor it
                 SymbolDefinition castOutput = visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
 
-                visitorContext.uasmBuilder.AddPush(sourceSymbol);
+                visitorContext.uasmBuilder.AddPush(sourceNumericSymbol);
                 visitorContext.uasmBuilder.AddPush(castOutput);
                 visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(conversionFunction));
 
@@ -1230,20 +1258,8 @@ namespace UdonSharp
             }
 
             SymbolDefinition exitJumpLocation = visitorContext.topTable.CreateNamedSymbol("exitJumpLoc", typeof(uint), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Constant);
-            SymbolDefinition oldReturnLocation = visitorContext.topTable.CreateNamedSymbol("oldReturnLoc", typeof(uint), SymbolDeclTypeFlags.Internal);
 
-            using (ExpressionCaptureScope oldReturnLocationSetScope = new ExpressionCaptureScope(visitorContext, null))
-            {
-                oldReturnLocationSetScope.SetToLocalSymbol(oldReturnLocation);
-                oldReturnLocationSetScope.ExecuteSet(visitorContext.returnJumpTarget);
-            }
-
-            using (ExpressionCaptureScope newReturnPointSetScope = new ExpressionCaptureScope(visitorContext, null))
-            {
-                newReturnPointSetScope.SetToLocalSymbol(visitorContext.returnJumpTarget);
-                newReturnPointSetScope.ExecuteSet(exitJumpLocation);
-            }
-
+            visitorContext.uasmBuilder.AddPush(exitJumpLocation);
             visitorContext.uasmBuilder.AddJump(captureLocalMethod.methodUserCallStart);
 
             JumpLabel exitLabel = visitorContext.labelTable.GetNewJumpLabel("returnLocation");
@@ -1251,12 +1267,6 @@ namespace UdonSharp
             // Now we can set this value after we have found the exit address
             visitorContext.uasmBuilder.AddJumpLabel(exitLabel);
             exitJumpLocation.symbolDefaultValue = exitLabel.resolvedAddress;
-
-            using (ExpressionCaptureScope restoreReturnLocationScope = new ExpressionCaptureScope(visitorContext, null))
-            {
-                restoreReturnLocationScope.SetToLocalSymbol(visitorContext.returnJumpTarget);
-                restoreReturnLocationScope.ExecuteSet(oldReturnLocation);
-            }
 
             SymbolDefinition returnValue = null;
 
@@ -1354,12 +1364,15 @@ namespace UdonSharp
             }
             else
             {
+                CheckScopeValidity();
                 throw new System.Exception($"Cannot call invoke on archetype {captureArchetype}");
             }
         }
 
         public System.Type GetReturnType(bool getUserType = false)
         {
+            CheckScopeValidity();
+
             if (captureArchetype == ExpressionCaptureArchetype.Method)
                 throw new System.Exception("Cannot infer return type from method without function arguments");
 
@@ -1426,6 +1439,17 @@ namespace UdonSharp
                 return true;
 
             return false;
+        }
+
+        /// <summary>
+        /// Value types need to be copied back to the array if you change a field on them. 
+        /// For instance if you have an array of Vector3, and do vecArray[0].x += 4f;, the vector result needs to be copied back to that index in the array since you're modifying an intermediate copy of it.
+        /// This function tells you if that copy is necessary.
+        /// </summary>
+        /// <returns></returns>
+        public bool NeedsArrayCopySet()
+        {
+            return !IsArrayIndexer() && arrayBacktraceSymbol != null && accessSymbol.symbolCsType.IsValueType;
         }
 
         public bool ResolveAccessToken(string accessToken)
@@ -1507,7 +1531,10 @@ namespace UdonSharp
         {
             SymbolDefinition symbol = null;
 
-            symbol = visitorContext.topTable.FindUserDefinedSymbol(localSymbolName);
+            if (IsThis())
+                symbol = visitorContext.topTable.GetGlobalSymbolTable().FindUserDefinedSymbol(localSymbolName);
+            else
+                symbol = visitorContext.topTable.FindUserDefinedSymbol(localSymbolName);
 
             // Allow user to mask built-in lookups
             if (symbol == null)

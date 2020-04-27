@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: SpinningCubes_4_Spinner
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 00eb1e98a79dc154085e682cde8ddb9d,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 7630bc71f918c2f49b34f0cd186b9418,
     type: 2}
   udonAssembly: ".data_start\r\n\r\n    .export signal\r\n\r\n    __refl_const_intnl_udonTypeID:
     %SystemInt64, null\r\n    __refl_const_intnl_udonTypeName: %SystemString, null\r\n
@@ -43,7 +43,8 @@ MonoBehaviour:
     \       PUSH, __3_intnl_SystemSingle\r\n        EXTERN, \"SystemSingle.__op_Multiplication__SystemSingle_SystemSingle__SystemSingle\"\r\n
     \       PUSH, __0_this_intnl_UnityEngineTransform\r\n        PUSH, __0_intnl_UnityEngineVector3\r\n
     \       PUSH, __3_intnl_SystemSingle\r\n        EXTERN, \"UnityEngineTransform.__Rotate__UnityEngineVector3_SystemSingle__SystemVoid\"\r\n
-    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n.code_end\r\n"
+    \       PUSH, __0_intnl_returnTarget_UInt32\r\n        COPY\r\n        JUMP_INDIRECT,
+    __0_intnl_returnTarget_UInt32\r\n        \r\n.code_end\r\n"
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: 03ed8b36c71614049ab25ac054e687d1, type: 3}
   behaviourIDHeapVarName: __refl_const_intnl_udonTypeID
@@ -259,10 +260,31 @@ MonoBehaviour:
     - startInstruction: 20
       endInstruction: 19
       startSourceChar: 532
-      endSourceChar: 549
+      endSourceChar: 532
       line: 18
       lineChar: 12
-      spanCodeSection: transform.Rotate(
+      spanCodeSection: 
+    - startInstruction: 20
+      endInstruction: 19
+      startSourceChar: 532
+      endSourceChar: 532
+      line: 18
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 20
+      endInstruction: 19
+      startSourceChar: 532
+      endSourceChar: 542
+      line: 18
+      lineChar: 12
+      spanCodeSection: transform.
+    - startInstruction: 20
+      endInstruction: 19
+      startSourceChar: 542
+      endSourceChar: 549
+      line: 18
+      lineChar: 22
+      spanCodeSection: Rotate(
     - startInstruction: 20
       endInstruction: 19
       startSourceChar: 549

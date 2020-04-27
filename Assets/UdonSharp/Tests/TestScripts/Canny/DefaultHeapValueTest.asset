@@ -1,0 +1,1457 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
+  m_Name: DefaultHeapValueTest
+  m_EditorClassIdentifier: 
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 7f5c4106b35fc7b49b9661198d028d0b,
+    type: 2}
+  udonAssembly: ".data_start\r\n\r\n    .export defaultPublicArr\r\n    .export defaultString\r\n
+    \   .sync networkSyncedString, none\r\n\r\n    __refl_const_intnl_udonTypeID:
+    %SystemInt64, null\r\n    __refl_const_intnl_udonTypeName: %SystemString, null\r\n
+    \   defaultString: %SystemString, null\r\n    defaultPublicArr: %SystemStringArray,
+    null\r\n    networkSyncedString: %SystemString, null\r\n    privateStr: %SystemString,
+    null\r\n    privateStrArr: %SystemStringArray, null\r\n    tester: %VRCUdonUdonBehaviour,
+    null\r\n    __0_const_intnl_SystemInt32: %SystemInt32, null\r\n    __0_const_intnl_SystemObject:
+    %SystemObject, null\r\n    __0_const_intnl_SystemString: %SystemString, null\r\n
+    \   __1_const_intnl_SystemString: %SystemString, null\r\n    __2_const_intnl_SystemString:
+    %SystemString, null\r\n    __3_const_intnl_SystemString: %SystemString, null\r\n
+    \   __4_const_intnl_SystemString: %SystemString, null\r\n    __5_const_intnl_SystemString:
+    %SystemString, null\r\n    __6_const_intnl_SystemString: %SystemString, null\r\n
+    \   __7_const_intnl_SystemString: %SystemString, null\r\n    __8_const_intnl_SystemString:
+    %SystemString, null\r\n    __9_const_intnl_SystemString: %SystemString, null\r\n
+    \   __0_const_intnl_SystemStringArray: %SystemStringArray, null\r\n    __0_const_intnl_exitJumpLoc_UInt32:
+    %SystemUInt32, null\r\n    __0_const_intnl_SystemUInt32: %SystemUInt32, null\r\n
+    \   __1_const_intnl_exitJumpLoc_UInt32: %SystemUInt32, null\r\n    __2_const_intnl_exitJumpLoc_UInt32:
+    %SystemUInt32, null\r\n    __3_const_intnl_exitJumpLoc_UInt32: %SystemUInt32,
+    null\r\n    __4_const_intnl_exitJumpLoc_UInt32: %SystemUInt32, null\r\n    __0_intnl_SystemBoolean:
+    %SystemBoolean, null\r\n    __1_intnl_SystemBoolean: %SystemBoolean, null\r\n
+    \   __2_intnl_SystemBoolean: %SystemBoolean, null\r\n    __3_intnl_SystemBoolean:
+    %SystemBoolean, null\r\n    __4_intnl_SystemBoolean: %SystemBoolean, null\r\n
+    \   __5_intnl_SystemBoolean: %SystemBoolean, null\r\n    __6_intnl_SystemBoolean:
+    %SystemBoolean, null\r\n    __7_intnl_SystemBoolean: %SystemBoolean, null\r\n
+    \   __0_intnl_SystemInt32: %SystemInt32, null\r\n    __0_intnl_SystemString: %SystemString,
+    null\r\n    __1_intnl_SystemString: %SystemString, null\r\n    __2_intnl_SystemString:
+    %SystemString, null\r\n    __0_intnl_SystemStringArray: %SystemStringArray, null\r\n
+    \   __1_intnl_SystemStringArray: %SystemStringArray, null\r\n    __0_intnl_returnTarget_UInt32:
+    %SystemUInt32, null\r\n\r\n.data_end\r\n\r\n        \r\n         # using UdonSharp;\r\n
+    \       \r\n         # using UnityEngine;\r\n        \r\n         # using VRC.SDKBase;\r\n
+    \       \r\n         # using VRC.Udon;\r\n        \r\n         # namespace UdonSharp.Tests\r\n
+    \       \r\n         # [AddComponentMenu(\"Udon Sharp/Tests/DefaultHeapValueTest\")]\r\n
+    \       \r\n         # public class DefaultHeapValueTest : UdonSharpBehaviour\r\n.code_start\r\n
+    \       \r\n         # [System.NonSerialized]\r\n        \r\n         # public
+    IntegrationTestSuite tester;\r\n        \r\n         # public void ExecuteTests()\r\n
+    \   .export ExecuteTests\r\n        \r\n    ExecuteTests:\r\n        \r\n        PUSH,
+    __0_const_intnl_SystemUInt32\r\n        \r\n         # {\r\n        \r\n         #
+    TestPublicArray();\r\n        PUSH, __0_const_intnl_exitJumpLoc_UInt32\r\n        JUMP,
+    0x00000074\r\n        \r\n         # TestPublicString();\r\n        PUSH, __1_const_intnl_exitJumpLoc_UInt32\r\n
+    \       JUMP, 0x000001AC\r\n        \r\n         # TestSyncedString();\r\n        PUSH,
+    __2_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x00000254\r\n        \r\n
+    \        # TestPrivateArr();\r\n        PUSH, __3_const_intnl_exitJumpLoc_UInt32\r\n
+    \       JUMP, 0x000002FC\r\n        \r\n         # TestPrivateStr();\r\n        PUSH,
+    __4_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x000003A4\r\n        PUSH,
+    __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n        JUMP_INDIRECT,
+    __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n         # [HideInInspector]\r\n
+    \       \r\n         # public string[] defaultPublicArr;\r\n        \r\n         #
+    void TestPublicArray()\r\n    TestPublicArray:\r\n        \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n
+    \       \r\n         # {\r\n        \r\n         # tester.TestAssertion(\"Default
+    Public Array Initialized\", defaultPublicArr != null && defaultPublicArr.Length
+    == 0);\r\n        PUSH, defaultPublicArr\r\n        PUSH, __0_intnl_SystemStringArray\r\n
+    \       COPY\r\n        PUSH, __0_intnl_SystemStringArray\r\n        PUSH, __0_const_intnl_SystemStringArray\r\n
+    \       PUSH, __1_intnl_SystemBoolean\r\n        EXTERN, \"SystemObject.__op_Inequality__SystemObject_SystemObject__SystemBoolean\"\r\n
+    \       PUSH, __1_intnl_SystemBoolean\r\n        PUSH, __0_intnl_SystemBoolean\r\n
+    \       COPY\r\n        PUSH, __0_intnl_SystemBoolean\r\n        JUMP_IF_FALSE,
+    0x00000138\r\n        PUSH, defaultPublicArr\r\n        PUSH, __0_intnl_SystemInt32\r\n
+    \       EXTERN, \"SystemStringArray.__get_Length__SystemInt32\"\r\n        PUSH,
+    __0_intnl_SystemInt32\r\n        PUSH, __0_const_intnl_SystemInt32\r\n        PUSH,
+    __2_intnl_SystemBoolean\r\n        EXTERN, \"SystemInt32.__op_Equality__SystemInt32_SystemInt32__SystemBoolean\"\r\n
+    \       PUSH, __0_intnl_SystemBoolean\r\n        PUSH, __2_intnl_SystemBoolean\r\n
+    \       PUSH, __3_intnl_SystemBoolean\r\n        EXTERN, \"SystemBoolean.__op_ConditionalAnd__SystemBoolean_SystemBoolean__SystemBoolean\"\r\n
+    \       PUSH, __3_intnl_SystemBoolean\r\n        PUSH, __0_intnl_SystemBoolean\r\n
+    \       COPY\r\n        PUSH, tester\r\n        PUSH, __1_const_intnl_SystemString\r\n
+    \       PUSH, __0_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
+    \       PUSH, tester\r\n        PUSH, __2_const_intnl_SystemString\r\n        PUSH,
+    __0_intnl_SystemBoolean\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
+    \       PUSH, tester\r\n        PUSH, __3_const_intnl_SystemString\r\n        EXTERN,
+    \"VRCUdonCommonInterfacesIUdonEventReceiver.__SendCustomEvent__SystemString__SystemVoid\"\r\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n
+    \        # [HideInInspector]\r\n        \r\n         # public string defaultString;\r\n
+    \       \r\n         # void TestPublicString()\r\n    TestPublicString:\r\n        \r\n
+    \       PUSH, __0_const_intnl_SystemUInt32\r\n        \r\n         # {\r\n        \r\n
+    \        # tester.TestAssertion(\"Default String Value\", defaultString == \"\");\r\n
+    \       PUSH, defaultString\r\n        PUSH, __0_intnl_SystemString\r\n        COPY\r\n
+    \       PUSH, __0_intnl_SystemString\r\n        PUSH, __5_const_intnl_SystemString\r\n
+    \       PUSH, __4_intnl_SystemBoolean\r\n        EXTERN, \"SystemString.__op_Equality__SystemString_SystemString__SystemBoolean\"\r\n
+    \       PUSH, tester\r\n        PUSH, __1_const_intnl_SystemString\r\n        PUSH,
+    __4_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
+    \       PUSH, tester\r\n        PUSH, __2_const_intnl_SystemString\r\n        PUSH,
+    __4_intnl_SystemBoolean\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
+    \       PUSH, tester\r\n        PUSH, __3_const_intnl_SystemString\r\n        EXTERN,
+    \"VRCUdonCommonInterfacesIUdonEventReceiver.__SendCustomEvent__SystemString__SystemVoid\"\r\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n
+    \        # [UdonSynced]\r\n        \r\n         # string networkSyncedString;\r\n
+    \       \r\n         # void TestSyncedString()\r\n    TestSyncedString:\r\n        \r\n
+    \       PUSH, __0_const_intnl_SystemUInt32\r\n        \r\n         # {\r\n        \r\n
+    \        # tester.TestAssertion(\"Default Synced String Value\", networkSyncedString
+    == \"\");\r\n        PUSH, networkSyncedString\r\n        PUSH, __1_intnl_SystemString\r\n
+    \       COPY\r\n        PUSH, __1_intnl_SystemString\r\n        PUSH, __5_const_intnl_SystemString\r\n
+    \       PUSH, __5_intnl_SystemBoolean\r\n        EXTERN, \"SystemString.__op_Equality__SystemString_SystemString__SystemBoolean\"\r\n
+    \       PUSH, tester\r\n        PUSH, __1_const_intnl_SystemString\r\n        PUSH,
+    __6_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
+    \       PUSH, tester\r\n        PUSH, __2_const_intnl_SystemString\r\n        PUSH,
+    __5_intnl_SystemBoolean\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
+    \       PUSH, tester\r\n        PUSH, __3_const_intnl_SystemString\r\n        EXTERN,
+    \"VRCUdonCommonInterfacesIUdonEventReceiver.__SendCustomEvent__SystemString__SystemVoid\"\r\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n
+    \        # string[] privateStrArr;\r\n        \r\n         # void TestPrivateArr()\r\n
+    \   TestPrivateArr:\r\n        \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n
+    \       \r\n         # {\r\n        \r\n         # tester.TestAssertion(\"Private
+    Array Default Null\", privateStrArr == null);\r\n        PUSH, privateStrArr\r\n
+    \       PUSH, __1_intnl_SystemStringArray\r\n        COPY\r\n        PUSH, __1_intnl_SystemStringArray\r\n
+    \       PUSH, __0_const_intnl_SystemStringArray\r\n        PUSH, __6_intnl_SystemBoolean\r\n
+    \       EXTERN, \"SystemObject.__op_Equality__SystemObject_SystemObject__SystemBoolean\"\r\n
+    \       PUSH, tester\r\n        PUSH, __1_const_intnl_SystemString\r\n        PUSH,
+    __7_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
+    \       PUSH, tester\r\n        PUSH, __2_const_intnl_SystemString\r\n        PUSH,
+    __6_intnl_SystemBoolean\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
+    \       PUSH, tester\r\n        PUSH, __3_const_intnl_SystemString\r\n        EXTERN,
+    \"VRCUdonCommonInterfacesIUdonEventReceiver.__SendCustomEvent__SystemString__SystemVoid\"\r\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n
+    \        # string privateStr;\r\n        \r\n         # void TestPrivateStr()\r\n
+    \   TestPrivateStr:\r\n        \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n
+    \       \r\n         # {\r\n        \r\n         # tester.TestAssertion(\"Private
+    String Default Null\", privateStr == null);\r\n        PUSH, privateStr\r\n        PUSH,
+    __2_intnl_SystemString\r\n        COPY\r\n        PUSH, __2_intnl_SystemString\r\n
+    \       PUSH, __9_const_intnl_SystemString\r\n        PUSH, __7_intnl_SystemBoolean\r\n
+    \       EXTERN, \"SystemString.__op_Equality__SystemString_SystemString__SystemBoolean\"\r\n
+    \       PUSH, tester\r\n        PUSH, __1_const_intnl_SystemString\r\n        PUSH,
+    __8_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
+    \       PUSH, tester\r\n        PUSH, __2_const_intnl_SystemString\r\n        PUSH,
+    __7_intnl_SystemBoolean\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
+    \       PUSH, tester\r\n        PUSH, __3_const_intnl_SystemString\r\n        EXTERN,
+    \"VRCUdonCommonInterfacesIUdonEventReceiver.__SendCustomEvent__SystemString__SystemVoid\"\r\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n.code_end\r\n"
+  assemblyError: 
+  sourceCsScript: {fileID: 11500000, guid: 7c9c6858cb4c7f54c95614138d4525f1, type: 3}
+  behaviourIDHeapVarName: __refl_const_intnl_udonTypeID
+  compileErrors: []
+  debugInfo:
+    serializedDebugSpans:
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 0
+      endSourceChar: 2
+      line: 0
+      lineChar: 0
+      spanCodeSection: "\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 2
+      endSourceChar: 2
+      line: 1
+      lineChar: 0
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 2
+      endSourceChar: 8
+      line: 1
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 8
+      endSourceChar: 20
+      line: 1
+      lineChar: 6
+      spanCodeSection: "UdonSharp;\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 20
+      endSourceChar: 26
+      line: 2
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 26
+      endSourceChar: 40
+      line: 2
+      lineChar: 6
+      spanCodeSection: "UnityEngine;\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 40
+      endSourceChar: 46
+      line: 3
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 46
+      endSourceChar: 46
+      line: 3
+      lineChar: 6
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 46
+      endSourceChar: 50
+      line: 3
+      lineChar: 6
+      spanCodeSection: VRC.
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 50
+      endSourceChar: 60
+      line: 3
+      lineChar: 10
+      spanCodeSection: "SDKBase;\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 60
+      endSourceChar: 66
+      line: 4
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 66
+      endSourceChar: 66
+      line: 4
+      lineChar: 6
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 66
+      endSourceChar: 70
+      line: 4
+      lineChar: 6
+      spanCodeSection: VRC.
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 70
+      endSourceChar: 79
+      line: 4
+      lineChar: 10
+      spanCodeSection: "Udon;\r\n\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 79
+      endSourceChar: 113
+      line: 6
+      lineChar: 0
+      spanCodeSection: "namespace UdonSharp.Tests\r\n{\r\n    "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 113
+      endSourceChar: 212
+      line: 8
+      lineChar: 4
+      spanCodeSection: "[AddComponentMenu(\"Udon Sharp/Tests/DefaultHeapValueTest\")]\r\n
+        \   public class DefaultHeapValueTest "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 212
+      endSourceChar: 214
+      line: 9
+      lineChar: 38
+      spanCodeSection: ': '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 214
+      endSourceChar: 214
+      line: 9
+      lineChar: 40
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 214
+      endSourceChar: 249
+      line: 9
+      lineChar: 40
+      spanCodeSection: "UdonSharpBehaviour\r\n    {\r\n        "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 249
+      endSourceChar: 250
+      line: 11
+      lineChar: 8
+      spanCodeSection: '['
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 250
+      endSourceChar: 250
+      line: 11
+      lineChar: 9
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 250
+      endSourceChar: 257
+      line: 11
+      lineChar: 9
+      spanCodeSection: System.
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 257
+      endSourceChar: 257
+      line: 11
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 257
+      endSourceChar: 288
+      line: 11
+      lineChar: 16
+      spanCodeSection: "NonSerialized]\r\n        public "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 288
+      endSourceChar: 288
+      line: 12
+      lineChar: 15
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 288
+      endSourceChar: 328
+      line: 12
+      lineChar: 15
+      spanCodeSection: "IntegrationTestSuite tester;\r\n\r\n        "
+    - startInstruction: 0
+      endInstruction: 7
+      startSourceChar: 328
+      endSourceChar: 364
+      line: 14
+      lineChar: 8
+      spanCodeSection: "public void ExecuteTests()\r\n        "
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 364
+      endSourceChar: 379
+      line: 15
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 379
+      endSourceChar: 379
+      line: 16
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 379
+      endSourceChar: 379
+      line: 16
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 23
+      startSourceChar: 379
+      endSourceChar: 411
+      line: 16
+      lineChar: 12
+      spanCodeSection: "TestPublicArray();\r\n            "
+    - startInstruction: 24
+      endInstruction: 23
+      startSourceChar: 411
+      endSourceChar: 411
+      line: 17
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 24
+      endInstruction: 23
+      startSourceChar: 411
+      endSourceChar: 411
+      line: 17
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 24
+      endInstruction: 39
+      startSourceChar: 411
+      endSourceChar: 444
+      line: 17
+      lineChar: 12
+      spanCodeSection: "TestPublicString();\r\n            "
+    - startInstruction: 40
+      endInstruction: 39
+      startSourceChar: 444
+      endSourceChar: 444
+      line: 18
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 40
+      endInstruction: 39
+      startSourceChar: 444
+      endSourceChar: 444
+      line: 18
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 40
+      endInstruction: 55
+      startSourceChar: 444
+      endSourceChar: 477
+      line: 18
+      lineChar: 12
+      spanCodeSection: "TestSyncedString();\r\n            "
+    - startInstruction: 56
+      endInstruction: 55
+      startSourceChar: 477
+      endSourceChar: 477
+      line: 19
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 56
+      endInstruction: 55
+      startSourceChar: 477
+      endSourceChar: 477
+      line: 19
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 56
+      endInstruction: 71
+      startSourceChar: 477
+      endSourceChar: 508
+      line: 19
+      lineChar: 12
+      spanCodeSection: "TestPrivateArr();\r\n            "
+    - startInstruction: 72
+      endInstruction: 71
+      startSourceChar: 508
+      endSourceChar: 508
+      line: 20
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 72
+      endInstruction: 71
+      startSourceChar: 508
+      endSourceChar: 508
+      line: 20
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 72
+      endInstruction: 107
+      startSourceChar: 508
+      endSourceChar: 548
+      line: 20
+      lineChar: 12
+      spanCodeSection: "TestPrivateStr();\r\n        }\r\n\r\n        "
+    - startInstruction: 108
+      endInstruction: 107
+      startSourceChar: 548
+      endSourceChar: 549
+      line: 23
+      lineChar: 8
+      spanCodeSection: '['
+    - startInstruction: 108
+      endInstruction: 107
+      startSourceChar: 549
+      endSourceChar: 549
+      line: 23
+      lineChar: 9
+      spanCodeSection: 
+    - startInstruction: 108
+      endInstruction: 107
+      startSourceChar: 549
+      endSourceChar: 582
+      line: 23
+      lineChar: 9
+      spanCodeSection: "HideInInspector]\r\n        public "
+    - startInstruction: 108
+      endInstruction: 107
+      startSourceChar: 582
+      endSourceChar: 582
+      line: 24
+      lineChar: 15
+      spanCodeSection: 
+    - startInstruction: 108
+      endInstruction: 107
+      startSourceChar: 582
+      endSourceChar: 582
+      line: 24
+      lineChar: 15
+      spanCodeSection: 
+    - startInstruction: 108
+      endInstruction: 107
+      startSourceChar: 582
+      endSourceChar: 620
+      line: 24
+      lineChar: 15
+      spanCodeSection: "string[] defaultPublicArr;\r\n\r\n        "
+    - startInstruction: 108
+      endInstruction: 115
+      startSourceChar: 620
+      endSourceChar: 652
+      line: 26
+      lineChar: 8
+      spanCodeSection: "void TestPublicArray()\r\n        "
+    - startInstruction: 116
+      endInstruction: 115
+      startSourceChar: 652
+      endSourceChar: 667
+      line: 27
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 116
+      endInstruction: 115
+      startSourceChar: 667
+      endSourceChar: 667
+      line: 28
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 116
+      endInstruction: 115
+      startSourceChar: 667
+      endSourceChar: 667
+      line: 28
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 116
+      endInstruction: 115
+      startSourceChar: 667
+      endSourceChar: 667
+      line: 28
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 116
+      endInstruction: 115
+      startSourceChar: 667
+      endSourceChar: 674
+      line: 28
+      lineChar: 12
+      spanCodeSection: tester.
+    - startInstruction: 116
+      endInstruction: 115
+      startSourceChar: 674
+      endSourceChar: 688
+      line: 28
+      lineChar: 19
+      spanCodeSection: TestAssertion(
+    - startInstruction: 116
+      endInstruction: 115
+      startSourceChar: 688
+      endSourceChar: 724
+      line: 28
+      lineChar: 33
+      spanCodeSection: '"Default Public Array Initialized", '
+    - startInstruction: 116
+      endInstruction: 115
+      startSourceChar: 724
+      endSourceChar: 724
+      line: 28
+      lineChar: 69
+      spanCodeSection: 
+    - startInstruction: 116
+      endInstruction: 115
+      startSourceChar: 724
+      endSourceChar: 724
+      line: 28
+      lineChar: 69
+      spanCodeSection: 
+    - startInstruction: 116
+      endInstruction: 135
+      startSourceChar: 724
+      endSourceChar: 744
+      line: 28
+      lineChar: 69
+      spanCodeSection: 'defaultPublicArr != '
+    - startInstruction: 136
+      endInstruction: 203
+      startSourceChar: 744
+      endSourceChar: 752
+      line: 28
+      lineChar: 89
+      spanCodeSection: 'null && '
+    - startInstruction: 204
+      endInstruction: 203
+      startSourceChar: 752
+      endSourceChar: 752
+      line: 28
+      lineChar: 97
+      spanCodeSection: 
+    - startInstruction: 204
+      endInstruction: 203
+      startSourceChar: 752
+      endSourceChar: 752
+      line: 28
+      lineChar: 97
+      spanCodeSection: 
+    - startInstruction: 204
+      endInstruction: 203
+      startSourceChar: 752
+      endSourceChar: 769
+      line: 28
+      lineChar: 97
+      spanCodeSection: defaultPublicArr.
+    - startInstruction: 204
+      endInstruction: 227
+      startSourceChar: 769
+      endSourceChar: 779
+      line: 28
+      lineChar: 114
+      spanCodeSection: 'Length == '
+    - startInstruction: 228
+      endInstruction: 419
+      startSourceChar: 779
+      endSourceChar: 805
+      line: 28
+      lineChar: 124
+      spanCodeSection: "0);\r\n        }\r\n\r\n        "
+    - startInstruction: 420
+      endInstruction: 419
+      startSourceChar: 805
+      endSourceChar: 806
+      line: 31
+      lineChar: 8
+      spanCodeSection: '['
+    - startInstruction: 420
+      endInstruction: 419
+      startSourceChar: 806
+      endSourceChar: 806
+      line: 31
+      lineChar: 9
+      spanCodeSection: 
+    - startInstruction: 420
+      endInstruction: 419
+      startSourceChar: 806
+      endSourceChar: 839
+      line: 31
+      lineChar: 9
+      spanCodeSection: "HideInInspector]\r\n        public "
+    - startInstruction: 420
+      endInstruction: 419
+      startSourceChar: 839
+      endSourceChar: 839
+      line: 32
+      lineChar: 15
+      spanCodeSection: 
+    - startInstruction: 420
+      endInstruction: 419
+      startSourceChar: 839
+      endSourceChar: 872
+      line: 32
+      lineChar: 15
+      spanCodeSection: "string defaultString;\r\n\r\n        "
+    - startInstruction: 420
+      endInstruction: 427
+      startSourceChar: 872
+      endSourceChar: 905
+      line: 34
+      lineChar: 8
+      spanCodeSection: "void TestPublicString()\r\n        "
+    - startInstruction: 428
+      endInstruction: 427
+      startSourceChar: 905
+      endSourceChar: 920
+      line: 35
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 428
+      endInstruction: 427
+      startSourceChar: 920
+      endSourceChar: 920
+      line: 36
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 428
+      endInstruction: 427
+      startSourceChar: 920
+      endSourceChar: 920
+      line: 36
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 428
+      endInstruction: 427
+      startSourceChar: 920
+      endSourceChar: 920
+      line: 36
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 428
+      endInstruction: 427
+      startSourceChar: 920
+      endSourceChar: 927
+      line: 36
+      lineChar: 12
+      spanCodeSection: tester.
+    - startInstruction: 428
+      endInstruction: 427
+      startSourceChar: 927
+      endSourceChar: 941
+      line: 36
+      lineChar: 19
+      spanCodeSection: TestAssertion(
+    - startInstruction: 428
+      endInstruction: 427
+      startSourceChar: 941
+      endSourceChar: 965
+      line: 36
+      lineChar: 33
+      spanCodeSection: '"Default String Value", '
+    - startInstruction: 428
+      endInstruction: 427
+      startSourceChar: 965
+      endSourceChar: 965
+      line: 36
+      lineChar: 57
+      spanCodeSection: 
+    - startInstruction: 428
+      endInstruction: 447
+      startSourceChar: 965
+      endSourceChar: 982
+      line: 36
+      lineChar: 57
+      spanCodeSection: 'defaultString == '
+    - startInstruction: 448
+      endInstruction: 587
+      startSourceChar: 982
+      endSourceChar: 1009
+      line: 36
+      lineChar: 74
+      spanCodeSection: "\"\");\r\n        }\r\n\r\n        "
+    - startInstruction: 588
+      endInstruction: 587
+      startSourceChar: 1009
+      endSourceChar: 1010
+      line: 39
+      lineChar: 8
+      spanCodeSection: '['
+    - startInstruction: 588
+      endInstruction: 587
+      startSourceChar: 1010
+      endSourceChar: 1010
+      line: 39
+      lineChar: 9
+      spanCodeSection: 
+    - startInstruction: 588
+      endInstruction: 587
+      startSourceChar: 1010
+      endSourceChar: 1031
+      line: 39
+      lineChar: 9
+      spanCodeSection: "UdonSynced]\r\n        "
+    - startInstruction: 588
+      endInstruction: 587
+      startSourceChar: 1031
+      endSourceChar: 1031
+      line: 40
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 588
+      endInstruction: 587
+      startSourceChar: 1031
+      endSourceChar: 1070
+      line: 40
+      lineChar: 8
+      spanCodeSection: "string networkSyncedString;\r\n\r\n        "
+    - startInstruction: 588
+      endInstruction: 595
+      startSourceChar: 1070
+      endSourceChar: 1103
+      line: 42
+      lineChar: 8
+      spanCodeSection: "void TestSyncedString()\r\n        "
+    - startInstruction: 596
+      endInstruction: 595
+      startSourceChar: 1103
+      endSourceChar: 1118
+      line: 43
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 596
+      endInstruction: 595
+      startSourceChar: 1118
+      endSourceChar: 1118
+      line: 44
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 596
+      endInstruction: 595
+      startSourceChar: 1118
+      endSourceChar: 1118
+      line: 44
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 596
+      endInstruction: 595
+      startSourceChar: 1118
+      endSourceChar: 1118
+      line: 44
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 596
+      endInstruction: 595
+      startSourceChar: 1118
+      endSourceChar: 1125
+      line: 44
+      lineChar: 12
+      spanCodeSection: tester.
+    - startInstruction: 596
+      endInstruction: 595
+      startSourceChar: 1125
+      endSourceChar: 1139
+      line: 44
+      lineChar: 19
+      spanCodeSection: TestAssertion(
+    - startInstruction: 596
+      endInstruction: 595
+      startSourceChar: 1139
+      endSourceChar: 1170
+      line: 44
+      lineChar: 33
+      spanCodeSection: '"Default Synced String Value", '
+    - startInstruction: 596
+      endInstruction: 595
+      startSourceChar: 1170
+      endSourceChar: 1170
+      line: 44
+      lineChar: 64
+      spanCodeSection: 
+    - startInstruction: 596
+      endInstruction: 615
+      startSourceChar: 1170
+      endSourceChar: 1193
+      line: 44
+      lineChar: 64
+      spanCodeSection: 'networkSyncedString == '
+    - startInstruction: 616
+      endInstruction: 755
+      startSourceChar: 1193
+      endSourceChar: 1220
+      line: 44
+      lineChar: 87
+      spanCodeSection: "\"\");\r\n        }\r\n\r\n        "
+    - startInstruction: 756
+      endInstruction: 755
+      startSourceChar: 1220
+      endSourceChar: 1220
+      line: 47
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 756
+      endInstruction: 755
+      startSourceChar: 1220
+      endSourceChar: 1220
+      line: 47
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 756
+      endInstruction: 755
+      startSourceChar: 1220
+      endSourceChar: 1220
+      line: 47
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 756
+      endInstruction: 755
+      startSourceChar: 1220
+      endSourceChar: 1255
+      line: 47
+      lineChar: 8
+      spanCodeSection: "string[] privateStrArr;\r\n\r\n        "
+    - startInstruction: 756
+      endInstruction: 763
+      startSourceChar: 1255
+      endSourceChar: 1286
+      line: 49
+      lineChar: 8
+      spanCodeSection: "void TestPrivateArr()\r\n        "
+    - startInstruction: 764
+      endInstruction: 763
+      startSourceChar: 1286
+      endSourceChar: 1301
+      line: 50
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 764
+      endInstruction: 763
+      startSourceChar: 1301
+      endSourceChar: 1301
+      line: 51
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 764
+      endInstruction: 763
+      startSourceChar: 1301
+      endSourceChar: 1301
+      line: 51
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 764
+      endInstruction: 763
+      startSourceChar: 1301
+      endSourceChar: 1301
+      line: 51
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 764
+      endInstruction: 763
+      startSourceChar: 1301
+      endSourceChar: 1308
+      line: 51
+      lineChar: 12
+      spanCodeSection: tester.
+    - startInstruction: 764
+      endInstruction: 763
+      startSourceChar: 1308
+      endSourceChar: 1322
+      line: 51
+      lineChar: 19
+      spanCodeSection: TestAssertion(
+    - startInstruction: 764
+      endInstruction: 763
+      startSourceChar: 1322
+      endSourceChar: 1352
+      line: 51
+      lineChar: 33
+      spanCodeSection: '"Private Array Default Null", '
+    - startInstruction: 764
+      endInstruction: 763
+      startSourceChar: 1352
+      endSourceChar: 1352
+      line: 51
+      lineChar: 63
+      spanCodeSection: 
+    - startInstruction: 764
+      endInstruction: 783
+      startSourceChar: 1352
+      endSourceChar: 1369
+      line: 51
+      lineChar: 63
+      spanCodeSection: 'privateStrArr == '
+    - startInstruction: 784
+      endInstruction: 923
+      startSourceChar: 1369
+      endSourceChar: 1398
+      line: 51
+      lineChar: 80
+      spanCodeSection: "null);\r\n        }\r\n\r\n        "
+    - startInstruction: 924
+      endInstruction: 923
+      startSourceChar: 1398
+      endSourceChar: 1398
+      line: 54
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 924
+      endInstruction: 923
+      startSourceChar: 1398
+      endSourceChar: 1398
+      line: 54
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 924
+      endInstruction: 923
+      startSourceChar: 1398
+      endSourceChar: 1428
+      line: 54
+      lineChar: 8
+      spanCodeSection: "string privateStr;\r\n\r\n        "
+    - startInstruction: 924
+      endInstruction: 931
+      startSourceChar: 1428
+      endSourceChar: 1459
+      line: 56
+      lineChar: 8
+      spanCodeSection: "void TestPrivateStr()\r\n        "
+    - startInstruction: 932
+      endInstruction: 931
+      startSourceChar: 1459
+      endSourceChar: 1474
+      line: 57
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 932
+      endInstruction: 931
+      startSourceChar: 1474
+      endSourceChar: 1474
+      line: 58
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 932
+      endInstruction: 931
+      startSourceChar: 1474
+      endSourceChar: 1474
+      line: 58
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 932
+      endInstruction: 931
+      startSourceChar: 1474
+      endSourceChar: 1474
+      line: 58
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 932
+      endInstruction: 931
+      startSourceChar: 1474
+      endSourceChar: 1481
+      line: 58
+      lineChar: 12
+      spanCodeSection: tester.
+    - startInstruction: 932
+      endInstruction: 931
+      startSourceChar: 1481
+      endSourceChar: 1495
+      line: 58
+      lineChar: 19
+      spanCodeSection: TestAssertion(
+    - startInstruction: 932
+      endInstruction: 931
+      startSourceChar: 1495
+      endSourceChar: 1526
+      line: 58
+      lineChar: 33
+      spanCodeSection: '"Private String Default Null", '
+    - startInstruction: 932
+      endInstruction: 931
+      startSourceChar: 1526
+      endSourceChar: 1526
+      line: 58
+      lineChar: 64
+      spanCodeSection: 
+    - startInstruction: 932
+      endInstruction: 951
+      startSourceChar: 1526
+      endSourceChar: 1540
+      line: 58
+      lineChar: 64
+      spanCodeSection: 'privateStr == '
+    - startInstruction: 952
+      endInstruction: 952
+      startSourceChar: 1540
+      endSourceChar: 1540
+      line: 58
+      lineChar: 78
+      spanCodeSection: 
+  hasInteractEvent: 0
+  serializationData:
+    SerializedFormat: 2
+    SerializedBytes: 
+    ReferencedUnityObjects:
+    - {fileID: 11500000, guid: 11d8d463c5030e74bbaa9da5236e94e9, type: 3}
+    SerializedBytesString: 
+    Prefab: {fileID: 0}
+    PrefabModificationsReferencedUnityObjects: []
+    PrefabModifications: []
+    SerializationNodes:
+    - Name: fieldDefinitions
+      Entry: 7
+      Data: 0|System.Collections.Generic.Dictionary`2[[System.String, mscorlib],[UdonSharp.FieldDefinition,
+        UdonSharp.Editor]], mscorlib
+    - Name: comparer
+      Entry: 7
+      Data: 1|System.Collections.Generic.GenericEqualityComparer`1[[System.String,
+        mscorlib]], mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 12
+      Data: 6
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: tester
+    - Name: $v
+      Entry: 7
+      Data: 2|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 3|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 7
+      Data: 4|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: UdonSharp.Tests.IntegrationTestSuite, Assembly-CSharp
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: declarationType
+      Entry: 3
+      Data: 2
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: VRCUdonUdonBehaviour
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: tester
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: tester
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 5|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 6|System.NonSerializedAttribute, mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 10
+      Data: 0
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: defaultPublicArr
+    - Name: $v
+      Entry: 7
+      Data: 7|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 8|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 7
+      Data: 9|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: System.String[], mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemStringArray
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: defaultPublicArr
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: defaultPublicArr
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 10|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 11|UnityEngine.HideInInspector, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: defaultString
+    - Name: $v
+      Entry: 7
+      Data: 12|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 13|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 7
+      Data: 14|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: System.String, mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemString
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: defaultString
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: defaultString
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 15|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 16|UnityEngine.HideInInspector, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: networkSyncedString
+    - Name: $v
+      Entry: 7
+      Data: 17|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 18|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 14
+    - Name: declarationType
+      Entry: 3
+      Data: 2
+    - Name: syncMode
+      Entry: 3
+      Data: 1
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemString
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: networkSyncedString
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: networkSyncedString
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 19|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 20|UdonSharp.UdonSyncedAttribute, UdonSharp.Runtime
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: privateStrArr
+    - Name: $v
+      Entry: 7
+      Data: 21|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 22|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 9
+    - Name: declarationType
+      Entry: 3
+      Data: 2
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemStringArray
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: privateStrArr
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: privateStrArr
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 23|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: privateStr
+    - Name: $v
+      Entry: 7
+      Data: 24|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 25|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 14
+    - Name: declarationType
+      Entry: 3
+      Data: 2
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemString
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: privateStr
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: privateStr
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 26|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
