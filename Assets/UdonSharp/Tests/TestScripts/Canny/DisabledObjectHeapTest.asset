@@ -34,8 +34,7 @@ MonoBehaviour:
     %SystemUInt32, null\r\n    __2_const_intnl_exitJumpLoc_UInt32: %SystemUInt32,
     null\r\n    __0_intnl_SystemBoolean: %SystemBoolean, null\r\n    __1_intnl_SystemBoolean:
     %SystemBoolean, null\r\n    __2_intnl_SystemBoolean: %SystemBoolean, null\r\n
-    \   __3_intnl_SystemBoolean: %SystemBoolean, null\r\n    __0_intnl_SystemInt32:
-    %SystemInt32, null\r\n    __1_intnl_SystemInt32: %SystemInt32, null\r\n    __0_intnl_SystemObject:
+    \   __3_intnl_SystemBoolean: %SystemBoolean, null\r\n    __0_intnl_SystemObject:
     %SystemObject, null\r\n    __1_intnl_SystemObject: %SystemObject, null\r\n    __0_intnl_SystemString:
     %SystemString, null\r\n    __1_intnl_SystemString: %SystemString, null\r\n    __2_intnl_SystemString:
     %SystemString, null\r\n    __3_intnl_SystemString: %SystemString, null\r\n    __0_intnl_returnTarget_UInt32:
@@ -59,7 +58,7 @@ MonoBehaviour:
     \       JUMP, 0x00000094\r\n        \r\n         # TestHeapVariableSet();\r\n
     \       PUSH, __1_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x00000160\r\n
     \       \r\n         # TestCustomEvent();\r\n        PUSH, __2_const_intnl_exitJumpLoc_UInt32\r\n
-    \       JUMP, 0x000002B0\r\n        PUSH, __0_intnl_returnTarget_UInt32 #Function
+    \       JUMP, 0x00000288\r\n        PUSH, __0_intnl_returnTarget_UInt32 #Function
     epilogue\r\n        COPY\r\n        JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n
     \       \r\n        \r\n         # void TestHeapVariableGet()\r\n    TestHeapVariableGet:\r\n
     \       \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n        \r\n         #
@@ -103,10 +102,8 @@ MonoBehaviour:
     \        # int callCounter = 0;\r\n        \r\n         # public void CallEvent()\r\n
     \   .export CallEvent\r\n        \r\n    CallEvent:\r\n        \r\n        PUSH,
     __0_const_intnl_SystemUInt32\r\n        \r\n         # {\r\n        \r\n         #
-    callCounter++;\r\n        PUSH, callCounter\r\n        PUSH, __0_intnl_SystemInt32\r\n
-    \       COPY\r\n        PUSH, callCounter\r\n        PUSH, __0_const_intnl_SystemInt32\r\n
-    \       PUSH, __1_intnl_SystemInt32\r\n        EXTERN, \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n
-    \       PUSH, __1_intnl_SystemInt32\r\n        PUSH, callCounter\r\n        COPY\r\n
+    callCounter++;\r\n        PUSH, callCounter\r\n        PUSH, __0_const_intnl_SystemInt32\r\n
+    \       PUSH, callCounter\r\n        EXTERN, \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n
     \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n
     \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n
     \        # void TestCustomEvent()\r\n    TestCustomEvent:\r\n        \r\n        PUSH,
@@ -765,196 +762,196 @@ MonoBehaviour:
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 588
-      endInstruction: 679
+      endInstruction: 639
       startSourceChar: 1475
       endSourceChar: 1512
       line: 45
       lineChar: 12
       spanCodeSection: "callCounter++;\r\n        }\r\n\r\n        "
-    - startInstruction: 680
-      endInstruction: 687
+    - startInstruction: 640
+      endInstruction: 647
       startSourceChar: 1512
       endSourceChar: 1544
       line: 48
       lineChar: 8
       spanCodeSection: "void TestCustomEvent()\r\n        "
-    - startInstruction: 688
-      endInstruction: 687
+    - startInstruction: 648
+      endInstruction: 647
       startSourceChar: 1544
       endSourceChar: 1559
       line: 49
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 688
-      endInstruction: 687
+    - startInstruction: 648
+      endInstruction: 647
       startSourceChar: 1559
       endSourceChar: 1559
       line: 50
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 688
-      endInstruction: 687
+    - startInstruction: 648
+      endInstruction: 647
       startSourceChar: 1559
       endSourceChar: 1559
       line: 50
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 688
-      endInstruction: 687
+    - startInstruction: 648
+      endInstruction: 647
       startSourceChar: 1559
       endSourceChar: 1573
       line: 50
       lineChar: 12
       spanCodeSection: 'callCounter = '
-    - startInstruction: 688
-      endInstruction: 707
+    - startInstruction: 648
+      endInstruction: 667
       startSourceChar: 1573
       endSourceChar: 1591
       line: 50
       lineChar: 26
       spanCodeSection: "0;\r\n\r\n            "
-    - startInstruction: 708
-      endInstruction: 707
+    - startInstruction: 668
+      endInstruction: 667
       startSourceChar: 1591
       endSourceChar: 1591
       line: 52
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 708
-      endInstruction: 707
+    - startInstruction: 668
+      endInstruction: 667
       startSourceChar: 1591
       endSourceChar: 1591
       line: 52
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 708
-      endInstruction: 707
+    - startInstruction: 668
+      endInstruction: 667
       startSourceChar: 1591
       endSourceChar: 1591
       line: 52
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 708
-      endInstruction: 707
+    - startInstruction: 668
+      endInstruction: 667
       startSourceChar: 1591
       endSourceChar: 1607
       line: 52
       lineChar: 12
       spanCodeSection: referenceScript.
-    - startInstruction: 708
-      endInstruction: 707
+    - startInstruction: 668
+      endInstruction: 667
       startSourceChar: 1607
       endSourceChar: 1626
       line: 52
       lineChar: 28
       spanCodeSection: 'spawnerBehaviour = '
-    - startInstruction: 708
-      endInstruction: 739
+    - startInstruction: 668
+      endInstruction: 699
       startSourceChar: 1626
       endSourceChar: 1645
       line: 52
       lineChar: 47
       spanCodeSection: "this;\r\n            "
-    - startInstruction: 740
-      endInstruction: 739
+    - startInstruction: 700
+      endInstruction: 699
       startSourceChar: 1645
       endSourceChar: 1645
       line: 53
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 740
-      endInstruction: 739
+    - startInstruction: 700
+      endInstruction: 699
       startSourceChar: 1645
       endSourceChar: 1645
       line: 53
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 740
-      endInstruction: 739
+    - startInstruction: 700
+      endInstruction: 699
       startSourceChar: 1645
       endSourceChar: 1645
       line: 53
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 740
-      endInstruction: 739
+    - startInstruction: 700
+      endInstruction: 699
       startSourceChar: 1645
       endSourceChar: 1661
       line: 53
       lineChar: 12
       spanCodeSection: referenceScript.
-    - startInstruction: 740
-      endInstruction: 739
+    - startInstruction: 700
+      endInstruction: 699
       startSourceChar: 1661
       endSourceChar: 1677
       line: 53
       lineChar: 28
       spanCodeSection: SendCustomEvent(
-    - startInstruction: 740
-      endInstruction: 763
+    - startInstruction: 700
+      endInstruction: 723
       startSourceChar: 1677
       endSourceChar: 1706
       line: 53
       lineChar: 44
       spanCodeSection: "\"CallEvent\");\r\n\r\n            "
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 724
+      endInstruction: 723
       startSourceChar: 1706
       endSourceChar: 1706
       line: 55
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 724
+      endInstruction: 723
       startSourceChar: 1706
       endSourceChar: 1706
       line: 55
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 724
+      endInstruction: 723
       startSourceChar: 1706
       endSourceChar: 1706
       line: 55
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 724
+      endInstruction: 723
       startSourceChar: 1706
       endSourceChar: 1713
       line: 55
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 724
+      endInstruction: 723
       startSourceChar: 1713
       endSourceChar: 1727
       line: 55
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 724
+      endInstruction: 723
       startSourceChar: 1727
       endSourceChar: 1764
       line: 55
       lineChar: 33
       spanCodeSection: '"Disabled Object Send Custom Event", '
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 724
+      endInstruction: 723
       startSourceChar: 1764
       endSourceChar: 1764
       line: 55
       lineChar: 70
       spanCodeSection: 
-    - startInstruction: 764
-      endInstruction: 763
+    - startInstruction: 724
+      endInstruction: 723
       startSourceChar: 1764
       endSourceChar: 1779
       line: 55
       lineChar: 70
       spanCodeSection: 'callCounter == '
-    - startInstruction: 764
-      endInstruction: 764
+    - startInstruction: 724
+      endInstruction: 724
       startSourceChar: 1779
       endSourceChar: 1779
       line: 55

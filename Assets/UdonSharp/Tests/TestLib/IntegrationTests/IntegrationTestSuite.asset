@@ -38,33 +38,30 @@ MonoBehaviour:
     \   __3_intnl_SystemBoolean: %SystemBoolean, null\r\n    __4_intnl_SystemBoolean:
     %SystemBoolean, null\r\n    __5_intnl_SystemBoolean: %SystemBoolean, null\r\n
     \   __6_intnl_SystemBoolean: %SystemBoolean, null\r\n    __7_intnl_SystemBoolean:
-    %SystemBoolean, null\r\n    __0_intnl_UdonSharpUdonSharpBehaviourArray: %UnityEngineComponentArray,
-    null\r\n    __0_intnl_returnValSymbol_Int32: %SystemInt32, null\r\n    __0_intnl_SystemInt32:
-    %SystemInt32, null\r\n    __1_intnl_returnValSymbol_Int32: %SystemInt32, null\r\n
-    \   __1_intnl_SystemInt32: %SystemInt32, null\r\n    __2_intnl_SystemInt32: %SystemInt32,
-    null\r\n    __3_intnl_SystemInt32: %SystemInt32, null\r\n    __4_intnl_SystemInt32:
-    %SystemInt32, null\r\n    __0_intnl_interpolatedStr_String: %SystemString, null\r\n
-    \   __0_intnl_SystemString: %SystemString, null\r\n    __1_intnl_interpolatedStr_String:
+    %SystemBoolean, null\r\n    __0_intnl_returnValSymbol_Int32: %SystemInt32, null\r\n
+    \   __0_intnl_SystemInt32: %SystemInt32, null\r\n    __1_intnl_returnValSymbol_Int32:
+    %SystemInt32, null\r\n    __1_intnl_SystemInt32: %SystemInt32, null\r\n    __0_intnl_interpolatedStr_String:
+    %SystemString, null\r\n    __0_intnl_SystemString: %SystemString, null\r\n    __1_intnl_interpolatedStr_String:
     %SystemString, null\r\n    __1_intnl_SystemString: %SystemString, null\r\n    __10_intnl_SystemString:
     %SystemString, null\r\n    __11_intnl_SystemString: %SystemString, null\r\n    __12_intnl_SystemString:
     %SystemString, null\r\n    __13_intnl_SystemString: %SystemString, null\r\n    __14_intnl_SystemString:
     %SystemString, null\r\n    __15_intnl_SystemString: %SystemString, null\r\n    __16_intnl_SystemString:
-    %SystemString, null\r\n    __17_intnl_SystemString: %SystemString, null\r\n    __2_intnl_SystemString:
-    %SystemString, null\r\n    __3_intnl_SystemString: %SystemString, null\r\n    __4_intnl_SystemString:
-    %SystemString, null\r\n    __5_intnl_SystemString: %SystemString, null\r\n    __6_intnl_SystemString:
-    %SystemString, null\r\n    __7_intnl_SystemString: %SystemString, null\r\n    __8_intnl_SystemString:
-    %SystemString, null\r\n    __9_intnl_SystemString: %SystemString, null\r\n    __0_intnl_UdonSharpUdonSharpBehaviour:
-    %VRCUdonUdonBehaviour, null\r\n    __0_intnl_returnTarget_UInt32: %SystemUInt32,
-    null\r\n\r\n.data_end\r\n\r\n        \r\n         # using UdonSharp;\r\n        \r\n
-    \        # using UnityEngine;\r\n        \r\n         # using VRC.SDKBase;\r\n
-    \       \r\n         # using VRC.Udon;\r\n        \r\n         # namespace UdonSharp.Tests\r\n
-    \       \r\n         # [AddComponentMenu(\"Udon Sharp/Test Lib/Integration Test
-    Suite\")]\r\n        \r\n         # public class IntegrationTestSuite : UdonSharpBehaviour\r\n.code_start\r\n
-    \       \r\n         # [System.NonSerialized]\r\n        \r\n         # public
-    bool printPassedTests = false;\r\n        \r\n         # [SerializeField] string
-    testSuiteName;\r\n        \r\n         # [SerializeField] bool forcePrintPassedTests
-    = false;\r\n        \r\n         # [SerializeField] UdonSharpBehaviour[] tests;\r\n
-    \       \r\n         # int testTotalCount;\r\n        \r\n         # int testSuccessCount;\r\n
+    %SystemString, null\r\n    __2_intnl_SystemString: %SystemString, null\r\n    __3_intnl_SystemString:
+    %SystemString, null\r\n    __4_intnl_SystemString: %SystemString, null\r\n    __5_intnl_SystemString:
+    %SystemString, null\r\n    __6_intnl_SystemString: %SystemString, null\r\n    __7_intnl_SystemString:
+    %SystemString, null\r\n    __8_intnl_SystemString: %SystemString, null\r\n    __9_intnl_SystemString:
+    %SystemString, null\r\n    __0_intnl_UdonSharpUdonSharpBehaviour: %VRCUdonUdonBehaviour,
+    null\r\n    __0_intnl_returnTarget_UInt32: %SystemUInt32, null\r\n\r\n.data_end\r\n\r\n
+    \       \r\n         # using UdonSharp;\r\n        \r\n         # using UnityEngine;\r\n
+    \       \r\n         # using VRC.SDKBase;\r\n        \r\n         # using VRC.Udon;\r\n
+    \       \r\n         # namespace UdonSharp.Tests\r\n        \r\n         # [AddComponentMenu(\"Udon
+    Sharp/Test Lib/Integration Test Suite\")]\r\n        \r\n         # public class
+    IntegrationTestSuite : UdonSharpBehaviour\r\n.code_start\r\n        \r\n         #
+    [System.NonSerialized]\r\n        \r\n         # public bool printPassedTests
+    = false;\r\n        \r\n         # [SerializeField] string testSuiteName;\r\n
+    \       \r\n         # [SerializeField] bool forcePrintPassedTests = false;\r\n
+    \       \r\n         # [SerializeField] UdonSharpBehaviour[] tests;\r\n        \r\n
+    \        # int testTotalCount;\r\n        \r\n         # int testSuccessCount;\r\n
     \       \r\n         # readonly string whitespaceStr = new string(' ', 4);\r\n
     \       \r\n         # public int GetTotalTestCount() => testTotalCount;\r\n    .export
     GetTotalTestCount\r\n        \r\n    GetTotalTestCount:\r\n        \r\n        PUSH,
@@ -102,7 +99,7 @@ MonoBehaviour:
     \"UnityEngineComponentArray.__get_Length__SystemInt32\"\r\n        PUSH, __0_intnl_SystemInt32\r\n
     \       PUSH, __1_intnl_SystemInt32\r\n        PUSH, __0_intnl_SystemBoolean\r\n
     \       EXTERN, \"SystemInt32.__op_LessThan__SystemInt32_SystemInt32__SystemBoolean\"\r\n
-    \       PUSH, __0_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000268\r\n
+    \       PUSH, __0_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000240\r\n
     \       PUSH, tests\r\n        PUSH, __0_intnl_SystemInt32\r\n        PUSH, __0_intnl_UdonSharpUdonSharpBehaviour\r\n
     \       EXTERN, \"UnityEngineComponentArray.__Get__SystemInt32__UnityEngineComponent\"\r\n
     \       PUSH, __0_intnl_UdonSharpUdonSharpBehaviour\r\n        PUSH, __0_test_UdonSharpBehaviour\r\n
@@ -111,13 +108,11 @@ MonoBehaviour:
     \       PUSH, __0_this_intnl_UdonSharpTestsIntegrationTestSuite\r\n        EXTERN,
     \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
     \       \r\n         # test.SendCustomEvent(\"ExecuteTests\");\r\n        PUSH,
-    __0_test_UdonSharpBehaviour\r\n        PUSH, tests\r\n        PUSH, __0_intnl_UdonSharpUdonSharpBehaviourArray\r\n
-    \       COPY # Copy-on-write symbol value dirtied\r\n        PUSH, __3_const_intnl_SystemString\r\n
+    __0_test_UdonSharpBehaviour\r\n        PUSH, __3_const_intnl_SystemString\r\n
     \       EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SendCustomEvent__SystemString__SystemVoid\"\r\n
     \       PUSH, __0_intnl_SystemInt32\r\n        PUSH, __1_const_intnl_SystemInt32\r\n
-    \       PUSH, __2_intnl_SystemInt32\r\n        EXTERN, \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n
-    \       PUSH, __2_intnl_SystemInt32\r\n        PUSH, __0_intnl_SystemInt32\r\n
-    \       COPY\r\n        JUMP, 0x0000017C\r\n        \r\n         # Debug.Log($\"{whitespaceStr}[<color=#00AF54>UdonSharp
+    \       PUSH, __0_intnl_SystemInt32\r\n        EXTERN, \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n
+    \       JUMP, 0x0000017C\r\n        \r\n         # Debug.Log($\"{whitespaceStr}[<color=#00AF54>UdonSharp
     Tests</color>] [{testSuiteName}] [{testSuccessCount}/{testTotalCount}] {(testSuccessCount
     == testTotalCount ? \"Tests succeeded\" : \"\")}\");\r\n        PUSH, whitespaceStr\r\n
     \       PUSH, __1_intnl_interpolatedStr_String\r\n        COPY\r\n        PUSH,
@@ -151,9 +146,9 @@ MonoBehaviour:
     __11_intnl_SystemString\r\n        PUSH, __1_intnl_interpolatedStr_String\r\n
     \       COPY\r\n        PUSH, testSuccessCount\r\n        PUSH, testTotalCount\r\n
     \       PUSH, __0_intnl_SystemBoolean\r\n        EXTERN, \"SystemInt32.__op_Equality__SystemInt32_SystemInt32__SystemBoolean\"\r\n
-    \       PUSH, __0_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000464\r\n
+    \       PUSH, __0_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x0000043C\r\n
     \       PUSH, __7_const_intnl_SystemString\r\n        PUSH, __12_intnl_SystemString\r\n
-    \       COPY\r\n        JUMP, 0x00000478\r\n        PUSH, __8_const_intnl_SystemString\r\n
+    \       COPY\r\n        JUMP, 0x00000450\r\n        PUSH, __8_const_intnl_SystemString\r\n
     \       PUSH, __12_intnl_SystemString\r\n        COPY\r\n        PUSH, __1_intnl_interpolatedStr_String\r\n
     \       PUSH, __12_intnl_SystemString\r\n        PUSH, __13_intnl_SystemString\r\n
     \       EXTERN, \"SystemString.__op_Addition__SystemString_SystemString__SystemString\"\r\n
@@ -166,45 +161,42 @@ MonoBehaviour:
     \       \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n        \r\n         #
     {\r\n        \r\n         # string testPrefixText = assertion ? \"[<color=#008000>Pass</color>]:
     \" : \"[<color=#FF0000>Fail</color>]: \";\r\n        PUSH, __0_assertion_Boolean\r\n
-    \       JUMP_IF_FALSE, 0x00000504\r\n        PUSH, __9_const_intnl_SystemString\r\n
-    \       PUSH, __14_intnl_SystemString\r\n        COPY\r\n        JUMP, 0x00000518\r\n
-    \       PUSH, __10_const_intnl_SystemString\r\n        PUSH, __14_intnl_SystemString\r\n
-    \       COPY\r\n        PUSH, __14_intnl_SystemString\r\n        PUSH, __0_testPrefixText_String\r\n
+    \       JUMP_IF_FALSE, 0x000004DC\r\n        PUSH, __9_const_intnl_SystemString\r\n
+    \       PUSH, __0_testPrefixText_String\r\n        COPY\r\n        JUMP, 0x000004F0\r\n
+    \       PUSH, __10_const_intnl_SystemString\r\n        PUSH, __0_testPrefixText_String\r\n
     \       COPY\r\n        \r\n         # if (!assertion || printPassedTests || forcePrintPassedTests)\r\n
     \       PUSH, __0_assertion_Boolean\r\n        PUSH, __3_intnl_SystemBoolean\r\n
     \       EXTERN, \"SystemBoolean.__op_UnaryNegation__SystemBoolean__SystemBoolean\"\r\n
     \       PUSH, __3_intnl_SystemBoolean\r\n        PUSH, __2_intnl_SystemBoolean\r\n
     \       COPY\r\n        PUSH, __2_intnl_SystemBoolean\r\n        PUSH, __4_intnl_SystemBoolean\r\n
     \       EXTERN, \"SystemBoolean.__op_UnaryNegation__SystemBoolean__SystemBoolean\"\r\n
-    \       PUSH, __4_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x000005B4\r\n
+    \       PUSH, __4_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000578\r\n
     \       PUSH, __2_intnl_SystemBoolean\r\n        PUSH, printPassedTests\r\n        PUSH,
     __5_intnl_SystemBoolean\r\n        EXTERN, \"SystemBoolean.__op_ConditionalOr__SystemBoolean_SystemBoolean__SystemBoolean\"\r\n
     \       PUSH, __5_intnl_SystemBoolean\r\n        PUSH, __2_intnl_SystemBoolean\r\n
     \       COPY\r\n        PUSH, __2_intnl_SystemBoolean\r\n        PUSH, __1_intnl_SystemBoolean\r\n
     \       COPY\r\n        PUSH, __1_intnl_SystemBoolean\r\n        PUSH, __6_intnl_SystemBoolean\r\n
     \       EXTERN, \"SystemBoolean.__op_UnaryNegation__SystemBoolean__SystemBoolean\"\r\n
-    \       PUSH, __6_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000624\r\n
+    \       PUSH, __6_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x000005E8\r\n
     \       PUSH, __1_intnl_SystemBoolean\r\n        PUSH, forcePrintPassedTests\r\n
     \       PUSH, __7_intnl_SystemBoolean\r\n        EXTERN, \"SystemBoolean.__op_ConditionalOr__SystemBoolean_SystemBoolean__SystemBoolean\"\r\n
     \       PUSH, __7_intnl_SystemBoolean\r\n        PUSH, __1_intnl_SystemBoolean\r\n
     \       COPY\r\n        PUSH, __1_intnl_SystemBoolean\r\n        JUMP_IF_FALSE,
-    0x000006A4\r\n        \r\n         # Debug.Log(whitespaceStr + whitespaceStr +
+    0x00000668\r\n        \r\n         # Debug.Log(whitespaceStr + whitespaceStr +
     testPrefixText + testName);\r\n        PUSH, whitespaceStr\r\n        PUSH, whitespaceStr\r\n
+    \       PUSH, __14_intnl_SystemString\r\n        EXTERN, \"SystemString.__op_Addition__SystemString_SystemString__SystemString\"\r\n
+    \       PUSH, __14_intnl_SystemString\r\n        PUSH, __0_testPrefixText_String\r\n
     \       PUSH, __15_intnl_SystemString\r\n        EXTERN, \"SystemString.__op_Addition__SystemString_SystemString__SystemString\"\r\n
-    \       PUSH, __15_intnl_SystemString\r\n        PUSH, __0_testPrefixText_String\r\n
+    \       PUSH, __15_intnl_SystemString\r\n        PUSH, __0_testName_String\r\n
     \       PUSH, __16_intnl_SystemString\r\n        EXTERN, \"SystemString.__op_Addition__SystemString_SystemString__SystemString\"\r\n
-    \       PUSH, __16_intnl_SystemString\r\n        PUSH, __0_testName_String\r\n
-    \       PUSH, __17_intnl_SystemString\r\n        EXTERN, \"SystemString.__op_Addition__SystemString_SystemString__SystemString\"\r\n
-    \       PUSH, __17_intnl_SystemString\r\n        EXTERN, \"UnityEngineDebug.__Log__SystemObject__SystemVoid\"\r\n
+    \       PUSH, __16_intnl_SystemString\r\n        EXTERN, \"UnityEngineDebug.__Log__SystemObject__SystemVoid\"\r\n
     \       \r\n         # ++testTotalCount;\r\n        PUSH, testTotalCount\r\n        PUSH,
-    __1_const_intnl_SystemInt32\r\n        PUSH, __3_intnl_SystemInt32\r\n        EXTERN,
-    \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n        PUSH,
-    __3_intnl_SystemInt32\r\n        PUSH, testTotalCount\r\n        COPY\r\n        \r\n
+    __1_const_intnl_SystemInt32\r\n        PUSH, testTotalCount\r\n        EXTERN,
+    \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n        \r\n
     \        # if (assertion) ++testSuccessCount;\r\n        PUSH, __0_assertion_Boolean\r\n
-    \       JUMP_IF_FALSE, 0x0000071C\r\n        PUSH, testSuccessCount\r\n        PUSH,
-    __1_const_intnl_SystemInt32\r\n        PUSH, __4_intnl_SystemInt32\r\n        EXTERN,
+    \       JUMP_IF_FALSE, 0x000006B8\r\n        PUSH, testSuccessCount\r\n        PUSH,
+    __1_const_intnl_SystemInt32\r\n        PUSH, testSuccessCount\r\n        EXTERN,
     \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n        PUSH,
-    __4_intnl_SystemInt32\r\n        PUSH, testSuccessCount\r\n        COPY\r\n        PUSH,
     __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n        JUMP_INDIRECT,
     __0_intnl_returnTarget_UInt32\r\n        \r\n.code_end\r\n"
   assemblyError: 
@@ -882,456 +874,456 @@ MonoBehaviour:
       lineChar: 21
       spanCodeSection: SendCustomEvent(
     - startInstruction: 512
-      endInstruction: 615
+      endInstruction: 575
       startSourceChar: 1197
       endSourceChar: 1244
       line: 38
       lineChar: 37
       spanCodeSection: "\"ExecuteTests\");\r\n            }\r\n\r\n            "
-    - startInstruction: 616
-      endInstruction: 615
+    - startInstruction: 576
+      endInstruction: 575
       startSourceChar: 1244
       endSourceChar: 1244
       line: 41
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 616
-      endInstruction: 615
+    - startInstruction: 576
+      endInstruction: 575
       startSourceChar: 1244
       endSourceChar: 1244
       line: 41
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 616
-      endInstruction: 615
+    - startInstruction: 576
+      endInstruction: 575
       startSourceChar: 1244
       endSourceChar: 1244
       line: 41
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 616
-      endInstruction: 615
+    - startInstruction: 576
+      endInstruction: 575
       startSourceChar: 1244
       endSourceChar: 1250
       line: 41
       lineChar: 12
       spanCodeSection: Debug.
-    - startInstruction: 616
-      endInstruction: 615
+    - startInstruction: 576
+      endInstruction: 575
       startSourceChar: 1250
       endSourceChar: 1254
       line: 41
       lineChar: 18
       spanCodeSection: Log(
-    - startInstruction: 616
-      endInstruction: 615
+    - startInstruction: 576
+      endInstruction: 575
       startSourceChar: 1254
       endSourceChar: 1256
       line: 41
       lineChar: 22
       spanCodeSection: $"
-    - startInstruction: 616
-      endInstruction: 615
+    - startInstruction: 576
+      endInstruction: 575
       startSourceChar: 1256
       endSourceChar: 1257
       line: 41
       lineChar: 24
       spanCodeSection: '{'
-    - startInstruction: 616
-      endInstruction: 635
+    - startInstruction: 576
+      endInstruction: 595
       startSourceChar: 1257
       endSourceChar: 1271
       line: 41
       lineChar: 25
       spanCodeSection: whitespaceStr}
-    - startInstruction: 636
-      endInstruction: 687
+    - startInstruction: 596
+      endInstruction: 647
       startSourceChar: 1271
       endSourceChar: 1313
       line: 41
       lineChar: 39
       spanCodeSection: '[<color=#00AF54>UdonSharp Tests</color>] ['
-    - startInstruction: 688
-      endInstruction: 687
+    - startInstruction: 648
+      endInstruction: 647
       startSourceChar: 1313
       endSourceChar: 1314
       line: 41
       lineChar: 81
       spanCodeSection: '{'
-    - startInstruction: 688
-      endInstruction: 739
+    - startInstruction: 648
+      endInstruction: 699
       startSourceChar: 1314
       endSourceChar: 1328
       line: 41
       lineChar: 82
       spanCodeSection: testSuiteName}
-    - startInstruction: 740
-      endInstruction: 791
+    - startInstruction: 700
+      endInstruction: 751
       startSourceChar: 1328
       endSourceChar: 1331
       line: 41
       lineChar: 96
       spanCodeSection: '] ['
-    - startInstruction: 792
-      endInstruction: 791
+    - startInstruction: 752
+      endInstruction: 751
       startSourceChar: 1331
       endSourceChar: 1332
       line: 41
       lineChar: 99
       spanCodeSection: '{'
-    - startInstruction: 792
-      endInstruction: 867
+    - startInstruction: 752
+      endInstruction: 827
       startSourceChar: 1332
       endSourceChar: 1349
       line: 41
       lineChar: 100
       spanCodeSection: testSuccessCount}
-    - startInstruction: 868
-      endInstruction: 919
+    - startInstruction: 828
+      endInstruction: 879
       startSourceChar: 1349
       endSourceChar: 1350
       line: 41
       lineChar: 117
       spanCodeSection: /
-    - startInstruction: 920
-      endInstruction: 919
+    - startInstruction: 880
+      endInstruction: 879
       startSourceChar: 1350
       endSourceChar: 1351
       line: 41
       lineChar: 118
       spanCodeSection: '{'
-    - startInstruction: 920
-      endInstruction: 995
+    - startInstruction: 880
+      endInstruction: 955
       startSourceChar: 1351
       endSourceChar: 1366
       line: 41
       lineChar: 119
       spanCodeSection: testTotalCount}
-    - startInstruction: 996
-      endInstruction: 1047
+    - startInstruction: 956
+      endInstruction: 1007
       startSourceChar: 1366
       endSourceChar: 1368
       line: 41
       lineChar: 134
       spanCodeSection: '] '
-    - startInstruction: 1048
-      endInstruction: 1047
+    - startInstruction: 1008
+      endInstruction: 1007
       startSourceChar: 1368
       endSourceChar: 1369
       line: 41
       lineChar: 136
       spanCodeSection: '{'
-    - startInstruction: 1048
-      endInstruction: 1047
+    - startInstruction: 1008
+      endInstruction: 1007
       startSourceChar: 1369
       endSourceChar: 1370
       line: 41
       lineChar: 137
       spanCodeSection: (
-    - startInstruction: 1048
-      endInstruction: 1047
+    - startInstruction: 1008
+      endInstruction: 1007
       startSourceChar: 1370
       endSourceChar: 1370
       line: 41
       lineChar: 138
       spanCodeSection: 
-    - startInstruction: 1048
-      endInstruction: 1047
+    - startInstruction: 1008
+      endInstruction: 1007
       startSourceChar: 1370
       endSourceChar: 1370
       line: 41
       lineChar: 138
       spanCodeSection: 
-    - startInstruction: 1048
-      endInstruction: 1047
+    - startInstruction: 1008
+      endInstruction: 1007
       startSourceChar: 1370
       endSourceChar: 1390
       line: 41
       lineChar: 138
       spanCodeSection: 'testSuccessCount == '
-    - startInstruction: 1048
-      endInstruction: 1095
+    - startInstruction: 1008
+      endInstruction: 1055
       startSourceChar: 1390
       endSourceChar: 1407
       line: 41
       lineChar: 158
       spanCodeSection: 'testTotalCount ? '
-    - startInstruction: 1096
-      endInstruction: 1123
+    - startInstruction: 1056
+      endInstruction: 1083
       startSourceChar: 1407
       endSourceChar: 1427
       line: 41
       lineChar: 175
       spanCodeSection: '"Tests succeeded" : '
-    - startInstruction: 1124
-      endInstruction: 1231
+    - startInstruction: 1084
+      endInstruction: 1191
       startSourceChar: 1427
       endSourceChar: 1457
       line: 41
       lineChar: 195
       spanCodeSection: "\"\")}\");\r\n        }\r\n\r\n        "
-    - startInstruction: 1232
-      endInstruction: 1239
+    - startInstruction: 1192
+      endInstruction: 1199
       startSourceChar: 1457
       endSourceChar: 1525
       line: 44
       lineChar: 8
       spanCodeSection: "public void TestAssertion(string testName, bool assertion)\r\n
         \       "
-    - startInstruction: 1240
-      endInstruction: 1239
+    - startInstruction: 1200
+      endInstruction: 1199
       startSourceChar: 1525
       endSourceChar: 1540
       line: 45
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 1240
-      endInstruction: 1239
+    - startInstruction: 1200
+      endInstruction: 1199
       startSourceChar: 1540
       endSourceChar: 1540
       line: 46
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1240
-      endInstruction: 1239
+    - startInstruction: 1200
+      endInstruction: 1199
       startSourceChar: 1540
       endSourceChar: 1540
       line: 46
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1240
-      endInstruction: 1239
+    - startInstruction: 1200
+      endInstruction: 1199
       startSourceChar: 1540
       endSourceChar: 1540
       line: 46
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1240
-      endInstruction: 1239
+    - startInstruction: 1200
+      endInstruction: 1199
       startSourceChar: 1540
       endSourceChar: 1562
       line: 46
       lineChar: 12
       spanCodeSection: 'string testPrefixText '
-    - startInstruction: 1240
-      endInstruction: 1239
+    - startInstruction: 1200
+      endInstruction: 1199
       startSourceChar: 1562
       endSourceChar: 1564
       line: 46
       lineChar: 34
       spanCodeSection: '= '
-    - startInstruction: 1240
-      endInstruction: 1239
+    - startInstruction: 1200
+      endInstruction: 1199
       startSourceChar: 1564
       endSourceChar: 1564
       line: 46
       lineChar: 36
       spanCodeSection: 
-    - startInstruction: 1240
-      endInstruction: 1255
+    - startInstruction: 1200
+      endInstruction: 1215
       startSourceChar: 1564
       endSourceChar: 1576
       line: 46
       lineChar: 36
       spanCodeSection: 'assertion ? '
-    - startInstruction: 1256
-      endInstruction: 1283
+    - startInstruction: 1216
+      endInstruction: 1243
       startSourceChar: 1576
       endSourceChar: 1612
       line: 46
       lineChar: 48
       spanCodeSection: '"[<color=#008000>Pass</color>]: " : '
-    - startInstruction: 1284
-      endInstruction: 1323
+    - startInstruction: 1244
+      endInstruction: 1263
       startSourceChar: 1612
       endSourceChar: 1662
       line: 46
       lineChar: 84
       spanCodeSection: "\"[<color=#FF0000>Fail</color>]: \";\r\n\r\n            "
-    - startInstruction: 1324
-      endInstruction: 1323
+    - startInstruction: 1264
+      endInstruction: 1263
       startSourceChar: 1662
       endSourceChar: 1666
       line: 48
       lineChar: 12
       spanCodeSection: if (
-    - startInstruction: 1324
-      endInstruction: 1323
+    - startInstruction: 1264
+      endInstruction: 1263
       startSourceChar: 1666
       endSourceChar: 1666
       line: 48
       lineChar: 16
       spanCodeSection: 
-    - startInstruction: 1324
-      endInstruction: 1323
+    - startInstruction: 1264
+      endInstruction: 1263
       startSourceChar: 1666
       endSourceChar: 1666
       line: 48
       lineChar: 16
       spanCodeSection: 
-    - startInstruction: 1324
-      endInstruction: 1323
+    - startInstruction: 1264
+      endInstruction: 1263
       startSourceChar: 1666
       endSourceChar: 1667
       line: 48
       lineChar: 16
       spanCodeSection: '!'
-    - startInstruction: 1324
-      endInstruction: 1407
+    - startInstruction: 1264
+      endInstruction: 1347
       startSourceChar: 1667
       endSourceChar: 1680
       line: 48
       lineChar: 17
       spanCodeSection: 'assertion || '
-    - startInstruction: 1408
-      endInstruction: 1519
+    - startInstruction: 1348
+      endInstruction: 1459
       startSourceChar: 1680
       endSourceChar: 1700
       line: 48
       lineChar: 30
       spanCodeSection: 'printPassedTests || '
-    - startInstruction: 1520
-      endInstruction: 1587
+    - startInstruction: 1460
+      endInstruction: 1527
       startSourceChar: 1700
       endSourceChar: 1740
       line: 48
       lineChar: 50
       spanCodeSection: "forcePrintPassedTests)\r\n                "
-    - startInstruction: 1588
-      endInstruction: 1587
+    - startInstruction: 1528
+      endInstruction: 1527
       startSourceChar: 1740
       endSourceChar: 1740
       line: 49
       lineChar: 16
       spanCodeSection: 
-    - startInstruction: 1588
-      endInstruction: 1587
+    - startInstruction: 1528
+      endInstruction: 1527
       startSourceChar: 1740
       endSourceChar: 1740
       line: 49
       lineChar: 16
       spanCodeSection: 
-    - startInstruction: 1588
-      endInstruction: 1587
+    - startInstruction: 1528
+      endInstruction: 1527
       startSourceChar: 1740
       endSourceChar: 1740
       line: 49
       lineChar: 16
       spanCodeSection: 
-    - startInstruction: 1588
-      endInstruction: 1587
+    - startInstruction: 1528
+      endInstruction: 1527
       startSourceChar: 1740
       endSourceChar: 1746
       line: 49
       lineChar: 16
       spanCodeSection: Debug.
-    - startInstruction: 1588
-      endInstruction: 1587
+    - startInstruction: 1528
+      endInstruction: 1527
       startSourceChar: 1746
       endSourceChar: 1750
       line: 49
       lineChar: 22
       spanCodeSection: Log(
-    - startInstruction: 1588
-      endInstruction: 1587
+    - startInstruction: 1528
+      endInstruction: 1527
       startSourceChar: 1750
       endSourceChar: 1750
       line: 49
       lineChar: 26
       spanCodeSection: 
-    - startInstruction: 1588
-      endInstruction: 1587
+    - startInstruction: 1528
+      endInstruction: 1527
       startSourceChar: 1750
       endSourceChar: 1750
       line: 49
       lineChar: 26
       spanCodeSection: 
-    - startInstruction: 1588
-      endInstruction: 1587
+    - startInstruction: 1528
+      endInstruction: 1527
       startSourceChar: 1750
       endSourceChar: 1750
       line: 49
       lineChar: 26
       spanCodeSection: 
-    - startInstruction: 1588
-      endInstruction: 1587
+    - startInstruction: 1528
+      endInstruction: 1527
       startSourceChar: 1750
       endSourceChar: 1766
       line: 49
       lineChar: 26
       spanCodeSection: 'whitespaceStr + '
-    - startInstruction: 1588
-      endInstruction: 1619
+    - startInstruction: 1528
+      endInstruction: 1559
       startSourceChar: 1766
       endSourceChar: 1782
       line: 49
       lineChar: 42
       spanCodeSection: 'whitespaceStr + '
-    - startInstruction: 1620
-      endInstruction: 1651
+    - startInstruction: 1560
+      endInstruction: 1591
       startSourceChar: 1782
       endSourceChar: 1799
       line: 49
       lineChar: 58
       spanCodeSection: 'testPrefixText + '
-    - startInstruction: 1652
-      endInstruction: 1699
+    - startInstruction: 1592
+      endInstruction: 1639
       startSourceChar: 1799
       endSourceChar: 1825
       line: 49
       lineChar: 75
       spanCodeSection: "testName);\r\n\r\n            "
-    - startInstruction: 1700
-      endInstruction: 1699
+    - startInstruction: 1640
+      endInstruction: 1639
       startSourceChar: 1825
       endSourceChar: 1825
       line: 51
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1700
-      endInstruction: 1699
+    - startInstruction: 1640
+      endInstruction: 1639
       startSourceChar: 1825
       endSourceChar: 1827
       line: 51
       lineChar: 12
       spanCodeSection: ++
-    - startInstruction: 1700
-      endInstruction: 1751
+    - startInstruction: 1640
+      endInstruction: 1671
       startSourceChar: 1827
       endSourceChar: 1856
       line: 51
       lineChar: 14
       spanCodeSection: "testTotalCount;\r\n            "
-    - startInstruction: 1752
-      endInstruction: 1751
+    - startInstruction: 1672
+      endInstruction: 1671
       startSourceChar: 1856
       endSourceChar: 1860
       line: 52
       lineChar: 12
       spanCodeSection: if (
-    - startInstruction: 1752
-      endInstruction: 1767
+    - startInstruction: 1672
+      endInstruction: 1687
       startSourceChar: 1860
       endSourceChar: 1871
       line: 52
       lineChar: 16
       spanCodeSection: 'assertion) '
-    - startInstruction: 1768
-      endInstruction: 1767
+    - startInstruction: 1688
+      endInstruction: 1687
       startSourceChar: 1871
       endSourceChar: 1871
       line: 52
       lineChar: 27
       spanCodeSection: 
-    - startInstruction: 1768
-      endInstruction: 1767
+    - startInstruction: 1688
+      endInstruction: 1687
       startSourceChar: 1871
       endSourceChar: 1873
       line: 52
       lineChar: 27
       spanCodeSection: ++
-    - startInstruction: 1768
-      endInstruction: 1768
+    - startInstruction: 1688
+      endInstruction: 1688
       startSourceChar: 1873
       endSourceChar: 1873
       line: 52
