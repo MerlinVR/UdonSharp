@@ -619,7 +619,7 @@ namespace UdonSharp
         }
 
         // There's probably a better place for this function...
-        public SymbolDefinition CastSymbolToType(SymbolDefinition sourceSymbol, System.Type targetType, bool isExplicit, bool needsNewSymbol = false)
+        public SymbolDefinition CastSymbolToType(SymbolDefinition sourceSymbol, System.Type targetType, bool isExplicit, bool needsNewSymbol = false, SymbolDefinition requestedDestination = null)
         {
             if (targetType.IsByRef) // Convert ref and out args to their main types.
                 targetType = targetType.GetElementType();
@@ -653,8 +653,7 @@ namespace UdonSharp
 
             // Numeric conversion handling
             MethodInfo conversionFunction = UdonSharpUtils.GetNumericConversionMethod(targetType, sourceSymbol.symbolCsType);
-            
-            
+
             if (conversionFunction != null && (isExplicit || isNumericCastValid))
             {
                 SymbolDefinition sourceNumericSymbol = sourceSymbol;
@@ -676,7 +675,7 @@ namespace UdonSharp
                 }
 
                 // This code is copied 3 times, todo: find a decent way to refactor it
-                SymbolDefinition castOutput = visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
+                SymbolDefinition castOutput = requestedDestination != null ? requestedDestination : visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
 
                 visitorContext.uasmBuilder.AddPush(sourceNumericSymbol);
                 visitorContext.uasmBuilder.AddPush(castOutput);
@@ -717,7 +716,7 @@ namespace UdonSharp
 
             if (foundConversion != null)
             {
-                SymbolDefinition castOutput = visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
+                SymbolDefinition castOutput = requestedDestination != null ? requestedDestination : visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
 
                 visitorContext.uasmBuilder.AddPush(sourceSymbol);
                 visitorContext.uasmBuilder.AddPush(castOutput);
@@ -748,7 +747,7 @@ namespace UdonSharp
 
                 if (foundConversion != null)
                 {
-                    SymbolDefinition castOutput = visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
+                    SymbolDefinition castOutput = requestedDestination != null ? requestedDestination : visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
 
                     visitorContext.uasmBuilder.AddPush(sourceSymbol);
                     visitorContext.uasmBuilder.AddPush(castOutput);

@@ -57,6 +57,10 @@ namespace UdonSharp
 
         private COWValueInternal cowValue = null;
 
+        public override string ToString()
+        {
+            return $"Symbol#{symbolUniqueName}";
+        }
         public bool IsUserDefinedBehaviour()
         {
             return UdonSharpUtils.IsUserDefinedBehaviour(internalType);

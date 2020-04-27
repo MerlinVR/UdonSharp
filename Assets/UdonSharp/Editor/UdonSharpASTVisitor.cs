@@ -834,63 +834,43 @@ namespace UdonSharp
                 }
             }
 
-            SymbolDefinition newSymbol = null;
             List<SymbolDefinition> newSymbols = new List<SymbolDefinition>();
 
             foreach (VariableDeclaratorSyntax variableDeclarator in node.Variables)
             {
-                newSymbol = null;
+                SymbolDefinition newSymbol = null;
 
                 string variableName = variableDeclarator.Identifier.ValueText;
-                bool createdSymbol = false;
 
                 using (ExpressionCaptureScope symbolCreationScope = new ExpressionCaptureScope(visitorContext, null))
                 {
+                    newSymbol = visitorContext.topTable.CreateNamedSymbol(variableDeclarator.Identifier.ValueText, variableType, symbolType);
+                    newSymbol.syncMode = syncMode;
+
+                    symbolCreationScope.SetToLocalSymbol(newSymbol);
+
                     // Run the initializer if it exists
                     // Todo: Run the set on the new symbol scope from within the initializer scope for direct setting
                     if (variableDeclarator.Initializer != null && symbolType == SymbolDeclTypeFlags.Local)
                     {
-                        using (ExpressionCaptureScope initializerCapture = new ExpressionCaptureScope(visitorContext, null))
+                        using (ExpressionCaptureScope initializerCapture = new ExpressionCaptureScope(visitorContext, null, newSymbol))
                         {
+                            Debug.Log($"IC {newSymbol} {variableDeclarator.Initializer}");
                             Visit(variableDeclarator.Initializer);
 
-                            if (newSymbol == null)
-                            {
-                                if (isVar)
-                                    variableType = initializerCapture.GetReturnType(true);
-
-                                newSymbol = visitorContext.topTable.CreateNamedSymbol(variableName, variableType, symbolType);
-
-                                symbolCreationScope.SetToLocalSymbol(newSymbol);
-                                createdSymbol = true;
-                            }
+                            if (isVar)
+                                variableType = initializerCapture.GetReturnType(true);
 
                             symbolCreationScope.ExecuteSet(initializerCapture.ExecuteGet());
                         }
                     }
 
-                    if (newSymbol != null)
-                    {
-                        newSymbol.syncMode = syncMode;
-                    }
+                    
+                    newSymbol.syncMode = syncMode;
                 }
 
-                if (!createdSymbol)
-                {
-                    using (ExpressionCaptureScope symbolCreationScope = new ExpressionCaptureScope(visitorContext, null))
-                    {
-                        newSymbol = visitorContext.topTable.CreateNamedSymbol(variableDeclarator.Identifier.ValueText, variableType, symbolType);
-                        newSymbol.syncMode = syncMode;
-
-                        symbolCreationScope.SetToLocalSymbol(newSymbol);
-                    }
-                }
-
-                if (newSymbol != null)
-                {
-                    VerifySyncValidForType(newSymbol.symbolCsType, syncMode);
-                    newSymbols.Add(newSymbol);
-                }
+                VerifySyncValidForType(newSymbol.symbolCsType, syncMode);
+                newSymbols.Add(newSymbol);
             }
 
             string udonTypeName = visitorContext.resolverContext.GetUdonTypeName(variableType);
@@ -981,7 +961,7 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
-            using (ExpressionCaptureScope captureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
+            using (ExpressionCaptureScope captureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope, visitorContext.requestedDestination))
             {
                 Visit(node.Value);
             }
