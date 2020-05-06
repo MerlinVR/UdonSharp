@@ -150,8 +150,18 @@ namespace UdonSharp
             {
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Interact", EditorStyles.boldLabel);
-                currentBehaviour.interactText = EditorGUILayout.TextField("Interaction Text", currentBehaviour.interactText);
-                currentBehaviour.proximity = EditorGUILayout.Slider("Proximity", currentBehaviour.proximity, 0f, 100f);
+
+                EditorGUI.BeginChangeCheck();
+                string newInteractText = EditorGUILayout.TextField("Interaction Text", currentBehaviour.interactText);
+                float newProximity = EditorGUILayout.Slider("Proximity", currentBehaviour.proximity, 0f, 100f);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(currentBehaviour, "Change interact property");
+
+                    currentBehaviour.interactText = newInteractText;
+                    currentBehaviour.proximity = newProximity;
+                }
 
                 EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
                 if (GUILayout.Button("Trigger Interact"))
