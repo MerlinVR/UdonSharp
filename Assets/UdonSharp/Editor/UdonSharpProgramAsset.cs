@@ -507,6 +507,8 @@ namespace UdonSharp
 
             TooltipAttribute tooltip = fieldDefinition == null ? null : fieldDefinition.GetAttribute<TooltipAttribute>();
 
+            RangeAttribute range = fieldDefinition == null ? null : fieldDefinition.GetAttribute<RangeAttribute>();
+
             if (tooltip != null)
                 fieldLabel = new GUIContent(fieldName, tooltip.tooltip);
             else
@@ -682,15 +684,24 @@ namespace UdonSharp
             }
             else if (declaredType == typeof(float))
             {
-                return EditorGUILayout.FloatField(fieldLabel, (float?)value ?? default);
+                if(range != null)
+                    return EditorGUILayout.Slider(fieldLabel, (float?)value ?? default, range.min, range.max);
+                else
+                    return EditorGUILayout.FloatField(fieldLabel, (float?)value ?? default);
             }
             else if (declaredType == typeof(double))
             {
-                return EditorGUILayout.DoubleField(fieldLabel, (double?)value ?? default);
+                if(range != null)
+                    return EditorGUILayout.Slider(fieldLabel, (float)Math.Round((double?)value ?? default, 1), range.min, range.max);
+                else
+                    return EditorGUILayout.DoubleField(fieldLabel, (double?)value ?? default);
             }
             else if (declaredType == typeof(int))
             {
-                return EditorGUILayout.IntField(fieldLabel, (int?)value ?? default);
+                if(range != null)
+                    return EditorGUILayout.IntSlider(fieldLabel, (int?)value ?? default, (int)range.min, (int)range.max);
+                else
+                    return EditorGUILayout.IntField(fieldLabel, (int?)value ?? default);
             }
             else if (declaredType == typeof(long))
             {
@@ -864,6 +875,8 @@ namespace UdonSharp
 
                 if (changed)
                 {
+                    if(variableType == typeof(double)) newValue = Convert.ToDouble(newValue);
+
                     if (shouldUseRuntimeValue)
                     {
                         currentBehaviour.SetProgramVariable(symbol, newValue);
