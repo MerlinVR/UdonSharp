@@ -32,6 +32,7 @@ namespace UdonSharp
         static UdonSharpAssetCompileWatcher()
         {
             EditorApplication.update += OnEditorUpdate;
+            EditorApplication.playModeStateChanged += PlayModeErrorCheck;
         }
 
         static void SetupWatchers() 
@@ -171,9 +172,28 @@ namespace UdonSharp
         static void OnEditorUpdate()
         {
             SetupWatchers();
+            
+            lock (modifiedFileLock)
+            {
+                if (modifiedFilePaths.Count > 0)
+                {
+                    foreach (string filePath in modifiedFilePaths)
+                    {
+                        MonoScript asset = AssetDatabase.LoadAssetAtPath<MonoScript>(filePath.Replace(Application.dataPath.Replace("/", "\\"), "Assets"));
+                        modifiedScripts.Add(asset);
+                    }
 
+                    modifiedFilePaths.Clear();
+                }
+            }
+
+            HandleScriptModifications();
+        }
+
+        static void PlayModeErrorCheck(PlayModeStateChange state)
+        {
             // Prevent people from entering play mode when there are compile errors, like normal Unity C#
-            if (EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)
+            if (state == PlayModeStateChange.EnteredPlayMode || state == PlayModeStateChange.ExitingEditMode)
             {
                 string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
 
@@ -197,22 +217,6 @@ namespace UdonSharp
                     typeof(SceneView).GetMethod("ShowNotification", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { "All U# compile errors have to be fixed before you can enter playmode!" });
                 }
             }
-            
-            lock (modifiedFileLock)
-            {
-                if (modifiedFilePaths.Count > 0)
-                {
-                    foreach (string filePath in modifiedFilePaths)
-                    {
-                        MonoScript asset = AssetDatabase.LoadAssetAtPath<MonoScript>(filePath.Replace(Application.dataPath.Replace("/", "\\"), "Assets"));
-                        modifiedScripts.Add(asset);
-                    }
-
-                    modifiedFilePaths.Clear();
-                }
-            }
-
-            HandleScriptModifications();
         }
 
         static void OnSourceFileChanged(object source, FileSystemEventArgs args)
