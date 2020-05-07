@@ -338,7 +338,13 @@ namespace UdonSharp
                                 object heapValue = program.Heap.GetHeapVariable(program.SymbolTable.GetAddressFromSymbol(varName));
 
                                 if (heapValue != null && UdonSharpUtils.IsUserDefinedType(heapValue.GetType()))
-                                    UdonSharpUtils.LogBuildError($"Field: '{varName}' UdonSharp does not yet support field initializers on user-defined types or jagged arrays", AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript), 0, 0);
+                                {
+                                    string fieldError = $"Field: '{varName}' UdonSharp does not yet support field initializers on user-defined types or jagged arrays";
+
+                                    UdonSharpUtils.LogBuildError(fieldError, AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript), 0, 0);
+
+                                    module.programAsset.compileErrors.Add(fieldError);
+                                }
                             }
                         }
                     }
