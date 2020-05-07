@@ -567,8 +567,6 @@ namespace UdonSharp
                                 objArray[0] = obj;
                                 UnityEngine.Object validatedObject = ValidateObjectReference(objArray, currentType.GetElementType(), null);
 
-                                Debug.Log($"Current type: {currentType.GetElementType()}, ref array length: {references.Length}");
-
                                 if (validatedObject != null)
                                 {
                                     DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
