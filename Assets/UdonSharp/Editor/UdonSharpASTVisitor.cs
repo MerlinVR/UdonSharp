@@ -1046,6 +1046,20 @@ namespace UdonSharp
                             throw new System.NotImplementedException($"Assignment operator {node.OperatorToken.Kind()} does not have handling");
                     }
 
+                    // Handle implicit ToString()
+                    if (lhsCapture.GetReturnType() == typeof(string) && 
+                        rhsValue.GetType() != typeof(string) && 
+                        visitorContext.resolverContext.FindBestOverloadFunction(operatorMethods.ToArray(), new List<System.Type> { lhsCapture.GetReturnType(), rhsValue.GetType() }) == null)
+                    {
+                        using (ExpressionCaptureScope stringConversionScope = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            stringConversionScope.SetToLocalSymbol(rhsValue);
+                            stringConversionScope.ResolveAccessToken("ToString");
+
+                            rhsValue = stringConversionScope.Invoke(new SymbolDefinition[] { });
+                        }
+                    }
+
                     using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
                     {
                         operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
