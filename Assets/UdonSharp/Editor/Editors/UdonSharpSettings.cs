@@ -1,5 +1,6 @@
-﻿using System.Collections;
+﻿
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -24,10 +25,29 @@ public class <TemplateClassName> : UdonSharpBehaviour
 }
 ";
 
+        private static readonly string[] BuiltinScanningBlacklist = new string[]
+        {
+            "Assets/Udon/Editor/",
+            "Assets/Udon/Serialization/",
+            "Assets/VRChat Examples/",
+            "Assets/VRCSDK/Dependencies/",
+            "Assets/UdonSharp/Editor/",
+            // Common 3rd party editor assets
+            "Assets/AmplifyShaderEditor/",
+            "Assets/AmplifyImpostors/",
+            "Assets/Bakery/",
+            "Assets/Editor/x64/Bakery/",
+            "Assets/Procedural Worlds/", // Gaia
+            "Assets/Pavo Studio/", // Muscle editor
+            "Assets/Plugins/RootMotion/", // FinalIK
+        };
+
         public bool autoCompileOnModify = true;
         public bool compileAllScripts = true;
         public bool waitForFocus = false;
         public TextAsset newScriptTemplateOverride = null;
+
+        public string[] scanningDirectoryBlacklist = new string[0];
 
         public bool buildDebugInfo = true;
         public bool includeInlineCode = true;
@@ -84,17 +104,28 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
             return templateStr;
         }
+
+        public static string[] GetScannerBlacklist()
+        {
+            UdonSharpSettings settings = GetSettings();
+
+            if (settings != null)
+                return BuiltinScanningBlacklist.Concat(settings.scanningDirectoryBlacklist).ToArray();
+
+            return BuiltinScanningBlacklist;
+        }
     }
     
     public class UdonSharpSettingsProvider
     {
-        private static GUIContent autoCompileLabel = new GUIContent("Auto compile on modify", "Trigger a compile whenever a U# source file is modified.");
-        private static GUIContent compileAllLabel = new GUIContent("Compile all scripts", "Compile all scripts when a script is modified. This prevents some potential for weird issues where classes don't match");
-        private static GUIContent waitForFocusLabel = new GUIContent("Compile on focus", "Waits for application focus to compile any changed U# scripts");
-        private static GUIContent templateOverrideLabel = new GUIContent("Script template override", "A custom override file to use as a template for newly created U# files. Put \"<TemplateClassName>\" in place of a class name for it to automatically populate with the file name.");
-        private static GUIContent includeDebugInfoLabel = new GUIContent("Debug build", "Include debug info in build");
-        private static GUIContent includeInlineCodeLabel = new GUIContent("Inline code", "Include C# inline in generated assembly");
-        private static GUIContent listenForVRCExceptionsLabel = new GUIContent("Listen for client exceptions", "Listens for exceptions from Udon and tries to match them to scripts in the project");
+        private static readonly GUIContent autoCompileLabel = new GUIContent("Auto compile on modify", "Trigger a compile whenever a U# source file is modified.");
+        private static readonly GUIContent compileAllLabel = new GUIContent("Compile all scripts", "Compile all scripts when a script is modified. This prevents some potential for weird issues where classes don't match");
+        private static readonly GUIContent waitForFocusLabel = new GUIContent("Compile on focus", "Waits for application focus to compile any changed U# scripts");
+        private static readonly GUIContent templateOverrideLabel = new GUIContent("Script template override", "A custom override file to use as a template for newly created U# files. Put \"<TemplateClassName>\" in place of a class name for it to automatically populate with the file name.");
+        private static readonly GUIContent includeDebugInfoLabel = new GUIContent("Debug build", "Include debug info in build");
+        private static readonly GUIContent includeInlineCodeLabel = new GUIContent("Inline code", "Include C# inline in generated assembly");
+        private static readonly GUIContent listenForVRCExceptionsLabel = new GUIContent("Listen for client exceptions", "Listens for exceptions from Udon and tries to match them to scripts in the project");
+        private static readonly GUIContent scanningBlackListLabel = new GUIContent("Scanning blacklist", "Directories to not watch for source code changes and not include in class lookups");
 
         [SettingsProvider]
         public static SettingsProvider CreateSettingsProvider()
@@ -120,7 +151,9 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
                     EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.waitForFocus)), waitForFocusLabel);
 
-                    EditorGUILayout.PropertyField(settingsObject.FindProperty("newScriptTemplateOverride"), templateOverrideLabel);
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.newScriptTemplateOverride)), templateOverrideLabel);
+
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.scanningDirectoryBlacklist)), scanningBlackListLabel, true);
 
                     EditorGUILayout.Space();
                     EditorGUILayout.LabelField("Debugging", EditorStyles.boldLabel);

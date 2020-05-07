@@ -57,14 +57,19 @@ namespace UdonSharp
 
             AssemblyReloadEvents.beforeAssemblyReload += CleanupWatchers;
 
-            string[] directories = Directory.GetDirectories("Assets/", "*", SearchOption.AllDirectories).Append("Assets/").ToArray();
+            string[] blacklistedDirectories = UdonSharpSettings.GetScannerBlacklist();
+
+            string[] directories = Directory.GetDirectories("Assets/", "*", SearchOption.AllDirectories).Append("Assets/")
+                .Select(e => e.Replace('\\', '/'))
+                .Where(e => !blacklistedDirectories.Any(name => name.TrimEnd('/') == e.TrimEnd('/') || e.StartsWith(name)))
+                .ToArray();
 
             List<string> sourceDirectories = new List<string>();
 
             foreach (string directory in directories)
             {
                 if (Directory.GetFiles(directory, "*.cs").Length > 0)
-                    sourceDirectories.Add(directory.Replace('\\', '/'));
+                    sourceDirectories.Add(directory);
             }
 
             fileSystemWatchers = new FileSystemWatcher[sourceDirectories.Count];
