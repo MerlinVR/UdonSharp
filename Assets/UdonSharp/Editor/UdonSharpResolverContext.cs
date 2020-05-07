@@ -330,19 +330,21 @@ namespace UdonSharp
         /// Verifies that Udon supports the given type and resolves the type name used to reference it in Udon
         /// </summary>
         /// <param name="externType">The found type</param>
+        /// <param name="skipBaseTypeRemap">Skips remapping base VRCSDK types, this is primarily used for VRCSDK function return value types since they may point to the base type and we want to maintain that.</param>
         /// <returns>The Udon type name string if it is a valid Udon type, 
         ///     or null if it is not a valid Udon type.</returns>
-        public string GetUdonTypeName(System.Type externType)
+        public string GetUdonTypeName(System.Type externType, bool skipBaseTypeRemap = false)
         {
-            externType = RemapBaseType(externType);
+            if (!skipBaseTypeRemap)
+                externType = RemapBaseType(externType);
 
             string externTypeName = externType.GetNameWithoutGenericArity();
-            string typeNamespace = externType.Namespace;
-            if (typeNamespace == null && externType.IsArray)
+            while (externType.IsArray || externType.IsByRef)
             {
                 externType = externType.GetElementType();
-                typeNamespace = externType.Namespace;
             }
+
+            string typeNamespace = externType.Namespace;
 
             // Handle nested type names (+ sign in names)
             if (externType.DeclaringType != null)
@@ -432,7 +434,7 @@ namespace UdonSharp
 
                 foreach (ParameterInfo parameterInfo in methodParams)
                 {
-                    paramStr += $"_{GetUdonTypeName(parameterInfo.ParameterType)}";
+                    paramStr += $"_{GetUdonTypeName(parameterInfo.ParameterType, true)}";
                 }
             }
             else if (externMethod is ConstructorInfo)
@@ -442,7 +444,7 @@ namespace UdonSharp
 
             if (externMethod is MethodInfo)
             {
-                returnStr = $"__{GetUdonTypeName(((MethodInfo)externMethod).ReturnType)}";
+                returnStr = $"__{GetUdonTypeName(((MethodInfo)externMethod).ReturnType, true)}";
             }
             else if (externMethod is ConstructorInfo)
             {
