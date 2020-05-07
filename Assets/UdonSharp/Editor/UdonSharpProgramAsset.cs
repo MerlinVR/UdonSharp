@@ -215,6 +215,7 @@ namespace UdonSharp
             showExtraOptions = EditorGUILayout.Foldout(showExtraOptions, "Utilities");
             if (showExtraOptions)
             {
+                EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
                 if (GUILayout.Button("Export to Assembly Asset"))
                 {
                     string savePath = EditorUtility.SaveFilePanelInProject("Assembly asset save location", Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(sourceCsScript)), "asset", "Choose a save location for the assembly asset");
@@ -224,6 +225,7 @@ namespace UdonSharp
                         UdonSharpEditorUtility.UdonSharpProgramToAssemblyProgram(this, savePath);
                     }
                 }
+                EditorGUI.EndDisabledGroup();
             }
 
             showProgramUasm = EditorGUILayout.Foldout(showProgramUasm, "Compiled C# Assembly");

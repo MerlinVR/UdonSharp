@@ -17,6 +17,9 @@ namespace UdonSharp
         /// <returns>The exported UdonAssemblyProgramAsset</returns>
         public static UdonAssemblyProgramAsset UdonSharpProgramToAssemblyProgram(UdonSharpProgramAsset udonSharpProgramAsset, string savePath)
         {
+            if (EditorApplication.isPlaying)
+                throw new System.NotSupportedException("UdonSharpEditorUtility.UdonSharpProgramToAssemblyProgram() cannot be called in play mode");
+
             UdonAssemblyProgramAsset newProgramAsset = ScriptableObject.CreateInstance<UdonAssemblyProgramAsset>();
             AssetDatabase.CreateAsset(newProgramAsset, savePath);
             AssetDatabase.SaveAssets();
