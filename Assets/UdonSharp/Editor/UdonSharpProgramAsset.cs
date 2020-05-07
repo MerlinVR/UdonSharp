@@ -520,9 +520,11 @@ namespace UdonSharp
                 {
                     foldoutStates.Add(symbol, false);
                 }
-                
+
+                Event tempEvent = new Event(Event.current);
+
                 Rect foldoutRect = EditorGUILayout.GetControlRect();
-                foldoutEnabled = EditorGUI.Foldout(foldoutRect, foldoutEnabled, fieldLabel);
+                foldoutEnabled = EditorGUI.Foldout(foldoutRect, foldoutEnabled, fieldLabel, true);
 
                 foldoutStates[symbol] = foldoutEnabled;
 
@@ -540,16 +542,15 @@ namespace UdonSharp
                     arrayDataType = typeof(Component[]);
                 }
 
-                switch (Event.current.type)
+                switch (tempEvent.type)
                 {
                     case EventType.DragExited:
                         if (GUI.enabled)
                             HandleUtility.Repaint();
                         break;
-
                     case EventType.DragUpdated:
                     case EventType.DragPerform:
-                        if (foldoutRect.Contains(Event.current.mousePosition) && GUI.enabled && canCopyPlace)
+                        if (foldoutRect.Contains(tempEvent.mousePosition) && GUI.enabled && canCopyPlace)
                         {
                             int foldoutId = (int)typeof(EditorGUIUtility).GetField("s_LastControlID", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
 
@@ -565,11 +566,14 @@ namespace UdonSharp
                             {
                                 objArray[0] = obj;
                                 UnityEngine.Object validatedObject = ValidateObjectReference(objArray, currentType.GetElementType(), null);
+
+                                Debug.Log($"Current type: {currentType.GetElementType()}, ref array length: {references.Length}");
+
                                 if (validatedObject != null)
                                 {
                                     DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
 
-                                    if (Event.current.type == EventType.DragPerform)
+                                    if (tempEvent.type == EventType.DragPerform)
                                     {
                                         draggedReferences.Add(validatedObject);
                                         acceptedDrag = true;
@@ -653,8 +657,6 @@ namespace UdonSharp
                         }
 
                         EditorGUI.indentLevel--;
-
-                        return valueArray;
                     }
                 }
             }
