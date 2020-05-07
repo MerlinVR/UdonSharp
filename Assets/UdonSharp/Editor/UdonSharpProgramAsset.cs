@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
 using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Editor.ProgramSources;
@@ -365,13 +364,8 @@ namespace UdonSharp
             return false;
         }
 
-        private bool IsNormalUnityObject(System.Type declaredType, FieldDefinition fieldDefinition)
-        {
-            return !UdonSharpUtils.IsUserDefinedBehaviour(declaredType) && (fieldDefinition == null || fieldDefinition.fieldSymbol.userCsType == null || !fieldDefinition.fieldSymbol.IsUserDefinedBehaviour());
-        }
-
         private static MonoScript currentUserScript = null;
-        private UnityEngine.Object ValidateObjectReference(UnityEngine.Object[] references, System.Type objType, SerializedProperty property, Enum options)
+        private UnityEngine.Object ValidateObjectReference(UnityEngine.Object[] references, System.Type objType, SerializedProperty property, Enum options = null)
         {
             if (property != null)
                 throw new ArgumentException("Serialized property on validate object reference should be null!");
@@ -429,6 +423,11 @@ namespace UdonSharp
             }
 
             return null;
+        }
+
+        private bool IsNormalUnityObject(System.Type declaredType, FieldDefinition fieldDefinition)
+        {
+            return !UdonSharpUtils.IsUserDefinedBehaviour(declaredType) && (fieldDefinition == null || fieldDefinition.fieldSymbol.userCsType == null || !fieldDefinition.fieldSymbol.IsUserDefinedBehaviour());
         }
 
         private object DrawUnityObjectField(GUIContent fieldName, string symbol, (object value, Type declaredType, FieldDefinition symbolField) publicVariable, ref bool dirty)
@@ -521,24 +520,90 @@ namespace UdonSharp
                 {
                     foldoutStates.Add(symbol, false);
                 }
+                
+                Rect foldoutRect = EditorGUILayout.GetControlRect();
+                foldoutEnabled = EditorGUI.Foldout(foldoutRect, foldoutEnabled, fieldLabel);
 
-                foldoutEnabled = EditorGUILayout.Foldout(foldoutEnabled, fieldLabel);
                 foldoutStates[symbol] = foldoutEnabled;
+
+                Type arrayDataType = currentType;
+
+                bool canCopyPlace = true;
+
+                if (UdonSharpUtils.IsUserJaggedArray(currentType))
+                {
+                    canCopyPlace = false;
+                    arrayDataType = typeof(object[]);
+                }
+                else if (currentType.IsArray && UdonSharpUtils.IsUserDefinedBehaviour(currentType))
+                {
+                    arrayDataType = typeof(Component[]);
+                }
+
+                switch (Event.current.type)
+                {
+                    case EventType.DragExited:
+                        if (GUI.enabled)
+                            HandleUtility.Repaint();
+                        break;
+
+                    case EventType.DragUpdated:
+                    case EventType.DragPerform:
+                        if (foldoutRect.Contains(Event.current.mousePosition) && GUI.enabled && canCopyPlace)
+                        {
+                            int foldoutId = (int)typeof(EditorGUIUtility).GetField("s_LastControlID", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+
+                            UnityEngine.Object[] references = DragAndDrop.objectReferences;
+                            UnityEngine.Object[] objArray = new UnityEngine.Object[1];
+
+                            bool acceptedDrag = false;
+
+                            List<UnityEngine.Object> draggedReferences = new List<UnityEngine.Object>();
+
+                            currentUserScript = fieldDefinition?.userBehaviourSource;
+                            foreach (UnityEngine.Object obj in references)
+                            {
+                                objArray[0] = obj;
+                                UnityEngine.Object validatedObject = ValidateObjectReference(objArray, currentType.GetElementType(), null);
+                                if (validatedObject != null)
+                                {
+                                    DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+
+                                    if (Event.current.type == EventType.DragPerform)
+                                    {
+                                        draggedReferences.Add(validatedObject);
+                                        acceptedDrag = true;
+                                        DragAndDrop.activeControlID = 0;
+                                    }
+                                    else
+                                    {
+                                        DragAndDrop.activeControlID = foldoutId;
+                                    }
+                                }
+                            }
+                            currentUserScript = null;
+
+                            if (acceptedDrag)
+                            {
+                                Array oldArray = (Array)value;
+
+                                Array newArray = Activator.CreateInstance(arrayDataType, new object[] { oldArray.Length + draggedReferences.Count }) as Array;
+                                Array.Copy(oldArray, newArray, oldArray.Length);
+                                Array.Copy(draggedReferences.ToArray(), 0, newArray, oldArray.Length, draggedReferences.Count);
+
+                                GUI.changed = true;
+                                DragAndDrop.AcceptDrag();
+
+                                return newArray;
+                            }
+                        }
+
+                        break;
+                }
 
                 if (foldoutEnabled)
                 {
                     Type elementType = currentType.GetElementType();
-                    Type arrayDataType = currentType;
-
-                    if (UdonSharpUtils.IsUserJaggedArray(currentType))
-                    {
-                        arrayDataType = typeof(object[]);
-                    }
-                    else if (currentType.IsArray && UdonSharpUtils.IsUserDefinedBehaviour(currentType))
-                    {
-                        arrayDataType = typeof(Component[]);
-                    }
-
 
                     if (value == null) // We can abuse that the foldout modified the outer scope when it was expanded to make sure this gets set
                     {
