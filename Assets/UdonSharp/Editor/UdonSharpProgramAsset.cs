@@ -365,6 +365,11 @@ namespace UdonSharp
             return false;
         }
 
+        private bool IsNormalUnityObject(System.Type declaredType, FieldDefinition fieldDefinition)
+        {
+            return !UdonSharpUtils.IsUserDefinedBehaviour(declaredType) && (fieldDefinition == null || fieldDefinition.fieldSymbol.userCsType == null || !fieldDefinition.fieldSymbol.IsUserDefinedBehaviour());
+        }
+
         private static MonoScript currentUserScript = null;
         private UnityEngine.Object ValidateObjectReference(UnityEngine.Object[] references, System.Type objType, SerializedProperty property, Enum options)
         {
@@ -431,10 +436,8 @@ namespace UdonSharp
             (object value, Type declaredType, FieldDefinition symbolField) = publicVariable;
 
             FieldDefinition fieldDefinition = symbolField;
-
-            bool isNormalUnityObject = !UdonSharpUtils.IsUserDefinedBehaviour(declaredType) && (fieldDefinition == null || fieldDefinition.fieldSymbol.userCsType == null || !fieldDefinition.fieldSymbol.IsUserDefinedBehaviour());
-
-            if (isNormalUnityObject)
+            
+            if (IsNormalUnityObject(declaredType, fieldDefinition))
                 return EditorGUILayout.ObjectField(fieldName, (UnityEngine.Object)value, declaredType, true);
 
             MethodInfo doObjectFieldMethod = typeof(EditorGUI).GetMethods(BindingFlags.Static | BindingFlags.NonPublic).Where(e => e.Name == "DoObjectField" && e.GetParameters().Length == 8).FirstOrDefault();
@@ -472,13 +475,9 @@ namespace UdonSharp
 
             string labelText = "";
             if (objectFieldValue != null)
-            {
-                labelText = $"{objectFieldValue.name} ({ObjectNames.NicifyVariableName(variableRootType.Name)})";
-            }
+                labelText = $"{objectFieldValue.name} ({variableRootType.Name})";
             else
-            {
-                labelText = $"None ({ObjectNames.NicifyVariableName(variableRootType.Name)})";
-            }
+                labelText = $"None ({variableRootType.Name})";
             
             // Overwrite any content already on the background from drawing the normal object field
             GUI.Box(originalRect, GUIContent.none, clearColorStyle);
@@ -570,8 +569,6 @@ namespace UdonSharp
                                 newArray.SetValue(valueArray.GetValue(i), i);
                             }
 
-                            dirty = true;
-
                             EditorGUI.indentLevel--;
                             return newArray;
                         }
@@ -585,8 +582,8 @@ namespace UdonSharp
 
                             if (EditorGUI.EndChangeCheck())
                             {
+                                valueArray = (Array)valueArray.Clone();
                                 valueArray.SetValue(newArrayVal, i);
-                                dirty = true;
                             }
                         }
 
