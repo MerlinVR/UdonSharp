@@ -657,6 +657,8 @@ namespace UdonSharp
                         }
 
                         EditorGUI.indentLevel--;
+
+                        return valueArray;
                     }
                 }
             }
