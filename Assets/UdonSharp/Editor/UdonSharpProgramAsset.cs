@@ -692,7 +692,7 @@ namespace UdonSharp
             else if (declaredType == typeof(double))
             {
                 if(range != null)
-                    return EditorGUILayout.Slider(fieldLabel, (float)Math.Round((double?)value ?? default, 1), range.min, range.max);
+                    return EditorGUILayout.Slider(fieldLabel, (float)((double?)value ?? default), range.min, range.max);
                 else
                     return EditorGUILayout.DoubleField(fieldLabel, (double?)value ?? default);
             }
