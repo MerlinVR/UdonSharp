@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: MultiOutParamsTest
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 8aa6a7a5fa9203446b89c72532991c7c,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 06cfb65263342a249968d390ce617ae8,
     type: 2}
   udonAssembly: ".data_start\r\n\r\n\r\n    __refl_const_intnl_udonTypeID: %SystemInt64,
     null\r\n    __refl_const_intnl_udonTypeName: %SystemString, null\r\n    tester:
@@ -28,13 +28,10 @@ MonoBehaviour:
     %SystemUInt32, null\r\n    __0_intnl_SystemBoolean: %SystemBoolean, null\r\n    __1_intnl_SystemBoolean:
     %SystemBoolean, null\r\n    __2_intnl_SystemBoolean: %SystemBoolean, null\r\n
     \   __3_intnl_SystemBoolean: %SystemBoolean, null\r\n    __4_intnl_SystemBoolean:
-    %SystemBoolean, null\r\n    __0_intnl_UnityEngineQuaternion: %UnityEngineQuaternion,
-    null\r\n    __0_intnl_SystemSingle: %SystemSingle, null\r\n    __1_intnl_SystemSingle:
-    %SystemSingle, null\r\n    __2_intnl_SystemSingle: %SystemSingle, null\r\n    __3_intnl_SystemSingle:
-    %SystemSingle, null\r\n    __0_intnl_returnTarget_UInt32: %SystemUInt32, null\r\n
-    \   __0_intnl_UnityEngineVector3: %UnityEngineVector3, null\r\n    __1_intnl_UnityEngineVector3:
-    %UnityEngineVector3, null\r\n    __2_intnl_UnityEngineVector3: %UnityEngineVector3,
-    null\r\n    __3_intnl_UnityEngineVector3: %UnityEngineVector3, null\r\n    __4_intnl_UnityEngineVector3:
+    %SystemBoolean, null\r\n    __0_intnl_SystemSingle: %SystemSingle, null\r\n    __1_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __2_intnl_SystemSingle: %SystemSingle, null\r\n    __0_intnl_returnTarget_UInt32:
+    %SystemUInt32, null\r\n    __0_intnl_UnityEngineVector3: %UnityEngineVector3,
+    null\r\n    __1_intnl_UnityEngineVector3: %UnityEngineVector3, null\r\n    __2_intnl_UnityEngineVector3:
     %UnityEngineVector3, null\r\n\r\n.data_end\r\n\r\n        \r\n         # using
     UdonSharp;\r\n        \r\n         # using UnityEngine;\r\n        \r\n         #
     using VRC.SDKBase;\r\n        \r\n         # using VRC.Udon;\r\n        \r\n         #
@@ -61,29 +58,24 @@ MonoBehaviour:
     \       PUSH, __0_intnl_UnityEngineVector3\r\n        PUSH, __1_intnl_UnityEngineVector3\r\n
     \       EXTERN, \"UnityEngineVector3.__get_normalized__UnityEngineVector3\"\r\n
     \       PUSH, __0_const_intnl_SystemSingle\r\n        PUSH, __1_intnl_UnityEngineVector3\r\n
-    \       PUSH, __0_intnl_UnityEngineQuaternion\r\n        EXTERN, \"UnityEngineQuaternion.__AngleAxis__SystemSingle_UnityEngineVector3__UnityEngineQuaternion\"\r\n
-    \       PUSH, __0_intnl_UnityEngineQuaternion\r\n        PUSH, __0_rotation_Quaternion\r\n
-    \       COPY\r\n        \r\n         # float angle = 0f;\r\n        PUSH, __1_const_intnl_SystemSingle\r\n
+    \       PUSH, __0_rotation_Quaternion\r\n        EXTERN, \"UnityEngineQuaternion.__AngleAxis__SystemSingle_UnityEngineVector3__UnityEngineQuaternion\"\r\n
+    \       \r\n         # float angle = 0f;\r\n        PUSH, __1_const_intnl_SystemSingle\r\n
     \       PUSH, __0_angle_Single\r\n        COPY\r\n        \r\n         # Vector3
-    axis = Vector3.zero;\r\n        PUSH, __2_intnl_UnityEngineVector3\r\n        EXTERN,
-    \"UnityEngineVector3.__get_zero__UnityEngineVector3\"\r\n        PUSH, __2_intnl_UnityEngineVector3\r\n
-    \       PUSH, __0_axis_Vector3\r\n        COPY\r\n        \r\n         # rotation.ToAngleAxis(out
-    angle, out axis);\r\n        PUSH, __0_rotation_Quaternion\r\n        PUSH, __0_angle_Single\r\n
-    \       PUSH, __0_axis_Vector3\r\n        EXTERN, \"UnityEngineQuaternion.__ToAngleAxis__SystemSingleRef_UnityEngineVector3Ref__SystemVoid\"\r\n
+    axis = Vector3.zero;\r\n        PUSH, __0_axis_Vector3\r\n        EXTERN, \"UnityEngineVector3.__get_zero__UnityEngineVector3\"\r\n
+    \       \r\n         # rotation.ToAngleAxis(out angle, out axis);\r\n        PUSH,
+    __0_rotation_Quaternion\r\n        PUSH, __0_angle_Single\r\n        PUSH, __0_axis_Vector3\r\n
+    \       EXTERN, \"UnityEngineQuaternion.__ToAngleAxis__SystemSingleRef_UnityEngineVector3Ref__SystemVoid\"\r\n
     \       \r\n         # tester.TestAssertion(\"Angle Axis double out params\",
     angle != 0f || axis != Vector3.zero);\r\n        PUSH, __0_angle_Single\r\n        PUSH,
-    __3_intnl_SystemSingle\r\n        COPY\r\n        PUSH, __3_intnl_SystemSingle\r\n
-    \       PUSH, __1_const_intnl_SystemSingle\r\n        PUSH, __1_intnl_SystemBoolean\r\n
-    \       EXTERN, \"SystemSingle.__op_Inequality__SystemSingle_SystemSingle__SystemBoolean\"\r\n
+    __1_const_intnl_SystemSingle\r\n        PUSH, __1_intnl_SystemBoolean\r\n        EXTERN,
+    \"SystemSingle.__op_Inequality__SystemSingle_SystemSingle__SystemBoolean\"\r\n
     \       PUSH, __1_intnl_SystemBoolean\r\n        PUSH, __0_intnl_SystemBoolean\r\n
     \       COPY\r\n        PUSH, __0_intnl_SystemBoolean\r\n        PUSH, __2_intnl_SystemBoolean\r\n
     \       EXTERN, \"SystemBoolean.__op_UnaryNegation__SystemBoolean__SystemBoolean\"\r\n
-    \       PUSH, __2_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000230\r\n
-    \       PUSH, __0_axis_Vector3\r\n        PUSH, __3_intnl_UnityEngineVector3\r\n
-    \       COPY\r\n        PUSH, __4_intnl_UnityEngineVector3\r\n        EXTERN,
-    \"UnityEngineVector3.__get_zero__UnityEngineVector3\"\r\n        PUSH, __3_intnl_UnityEngineVector3\r\n
-    \       PUSH, __4_intnl_UnityEngineVector3\r\n        PUSH, __3_intnl_SystemBoolean\r\n
-    \       EXTERN, \"UnityEngineVector3.__op_Inequality__UnityEngineVector3_UnityEngineVector3__SystemBoolean\"\r\n
+    \       PUSH, __2_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x000001E0\r\n
+    \       PUSH, __2_intnl_UnityEngineVector3\r\n        EXTERN, \"UnityEngineVector3.__get_zero__UnityEngineVector3\"\r\n
+    \       PUSH, __0_axis_Vector3\r\n        PUSH, __2_intnl_UnityEngineVector3\r\n
+    \       PUSH, __3_intnl_SystemBoolean\r\n        EXTERN, \"UnityEngineVector3.__op_Inequality__UnityEngineVector3_UnityEngineVector3__SystemBoolean\"\r\n
     \       PUSH, __0_intnl_SystemBoolean\r\n        PUSH, __3_intnl_SystemBoolean\r\n
     \       PUSH, __4_intnl_SystemBoolean\r\n        EXTERN, \"SystemBoolean.__op_ConditionalOr__SystemBoolean_SystemBoolean__SystemBoolean\"\r\n
     \       PUSH, __4_intnl_SystemBoolean\r\n        PUSH, __0_intnl_SystemBoolean\r\n
@@ -470,259 +462,259 @@ MonoBehaviour:
       lineChar: 78
       spanCodeSection: 3).
     - startInstruction: 164
-      endInstruction: 239
+      endInstruction: 219
       startSourceChar: 794
       endSourceChar: 822
       line: 25
       lineChar: 81
       spanCodeSection: "normalized);\r\n\r\n            "
-    - startInstruction: 240
-      endInstruction: 239
+    - startInstruction: 220
+      endInstruction: 219
       startSourceChar: 822
       endSourceChar: 822
       line: 27
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 240
-      endInstruction: 239
+    - startInstruction: 220
+      endInstruction: 219
       startSourceChar: 822
       endSourceChar: 822
       line: 27
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 240
-      endInstruction: 239
+    - startInstruction: 220
+      endInstruction: 219
       startSourceChar: 822
       endSourceChar: 822
       line: 27
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 240
-      endInstruction: 239
+    - startInstruction: 220
+      endInstruction: 219
       startSourceChar: 822
       endSourceChar: 834
       line: 27
       lineChar: 12
       spanCodeSection: 'float angle '
-    - startInstruction: 240
-      endInstruction: 239
+    - startInstruction: 220
+      endInstruction: 219
       startSourceChar: 834
       endSourceChar: 836
       line: 27
       lineChar: 24
       spanCodeSection: '= '
-    - startInstruction: 240
-      endInstruction: 259
+    - startInstruction: 220
+      endInstruction: 239
       startSourceChar: 836
       endSourceChar: 853
       line: 27
       lineChar: 26
       spanCodeSection: "0f;\r\n            "
-    - startInstruction: 260
-      endInstruction: 259
+    - startInstruction: 240
+      endInstruction: 239
       startSourceChar: 853
       endSourceChar: 853
       line: 28
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 260
-      endInstruction: 259
+    - startInstruction: 240
+      endInstruction: 239
       startSourceChar: 853
       endSourceChar: 853
       line: 28
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 260
-      endInstruction: 259
+    - startInstruction: 240
+      endInstruction: 239
       startSourceChar: 853
       endSourceChar: 853
       line: 28
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 260
-      endInstruction: 259
+    - startInstruction: 240
+      endInstruction: 239
       startSourceChar: 853
       endSourceChar: 866
       line: 28
       lineChar: 12
       spanCodeSection: 'Vector3 axis '
-    - startInstruction: 260
-      endInstruction: 259
+    - startInstruction: 240
+      endInstruction: 239
       startSourceChar: 866
       endSourceChar: 868
       line: 28
       lineChar: 25
       spanCodeSection: '= '
-    - startInstruction: 260
-      endInstruction: 259
+    - startInstruction: 240
+      endInstruction: 239
       startSourceChar: 868
       endSourceChar: 868
       line: 28
       lineChar: 27
       spanCodeSection: 
-    - startInstruction: 260
-      endInstruction: 259
+    - startInstruction: 240
+      endInstruction: 239
       startSourceChar: 868
       endSourceChar: 876
       line: 28
       lineChar: 27
       spanCodeSection: Vector3.
-    - startInstruction: 260
-      endInstruction: 295
+    - startInstruction: 240
+      endInstruction: 255
       startSourceChar: 876
       endSourceChar: 895
       line: 28
       lineChar: 35
       spanCodeSection: "zero;\r\n            "
-    - startInstruction: 296
-      endInstruction: 295
+    - startInstruction: 256
+      endInstruction: 255
       startSourceChar: 895
       endSourceChar: 895
       line: 29
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 296
-      endInstruction: 295
+    - startInstruction: 256
+      endInstruction: 255
       startSourceChar: 895
       endSourceChar: 895
       line: 29
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 296
-      endInstruction: 295
+    - startInstruction: 256
+      endInstruction: 255
       startSourceChar: 895
       endSourceChar: 895
       line: 29
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 296
-      endInstruction: 295
+    - startInstruction: 256
+      endInstruction: 255
       startSourceChar: 895
       endSourceChar: 904
       line: 29
       lineChar: 12
       spanCodeSection: rotation.
-    - startInstruction: 296
-      endInstruction: 295
+    - startInstruction: 256
+      endInstruction: 255
       startSourceChar: 904
       endSourceChar: 920
       line: 29
       lineChar: 21
       spanCodeSection: 'ToAngleAxis(out '
-    - startInstruction: 296
-      endInstruction: 295
+    - startInstruction: 256
+      endInstruction: 255
       startSourceChar: 920
       endSourceChar: 931
       line: 29
       lineChar: 37
       spanCodeSection: 'angle, out '
-    - startInstruction: 296
-      endInstruction: 327
+    - startInstruction: 256
+      endInstruction: 287
       startSourceChar: 931
       endSourceChar: 953
       line: 29
       lineChar: 48
       spanCodeSection: "axis);\r\n\r\n            "
-    - startInstruction: 328
-      endInstruction: 327
+    - startInstruction: 288
+      endInstruction: 287
       startSourceChar: 953
       endSourceChar: 953
       line: 31
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 328
-      endInstruction: 327
+    - startInstruction: 288
+      endInstruction: 287
       startSourceChar: 953
       endSourceChar: 953
       line: 31
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 328
-      endInstruction: 327
+    - startInstruction: 288
+      endInstruction: 287
       startSourceChar: 953
       endSourceChar: 953
       line: 31
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 328
-      endInstruction: 327
+    - startInstruction: 288
+      endInstruction: 287
       startSourceChar: 953
       endSourceChar: 960
       line: 31
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 328
-      endInstruction: 327
+    - startInstruction: 288
+      endInstruction: 287
       startSourceChar: 960
       endSourceChar: 974
       line: 31
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 328
-      endInstruction: 327
+    - startInstruction: 288
+      endInstruction: 287
       startSourceChar: 974
       endSourceChar: 1006
       line: 31
       lineChar: 33
       spanCodeSection: '"Angle Axis double out params", '
-    - startInstruction: 328
-      endInstruction: 327
+    - startInstruction: 288
+      endInstruction: 287
       startSourceChar: 1006
       endSourceChar: 1006
       line: 31
       lineChar: 65
       spanCodeSection: 
-    - startInstruction: 328
-      endInstruction: 327
+    - startInstruction: 288
+      endInstruction: 287
       startSourceChar: 1006
       endSourceChar: 1006
       line: 31
       lineChar: 65
       spanCodeSection: 
-    - startInstruction: 328
-      endInstruction: 347
+    - startInstruction: 288
+      endInstruction: 287
       startSourceChar: 1006
       endSourceChar: 1015
       line: 31
       lineChar: 65
       spanCodeSection: 'angle != '
-    - startInstruction: 348
-      endInstruction: 439
+    - startInstruction: 288
+      endInstruction: 379
       startSourceChar: 1015
       endSourceChar: 1021
       line: 31
       lineChar: 74
       spanCodeSection: '0f || '
-    - startInstruction: 440
-      endInstruction: 439
+    - startInstruction: 380
+      endInstruction: 379
       startSourceChar: 1021
       endSourceChar: 1021
       line: 31
       lineChar: 80
       spanCodeSection: 
-    - startInstruction: 440
-      endInstruction: 459
+    - startInstruction: 380
+      endInstruction: 379
       startSourceChar: 1021
       endSourceChar: 1029
       line: 31
       lineChar: 80
       spanCodeSection: 'axis != '
-    - startInstruction: 460
-      endInstruction: 459
+    - startInstruction: 380
+      endInstruction: 379
       startSourceChar: 1029
       endSourceChar: 1029
       line: 31
       lineChar: 88
       spanCodeSection: 
-    - startInstruction: 460
-      endInstruction: 459
+    - startInstruction: 380
+      endInstruction: 379
       startSourceChar: 1029
       endSourceChar: 1037
       line: 31
       lineChar: 88
       spanCodeSection: Vector3.
-    - startInstruction: 460
-      endInstruction: 460
+    - startInstruction: 380
+      endInstruction: 380
       startSourceChar: 1037
       endSourceChar: 1037
       line: 31

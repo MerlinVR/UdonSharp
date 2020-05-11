@@ -227,7 +227,7 @@ namespace UdonSharp
         {
             AddPush(source);
             AddPush(target);
-            AddCopy();
+            AddCopy(comment);
         }
     }
 

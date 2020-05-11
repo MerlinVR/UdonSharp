@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -52,7 +51,17 @@ namespace UdonSharp
         // The default value for the symbol that gets set on the heap
         // This is only used for global (public/private) symbols with a default value, and constant symbols
         public object symbolDefaultValue = null;
-        
+
+        private COWValueInternal cowValue = null;
+
+#if UDONSHARP_DEBUG
+        private List<COWValueInternal> priorCowValues = new List<COWValueInternal>();
+#endif
+
+        public override string ToString()
+        {
+            return $"Symbol#{symbolUniqueName}";
+        }
         public bool IsUserDefinedBehaviour()
         {
             return UdonSharpUtils.IsUserDefinedBehaviour(internalType);
@@ -61,6 +70,192 @@ namespace UdonSharp
         public bool IsUserDefinedType()
         {
             return UdonSharpUtils.IsUserDefinedType(internalType);
+        }
+
+        /// <summary>
+        /// Marks this symbol as dirty; any pending copy-on-write capture will proceed 
+        /// to make a copy of the current value of this symbol if necessary. This should be
+        /// done before any write to a (potentially) non-internal symbol.
+        /// </summary>
+        public void MarkDirty()
+        {
+            if (cowValue != null)
+            {
+#if UDONSHARP_DEBUG
+                priorCowValues.Add(cowValue);
+#endif
+                cowValue.MarkDirty();
+            }
+        }
+        public void AssertCOWClosed()
+        {
+            if (cowValue != null)
+            {
+                cowValue.AssertNoLeaks();
+            }
+#if UDONSHARP_DEBUG
+            foreach (COWValueInternal prior in priorCowValues)
+            {
+                prior.AssertNoLeaks();
+            }
+#endif
+        }
+
+        public COWValue GetCOWValue(AssemblyBuilder assemblyBuilder, SymbolTable symbolTable)
+        {
+            if (cowValue != null)
+            {
+                if (cowValue.assemblyBuilder != assemblyBuilder)
+                {
+                    // Hmm... new compilation context? Dirty it and get a new one.
+                    cowValue.MarkDirty();
+                    cowValue = null;
+                } else if (cowValue.isDirty) {
+                    cowValue = null;
+                } else {
+                    return new COWValue(cowValue);
+                }
+            }
+
+            cowValue = new COWValueInternal(assemblyBuilder, this, symbolTable);
+            return new COWValue(cowValue);
+        }
+
+        /// <summary>
+        /// In some cases, we want to capture the current value in a symbol, do some other work (which may or may not modify the symbol),
+        /// then use that value. This is important for e.g. binary expressions with side-effecting terms, such as (a = b + (b += 1)).
+        /// We must capture the old value of 'b' here before evaluating the right-hand side. However, most such expressions
+        /// don't in fact end up writing to these values, so we'd like to avoid the cost of these extra copies.
+        /// 
+        /// The COWSymbolValue class represents an observation of a symbol value at some point in the past.
+        /// If the SymbolDefinition.MakeDirty() function is called before this observation is resolved (disposed),
+        /// a COPY is generated to a temporary symbol. Otherwise, though, we use the symbol directly.
+        /// </summary>
+        internal class COWValueInternal
+        {
+            static int index = 0;
+
+            public int instanceIndex = index++;
+
+            public AssemblyBuilder assemblyBuilder;
+
+            public int referenceCount = 0;
+            public bool isDirty = false;
+
+            public SymbolDefinition symbol { get; private set; } = null;
+            public SymbolDefinition originalSymbol { get; private set; } = null;
+
+            public SymbolTable symbolTable;
+
+#if UDONSHARP_DEBUG
+            private HashSet<COWValue> holders = new HashSet<COWValue>();
+#endif
+
+            public COWValueInternal(AssemblyBuilder assemblyBuilder, SymbolDefinition symbol, SymbolTable table)
+            {
+                this.assemblyBuilder = assemblyBuilder;
+                this.symbol = this.originalSymbol = symbol;
+                this.symbolTable = table;
+            }
+
+            public void AddRef(COWValue holder)
+            {
+                referenceCount++;
+#if UDONSHARP_DEBUG
+                holders.Add(holder);
+#endif
+            }
+
+            public void ClearRef(COWValue holder)
+            {
+                referenceCount--;
+#if UDONSHARP_DEBUG
+                if (!holders.Remove(holder))
+                {
+                    throw new Exception("No matching holder for COWValue");
+                }
+#endif
+            }
+
+            public void AssertNoLeaks()
+            {
+                if (referenceCount != 0)
+                {
+#if UDONSHARP_DEBUG
+                    foreach (COWValue holder in holders) {
+                        Debug.LogError($"Value reference for symbol {originalSymbol} leaked at:\n\n{holder.stackTrace}");
+                    }
+#endif
+                    throw new Exception($"UdonSharp internal error: Leaked COWValue reference for symbol {originalSymbol}");
+                }
+            }
+
+            public void MarkDirty()
+            {
+                if (referenceCount == 0)
+                {
+                    isDirty = true;
+                    symbol = null;
+                    return;
+                }
+
+                if (!isDirty)
+                {
+                    SymbolDefinition temporary = symbolTable.CreateUnnamedSymbol(symbol.internalType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
+                    assemblyBuilder.AddCopy(temporary, symbol, " Copy-on-write symbol value dirtied");
+                    symbol = temporary;
+                    isDirty = true;
+                }
+            }
+        }
+
+        public class COWValue : IDisposable
+        {
+            private bool isDisposed = false;
+            private COWValueInternal backer;
+#if UDONSHARP_DEBUG
+            public System.Diagnostics.StackTrace stackTrace;
+#endif
+
+            internal COWValue(COWValueInternal backer)
+            {
+                this.backer = backer;
+#if UDONSHARP_DEBUG
+                stackTrace = new System.Diagnostics.StackTrace(true);
+#endif
+                backer.AddRef(this);
+            }
+
+            public SymbolDefinition symbol
+            {
+                get
+                {
+                    if (isDisposed)
+                    {
+                        throw new Exception($"COWSymbolValue for {backer.originalSymbol} has been disposed");
+                    }
+                    return backer.symbol;
+                }
+            }
+
+            public COWValue AddRef()
+            {
+                if (isDisposed)
+                {
+                    throw new Exception($"COWSymbolValue for {backer.originalSymbol} has been disposed");
+                }
+
+                return new COWValue(backer);
+            }
+
+            public void Dispose()
+            {
+                if (isDisposed) return;
+
+                isDisposed = true;
+
+                backer.ClearRef(this);
+            }
         }
     }
 
@@ -537,6 +732,24 @@ namespace UdonSharp
                     globalTable.namedSymbolCounters[childSymbolNameCount.Key] = Mathf.Max(globalTable.namedSymbolCounters[childSymbolNameCount.Key], childSymbolNameCount.Value);
                 else
                     globalTable.namedSymbolCounters.Add(childSymbolNameCount.Key, childSymbolNameCount.Value);
+            }
+        }
+
+        public void DirtyEverything(bool skipLocals = false)
+        {
+            foreach (SymbolDefinition symbol in GetAllSymbols(true))
+            {
+                if (skipLocals && (symbol.declarationType & SymbolDeclTypeFlags.Local) != 0)
+                {
+                    continue;
+                }
+
+                if ((symbol.declarationType & SymbolDeclTypeFlags.Constant) != 0)
+                {
+                    continue;
+                }
+
+                symbol.MarkDirty();
             }
         }
     }

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: IntegrationTestRunner
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 16bcea2d0a6d0fb408f84978b352fc9b,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 74276df04765d874ca445fdade7261ec,
     type: 2}
   udonAssembly: ".data_start\r\n\r\n    .export runTestOnStart\r\n    .export logPassedTests\r\n
     \   .export integrationTests\r\n\r\n    __refl_const_intnl_udonTypeID: %SystemInt64,
@@ -72,7 +72,7 @@ MonoBehaviour:
     __1_intnl_SystemInt32\r\n        EXTERN, \"UnityEngineComponentArray.__get_Length__SystemInt32\"\r\n
     \       PUSH, __0_intnl_SystemInt32\r\n        PUSH, __1_intnl_SystemInt32\r\n
     \       PUSH, __0_intnl_SystemBoolean\r\n        EXTERN, \"SystemInt32.__op_LessThan__SystemInt32_SystemInt32__SystemBoolean\"\r\n
-    \       PUSH, __0_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x000002B4\r\n
+    \       PUSH, __0_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x000002A0\r\n
     \       PUSH, integrationTests\r\n        PUSH, __0_intnl_SystemInt32\r\n        PUSH,
     __0_intnl_UdonSharpTestsIntegrationTestSuite\r\n        EXTERN, \"UnityEngineComponentArray.__Get__SystemInt32__UnityEngineComponent\"\r\n
     \       PUSH, __0_intnl_UdonSharpTestsIntegrationTestSuite\r\n        PUSH, __0_suite_IntegrationTestSuite\r\n
@@ -103,9 +103,8 @@ MonoBehaviour:
     __5_intnl_SystemInt32\r\n        EXTERN, \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n
     \       PUSH, __5_intnl_SystemInt32\r\n        PUSH, __0_passedTests_Int32\r\n
     \       COPY\r\n        PUSH, __0_intnl_SystemInt32\r\n        PUSH, __1_const_intnl_SystemInt32\r\n
-    \       PUSH, __2_intnl_SystemInt32\r\n        EXTERN, \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n
-    \       PUSH, __2_intnl_SystemInt32\r\n        PUSH, __0_intnl_SystemInt32\r\n
-    \       COPY\r\n        JUMP, 0x000000D4\r\n        \r\n         # Debug.Log($\"[<color=#00AF54>UdonSharp
+    \       PUSH, __0_intnl_SystemInt32\r\n        EXTERN, \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n
+    \       JUMP, 0x000000D4\r\n        \r\n         # Debug.Log($\"[<color=#00AF54>UdonSharp
     Tests</color>] Tests finished [{passedTests}/{totalTests}]\");\r\n        PUSH,
     __7_const_intnl_SystemString\r\n        PUSH, __0_intnl_interpolatedStr_String\r\n
     \       COPY\r\n        PUSH, __0_passedTests_Int32\r\n        PUSH, __0_intnl_SystemString\r\n
@@ -602,10 +601,31 @@ MonoBehaviour:
     - startInstruction: 312
       endInstruction: 311
       startSourceChar: 886
-      endSourceChar: 911
+      endSourceChar: 886
       line: 36
       lineChar: 16
-      spanCodeSection: 'suite.printPassedTests = '
+      spanCodeSection: 
+    - startInstruction: 312
+      endInstruction: 311
+      startSourceChar: 886
+      endSourceChar: 886
+      line: 36
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 312
+      endInstruction: 311
+      startSourceChar: 886
+      endSourceChar: 892
+      line: 36
+      lineChar: 16
+      spanCodeSection: suite.
+    - startInstruction: 312
+      endInstruction: 311
+      startSourceChar: 892
+      endSourceChar: 911
+      line: 36
+      lineChar: 22
+      spanCodeSection: 'printPassedTests = '
     - startInstruction: 312
       endInstruction: 343
       startSourceChar: 911
@@ -658,6 +678,13 @@ MonoBehaviour:
     - startInstruction: 368
       endInstruction: 367
       startSourceChar: 981
+      endSourceChar: 981
+      line: 39
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 368
+      endInstruction: 367
+      startSourceChar: 981
       endSourceChar: 995
       line: 39
       lineChar: 16
@@ -700,6 +727,13 @@ MonoBehaviour:
     - startInstruction: 500
       endInstruction: 499
       startSourceChar: 1039
+      endSourceChar: 1039
+      line: 40
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 500
+      endInstruction: 499
+      startSourceChar: 1039
       endSourceChar: 1054
       line: 40
       lineChar: 16
@@ -726,98 +760,98 @@ MonoBehaviour:
       lineChar: 31
       spanCodeSection: suite.
     - startInstruction: 500
-      endInstruction: 691
+      endInstruction: 671
       startSourceChar: 1060
       endSourceChar: 1115
       line: 40
       lineChar: 37
       spanCodeSection: "GetSucceededTestCount();\r\n            }\r\n\r\n            "
-    - startInstruction: 692
-      endInstruction: 691
+    - startInstruction: 672
+      endInstruction: 671
       startSourceChar: 1115
       endSourceChar: 1115
       line: 43
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 692
-      endInstruction: 691
+    - startInstruction: 672
+      endInstruction: 671
       startSourceChar: 1115
       endSourceChar: 1115
       line: 43
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 692
-      endInstruction: 691
+    - startInstruction: 672
+      endInstruction: 671
       startSourceChar: 1115
       endSourceChar: 1115
       line: 43
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 692
-      endInstruction: 691
+    - startInstruction: 672
+      endInstruction: 671
       startSourceChar: 1115
       endSourceChar: 1121
       line: 43
       lineChar: 12
       spanCodeSection: Debug.
-    - startInstruction: 692
-      endInstruction: 691
+    - startInstruction: 672
+      endInstruction: 671
       startSourceChar: 1121
       endSourceChar: 1125
       line: 43
       lineChar: 18
       spanCodeSection: Log(
-    - startInstruction: 692
-      endInstruction: 691
+    - startInstruction: 672
+      endInstruction: 671
       startSourceChar: 1125
       endSourceChar: 1127
       line: 43
       lineChar: 22
       spanCodeSection: $"
-    - startInstruction: 692
-      endInstruction: 711
+    - startInstruction: 672
+      endInstruction: 691
       startSourceChar: 1127
       endSourceChar: 1184
       line: 43
       lineChar: 24
       spanCodeSection: '[<color=#00AF54>UdonSharp Tests</color>] Tests finished ['
-    - startInstruction: 712
-      endInstruction: 711
+    - startInstruction: 692
+      endInstruction: 691
       startSourceChar: 1184
       endSourceChar: 1185
       line: 43
       lineChar: 81
       spanCodeSection: '{'
-    - startInstruction: 712
-      endInstruction: 787
+    - startInstruction: 692
+      endInstruction: 767
       startSourceChar: 1185
       endSourceChar: 1197
       line: 43
       lineChar: 82
       spanCodeSection: passedTests}
-    - startInstruction: 788
-      endInstruction: 839
+    - startInstruction: 768
+      endInstruction: 819
       startSourceChar: 1197
       endSourceChar: 1198
       line: 43
       lineChar: 94
       spanCodeSection: /
-    - startInstruction: 840
-      endInstruction: 839
+    - startInstruction: 820
+      endInstruction: 819
       startSourceChar: 1198
       endSourceChar: 1199
       line: 43
       lineChar: 95
       spanCodeSection: '{'
-    - startInstruction: 840
-      endInstruction: 915
+    - startInstruction: 820
+      endInstruction: 895
       startSourceChar: 1199
       endSourceChar: 1210
       line: 43
       lineChar: 96
       spanCodeSection: totalTests}
-    - startInstruction: 916
-      endInstruction: 916
+    - startInstruction: 896
+      endInstruction: 896
       startSourceChar: 1210
       endSourceChar: 1210
       line: 43

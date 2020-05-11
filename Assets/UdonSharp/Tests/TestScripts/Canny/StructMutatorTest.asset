@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: StructMutatorTest
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: d2654bf3c86d9f140b9e163df9aea526,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: c1e1f45be757f4d498ae1219297a7319,
     type: 2}
   udonAssembly: ".data_start\r\n\r\n\r\n    __refl_const_intnl_udonTypeID: %SystemInt64,
     null\r\n    __refl_const_intnl_udonTypeName: %SystemString, null\r\n    tester:
@@ -35,60 +35,56 @@ MonoBehaviour:
     %SystemBoolean, null\r\n    __2_intnl_SystemBoolean: %SystemBoolean, null\r\n
     \   __3_intnl_SystemBoolean: %SystemBoolean, null\r\n    __0_intnl_UnityEngineColor:
     %UnityEngineColor, null\r\n    __1_intnl_UnityEngineColor: %UnityEngineColor,
-    null\r\n    __2_intnl_UnityEngineColor: %UnityEngineColor, null\r\n    __0_intnl_UnityEngineRay:
-    %UnityEngineRay, null\r\n    __0_intnl_SystemSingle: %SystemSingle, null\r\n    __1_intnl_SystemSingle:
-    %SystemSingle, null\r\n    __2_intnl_SystemSingle: %SystemSingle, null\r\n    __3_intnl_SystemSingle:
-    %SystemSingle, null\r\n    __4_intnl_SystemSingle: %SystemSingle, null\r\n    __5_intnl_SystemSingle:
-    %SystemSingle, null\r\n    __6_intnl_SystemSingle: %SystemSingle, null\r\n    __7_intnl_SystemSingle:
-    %SystemSingle, null\r\n    __8_intnl_SystemSingle: %SystemSingle, null\r\n    __9_intnl_SystemSingle:
-    %SystemSingle, null\r\n    __0_intnl_returnTarget_UInt32: %SystemUInt32, null\r\n
-    \   __0_intnl_UnityEngineVector3: %UnityEngineVector3, null\r\n    __1_intnl_UnityEngineVector3:
-    %UnityEngineVector3, null\r\n    __2_intnl_UnityEngineVector3: %UnityEngineVector3,
-    null\r\n    __3_intnl_UnityEngineVector3: %UnityEngineVector3, null\r\n    __4_intnl_UnityEngineVector3:
-    %UnityEngineVector3, null\r\n    __5_intnl_UnityEngineVector3: %UnityEngineVector3,
-    null\r\n    __6_intnl_UnityEngineVector3: %UnityEngineVector3, null\r\n    __7_intnl_UnityEngineVector3:
-    %UnityEngineVector3, null\r\n    __8_intnl_UnityEngineVector3: %UnityEngineVector3,
-    null\r\n\r\n.data_end\r\n\r\n        \r\n         # using UdonSharp;\r\n        \r\n
-    \        # using UnityEngine;\r\n        \r\n         # using UnityEngine.UI;\r\n
-    \       \r\n         # using VRC.SDKBase;\r\n        \r\n         # using VRC.Udon;\r\n
-    \       \r\n         # namespace UdonSharp.Tests\r\n        \r\n         # [AddComponentMenu(\"Udon
-    Sharp/Tests/StructMutatorTest\")]\r\n        \r\n         # public class StructMutatorTest
-    : UdonSharpBehaviour\r\n.code_start\r\n        \r\n         # [System.NonSerialized]\r\n
-    \       \r\n         # public IntegrationTestSuite tester;\r\n        \r\n         #
-    public void ExecuteTests()\r\n    .export ExecuteTests\r\n        \r\n    ExecuteTests:\r\n
+    null\r\n    __2_intnl_UnityEngineColor: %UnityEngineColor, null\r\n    __0_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __1_intnl_SystemSingle: %SystemSingle, null\r\n    __2_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __3_intnl_SystemSingle: %SystemSingle, null\r\n    __4_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __5_intnl_SystemSingle: %SystemSingle, null\r\n    __6_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __7_intnl_SystemSingle: %SystemSingle, null\r\n    __8_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __9_intnl_SystemSingle: %SystemSingle, null\r\n    __0_intnl_returnTarget_UInt32:
+    %SystemUInt32, null\r\n    __0_intnl_UnityEngineVector3: %UnityEngineVector3,
+    null\r\n    __1_intnl_UnityEngineVector3: %UnityEngineVector3, null\r\n    __2_intnl_UnityEngineVector3:
+    %UnityEngineVector3, null\r\n    __3_intnl_UnityEngineVector3: %UnityEngineVector3,
+    null\r\n    __4_intnl_UnityEngineVector3: %UnityEngineVector3, null\r\n    __5_intnl_UnityEngineVector3:
+    %UnityEngineVector3, null\r\n\r\n.data_end\r\n\r\n        \r\n         # using
+    UdonSharp;\r\n        \r\n         # using UnityEngine;\r\n        \r\n         #
+    using UnityEngine.UI;\r\n        \r\n         # using VRC.SDKBase;\r\n        \r\n
+    \        # using VRC.Udon;\r\n        \r\n         # namespace UdonSharp.Tests\r\n
+    \       \r\n         # [AddComponentMenu(\"Udon Sharp/Tests/StructMutatorTest\")]\r\n
+    \       \r\n         # public class StructMutatorTest : UdonSharpBehaviour\r\n.code_start\r\n
+    \       \r\n         # [System.NonSerialized]\r\n        \r\n         # public
+    IntegrationTestSuite tester;\r\n        \r\n         # public void ExecuteTests()\r\n
+    \   .export ExecuteTests\r\n        \r\n    ExecuteTests:\r\n        \r\n        PUSH,
+    __0_const_intnl_SystemUInt32\r\n        \r\n         # {\r\n        \r\n         #
+    TestFieldSet();\r\n        PUSH, __0_const_intnl_exitJumpLoc_UInt32\r\n        JUMP,
+    0x00000064\r\n        \r\n         # TestRayPropertySet();\r\n        PUSH, __1_const_intnl_exitJumpLoc_UInt32\r\n
+    \       JUMP, 0x000001F0\r\n        \r\n         # TestColorBlockSet();\r\n        PUSH,
+    __2_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x00000314\r\n        \r\n
+    \        # TestMethodSet();\r\n        PUSH, __3_const_intnl_exitJumpLoc_UInt32\r\n
+    \       JUMP, 0x0000040C\r\n        PUSH, __0_intnl_returnTarget_UInt32 #Function
+    epilogue\r\n        COPY\r\n        JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n
+    \       \r\n        \r\n         # void TestFieldSet()\r\n    TestFieldSet:\r\n
     \       \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n        \r\n         #
-    {\r\n        \r\n         # TestFieldSet();\r\n        PUSH, __0_const_intnl_exitJumpLoc_UInt32\r\n
-    \       JUMP, 0x00000064\r\n        \r\n         # TestRayPropertySet();\r\n        PUSH,
-    __1_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x00000218\r\n        \r\n
-    \        # TestColorBlockSet();\r\n        PUSH, __2_const_intnl_exitJumpLoc_UInt32\r\n
-    \       JUMP, 0x00000350\r\n        \r\n         # TestMethodSet();\r\n        PUSH,
-    __3_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x00000448\r\n        PUSH,
-    __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n        JUMP_INDIRECT,
-    __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n         # void TestFieldSet()\r\n
-    \   TestFieldSet:\r\n        \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n
-    \       \r\n         # {\r\n        \r\n         # Vector3 vector = new Vector3(1,
-    2, 3);\r\n        PUSH, __0_const_intnl_SystemInt32\r\n        PUSH, __0_intnl_SystemSingle\r\n
+    {\r\n        \r\n         # Vector3 vector = new Vector3(1, 2, 3);\r\n        PUSH,
+    __0_const_intnl_SystemInt32\r\n        PUSH, __0_intnl_SystemSingle\r\n        EXTERN,
+    \"SystemConvert.__ToSingle__SystemInt32__SystemSingle\"\r\n        PUSH, __1_const_intnl_SystemInt32\r\n
+    \       PUSH, __1_intnl_SystemSingle\r\n        EXTERN, \"SystemConvert.__ToSingle__SystemInt32__SystemSingle\"\r\n
+    \       PUSH, __2_const_intnl_SystemInt32\r\n        PUSH, __2_intnl_SystemSingle\r\n
     \       EXTERN, \"SystemConvert.__ToSingle__SystemInt32__SystemSingle\"\r\n        PUSH,
-    __1_const_intnl_SystemInt32\r\n        PUSH, __1_intnl_SystemSingle\r\n        EXTERN,
-    \"SystemConvert.__ToSingle__SystemInt32__SystemSingle\"\r\n        PUSH, __2_const_intnl_SystemInt32\r\n
-    \       PUSH, __2_intnl_SystemSingle\r\n        EXTERN, \"SystemConvert.__ToSingle__SystemInt32__SystemSingle\"\r\n
-    \       PUSH, __0_intnl_SystemSingle\r\n        PUSH, __1_intnl_SystemSingle\r\n
-    \       PUSH, __2_intnl_SystemSingle\r\n        PUSH, __0_intnl_UnityEngineVector3\r\n
-    \       EXTERN, \"UnityEngineVector3.__ctor__SystemSingle_SystemSingle_SystemSingle__UnityEngineVector3\"\r\n
-    \       PUSH, __0_intnl_UnityEngineVector3\r\n        PUSH, __0_vector_Vector3\r\n
-    \       COPY\r\n        \r\n         # vector.y = 4f;\r\n        PUSH, __0_vector_Vector3\r\n
+    __0_intnl_SystemSingle\r\n        PUSH, __1_intnl_SystemSingle\r\n        PUSH,
+    __2_intnl_SystemSingle\r\n        PUSH, __0_vector_Vector3\r\n        EXTERN,
+    \"UnityEngineVector3.__ctor__SystemSingle_SystemSingle_SystemSingle__UnityEngineVector3\"\r\n
+    \       \r\n         # vector.y = 4f;\r\n        PUSH, __0_vector_Vector3\r\n
     \       PUSH, __0_const_intnl_SystemSingle\r\n        EXTERN, \"UnityEngineVector3.__set_y__SystemSingle\"\r\n
     \       \r\n         # tester.TestAssertion(\"Vector3 Field Set\", vector == new
-    Vector3(1, 4, 3));\r\n        PUSH, __0_vector_Vector3\r\n        PUSH, __1_intnl_UnityEngineVector3\r\n
-    \       COPY\r\n        PUSH, __0_const_intnl_SystemInt32\r\n        PUSH, __3_intnl_SystemSingle\r\n
+    Vector3(1, 4, 3));\r\n        PUSH, __0_const_intnl_SystemInt32\r\n        PUSH,
+    __3_intnl_SystemSingle\r\n        EXTERN, \"SystemConvert.__ToSingle__SystemInt32__SystemSingle\"\r\n
+    \       PUSH, __3_const_intnl_SystemInt32\r\n        PUSH, __4_intnl_SystemSingle\r\n
     \       EXTERN, \"SystemConvert.__ToSingle__SystemInt32__SystemSingle\"\r\n        PUSH,
-    __3_const_intnl_SystemInt32\r\n        PUSH, __4_intnl_SystemSingle\r\n        EXTERN,
-    \"SystemConvert.__ToSingle__SystemInt32__SystemSingle\"\r\n        PUSH, __2_const_intnl_SystemInt32\r\n
-    \       PUSH, __5_intnl_SystemSingle\r\n        EXTERN, \"SystemConvert.__ToSingle__SystemInt32__SystemSingle\"\r\n
-    \       PUSH, __3_intnl_SystemSingle\r\n        PUSH, __4_intnl_SystemSingle\r\n
-    \       PUSH, __5_intnl_SystemSingle\r\n        PUSH, __2_intnl_UnityEngineVector3\r\n
-    \       EXTERN, \"UnityEngineVector3.__ctor__SystemSingle_SystemSingle_SystemSingle__UnityEngineVector3\"\r\n
-    \       PUSH, __1_intnl_UnityEngineVector3\r\n        PUSH, __2_intnl_UnityEngineVector3\r\n
+    __2_const_intnl_SystemInt32\r\n        PUSH, __5_intnl_SystemSingle\r\n        EXTERN,
+    \"SystemConvert.__ToSingle__SystemInt32__SystemSingle\"\r\n        PUSH, __3_intnl_SystemSingle\r\n
+    \       PUSH, __4_intnl_SystemSingle\r\n        PUSH, __5_intnl_SystemSingle\r\n
+    \       PUSH, __0_intnl_UnityEngineVector3\r\n        EXTERN, \"UnityEngineVector3.__ctor__SystemSingle_SystemSingle_SystemSingle__UnityEngineVector3\"\r\n
+    \       PUSH, __0_vector_Vector3\r\n        PUSH, __0_intnl_UnityEngineVector3\r\n
     \       PUSH, __0_intnl_SystemBoolean\r\n        EXTERN, \"UnityEngineVector3.__op_Equality__UnityEngineVector3_UnityEngineVector3__SystemBoolean\"\r\n
     \       PUSH, tester\r\n        PUSH, __1_const_intnl_SystemString\r\n        PUSH,
     __0_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
@@ -100,20 +96,19 @@ MonoBehaviour:
     \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n
     \        # void TestRayPropertySet()\r\n    TestRayPropertySet:\r\n        \r\n
     \       PUSH, __0_const_intnl_SystemUInt32\r\n        \r\n         # {\r\n        \r\n
-    \        # Ray ray = new Ray(Vector3.zero, Vector3.up);\r\n        PUSH, __3_intnl_UnityEngineVector3\r\n
+    \        # Ray ray = new Ray(Vector3.zero, Vector3.up);\r\n        PUSH, __1_intnl_UnityEngineVector3\r\n
     \       EXTERN, \"UnityEngineVector3.__get_zero__UnityEngineVector3\"\r\n        PUSH,
-    __4_intnl_UnityEngineVector3\r\n        EXTERN, \"UnityEngineVector3.__get_up__UnityEngineVector3\"\r\n
-    \       PUSH, __3_intnl_UnityEngineVector3\r\n        PUSH, __4_intnl_UnityEngineVector3\r\n
-    \       PUSH, __0_intnl_UnityEngineRay\r\n        EXTERN, \"UnityEngineRay.__ctor__UnityEngineVector3_UnityEngineVector3__UnityEngineRay\"\r\n
-    \       PUSH, __0_intnl_UnityEngineRay\r\n        PUSH, __0_ray_Ray\r\n        COPY\r\n
-    \       \r\n         # ray.direction = Vector3.right;\r\n        PUSH, __5_intnl_UnityEngineVector3\r\n
+    __2_intnl_UnityEngineVector3\r\n        EXTERN, \"UnityEngineVector3.__get_up__UnityEngineVector3\"\r\n
+    \       PUSH, __1_intnl_UnityEngineVector3\r\n        PUSH, __2_intnl_UnityEngineVector3\r\n
+    \       PUSH, __0_ray_Ray\r\n        EXTERN, \"UnityEngineRay.__ctor__UnityEngineVector3_UnityEngineVector3__UnityEngineRay\"\r\n
+    \       \r\n         # ray.direction = Vector3.right;\r\n        PUSH, __3_intnl_UnityEngineVector3\r\n
     \       EXTERN, \"UnityEngineVector3.__get_right__UnityEngineVector3\"\r\n        PUSH,
-    __0_ray_Ray\r\n        PUSH, __5_intnl_UnityEngineVector3\r\n        EXTERN, \"UnityEngineRay.__set_direction__UnityEngineVector3__SystemVoid\"\r\n
+    __0_ray_Ray\r\n        PUSH, __3_intnl_UnityEngineVector3\r\n        EXTERN, \"UnityEngineRay.__set_direction__UnityEngineVector3__SystemVoid\"\r\n
     \       \r\n         # tester.TestAssertion(\"Ray Property Set\", ray.direction
-    == Vector3.right);\r\n        PUSH, __0_ray_Ray\r\n        PUSH, __6_intnl_UnityEngineVector3\r\n
+    == Vector3.right);\r\n        PUSH, __0_ray_Ray\r\n        PUSH, __4_intnl_UnityEngineVector3\r\n
     \       EXTERN, \"UnityEngineRay.__get_direction__UnityEngineVector3\"\r\n        PUSH,
-    __7_intnl_UnityEngineVector3\r\n        EXTERN, \"UnityEngineVector3.__get_right__UnityEngineVector3\"\r\n
-    \       PUSH, __6_intnl_UnityEngineVector3\r\n        PUSH, __7_intnl_UnityEngineVector3\r\n
+    __5_intnl_UnityEngineVector3\r\n        EXTERN, \"UnityEngineVector3.__get_right__UnityEngineVector3\"\r\n
+    \       PUSH, __4_intnl_UnityEngineVector3\r\n        PUSH, __5_intnl_UnityEngineVector3\r\n
     \       PUSH, __1_intnl_SystemBoolean\r\n        EXTERN, \"UnityEngineVector3.__op_Equality__UnityEngineVector3_UnityEngineVector3__SystemBoolean\"\r\n
     \       PUSH, tester\r\n        PUSH, __1_const_intnl_SystemString\r\n        PUSH,
     __4_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
@@ -153,9 +148,8 @@ MonoBehaviour:
     __2_const_intnl_SystemInt32\r\n        PUSH, __8_intnl_SystemSingle\r\n        EXTERN,
     \"SystemConvert.__ToSingle__SystemInt32__SystemSingle\"\r\n        PUSH, __6_intnl_SystemSingle\r\n
     \       PUSH, __7_intnl_SystemSingle\r\n        PUSH, __8_intnl_SystemSingle\r\n
-    \       PUSH, __8_intnl_UnityEngineVector3\r\n        EXTERN, \"UnityEngineVector3.__ctor__SystemSingle_SystemSingle_SystemSingle__UnityEngineVector3\"\r\n
-    \       PUSH, __8_intnl_UnityEngineVector3\r\n        PUSH, __1_vector_Vector3\r\n
-    \       COPY\r\n        \r\n         # vector.Normalize();\r\n        PUSH, __1_vector_Vector3\r\n
+    \       PUSH, __1_vector_Vector3\r\n        EXTERN, \"UnityEngineVector3.__ctor__SystemSingle_SystemSingle_SystemSingle__UnityEngineVector3\"\r\n
+    \       \r\n         # vector.Normalize();\r\n        PUSH, __1_vector_Vector3\r\n
     \       EXTERN, \"UnityEngineVector3.__Normalize__SystemVoid\"\r\n        \r\n
     \        # tester.TestAssertion(\"Vector Method Set\", Mathf.Approximately(vector.magnitude,
     1f));\r\n        PUSH, __1_vector_Vector3\r\n        PUSH, __9_intnl_SystemSingle\r\n
@@ -588,576 +582,639 @@ MonoBehaviour:
       lineChar: 47
       spanCodeSection: 
     - startInstruction: 100
-      endInstruction: 231
+      endInstruction: 211
       startSourceChar: 940
       endSourceChar: 957
       line: 30
       lineChar: 47
       spanCodeSection: "3);\r\n            "
-    - startInstruction: 232
-      endInstruction: 231
+    - startInstruction: 212
+      endInstruction: 211
       startSourceChar: 957
       endSourceChar: 957
       line: 31
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 232
-      endInstruction: 231
+    - startInstruction: 212
+      endInstruction: 211
       startSourceChar: 957
-      endSourceChar: 968
+      endSourceChar: 957
       line: 31
       lineChar: 12
-      spanCodeSection: 'vector.y = '
-    - startInstruction: 232
-      endInstruction: 255
+      spanCodeSection: 
+    - startInstruction: 212
+      endInstruction: 211
+      startSourceChar: 957
+      endSourceChar: 957
+      line: 31
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 212
+      endInstruction: 211
+      startSourceChar: 957
+      endSourceChar: 964
+      line: 31
+      lineChar: 12
+      spanCodeSection: vector.
+    - startInstruction: 212
+      endInstruction: 211
+      startSourceChar: 964
+      endSourceChar: 968
+      line: 31
+      lineChar: 19
+      spanCodeSection: 'y = '
+    - startInstruction: 212
+      endInstruction: 235
       startSourceChar: 968
       endSourceChar: 987
       line: 31
       lineChar: 23
       spanCodeSection: "4f;\r\n\r\n            "
-    - startInstruction: 256
-      endInstruction: 255
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 987
       endSourceChar: 987
       line: 33
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 256
-      endInstruction: 255
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 987
       endSourceChar: 987
       line: 33
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 256
-      endInstruction: 255
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 987
       endSourceChar: 987
       line: 33
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 256
-      endInstruction: 255
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 987
       endSourceChar: 994
       line: 33
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 256
-      endInstruction: 255
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 994
       endSourceChar: 1008
       line: 33
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 256
-      endInstruction: 255
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 1008
       endSourceChar: 1029
       line: 33
       lineChar: 33
       spanCodeSection: '"Vector3 Field Set", '
-    - startInstruction: 256
-      endInstruction: 255
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 1029
       endSourceChar: 1029
       line: 33
       lineChar: 54
       spanCodeSection: 
-    - startInstruction: 256
-      endInstruction: 275
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 1029
       endSourceChar: 1039
       line: 33
       lineChar: 54
       spanCodeSection: 'vector == '
-    - startInstruction: 276
-      endInstruction: 275
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 1039
       endSourceChar: 1043
       line: 33
       lineChar: 64
       spanCodeSection: 'new '
-    - startInstruction: 276
-      endInstruction: 275
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 1043
       endSourceChar: 1051
       line: 33
       lineChar: 68
       spanCodeSection: Vector3(
-    - startInstruction: 276
-      endInstruction: 275
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 1051
       endSourceChar: 1051
       line: 33
       lineChar: 76
       spanCodeSection: 
-    - startInstruction: 276
-      endInstruction: 275
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 1051
       endSourceChar: 1054
       line: 33
       lineChar: 76
       spanCodeSection: '1, '
-    - startInstruction: 276
-      endInstruction: 275
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 1054
       endSourceChar: 1054
       line: 33
       lineChar: 79
       spanCodeSection: 
-    - startInstruction: 276
-      endInstruction: 275
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 1054
       endSourceChar: 1057
       line: 33
       lineChar: 79
       spanCodeSection: '4, '
-    - startInstruction: 276
-      endInstruction: 275
+    - startInstruction: 236
+      endInstruction: 235
       startSourceChar: 1057
       endSourceChar: 1057
       line: 33
       lineChar: 82
       spanCodeSection: 
-    - startInstruction: 276
-      endInstruction: 527
+    - startInstruction: 236
+      endInstruction: 487
       startSourceChar: 1057
       endSourceChar: 1197
       line: 33
       lineChar: 82
       spanCodeSection: "3));\r\n        }\r\n\r\n        // https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/raysetorigin-and-raysetdirection-not-working\r\n
         \       "
-    - startInstruction: 528
-      endInstruction: 535
+    - startInstruction: 488
+      endInstruction: 495
       startSourceChar: 1197
       endSourceChar: 1232
       line: 37
       lineChar: 8
       spanCodeSection: "void TestRayPropertySet()\r\n        "
-    - startInstruction: 536
-      endInstruction: 535
+    - startInstruction: 496
+      endInstruction: 495
       startSourceChar: 1232
       endSourceChar: 1247
       line: 38
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 536
-      endInstruction: 535
+    - startInstruction: 496
+      endInstruction: 495
       startSourceChar: 1247
       endSourceChar: 1247
       line: 39
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 536
-      endInstruction: 535
+    - startInstruction: 496
+      endInstruction: 495
       startSourceChar: 1247
       endSourceChar: 1247
       line: 39
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 536
-      endInstruction: 535
+    - startInstruction: 496
+      endInstruction: 495
       startSourceChar: 1247
       endSourceChar: 1247
       line: 39
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 536
-      endInstruction: 535
+    - startInstruction: 496
+      endInstruction: 495
       startSourceChar: 1247
       endSourceChar: 1255
       line: 39
       lineChar: 12
       spanCodeSection: 'Ray ray '
-    - startInstruction: 536
-      endInstruction: 535
+    - startInstruction: 496
+      endInstruction: 495
       startSourceChar: 1255
       endSourceChar: 1257
       line: 39
       lineChar: 20
       spanCodeSection: '= '
-    - startInstruction: 536
-      endInstruction: 535
+    - startInstruction: 496
+      endInstruction: 495
       startSourceChar: 1257
       endSourceChar: 1261
       line: 39
       lineChar: 22
       spanCodeSection: 'new '
-    - startInstruction: 536
-      endInstruction: 535
+    - startInstruction: 496
+      endInstruction: 495
       startSourceChar: 1261
       endSourceChar: 1265
       line: 39
       lineChar: 26
       spanCodeSection: Ray(
-    - startInstruction: 536
-      endInstruction: 535
+    - startInstruction: 496
+      endInstruction: 495
       startSourceChar: 1265
       endSourceChar: 1265
       line: 39
       lineChar: 30
       spanCodeSection: 
-    - startInstruction: 536
-      endInstruction: 535
+    - startInstruction: 496
+      endInstruction: 495
       startSourceChar: 1265
       endSourceChar: 1265
       line: 39
       lineChar: 30
       spanCodeSection: 
-    - startInstruction: 536
-      endInstruction: 535
+    - startInstruction: 496
+      endInstruction: 495
       startSourceChar: 1265
       endSourceChar: 1273
       line: 39
       lineChar: 30
       spanCodeSection: Vector3.
-    - startInstruction: 536
-      endInstruction: 551
+    - startInstruction: 496
+      endInstruction: 511
       startSourceChar: 1273
       endSourceChar: 1279
       line: 39
       lineChar: 38
       spanCodeSection: 'zero, '
-    - startInstruction: 552
-      endInstruction: 551
+    - startInstruction: 512
+      endInstruction: 511
       startSourceChar: 1279
       endSourceChar: 1279
       line: 39
       lineChar: 44
       spanCodeSection: 
-    - startInstruction: 552
-      endInstruction: 551
+    - startInstruction: 512
+      endInstruction: 511
       startSourceChar: 1279
       endSourceChar: 1279
       line: 39
       lineChar: 44
       spanCodeSection: 
-    - startInstruction: 552
-      endInstruction: 551
+    - startInstruction: 512
+      endInstruction: 511
       startSourceChar: 1279
       endSourceChar: 1287
       line: 39
       lineChar: 44
       spanCodeSection: Vector3.
-    - startInstruction: 552
-      endInstruction: 619
+    - startInstruction: 512
+      endInstruction: 559
       startSourceChar: 1287
       endSourceChar: 1307
       line: 39
       lineChar: 52
       spanCodeSection: "up);\r\n\r\n            "
-    - startInstruction: 620
-      endInstruction: 619
+    - startInstruction: 560
+      endInstruction: 559
       startSourceChar: 1307
       endSourceChar: 1307
       line: 41
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 620
-      endInstruction: 619
+    - startInstruction: 560
+      endInstruction: 559
       startSourceChar: 1307
-      endSourceChar: 1323
+      endSourceChar: 1307
       line: 41
       lineChar: 12
-      spanCodeSection: 'ray.direction = '
-    - startInstruction: 620
-      endInstruction: 619
+      spanCodeSection: 
+    - startInstruction: 560
+      endInstruction: 559
+      startSourceChar: 1307
+      endSourceChar: 1307
+      line: 41
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 560
+      endInstruction: 559
+      startSourceChar: 1307
+      endSourceChar: 1311
+      line: 41
+      lineChar: 12
+      spanCodeSection: ray.
+    - startInstruction: 560
+      endInstruction: 559
+      startSourceChar: 1311
+      endSourceChar: 1323
+      line: 41
+      lineChar: 16
+      spanCodeSection: 'direction = '
+    - startInstruction: 560
+      endInstruction: 559
       startSourceChar: 1323
       endSourceChar: 1323
       line: 41
       lineChar: 28
       spanCodeSection: 
-    - startInstruction: 620
-      endInstruction: 619
+    - startInstruction: 560
+      endInstruction: 559
       startSourceChar: 1323
       endSourceChar: 1331
       line: 41
       lineChar: 28
       spanCodeSection: Vector3.
-    - startInstruction: 620
-      endInstruction: 659
+    - startInstruction: 560
+      endInstruction: 599
       startSourceChar: 1331
       endSourceChar: 1353
       line: 41
       lineChar: 36
       spanCodeSection: "right;\r\n\r\n            "
-    - startInstruction: 660
-      endInstruction: 659
+    - startInstruction: 600
+      endInstruction: 599
       startSourceChar: 1353
       endSourceChar: 1353
       line: 43
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 660
-      endInstruction: 659
+    - startInstruction: 600
+      endInstruction: 599
       startSourceChar: 1353
       endSourceChar: 1353
       line: 43
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 660
-      endInstruction: 659
+    - startInstruction: 600
+      endInstruction: 599
       startSourceChar: 1353
       endSourceChar: 1353
       line: 43
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 660
-      endInstruction: 659
+    - startInstruction: 600
+      endInstruction: 599
       startSourceChar: 1353
       endSourceChar: 1360
       line: 43
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 660
-      endInstruction: 659
+    - startInstruction: 600
+      endInstruction: 599
       startSourceChar: 1360
       endSourceChar: 1374
       line: 43
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 660
-      endInstruction: 659
+    - startInstruction: 600
+      endInstruction: 599
       startSourceChar: 1374
       endSourceChar: 1394
       line: 43
       lineChar: 33
       spanCodeSection: '"Ray Property Set", '
-    - startInstruction: 660
-      endInstruction: 659
+    - startInstruction: 600
+      endInstruction: 599
       startSourceChar: 1394
       endSourceChar: 1394
       line: 43
       lineChar: 53
       spanCodeSection: 
-    - startInstruction: 660
-      endInstruction: 659
+    - startInstruction: 600
+      endInstruction: 599
       startSourceChar: 1394
       endSourceChar: 1394
       line: 43
       lineChar: 53
       spanCodeSection: 
-    - startInstruction: 660
-      endInstruction: 659
+    - startInstruction: 600
+      endInstruction: 599
       startSourceChar: 1394
       endSourceChar: 1398
       line: 43
       lineChar: 53
       spanCodeSection: ray.
-    - startInstruction: 660
-      endInstruction: 683
+    - startInstruction: 600
+      endInstruction: 623
       startSourceChar: 1398
       endSourceChar: 1411
       line: 43
       lineChar: 57
       spanCodeSection: 'direction == '
-    - startInstruction: 684
-      endInstruction: 683
+    - startInstruction: 624
+      endInstruction: 623
       startSourceChar: 1411
       endSourceChar: 1411
       line: 43
       lineChar: 70
       spanCodeSection: 
-    - startInstruction: 684
-      endInstruction: 683
+    - startInstruction: 624
+      endInstruction: 623
       startSourceChar: 1411
       endSourceChar: 1419
       line: 43
       lineChar: 70
       spanCodeSection: Vector3.
-    - startInstruction: 684
-      endInstruction: 839
+    - startInstruction: 624
+      endInstruction: 779
       startSourceChar: 1419
       endSourceChar: 1540
       line: 43
       lineChar: 78
       spanCodeSection: "right);\r\n        }\r\n\r\n        // Another instance of
         property setters not working that was reported by someone.\r\n        "
-    - startInstruction: 840
-      endInstruction: 847
+    - startInstruction: 780
+      endInstruction: 787
       startSourceChar: 1540
       endSourceChar: 1574
       line: 47
       lineChar: 8
       spanCodeSection: "void TestColorBlockSet()\r\n        "
-    - startInstruction: 848
-      endInstruction: 847
+    - startInstruction: 788
+      endInstruction: 787
       startSourceChar: 1574
       endSourceChar: 1589
       line: 48
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 848
-      endInstruction: 847
+    - startInstruction: 788
+      endInstruction: 787
       startSourceChar: 1589
       endSourceChar: 1589
       line: 49
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 848
-      endInstruction: 847
+    - startInstruction: 788
+      endInstruction: 787
       startSourceChar: 1589
       endSourceChar: 1589
       line: 49
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 848
-      endInstruction: 847
+    - startInstruction: 788
+      endInstruction: 787
       startSourceChar: 1589
       endSourceChar: 1589
       line: 49
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 848
-      endInstruction: 847
+    - startInstruction: 788
+      endInstruction: 787
       startSourceChar: 1589
       endSourceChar: 1605
       line: 49
       lineChar: 12
       spanCodeSection: 'ColorBlock test '
-    - startInstruction: 848
-      endInstruction: 847
+    - startInstruction: 788
+      endInstruction: 787
       startSourceChar: 1605
       endSourceChar: 1607
       line: 49
       lineChar: 28
       spanCodeSection: '= '
-    - startInstruction: 848
-      endInstruction: 847
+    - startInstruction: 788
+      endInstruction: 787
       startSourceChar: 1607
       endSourceChar: 1611
       line: 49
       lineChar: 30
       spanCodeSection: 'new '
-    - startInstruction: 848
-      endInstruction: 867
+    - startInstruction: 788
+      endInstruction: 807
       startSourceChar: 1611
       endSourceChar: 1638
       line: 49
       lineChar: 34
       spanCodeSection: "ColorBlock();\r\n            "
-    - startInstruction: 868
-      endInstruction: 867
+    - startInstruction: 808
+      endInstruction: 807
       startSourceChar: 1638
       endSourceChar: 1638
       line: 50
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 868
-      endInstruction: 867
+    - startInstruction: 808
+      endInstruction: 807
       startSourceChar: 1638
-      endSourceChar: 1657
+      endSourceChar: 1638
       line: 50
       lineChar: 12
-      spanCodeSection: 'test.normalColor = '
-    - startInstruction: 868
-      endInstruction: 867
+      spanCodeSection: 
+    - startInstruction: 808
+      endInstruction: 807
+      startSourceChar: 1638
+      endSourceChar: 1638
+      line: 50
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 808
+      endInstruction: 807
+      startSourceChar: 1638
+      endSourceChar: 1643
+      line: 50
+      lineChar: 12
+      spanCodeSection: test.
+    - startInstruction: 808
+      endInstruction: 807
+      startSourceChar: 1643
+      endSourceChar: 1657
+      line: 50
+      lineChar: 17
+      spanCodeSection: 'normalColor = '
+    - startInstruction: 808
+      endInstruction: 807
       startSourceChar: 1657
       endSourceChar: 1657
       line: 50
       lineChar: 31
       spanCodeSection: 
-    - startInstruction: 868
-      endInstruction: 867
+    - startInstruction: 808
+      endInstruction: 807
       startSourceChar: 1657
       endSourceChar: 1663
       line: 50
       lineChar: 31
       spanCodeSection: Color.
-    - startInstruction: 868
-      endInstruction: 907
+    - startInstruction: 808
+      endInstruction: 847
       startSourceChar: 1663
       endSourceChar: 1685
       line: 50
       lineChar: 37
       spanCodeSection: "green;\r\n\r\n            "
-    - startInstruction: 908
-      endInstruction: 907
+    - startInstruction: 848
+      endInstruction: 847
       startSourceChar: 1685
       endSourceChar: 1685
       line: 52
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 908
-      endInstruction: 907
+    - startInstruction: 848
+      endInstruction: 847
       startSourceChar: 1685
       endSourceChar: 1685
       line: 52
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 908
-      endInstruction: 907
+    - startInstruction: 848
+      endInstruction: 847
       startSourceChar: 1685
       endSourceChar: 1685
       line: 52
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 908
-      endInstruction: 907
+    - startInstruction: 848
+      endInstruction: 847
       startSourceChar: 1685
       endSourceChar: 1692
       line: 52
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 908
-      endInstruction: 907
+    - startInstruction: 848
+      endInstruction: 847
       startSourceChar: 1692
       endSourceChar: 1706
       line: 52
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 908
-      endInstruction: 907
+    - startInstruction: 848
+      endInstruction: 847
       startSourceChar: 1706
       endSourceChar: 1734
       line: 52
       lineChar: 33
       spanCodeSection: '"Color Block Property Set", '
-    - startInstruction: 908
-      endInstruction: 907
+    - startInstruction: 848
+      endInstruction: 847
       startSourceChar: 1734
       endSourceChar: 1734
       line: 52
       lineChar: 61
       spanCodeSection: 
-    - startInstruction: 908
-      endInstruction: 907
+    - startInstruction: 848
+      endInstruction: 847
       startSourceChar: 1734
       endSourceChar: 1734
       line: 52
       lineChar: 61
       spanCodeSection: 
-    - startInstruction: 908
-      endInstruction: 907
+    - startInstruction: 848
+      endInstruction: 847
       startSourceChar: 1734
       endSourceChar: 1739
       line: 52
       lineChar: 61
       spanCodeSection: test.
-    - startInstruction: 908
-      endInstruction: 931
+    - startInstruction: 848
+      endInstruction: 871
       startSourceChar: 1739
       endSourceChar: 1754
       line: 52
       lineChar: 66
       spanCodeSection: 'normalColor == '
-    - startInstruction: 932
-      endInstruction: 931
+    - startInstruction: 872
+      endInstruction: 871
       startSourceChar: 1754
       endSourceChar: 1754
       line: 52
       lineChar: 81
       spanCodeSection: 
-    - startInstruction: 932
-      endInstruction: 931
+    - startInstruction: 872
+      endInstruction: 871
       startSourceChar: 1754
       endSourceChar: 1760
       line: 52
       lineChar: 81
       spanCodeSection: Color.
-    - startInstruction: 932
-      endInstruction: 1087
+    - startInstruction: 872
+      endInstruction: 1027
       startSourceChar: 1760
       endSourceChar: 2007
       line: 52
@@ -1165,239 +1222,239 @@ MonoBehaviour:
       spanCodeSection: "green);\r\n        }\r\n\r\n        // Related to https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/raysetorigin-and-raysetdirection-not-working,
         does not have a dedicated canny. Q ran into the issue so it's hopefully internally
         tracked.\r\n        "
-    - startInstruction: 1088
-      endInstruction: 1095
+    - startInstruction: 1028
+      endInstruction: 1035
       startSourceChar: 2007
       endSourceChar: 2037
       line: 56
       lineChar: 8
       spanCodeSection: "void TestMethodSet()\r\n        "
-    - startInstruction: 1096
-      endInstruction: 1095
+    - startInstruction: 1036
+      endInstruction: 1035
       startSourceChar: 2037
       endSourceChar: 2052
       line: 57
       lineChar: 8
       spanCodeSection: "{\r\n            "
-    - startInstruction: 1096
-      endInstruction: 1095
+    - startInstruction: 1036
+      endInstruction: 1035
       startSourceChar: 2052
       endSourceChar: 2052
       line: 58
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1096
-      endInstruction: 1095
+    - startInstruction: 1036
+      endInstruction: 1035
       startSourceChar: 2052
       endSourceChar: 2052
       line: 58
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1096
-      endInstruction: 1095
+    - startInstruction: 1036
+      endInstruction: 1035
       startSourceChar: 2052
       endSourceChar: 2052
       line: 58
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1096
-      endInstruction: 1095
+    - startInstruction: 1036
+      endInstruction: 1035
       startSourceChar: 2052
       endSourceChar: 2067
       line: 58
       lineChar: 12
       spanCodeSection: 'Vector3 vector '
-    - startInstruction: 1096
-      endInstruction: 1095
+    - startInstruction: 1036
+      endInstruction: 1035
       startSourceChar: 2067
       endSourceChar: 2069
       line: 58
       lineChar: 27
       spanCodeSection: '= '
-    - startInstruction: 1096
-      endInstruction: 1095
+    - startInstruction: 1036
+      endInstruction: 1035
       startSourceChar: 2069
       endSourceChar: 2073
       line: 58
       lineChar: 29
       spanCodeSection: 'new '
-    - startInstruction: 1096
-      endInstruction: 1095
+    - startInstruction: 1036
+      endInstruction: 1035
       startSourceChar: 2073
       endSourceChar: 2081
       line: 58
       lineChar: 33
       spanCodeSection: Vector3(
-    - startInstruction: 1096
-      endInstruction: 1095
+    - startInstruction: 1036
+      endInstruction: 1035
       startSourceChar: 2081
       endSourceChar: 2081
       line: 58
       lineChar: 41
       spanCodeSection: 
-    - startInstruction: 1096
-      endInstruction: 1095
+    - startInstruction: 1036
+      endInstruction: 1035
       startSourceChar: 2081
       endSourceChar: 2084
       line: 58
       lineChar: 41
       spanCodeSection: '1, '
-    - startInstruction: 1096
-      endInstruction: 1095
+    - startInstruction: 1036
+      endInstruction: 1035
       startSourceChar: 2084
       endSourceChar: 2084
       line: 58
       lineChar: 44
       spanCodeSection: 
-    - startInstruction: 1096
-      endInstruction: 1095
+    - startInstruction: 1036
+      endInstruction: 1035
       startSourceChar: 2084
       endSourceChar: 2087
       line: 58
       lineChar: 44
       spanCodeSection: '2, '
-    - startInstruction: 1096
-      endInstruction: 1095
+    - startInstruction: 1036
+      endInstruction: 1035
       startSourceChar: 2087
       endSourceChar: 2087
       line: 58
       lineChar: 47
       spanCodeSection: 
-    - startInstruction: 1096
-      endInstruction: 1227
+    - startInstruction: 1036
+      endInstruction: 1147
       startSourceChar: 2087
       endSourceChar: 2104
       line: 58
       lineChar: 47
       spanCodeSection: "3);\r\n            "
-    - startInstruction: 1228
-      endInstruction: 1227
+    - startInstruction: 1148
+      endInstruction: 1147
       startSourceChar: 2104
       endSourceChar: 2104
       line: 59
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1228
-      endInstruction: 1227
+    - startInstruction: 1148
+      endInstruction: 1147
       startSourceChar: 2104
       endSourceChar: 2104
       line: 59
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1228
-      endInstruction: 1227
+    - startInstruction: 1148
+      endInstruction: 1147
       startSourceChar: 2104
       endSourceChar: 2104
       line: 59
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1228
-      endInstruction: 1227
+    - startInstruction: 1148
+      endInstruction: 1147
       startSourceChar: 2104
       endSourceChar: 2111
       line: 59
       lineChar: 12
       spanCodeSection: vector.
-    - startInstruction: 1228
-      endInstruction: 1243
+    - startInstruction: 1148
+      endInstruction: 1163
       startSourceChar: 2111
       endSourceChar: 2139
       line: 59
       lineChar: 19
       spanCodeSection: "Normalize();\r\n\r\n            "
-    - startInstruction: 1244
-      endInstruction: 1243
+    - startInstruction: 1164
+      endInstruction: 1163
       startSourceChar: 2139
       endSourceChar: 2139
       line: 61
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1244
-      endInstruction: 1243
+    - startInstruction: 1164
+      endInstruction: 1163
       startSourceChar: 2139
       endSourceChar: 2139
       line: 61
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1244
-      endInstruction: 1243
+    - startInstruction: 1164
+      endInstruction: 1163
       startSourceChar: 2139
       endSourceChar: 2139
       line: 61
       lineChar: 12
       spanCodeSection: 
-    - startInstruction: 1244
-      endInstruction: 1243
+    - startInstruction: 1164
+      endInstruction: 1163
       startSourceChar: 2139
       endSourceChar: 2146
       line: 61
       lineChar: 12
       spanCodeSection: tester.
-    - startInstruction: 1244
-      endInstruction: 1243
+    - startInstruction: 1164
+      endInstruction: 1163
       startSourceChar: 2146
       endSourceChar: 2160
       line: 61
       lineChar: 19
       spanCodeSection: TestAssertion(
-    - startInstruction: 1244
-      endInstruction: 1243
+    - startInstruction: 1164
+      endInstruction: 1163
       startSourceChar: 2160
       endSourceChar: 2181
       line: 61
       lineChar: 33
       spanCodeSection: '"Vector Method Set", '
-    - startInstruction: 1244
-      endInstruction: 1243
+    - startInstruction: 1164
+      endInstruction: 1163
       startSourceChar: 2181
       endSourceChar: 2181
       line: 61
       lineChar: 54
       spanCodeSection: 
-    - startInstruction: 1244
-      endInstruction: 1243
+    - startInstruction: 1164
+      endInstruction: 1163
       startSourceChar: 2181
       endSourceChar: 2181
       line: 61
       lineChar: 54
       spanCodeSection: 
-    - startInstruction: 1244
-      endInstruction: 1243
+    - startInstruction: 1164
+      endInstruction: 1163
       startSourceChar: 2181
       endSourceChar: 2187
       line: 61
       lineChar: 54
       spanCodeSection: Mathf.
-    - startInstruction: 1244
-      endInstruction: 1243
+    - startInstruction: 1164
+      endInstruction: 1163
       startSourceChar: 2187
       endSourceChar: 2201
       line: 61
       lineChar: 60
       spanCodeSection: Approximately(
-    - startInstruction: 1244
-      endInstruction: 1243
+    - startInstruction: 1164
+      endInstruction: 1163
       startSourceChar: 2201
       endSourceChar: 2201
       line: 61
       lineChar: 74
       spanCodeSection: 
-    - startInstruction: 1244
-      endInstruction: 1243
+    - startInstruction: 1164
+      endInstruction: 1163
       startSourceChar: 2201
       endSourceChar: 2208
       line: 61
       lineChar: 74
       spanCodeSection: vector.
-    - startInstruction: 1244
-      endInstruction: 1267
+    - startInstruction: 1164
+      endInstruction: 1187
       startSourceChar: 2208
       endSourceChar: 2219
       line: 61
       lineChar: 81
       spanCodeSection: 'magnitude, '
-    - startInstruction: 1268
-      endInstruction: 1268
+    - startInstruction: 1188
+      endInstruction: 1188
       startSourceChar: 2219
       endSourceChar: 2219
       line: 61
