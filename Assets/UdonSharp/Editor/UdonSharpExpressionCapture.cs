@@ -69,8 +69,23 @@ namespace UdonSharp
         // Note that this is only a cache used to help with cleanup, and is not considered to be the value of the object
         // (and therefore is not inherited).
         private SymbolDefinition.COWValue cowValue = null;
+        
+        private SymbolDefinition _accessSymbol = null;
+        public SymbolDefinition accessSymbol
+        {
+            get
+            {
+                if (accessValue != null)
+                    return accessValue.symbol;
 
-        public SymbolDefinition accessSymbol { get; private set; } = null;
+                return _accessSymbol;
+            }
+            private set
+            {
+                accessValue = null;
+                _accessSymbol = value;
+            }
+        }
 
         private SymbolDefinition.COWValue _accessValue = null;
         public SymbolDefinition.COWValue accessValue {
@@ -86,6 +101,7 @@ namespace UdonSharp
                 if (value != null)
                 {
                     _accessValue = value.AddRef();
+                    _accessSymbol = null;
                 }
                 else
                 {
@@ -220,14 +236,13 @@ namespace UdonSharp
             captureLocalSymbol = childScope.captureLocalSymbol;
             captureProperty = childScope.captureProperty;
             captureType = childScope.captureType;
-            accessSymbol = childScope.accessSymbol;
-            accessValue = childScope.accessValue;
+            accessSymbol = childScope._accessSymbol;
+            _accessValue = childScope._accessValue?.AddRef();
             captureEnum = childScope.captureEnum;
             arrayIndexerIndexValue = childScope.arrayIndexerIndexValue;
             captureLocalMethod = childScope.captureLocalMethod;
             captureExternUserField = childScope.captureExternUserField;
             captureExternUserMethod = childScope.captureExternUserMethod;
-            InternalMethodHandler = childScope.InternalMethodHandler;
             unresolvedAccessChain = childScope.unresolvedAccessChain;
         }
 
@@ -2162,7 +2177,7 @@ namespace UdonSharp
             _accessValue = ExecuteGetCOW(); // implicitly adds refcount
             cowValue = null; // Move ownership to accessValue here
 
-            accessSymbol = null;
+            _accessSymbol = null;
 
             captureArchetype = ExpressionCaptureArchetype.ArrayIndexer;
             // If we didn't need to cast, use the original symbol's COW value as-is.
