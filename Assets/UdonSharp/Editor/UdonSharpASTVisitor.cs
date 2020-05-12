@@ -993,19 +993,18 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
-            //visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
+            bool isSimpleAssignment = node.OperatorToken.Kind() == SyntaxKind.SimpleAssignmentExpression || node.OperatorToken.Kind() == SyntaxKind.EqualsToken;
+            ExpressionCaptureScope topScope = visitorContext.topCaptureScope;
 
             SymbolDefinition rhsValue = null;
 
             // Set parent to allow capture propagation for stuff like x = y = z;
-            using (ExpressionCaptureScope lhsCapture = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
+            using (ExpressionCaptureScope lhsCapture = new ExpressionCaptureScope(visitorContext, isSimpleAssignment ? topScope : null))
             {
                 Visit(node.Left);
 
                 // Done before anything modifies the state of the lhsCapture which will make this turn false
                 bool needsCopy = lhsCapture.NeedsArrayCopySet();
-
-                bool isSimpleAssignment = node.OperatorToken.Kind() == SyntaxKind.SimpleAssignmentExpression || node.OperatorToken.Kind() == SyntaxKind.EqualsToken;
 
                 using (ExpressionCaptureScope rhsCapture = new ExpressionCaptureScope(visitorContext, null, isSimpleAssignment ? lhsCapture.destinationSymbolForSet : null))
                 {
@@ -1070,30 +1069,33 @@ namespace UdonSharp
                     using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null))
                     {
                         operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
-                        
+
                         SymbolDefinition resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { lhsCapture.ExecuteGet(), rhsValue });
 
-                        if (needsCopy)
+                        using (ExpressionCaptureScope resultPropagationScope = new ExpressionCaptureScope(visitorContext, topScope))
                         {
-                            // Create a new set scope to maintain array setter handling for structs
-                            using (ExpressionCaptureScope lhsSetScope = new ExpressionCaptureScope(visitorContext, null))
-                            {
-                                Visit(node.Left);
+                            resultPropagationScope.SetToLocalSymbol(resultSymbol);
 
-                                // In place arithmetic operators for lower precision types will return int, but C# will normally cast the result back to the target type, so do a force cast here
-                                lhsSetScope.ExecuteSet(resultSymbol, true);
+                            if (needsCopy)
+                            {
+                                // Create a new set scope to maintain array setter handling for structs
+                                using (ExpressionCaptureScope lhsSetScope = new ExpressionCaptureScope(visitorContext, null))
+                                {
+                                    Visit(node.Left);
+
+                                    // In place arithmetic operators for lower precision types will return int, but C# will normally cast the result back to the target type, so do a force cast here
+                                    lhsSetScope.ExecuteSet(resultSymbol, true);
+                                }
                             }
-                        }
-                        else
-                        {
-                            // In place arithmetic operators for lower precision types will return int, but C# will normally cast the result back to the target type, so do a force cast here
-                            lhsCapture.ExecuteSet(resultSymbol, true);
+                            else
+                            {
+                                // In place arithmetic operators for lower precision types will return int, but C# will normally cast the result back to the target type, so do a force cast here
+                                lhsCapture.ExecuteSet(resultSymbol, true);
+                            }
                         }
                     }
                 }
             }
-
-            //visitorContext.PopTable();
         }
 
         public override void VisitPrefixUnaryExpression(PrefixUnaryExpressionSyntax node)

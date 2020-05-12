@@ -40,6 +40,10 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Struct array increment assignment in place", (vecArray[0].x += 1f) == 9f);
             tester.TestAssertion("Struct array increment assignment in place after assignment", vecArray[0].x == 9f);
 
+            float result = vecArray[0].x += 3f;
+
+            tester.TestAssertion("Struct array increment assignment in place result", result == 12f);
+
             int[] intArray = new int[2];
 
             intArray[1] += 4;
