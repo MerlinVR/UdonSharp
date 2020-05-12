@@ -63,6 +63,17 @@ namespace UdonSharp.Tests
             long typeID = GetUdonTypeID<ArrayTest>();
             tester.TestAssertion("Udon Type ID array access", typeID == selfArrayTest[0].GetUdonTypeID());
 
+            float[][] floatJaggedArray = new float[][] { new[] { 1f, 2f }, new[] { 3f, 4, 5 } };
+
+            tester.TestAssertion("Jagged array access", floatJaggedArray[0][0] == 1f && floatJaggedArray[0][1] == 2f && floatJaggedArray[1][0] == 3f && floatJaggedArray[1][1] == 4f && floatJaggedArray[1][2] == 5f);
+
+            tester.TestAssertion("Jagged array in-place increment", (floatJaggedArray[0][1] += 2f) == 4f);
+            tester.TestAssertion("Jagged array in-place increment after assignment", floatJaggedArray[0][1] == 4f);
+
+            ArrayTest[][] userTypeJaggedArray = new ArrayTest[][] { new ArrayTest[] { this, this }, new [] { this } };
+            userTypeJaggedArray[1][0] = null;
+
+            tester.TestAssertion("User type jagged array", userTypeJaggedArray[0][0] == this && userTypeJaggedArray[0][1] == this && userTypeJaggedArray[1][0] == null);
         }
     }
 }
