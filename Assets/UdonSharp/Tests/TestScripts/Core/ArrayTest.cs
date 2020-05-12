@@ -36,6 +36,15 @@ namespace UdonSharp.Tests
             Vector3[] vecArray = new Vector3[] { new Vector2(4, 5f) };
             vecArray[0].x += 4;
             tester.TestAssertion("Struct array increment assignment", vecArray[0].x == 8f);
+            
+            tester.TestAssertion("Struct array increment assignment in place", (vecArray[0].x += 1f) == 9f);
+            tester.TestAssertion("Struct array increment assignment in place after assignment", vecArray[0].x == 9f);
+
+            int[] intArray = new int[2];
+
+            intArray[1] += 4;
+            tester.TestAssertion("Int array increment assignment", intArray[1] == 4);
+            tester.TestAssertion("Int array increment assignment in place", (intArray[1] += 4) == 8);
 
             ArrayTest[] selfArrayTest = new[] { this };
 
