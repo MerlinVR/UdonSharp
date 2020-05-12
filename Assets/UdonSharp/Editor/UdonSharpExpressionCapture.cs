@@ -101,6 +101,7 @@ namespace UdonSharp
                 if (value != null)
                 {
                     _accessValue = value.AddRef();
+                    _accessSymbol = null;
                 }
                 else
                 {
