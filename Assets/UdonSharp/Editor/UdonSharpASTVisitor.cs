@@ -862,7 +862,7 @@ namespace UdonSharp
 
                     // Run the initializer if it exists
                     // Todo: Run the set on the new symbol scope from within the initializer scope for direct setting
-                    if (variableDeclarator.Initializer != null && symbolType == SymbolDeclTypeFlags.Local)
+                    if (variableDeclarator.Initializer != null && symbolType.HasFlag(SymbolDeclTypeFlags.Local))
                     {
                         using (ExpressionCaptureScope initializerCapture = new ExpressionCaptureScope(visitorContext, null, newSymbol))
                         {
@@ -2205,8 +2205,7 @@ namespace UdonSharp
             {
                 incrementExecuteScope.SetToMethods(GetOperators(typeof(int), BuiltinOperatorType.Addition));
                 SymbolDefinition constIntIncrement = visitorContext.topTable.CreateConstSymbol(typeof(int), 1);
-
-                // This should be a direct set, but I haven't implemented that yet so we do a wasteful copy here
+                
                 SymbolDefinition incrementResultSymbol = incrementExecuteScope.Invoke(new SymbolDefinition[] { indexSymbol, constIntIncrement });
 
                 using (ExpressionCaptureScope indexSetScope = new ExpressionCaptureScope(visitorContext, null))
