@@ -193,6 +193,12 @@ namespace UdonSharp
         static void PlayModeErrorCheck(PlayModeStateChange state)
         {
             // Prevent people from entering play mode when there are compile errors, like normal Unity C#
+            // READ ME
+            // --------
+            // If you think you know better and are about to edit this out, be aware that you gain nothing by doing so. 
+            // If a script hits a compile error, it will not update until the compile errors are resolved.
+            // You will just be left wondering "why aren't my scripts changing when I edit them?" since the old copy of the script will be used until the compile errors are resolved.
+            // --------
             if (state == PlayModeStateChange.EnteredPlayMode || state == PlayModeStateChange.ExitingEditMode)
             {
                 string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
