@@ -1,14 +1,12 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Profiling;
+using static UdonSharp.UdonSharpCompiler;
 
 namespace UdonSharp
 {
@@ -20,6 +18,7 @@ namespace UdonSharp
     {
         public UdonSharpProgramAsset programAsset { get; private set; }
         private string sourceCode;
+        UdonSharpSettings settings;
 
         public ResolverContext resolver { get; private set; }
         public SymbolTable moduleSymbols { get; private set; }
@@ -38,22 +37,24 @@ namespace UdonSharp
             moduleSymbols = new SymbolTable(resolver, null);
             moduleLabels = new LabelTable();
             fieldsWithInitializers = new HashSet<FieldDeclarationSyntax>();
-        }
 
-        public int Compile(List<ClassDefinition> classDefinitions)
-        {
             if (programAsset.sourceCsScript == null)
                 throw new System.ArgumentException($"Asset '{AssetDatabase.GetAssetPath(programAsset)}' does not have a valid program source to compile from");
 
-            Profiler.BeginSample("Compile Module");
-
-            programAsset.compileErrors.Clear();
 
             sourceCode = UdonSharpUtils.ReadFileTextSync(AssetDatabase.GetAssetPath(programAsset.sourceCsScript));
+            
+            settings = UdonSharpSettings.GetSettings();
+        }
 
-            Profiler.BeginSample("Parse AST");
+        public CompileTaskResult Compile(List<ClassDefinition> classDefinitions)
+        {
+            programAsset.compileErrors.Clear();
+            
             SyntaxTree tree = CSharpSyntaxTree.ParseText(sourceCode);
-            Profiler.EndSample();
+
+            CompileTaskResult result = new CompileTaskResult();
+            result.programAsset = programAsset;
 
             int errorCount = 0;
 
@@ -78,19 +79,15 @@ namespace UdonSharp
 
             if (errorCount > 0)
             {
-                ErrorCount = errorCount;
-                Profiler.EndSample();
-                return errorCount;
+                result.compileErrorCount = errorCount;
+                return result;
             }
-
-            Profiler.BeginSample("Visit");
+            
             UdonSharpFieldVisitor fieldVisitor = new UdonSharpFieldVisitor(fieldsWithInitializers);
             fieldVisitor.Visit(tree.GetRoot());
 
             MethodVisitor methodVisitor = new MethodVisitor(resolver, moduleSymbols, moduleLabels);
             methodVisitor.Visit(tree.GetRoot());
-
-            UdonSharpSettings settings = UdonSharpSettings.GetSettings();
 
             ClassDebugInfo debugInfo = null;
 
@@ -105,10 +102,6 @@ namespace UdonSharp
             {
                 visitor.Visit(tree.GetRoot());
                 visitor.VerifyIntegrity();
-                foreach (SymbolDefinition d in visitor.visitorContext.topTable.GetAllSymbols(true))
-                {
-                    d.AssertCOWClosed();
-                }
             }
             catch (System.Exception e)
             {
@@ -139,22 +132,23 @@ namespace UdonSharp
 
                 errorCount++;
             }
-            Profiler.EndSample();
+
+            if (errorCount > 0)
+            {
+                result.compileErrorCount = errorCount;
+                return result;
+            }
 
             if (errorCount == 0)
             {
                 compiledClassDefinition = classDefinitions.Find(e => e.userClassType == visitor.visitorContext.behaviourUserType);
 
-                Profiler.BeginSample("Build assembly");
                 string dataBlock = BuildHeapDataBlock();
                 string codeBlock = visitor.GetCompiledUasm();
 
-                programAsset.SetUdonAssembly(dataBlock + codeBlock);
-                Profiler.EndSample();
-                
-                Profiler.BeginSample("Assemble Program");
-                programAsset.AssembleCsProgram((uint)(moduleSymbols.GetAllUniqueChildSymbols().Count + visitor.GetExternStrCount()));
-                Profiler.EndSample();
+                result.compiledAssembly = dataBlock + codeBlock;
+                result.symbolCount = (uint)(moduleSymbols.GetAllUniqueChildSymbols().Count + visitor.GetExternStrCount());
+
                 programAsset.behaviourIDHeapVarName = visitor.GetIDHeapVarName();
 
                 programAsset.fieldDefinitions = visitor.visitorContext.localFieldDefinitions;
@@ -165,9 +159,7 @@ namespace UdonSharp
                 programAsset.debugInfo = debugInfo;
             }
 
-            Profiler.EndSample();
-
-            return errorCount;
+            return result;
         }
 
         private string BuildHeapDataBlock()

@@ -1,10 +1,12 @@
 ﻿using System.CodeDom;
 using System.CodeDom.Compiler;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -18,6 +20,14 @@ namespace UdonSharp
 {
     public class UdonSharpCompiler
     {
+        public class CompileTaskResult
+        {
+            public UdonSharpProgramAsset programAsset;
+            public string compiledAssembly;
+            public uint symbolCount;
+            public int compileErrorCount;
+        }
+
         private CompilationModule[] modules;
 
         private static int initAssemblyCounter = 0;
@@ -40,7 +50,9 @@ namespace UdonSharp
             compileTimer.Start();
 
             int totalErrorCount = 0;
-            int moduleCounter = 0;
+            //int moduleCounter = 0;
+
+            ConcurrentBag<CompileTaskResult> compileTaskResults = new ConcurrentBag<CompileTaskResult>();
 
             try
             {
@@ -50,18 +62,35 @@ namespace UdonSharp
 
                 if (totalErrorCount == 0)
                 {
-                    foreach (CompilationModule module in modules)
-                    {
-                        EditorUtility.DisplayProgressBar("UdonSharp Compile",
-                                                        $"Compiling {AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript)}...",
-                                                        Mathf.Clamp01((moduleCounter++ / (float)modules.Length) + Random.Range(0.01f, 1f / modules.Length))); // Make it look like we're doing work :D
+                    //foreach (CompilationModule module in modules)
+                    //{
+                    //    EditorUtility.DisplayProgressBar("UdonSharp Compile",
+                    //                                    $"Compiling {AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript)}...",
+                    //                                    Mathf.Clamp01((moduleCounter++ / (float)modules.Length) + Random.Range(0.01f, 1f / modules.Length))); // Make it look like we're doing work :D
 
-                        int moduleErrorCount = module.Compile(classDefinitions);
-                        totalErrorCount += moduleErrorCount;
+                    //    compileTaskResults.Add(module.Compile(classDefinitions));
+                    //}
+
+                    object progressBarLock = new object();
+
+                    Parallel.ForEach(modules, (module) =>
+                    {
+                        compileTaskResults.Add(module.Compile(classDefinitions));
+                    });
+
+                    foreach (CompileTaskResult taskResult in compileTaskResults)
+                    {
+                        totalErrorCount += taskResult.compileErrorCount;
                     }
 
                     if (totalErrorCount == 0)
                     {
+                        foreach (CompileTaskResult taskResult in compileTaskResults)
+                        {
+                            taskResult.programAsset.SetUdonAssembly(taskResult.compiledAssembly);
+                            taskResult.programAsset.AssembleCsProgram(taskResult.symbolCount);
+                        }
+
                         EditorUtility.DisplayProgressBar("UdonSharp Compile", "Assigning constants...", 1f);
                         int initializerErrorCount = AssignHeapConstants();
                         totalErrorCount += initializerErrorCount;

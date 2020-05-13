@@ -124,6 +124,11 @@ namespace UdonSharp
         {
             // Right now just check that the capture scopes are empty and no one failed to close a scope.
             Debug.Assert(visitorContext.topCaptureScope == null, "AST visitor capture scope state invalid!");
+            
+            foreach (SymbolDefinition d in visitorContext.topTable.GetAllSymbols(true))
+            {
+                d.AssertCOWClosed();
+            }
         }
 
         public string GetCompiledUasm()

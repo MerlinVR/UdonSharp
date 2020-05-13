@@ -25,7 +25,7 @@ namespace UdonSharp
 
     public class ResolverContext
     {
-        public HashSet<string> usingNamespaces { get; private set; }
+        public HashSet<string> usingNamespaces { get; private set; } = new HashSet<string>() { "" }; // Add a blank namespace in case the type is already fully qualified, this is used in ResolveExternType() and ResolveExternMethod()
 
         private static readonly IReadOnlyDictionary<string, string> builtinTypeAliasMap = new Dictionary<string, string>()
         {
@@ -47,47 +47,56 @@ namespace UdonSharp
             { "void", "System.Void" } // void might need to be revisited since it could mess with something
         };
 
-        private Dictionary<string, System.Type> typeLookupCache;
+        private Dictionary<string, System.Type> typeLookupCache = new Dictionary<string, System.Type>();
 
         private static HashSet<string> nodeDefinitionLookup;
 
         private static Dictionary<string, string> builtinEventLookup;
+        private static bool cacheInitRan = false;
+        static object cacheInitLock = new object();
+
+        public static void CacheInit()
+        {
+            if (cacheInitRan)
+                return;
+
+            lock (cacheInitLock)
+            {
+                if (cacheInitRan)
+                    return;
+
+                if (nodeDefinitionLookup == null)
+                {
+                    nodeDefinitionLookup = new HashSet<string>(UdonEditorManager.Instance.GetNodeDefinitions().Select(e => e.fullName));
+                }
+
+                if (builtinEventLookup == null)
+                {
+                    builtinEventLookup = new Dictionary<string, string>();
+
+                    foreach (UdonNodeDefinition nodeDefinition in UdonEditorManager.Instance.GetNodeDefinitions("Event_"))
+                    {
+                        if (nodeDefinition.fullName == "Event_Custom")
+                            continue;
+
+                        string eventNameStr = nodeDefinition.fullName.Substring(6);
+                        char[] eventName = eventNameStr.ToCharArray();
+                        eventName[0] = char.ToLowerInvariant(eventName[0]);
+
+                        builtinEventLookup.Add(eventNameStr, "_" + new string(eventName));
+                    }
+                }
+
+                cacheInitRan = true;
+            }
+        }
 
         public ResolverContext()
         {
-            usingNamespaces = new HashSet<string>();
-            usingNamespaces.Add(""); // Add a blank namespace in case the type is already fully qualified, this is used in ResolveExternType() and ResolveExternMethod()
+            CacheInit();
 
-            typeLookupCache = new Dictionary<string, System.Type>();
-
-            if (nodeDefinitionLookup == null)
-            {
-                nodeDefinitionLookup = new HashSet<string>();
-
-                foreach (UdonNodeDefinition nodeDefinition in UdonEditorManager.Instance.GetNodeDefinitions())
-                {
-                    nodeDefinitionLookup.Add(nodeDefinition.fullName);
-                }
-
-                //nodeDefinitionLookup.UnionWith(UdonEditorManager.Instance.GetNodeDefinitions().Select(e => e.fullName));
-            }
-
-            if (builtinEventLookup == null)
-            {
-                builtinEventLookup = new Dictionary<string, string>();
-
-                foreach (UdonNodeDefinition nodeDefinition in UdonEditorManager.Instance.GetNodeDefinitions("Event_"))
-                {
-                    if (nodeDefinition.fullName == "Event_Custom")
-                        continue;
-
-                    string eventNameStr = nodeDefinition.fullName.Substring(6);
-                    char[] eventName = eventNameStr.ToCharArray();
-                    eventName[0] = char.ToLowerInvariant(eventName[0]);
-
-                    builtinEventLookup.Add(eventNameStr, "_" + new string(eventName));
-                }
-            }
+            if (!cacheInitRan)
+                throw new System.Exception("Type cache must be initialized before you can construct a ResolverContext");
         }
 
         public void AddNamespace(string namespaceToAdd)

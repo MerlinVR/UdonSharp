@@ -163,6 +163,8 @@ namespace UdonSharp
 
         // Namespace lookup to check if something is a namespace
         private static HashSet<string> allLinkedNamespaces;
+        private static bool namespacesInit = false;
+        private static object namespaceLock = new object();
 
         // The current visitor context
         ASTVisitorContext visitorContext;
@@ -173,14 +175,22 @@ namespace UdonSharp
 
         private void FindValidNamespaces()
         {
-            if (allLinkedNamespaces != null)
+            if (namespacesInit)
                 return;
 
-            allLinkedNamespaces = new HashSet<string>();
-
-            foreach (Assembly assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            lock (namespaceLock)
             {
-                allLinkedNamespaces.UnionWith(assembly.GetTypes().Select(e => e.Namespace).Distinct());
+                if (namespacesInit)
+                    return;
+
+                allLinkedNamespaces = new HashSet<string>();
+
+                foreach (Assembly assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    allLinkedNamespaces.UnionWith(assembly.GetTypes().Select(e => e.Namespace).Distinct());
+                }
+
+                namespacesInit = true;
             }
         }
 
