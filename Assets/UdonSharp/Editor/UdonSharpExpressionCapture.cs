@@ -515,21 +515,25 @@ namespace UdonSharp
             return outSymbol;
         }
 
-        public SymbolDefinition destinationSymbolForSet { 
+        public SymbolDefinition destinationSymbolForSet
+        { 
             get
             {
                 if (captureArchetype == ExpressionCaptureArchetype.LocalSymbol)
                 {
-                    if (captureLocalSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) || captureLocalSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.This))
-                        return null;
+                    if (captureLocalSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant))
+                        throw new System.Exception("Cannot execute set on constant symbols");
+                    else if (captureLocalSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.This))
+                        throw new System.Exception("Cannot execute set on `this` symbols");
 
                     return captureLocalSymbol;
-                } else
+                }
+                else
                 {
                     return null;
                 }
             } 
-        }
+        } 
 
         public void ExecuteSet(SymbolDefinition value, bool explicitCast = false)
         {
