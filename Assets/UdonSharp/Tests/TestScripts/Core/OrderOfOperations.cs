@@ -24,6 +24,11 @@ namespace UdonSharp.Tests
             return index;
         }
 
+        private uint ROTRIGHT(uint a, int b)
+        {
+            return (a >> b) | (a << 32 - b);
+        }
+
         public void ExecuteTests()
         {
             int a = 1;
@@ -79,6 +84,9 @@ namespace UdonSharp.Tests
             // should not exception
             intArray[0] = self.overwriteArrayFields(0);
             tester.TestAssertion("Clearing array field by non-local function while write is pending", true);
+
+            uint x = 3;
+            tester.TestAssertion("Local function return values", (ROTRIGHT(x, 3) ^ ROTRIGHT(x, 18)) == 1610661888);
         }
     }
 }
