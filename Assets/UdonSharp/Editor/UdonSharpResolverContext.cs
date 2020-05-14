@@ -53,7 +53,7 @@ namespace UdonSharp
 
         private static Dictionary<string, string> builtinEventLookup;
         private static bool cacheInitRan = false;
-        static object cacheInitLock = new object();
+        private static readonly object cacheInitLock = new object();
 
         public static void CacheInit()
         {
@@ -222,6 +222,7 @@ namespace UdonSharp
         }
 
         private static List<Assembly> loadedAssemblyCache = null;
+        private static readonly object assemblyCacheLock = new object();
         
         public System.Type ResolveExternType(string qualifiedTypeName)
         {
@@ -260,14 +261,20 @@ namespace UdonSharp
                 {
                     if (loadedAssemblyCache == null)
                     {
-                        loadedAssemblyCache = System.AppDomain.CurrentDomain.GetAssemblies()
-                            .OrderBy(e =>
-                                e.GetName().Name.Contains("UnityEngine") ||
-                                e.GetName().Name.Contains("System") || 
-                                e.GetName().Name.Contains("VRC") ||
-                                e.GetName().Name.Contains("Udon") || 
-                                e.GetName().Name.Contains("Assembly-CSharp") ||
-                                e.GetName().Name.Contains("mscorlib")).Reverse().ToList();
+                        lock (assemblyCacheLock)
+                        {
+                            if (loadedAssemblyCache == null)
+                            {
+                                loadedAssemblyCache = System.AppDomain.CurrentDomain.GetAssemblies()
+                                    .OrderBy(e =>
+                                        e.GetName().Name.Contains("UnityEngine") ||
+                                        e.GetName().Name.Contains("System") ||
+                                        e.GetName().Name.Contains("VRC") ||
+                                        e.GetName().Name.Contains("Udon") ||
+                                        e.GetName().Name.Contains("Assembly-CSharp") ||
+                                        e.GetName().Name.Contains("mscorlib")).Reverse().ToList();
+                            }
+                        }
                     }
                     
                     foreach (Assembly assembly in loadedAssemblyCache)
@@ -295,21 +302,28 @@ namespace UdonSharp
         }
 
         private static Dictionary<System.Type, System.Type> inheritedTypeMap = null;
+        private readonly static object inheritedTypeMapLock = new object();
 
         private Dictionary<System.Type, System.Type> GetInheritedTypeMap()
         {
             if (inheritedTypeMap != null)
                 return inheritedTypeMap;
 
-            inheritedTypeMap = new Dictionary<System.Type, System.Type>();
-
-            IEnumerable<System.Type> typeList = System.AppDomain.CurrentDomain.GetAssemblies().SelectMany(t => t.GetTypes()).Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
-
-            foreach (System.Type childType in typeList)
+            lock (inheritedTypeMapLock)
             {
-                if (childType.BaseType != null && childType.BaseType.Namespace.StartsWith("VRC.SDKBase"))
+                if (inheritedTypeMap != null)
+                    return inheritedTypeMap;
+
+                inheritedTypeMap = new Dictionary<System.Type, System.Type>();
+
+                IEnumerable<System.Type> typeList = System.AppDomain.CurrentDomain.GetAssemblies().SelectMany(t => t.GetTypes()).Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
+
+                foreach (System.Type childType in typeList)
                 {
-                    inheritedTypeMap.Add(childType.BaseType, childType);
+                    if (childType.BaseType != null && childType.BaseType.Namespace.StartsWith("VRC.SDKBase"))
+                    {
+                        inheritedTypeMap.Add(childType.BaseType, childType);
+                    }
                 }
             }
 

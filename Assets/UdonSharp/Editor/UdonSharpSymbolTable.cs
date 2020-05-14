@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using UnityEngine;
 using VRC.Udon.Serialization.OdinSerializer;
 
@@ -135,7 +136,7 @@ namespace UdonSharp
         {
             static int index = 0;
 
-            public int instanceIndex = index++;
+            public int instanceIndex = Interlocked.Increment(ref index);
 
             public AssemblyBuilder assemblyBuilder;
 
