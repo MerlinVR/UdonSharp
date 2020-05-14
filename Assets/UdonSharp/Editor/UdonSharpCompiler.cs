@@ -50,9 +50,6 @@ namespace UdonSharp
             compileTimer.Start();
 
             int totalErrorCount = 0;
-            //int moduleCounter = 0;
-
-            ConcurrentBag<CompileTaskResult> compileTaskResults = new ConcurrentBag<CompileTaskResult>();
 
             try
             {
@@ -62,35 +59,41 @@ namespace UdonSharp
 
                 if (totalErrorCount == 0)
                 {
-                    //foreach (CompilationModule module in modules)
-                    //{
-                    //    EditorUtility.DisplayProgressBar("UdonSharp Compile",
-                    //                                    $"Compiling {AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript)}...",
-                    //                                    Mathf.Clamp01((moduleCounter++ / (float)modules.Length) + Random.Range(0.01f, 1f / modules.Length))); // Make it look like we're doing work :D
+                    List<Task<CompileTaskResult>> compileTasks = new List<Task<CompileTaskResult>>();
 
-                    //    compileTaskResults.Add(module.Compile(classDefinitions));
-                    //}
-
-                    object progressBarLock = new object();
-
-                    Parallel.ForEach(modules, (module) =>
+                    foreach (CompilationModule module in modules)
                     {
-                        compileTaskResults.Add(module.Compile(classDefinitions));
-                    });
+                        compileTasks.Add(Task.Factory.StartNew(() => module.Compile(classDefinitions)));
+                    }
 
-                    foreach (CompileTaskResult taskResult in compileTaskResults)
+                    int totalTaskCount = compileTasks.Count;
+
+                    while (compileTasks.Count > 0)
                     {
-                        totalErrorCount += taskResult.compileErrorCount;
+                        Task<CompileTaskResult> compileResultTask = Task.WhenAny(compileTasks).Result;
+                        compileTasks.Remove(compileResultTask);
+
+                        CompileTaskResult compileResult = compileResultTask.Result;
+
+                        if (compileResult.compileErrorCount == 0)
+                        {
+                            compileResult.programAsset.SetUdonAssembly(compileResult.compiledAssembly);
+                            compileResult.programAsset.AssembleCsProgram(compileResult.symbolCount);
+                        }
+                        else
+                        {
+                            totalErrorCount += compileResult.compileErrorCount;
+                        }
+
+                        int processedTaskCount = totalTaskCount - compileTasks.Count;
+
+                        EditorUtility.DisplayProgressBar("UdonSharp Compile",
+                                                         $"Compiling scripts ({processedTaskCount}/{totalTaskCount})...",
+                                                         Mathf.Clamp01((processedTaskCount / ((float)totalTaskCount + 1f))));
                     }
 
                     if (totalErrorCount == 0)
                     {
-                        foreach (CompileTaskResult taskResult in compileTaskResults)
-                        {
-                            taskResult.programAsset.SetUdonAssembly(taskResult.compiledAssembly);
-                            taskResult.programAsset.AssembleCsProgram(taskResult.symbolCount);
-                        }
-
                         EditorUtility.DisplayProgressBar("UdonSharp Compile", "Assigning constants...", 1f);
                         int initializerErrorCount = AssignHeapConstants();
                         totalErrorCount += initializerErrorCount;
