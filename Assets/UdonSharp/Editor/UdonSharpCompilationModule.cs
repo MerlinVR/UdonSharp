@@ -68,18 +68,18 @@ namespace UdonSharp
 
                     LinePosition linePosition = diagnostic.Location.GetLineSpan().StartLinePosition;
 
-                    errorString = UdonSharpUtils.LogBuildError($"error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}",
-                                                                AssetDatabase.GetAssetPath(programAsset.sourceCsScript).Replace("/", "\\"),
-                                                                linePosition.Line,
-                                                                linePosition.Character);
+                    CompileError error = new CompileError();
+                    error.script = programAsset.sourceCsScript;
+                    error.errorStr = $"error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}";
+                    error.lineIdx = linePosition.Line;
+                    error.charIdx = linePosition.Character;
 
-                    programAsset.compileErrors.Add(errorString);
+                    result.compileErrors.Add(error);
                 }
             }
 
             if (errorCount > 0)
             {
-                result.compileErrorCount = errorCount;
                 return result;
             }
             
@@ -113,10 +113,13 @@ namespace UdonSharp
                 {
                     FileLinePositionSpan lineSpan = currentNode.GetLocation().GetLineSpan();
 
-                    logMessage = UdonSharpUtils.LogBuildError($"{e.GetType()}: {e.Message}",
-                                                                AssetDatabase.GetAssetPath(programAsset.sourceCsScript).Replace("/", "\\"),
-                                                                lineSpan.StartLinePosition.Line,
-                                                                lineSpan.StartLinePosition.Character);
+                    CompileError error = new CompileError();
+                    error.script = programAsset.sourceCsScript;
+                    error.errorStr = $"{e.GetType()}: {e.Message}";
+                    error.lineIdx = lineSpan.StartLinePosition.Line;
+                    error.charIdx = lineSpan.StartLinePosition.Character;
+
+                    result.compileErrors.Add(error);
                 }
                 else
                 {
@@ -135,7 +138,6 @@ namespace UdonSharp
 
             if (errorCount > 0)
             {
-                result.compileErrorCount = errorCount;
                 return result;
             }
 

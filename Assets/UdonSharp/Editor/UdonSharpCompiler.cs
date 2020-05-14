@@ -20,12 +20,20 @@ namespace UdonSharp
 {
     public class UdonSharpCompiler
     {
+        public class CompileError
+        {
+            public MonoScript script;
+            public string errorStr;
+            public int lineIdx;
+            public int charIdx;
+        }
+
         public class CompileTaskResult
         {
             public UdonSharpProgramAsset programAsset;
             public string compiledAssembly;
             public uint symbolCount;
-            public int compileErrorCount;
+            public List<CompileError> compileErrors = new List<CompileError>();
         }
 
         private CompilationModule[] modules;
@@ -75,14 +83,24 @@ namespace UdonSharp
 
                         CompileTaskResult compileResult = compileResultTask.Result;
 
-                        if (compileResult.compileErrorCount == 0)
+                        if (compileResult.compileErrors.Count == 0)
                         {
                             compileResult.programAsset.SetUdonAssembly(compileResult.compiledAssembly);
                             compileResult.programAsset.AssembleCsProgram(compileResult.symbolCount);
                         }
                         else
                         {
-                            totalErrorCount += compileResult.compileErrorCount;
+                            foreach (CompileError error in compileResult.compileErrors)
+                            {
+                                string errorMessage = UdonSharpUtils.LogBuildError(error.errorStr,
+                                                                                   AssetDatabase.GetAssetPath(error.script).Replace("/", "\\"),
+                                                                                   error.lineIdx,
+                                                                                   error.charIdx);
+
+                                compileResult.programAsset.compileErrors.Add(errorMessage);
+                            }
+
+                            totalErrorCount += compileResult.compileErrors.Count;
                         }
 
                         int processedTaskCount = totalTaskCount - compileTasks.Count;
