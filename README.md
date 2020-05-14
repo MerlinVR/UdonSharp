@@ -89,6 +89,8 @@ public class RotatingCubeBehaviour : UdonSharpBehaviour
 
 [**PhaxeNor**](https://github.com/PhaxeNor) - Help with wiki and documentation
 
+[**bd_**](https://github.com/bdunderscore) - Significant optimizations to compiled code
+
 [**UdonPie Compiler**](https://github.com/zz-roba/UdonPieCompiler) - For demonstrating how straightforward it can be to write a compiler for Udon
 
 ## Links

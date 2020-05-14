@@ -370,7 +370,9 @@ namespace UdonSharp
             if (property != null)
                 throw new ArgumentException("Serialized property on validate object reference should be null!");
 
-            if (currentUserScript != null)
+            if (currentUserScript != null || 
+                objType == typeof(UdonBehaviour) || 
+                objType == typeof(UdonSharpBehaviour))
             {
                 foreach (UnityEngine.Object reference in references)
                 {
@@ -399,7 +401,8 @@ namespace UdonSharp
                             referenceBehaviour.programSource is UdonSharpProgramAsset udonSharpProgram &&
                             udonSharpProgram.sourceCsScript != null)
                         {
-                            if (udonSharpProgram.sourceCsScript == currentUserScript)
+                            if (currentUserScript == null || // If this is null, the field is referencing a generic UdonBehaviour or UdonSharpBehaviour instead of a behaviour of a certain type that inherits from UdonSharpBehaviour.
+                                udonSharpProgram.sourceCsScript == currentUserScript)
                                 return referenceBehaviour;
                         }
                     }
@@ -609,8 +612,9 @@ namespace UdonSharp
                 {
                     Type elementType = currentType.GetElementType();
 
-                    if (value == null) // We can abuse that the foldout modified the outer scope when it was expanded to make sure this gets set
+                    if (value == null)
                     {
+                        GUI.changed = true;
                         return Activator.CreateInstance(arrayDataType, new object[] { 0 });
                     }
 
