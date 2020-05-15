@@ -226,7 +226,6 @@ namespace UdonSharp
         private void InheritScope(ExpressionCaptureScope childScope)
         {
             if (captureArchetype != ExpressionCaptureArchetype.Unknown ||
-                childScope.captureArchetype == ExpressionCaptureArchetype.This ||
                 childScope.captureArchetype == ExpressionCaptureArchetype.Method ||
                 childScope.captureArchetype == ExpressionCaptureArchetype.Namespace)
                 return;
