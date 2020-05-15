@@ -469,7 +469,7 @@ namespace UdonSharp
                     getVariableMethodScope.ResolveAccessToken("GetProgramVariable");
 
                     SymbolDefinition externVarReturn = getVariableMethodScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserField.fieldSymbol.symbolUniqueName) });
-                    outSymbol = CastSymbolToType(externVarReturn, captureExternUserField.fieldSymbol.userCsType, true, true, requestedDestination);
+                    outSymbol = CastSymbolToType(externVarReturn, captureExternUserField.fieldSymbol.userCsType, true, true, outSymbol == requestedDestination ? requestedDestination : null);
                 }
             }
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
