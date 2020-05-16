@@ -67,5 +67,10 @@ namespace UdonSharp.Tests
             int result = AddIntegers2(2, 4) + AddIntegers2(6, 9);
             tester.TestAssertion("Method Intermediate Return Value", result == 21);
         }
+
+        //void TestOutParam(ref int output)
+        //{
+        //    output = 4;
+        //}
     }
 }

@@ -1325,6 +1325,18 @@ namespace UdonSharp
             if (node.Modifiers.HasModifier("static"))
                 throw new System.NotSupportedException("UdonSharp does not currently support static method declarations");
 
+            foreach (ParameterSyntax param in node.ParameterList.Parameters)
+            {
+                UpdateSyntaxNode(param);
+
+                if (param.Modifiers.Any(SyntaxKind.OutKeyword))
+                    throw new System.NotSupportedException("UdonSharp does not yet support 'out' parameters on user-defined methods.");
+                if (param.Modifiers.Any(SyntaxKind.InKeyword))
+                    throw new System.NotSupportedException("UdonSharp does not yet support 'in' parameters on user-defined methods.");
+                if (param.Modifiers.Any(SyntaxKind.RefKeyword))
+                    throw new System.NotSupportedException("UdonSharp does not yet support 'ref' parameters on user-defined methods.");
+            }
+
             // Export the method if it's public or builtin
             if (isBuiltinEvent || node.Modifiers.HasModifier("public"))
             {

@@ -236,7 +236,6 @@ namespace UdonSharp
         private void InheritScope(ExpressionCaptureScope childScope)
         {
             if (captureArchetype != ExpressionCaptureArchetype.Unknown ||
-                childScope.captureArchetype == ExpressionCaptureArchetype.This ||
                 childScope.captureArchetype == ExpressionCaptureArchetype.Method ||
                 childScope.captureArchetype == ExpressionCaptureArchetype.Namespace)
                 return;
@@ -247,7 +246,7 @@ namespace UdonSharp
             captureProperty = childScope.captureProperty;
             captureType = childScope.captureType;
             accessSymbol = childScope._accessSymbol;
-            _accessValue = childScope._accessValue?.AddRef();
+            accessValue = childScope.accessValue;
             captureEnum = childScope.captureEnum;
             arrayIndexerIndexValue = childScope.arrayIndexerIndexValue;
             captureLocalMethod = childScope.captureLocalMethod;
@@ -479,7 +478,7 @@ namespace UdonSharp
                     getVariableMethodScope.ResolveAccessToken("GetProgramVariable");
 
                     SymbolDefinition externVarReturn = getVariableMethodScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserField.fieldSymbol.symbolUniqueName) });
-                    outSymbol = CastSymbolToType(externVarReturn, captureExternUserField.fieldSymbol.userCsType, true, true, requestedDestination);
+                    outSymbol = CastSymbolToType(externVarReturn, captureExternUserField.fieldSymbol.userCsType, true, true, outSymbol == requestedDestination ? requestedDestination : null);
                 }
             }
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
@@ -2185,9 +2184,11 @@ namespace UdonSharp
             else
                 indexerSymbol = CastSymbolToType(indexerSymbol, typeof(int), false); // Non-explicit cast to handle if any types have implicit conversion operators and throw an error otherwise
 
+            SymbolDefinition.COWValue oldCOWValue = _accessValue;
             _accessValue = ExecuteGetCOW(); // implicitly adds refcount
-            cowValue = null; // Move ownership to accessValue here
+            oldCOWValue?.Dispose();
 
+            cowValue = null; // Move ownership to accessValue here
             _accessSymbol = null;
 
             captureArchetype = ExpressionCaptureArchetype.ArrayIndexer;
