@@ -183,7 +183,7 @@ namespace UdonSharp
                 {
 #if UDONSHARP_DEBUG
                     foreach (COWValue holder in holders) {
-                        Debug.LogError($"Value reference for symbol {originalSymbol} leaked at:\n\n{holder.stackTrace}");
+                        Debug.LogError($"Value reference for symbol {originalSymbol} ref count: {referenceCount} leaked at:\n\n{holder.stackTrace}");
                     }
 #endif
                     throw new Exception($"UdonSharp internal error: Leaked COWValue reference for symbol {originalSymbol}");
