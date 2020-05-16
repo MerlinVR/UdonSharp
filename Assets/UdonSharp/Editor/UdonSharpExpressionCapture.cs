@@ -236,7 +236,7 @@ namespace UdonSharp
             captureProperty = childScope.captureProperty;
             captureType = childScope.captureType;
             accessSymbol = childScope._accessSymbol;
-            _accessValue = childScope._accessValue?.AddRef();
+            accessValue = childScope.accessValue;
             captureEnum = childScope.captureEnum;
             arrayIndexerIndexValue = childScope.arrayIndexerIndexValue;
             captureLocalMethod = childScope.captureLocalMethod;
@@ -2173,9 +2173,11 @@ namespace UdonSharp
             else
                 indexerSymbol = CastSymbolToType(indexerSymbol, typeof(int), false); // Non-explicit cast to handle if any types have implicit conversion operators and throw an error otherwise
 
+            SymbolDefinition.COWValue oldCOWValue = _accessValue;
             _accessValue = ExecuteGetCOW(); // implicitly adds refcount
-            cowValue = null; // Move ownership to accessValue here
+            oldCOWValue?.Dispose();
 
+            cowValue = null; // Move ownership to accessValue here
             _accessSymbol = null;
 
             captureArchetype = ExpressionCaptureArchetype.ArrayIndexer;
