@@ -32,11 +32,21 @@ namespace UdonSharp
         [MenuItem("Assets/Create/U# Script", false, 5)]
         private static void CreateUSharpScript()
         {
-            string folderPath = AssetDatabase.GetAssetPath(Selection.activeObject);
-            if (Selection.activeObject.GetType() != typeof(UnityEditor.DefaultAsset))
+            string folderPath = "Assets/";
+            if (Selection.activeObject != null)
             {
-                folderPath = Path.GetDirectoryName(folderPath).Replace('\\', '/');
+                folderPath = AssetDatabase.GetAssetPath(Selection.activeObject);
+                if (Selection.activeObject.GetType() != typeof(UnityEditor.DefaultAsset))
+                {
+                    folderPath = Path.GetDirectoryName(folderPath);
+                }
             }
+            else if (Selection.assetGUIDs.Length > 0)
+            {
+                folderPath = AssetDatabase.GUIDToAssetPath(Selection.assetGUIDs[0]);
+            }
+
+            folderPath = folderPath.Replace('\\', '/');
             
             string chosenFilePath = EditorUtility.SaveFilePanelInProject("Save UdonSharp File", "", "cs", "Save UdonSharp file", folderPath);
 
