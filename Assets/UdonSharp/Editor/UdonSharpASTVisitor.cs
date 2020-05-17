@@ -1256,7 +1256,7 @@ namespace UdonSharp
                         operandCapture.ExecuteSet(resultSymbol, true);
                     }
                 }
-                catch (System.Exception e)
+                catch (System.Exception)
                 {
                     throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operand of type '{UdonSharpUtils.PrettifyTypeName(operandCapture.GetReturnType())}'");
                 }

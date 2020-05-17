@@ -337,7 +337,7 @@ namespace UdonSharp
         }
 
         // Skips the property since it will create an asset if one doesn't exist and we do not want that.
-        public AbstractSerializedUdonProgramAsset GetSerializedUdonProgramAssetStorage()
+        public AbstractSerializedUdonProgramAsset GetSerializedUdonProgramAsset()
         {
             return serializedUdonProgramAsset;
         }

@@ -58,8 +58,6 @@ namespace UdonSharp
 
             int errorCount = 0;
 
-            string errorString = "";
-
             foreach (Diagnostic diagnostic in tree.GetDiagnostics())
             {
                 if (diagnostic.Severity == DiagnosticSeverity.Error)
