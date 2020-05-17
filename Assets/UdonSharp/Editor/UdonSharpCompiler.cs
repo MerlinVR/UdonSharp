@@ -67,21 +67,35 @@ namespace UdonSharp
 
                 if (totalErrorCount == 0)
                 {
+#if UDONSHARP_DEBUG // Single threaded compile
+                    List<CompileTaskResult> compileTasks = new List<CompileTaskResult>();
+
+                    foreach (CompilationModule module in modules)
+                    {
+                        compileTasks.Add(module.Compile(classDefinitions));
+                    }
+#else
                     List<Task<CompileTaskResult>> compileTasks = new List<Task<CompileTaskResult>>();
 
                     foreach (CompilationModule module in modules)
                     {
                         compileTasks.Add(Task.Factory.StartNew(() => module.Compile(classDefinitions)));
                     }
+#endif
 
                     int totalTaskCount = compileTasks.Count;
 
                     while (compileTasks.Count > 0)
                     {
+#if UDONSHARP_DEBUG
+                        CompileTaskResult compileResult = compileTasks.Last();
+                        compileTasks.RemoveAt(compileTasks.Count - 1);
+#else
                         Task<CompileTaskResult> compileResultTask = Task.WhenAny(compileTasks).Result;
                         compileTasks.Remove(compileResultTask);
 
                         CompileTaskResult compileResult = compileResultTask.Result;
+#endif
 
                         if (compileResult.compileErrors.Count == 0)
                         {
