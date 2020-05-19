@@ -48,8 +48,7 @@ This compiler is in an early state and I have no prior experience making compile
 
 ### Requirements
 - Unity 2018.4.20f1 or greater
-- VRCSDK3
-- UdonSDK
+- [VRCSDK3 + UdonSDK](https://vrchat.com/home/download)
 - The latest [release](https://github.com/Merlin-san/UdonSharp/releases/latest) of UdonSharp
 
 ### Installation
@@ -83,6 +82,10 @@ public class RotatingCubeBehaviour : UdonSharpBehaviour
     }
 }
 ```
+
+#### Other examples
+
+For more example scripts take a look at the wiki page for [examples](https://github.com/Merlin-san/UdonSharp/wiki/examples), the Examples folder included with U#, or the [community resources](https://github.com/Merlin-san/UdonSharp/wiki/community-resources) page on the wiki.
 
 ## Credits
 [**Toocanzs**](https://github.com/Toocanzs) - Implementing field initializers and helping with miscellaneous things
