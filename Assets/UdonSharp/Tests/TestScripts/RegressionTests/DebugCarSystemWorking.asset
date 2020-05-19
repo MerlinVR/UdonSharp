@@ -1,0 +1,3271 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
+  m_Name: DebugCarSystemWorking
+  m_EditorClassIdentifier: 
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 43f99f67632b33a46bd599a487445ef7,
+    type: 2}
+  udonAssembly: ".data_start\r\n\r\n    .export leftFrontWheel\r\n    .export rightFrontWheel\r\n
+    \   .export leftRearWheel\r\n    .export rightRearWheel\r\n    .export MAX_SPEED\r\n
+    \   .export MAX_MOTOR_TORQUE\r\n    .export MAX_STEERING_ANGLE\r\n    .export
+    MAX_BRAKE_TORQUE\r\n    .export CONST_BRAKE_TORQUE\r\n    .export DOWN_FORCE\r\n
+    \   .export CENTER_MASS_POS\r\n    .export steering\r\n    .export velocity\r\n\r\n
+    \   __refl_const_intnl_udonTypeID: %SystemInt64, null\r\n    __refl_const_intnl_udonTypeName:
+    %SystemString, null\r\n    CENTER_MASS_POS: %SystemSingle, null\r\n    CONST_BRAKE_TORQUE:
+    %SystemSingle, null\r\n    DOWN_FORCE: %SystemSingle, null\r\n    MAX_BRAKE_TORQUE:
+    %SystemSingle, null\r\n    MAX_MOTOR_TORQUE: %SystemSingle, null\r\n    MAX_SPEED:
+    %SystemSingle, null\r\n    MAX_STEERING_ANGLE: %SystemSingle, null\r\n    steering:
+    %SystemSingle, null\r\n    velocity: %SystemSingle, null\r\n    leftFrontWheel:
+    %UnityEngineWheelCollider, null\r\n    leftRearWheel: %UnityEngineWheelCollider,
+    null\r\n    rightFrontWheel: %UnityEngineWheelCollider, null\r\n    rightRearWheel:
+    %UnityEngineWheelCollider, null\r\n    rigidBody: %UnityEngineRigidbody, null\r\n
+    \   brake: %SystemSingle, null\r\n    motor: %SystemSingle, null\r\n    __0_this_intnl_UnityEngineTransform:
+    %UnityEngineTransform, this\r\n    __0_this_intnl_DebugCarSystemWorking: %VRCUdonUdonBehaviour,
+    this\r\n    __0_maxsp_Single: %SystemSingle, null\r\n    __0_min_Single: %SystemSingle,
+    null\r\n    __0_sign_Single: %SystemSingle, null\r\n    __0_sp_Single: %SystemSingle,
+    null\r\n    __0_direction_Vector3: %UnityEngineVector3, null\r\n    __0_const_intnl_SystemInt32:
+    %SystemInt32, null\r\n    __1_const_intnl_SystemInt32: %SystemInt32, null\r\n
+    \   __0_const_intnl_UnityEngineKeyCode: %UnityEngineKeyCode, null\r\n    __0_const_intnl_SystemObject:
+    %SystemObject, null\r\n    __0_const_intnl_SystemSingle: %SystemSingle, null\r\n
+    \   __1_const_intnl_SystemSingle: %SystemSingle, null\r\n    __2_const_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __3_const_intnl_SystemSingle: %SystemSingle, null\r\n
+    \   __0_const_intnl_SystemType: %SystemType, null\r\n    __0_const_intnl_exitJumpLoc_UInt32:
+    %SystemUInt32, null\r\n    __0_const_intnl_SystemUInt32: %SystemUInt32, null\r\n
+    \   __1_const_intnl_exitJumpLoc_UInt32: %SystemUInt32, null\r\n    __2_const_intnl_exitJumpLoc_UInt32:
+    %SystemUInt32, null\r\n    __3_const_intnl_exitJumpLoc_UInt32: %SystemUInt32,
+    null\r\n    __0_const_intnl_VRCSDKBaseVRCPlayerApi: %VRCSDKBaseVRCPlayerApi, null\r\n
+    \   __0_intnl_SystemBoolean: %SystemBoolean, null\r\n    __1_intnl_SystemBoolean:
+    %SystemBoolean, null\r\n    __2_intnl_SystemBoolean: %SystemBoolean, null\r\n
+    \   __0_intnl_returnValSymbol_Single: %SystemSingle, null\r\n    __0_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __1_intnl_SystemSingle: %SystemSingle, null\r\n    __10_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __11_intnl_SystemSingle: %SystemSingle, null\r\n    __12_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __13_intnl_SystemSingle: %SystemSingle, null\r\n    __14_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __2_intnl_SystemSingle: %SystemSingle, null\r\n    __3_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __4_intnl_SystemSingle: %SystemSingle, null\r\n    __5_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __6_intnl_SystemSingle: %SystemSingle, null\r\n    __7_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __8_intnl_SystemSingle: %SystemSingle, null\r\n    __9_intnl_SystemSingle:
+    %SystemSingle, null\r\n    __0_intnl_returnTarget_UInt32: %SystemUInt32, null\r\n
+    \   __0_intnl_UnityEngineVector3: %UnityEngineVector3, null\r\n    __1_intnl_UnityEngineVector3:
+    %UnityEngineVector3, null\r\n    __2_intnl_UnityEngineVector3: %UnityEngineVector3,
+    null\r\n    __3_intnl_UnityEngineVector3: %UnityEngineVector3, null\r\n    __4_intnl_UnityEngineVector3:
+    %UnityEngineVector3, null\r\n    __5_intnl_UnityEngineVector3: %UnityEngineVector3,
+    null\r\n    __0_intnl_VRCSDKBaseVRCPlayerApi: %VRCSDKBaseVRCPlayerApi, null\r\n\r\n.data_end\r\n\r\n
+    \       \r\n         # using UdonSharp;\r\n        \r\n         # using UnityEngine;\r\n
+    \       \r\n         # using UnityEngine.UI;\r\n        \r\n         # using VRC.SDKBase;\r\n
+    \       \r\n         # using VRC.Udon;\r\n        \r\n         # public class
+    DebugCarSystemWorking : UdonSharpBehaviour\r\n.code_start\r\n        \r\n         #
+    public WheelCollider leftFrontWheel;\r\n        \r\n         # public WheelCollider
+    rightFrontWheel;\r\n        \r\n         # public WheelCollider leftRearWheel;\r\n
+    \       \r\n         # public WheelCollider rightRearWheel;\r\n        \r\n         #
+    public const float MAX_SPEED = 30.0f;          // \uFFFD\u0151\uFFFDX\uFFFDs\uFFFD[\uFFFDh\r\n
+    \       \r\n         # public const float MAX_MOTOR_TORQUE = 300;      // \uFFFD\u0151\u50C2\uFFFD[\uFFFD^\uFFFD[\uFFFDg\uFFFD\uFFFD\uFFFDN\r\n
+    \       \r\n         # public const float MAX_STEERING_ANGLE = 30;     // \uFFFD\u0151\uFFFDX\uFFFDe\uFFFDA\uFFFD\uFFFD\uFFFD\uFFFD\uFFFDO\uFFFDp\uFFFDx\r\n
+    \       \r\n         # public const float MAX_BRAKE_TORQUE = 500;      // \uFFFD\u0151\uFFFDu\uFFFD\uFFFD\uFFFD[\uFFFDL\uFFFDg\uFFFD\uFFFD\uFFFDN\r\n
+    \       \r\n         # public const float CONST_BRAKE_TORQUE = 1.0f;   // \uFFFDP\uFFFD\uFFFDI\uFFFD\u0203u\uFFFD\uFFFD\uFFFD[\uFFFDL\r\n
+    \       \r\n         # public const float DOWN_FORCE = 100.0f;           // \uFFFD_\uFFFDE\uFFFD\uFFFD\uFFFDt\uFFFDH\uFFFD[\uFFFDX\uFFFD\u030B\uFFFD\uFFFD\uFFFD\r\n
+    \       \r\n         # public const float CENTER_MASS_POS = 0.0f;      // \uFFFDd\uFFFDS\uFFFD\u0312\u10B3\r\n
+    \       \r\n         # private float motor = 0;\r\n        \r\n         # public
+    float steering = 0;\r\n        \r\n         # private float brake = 0;\r\n        \r\n
+    \        # public float velocity;\r\n        \r\n         # private Rigidbody
+    rigidBody;\r\n        \r\n         # float HandleMapping(float sp, float maxsp,
+    float min)\r\n    HandleMapping:\r\n        \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n
+    \       \r\n         # {\r\n        \r\n         # return Mathf.Clamp((Mathf.Abs(sp)
+    * (-min / maxsp) + 1.0f), min, 1.0f);\r\n        PUSH, __0_sp_Single\r\n        PUSH,
+    __0_intnl_SystemSingle\r\n        EXTERN, \"UnityEngineMathf.__Abs__SystemSingle__SystemSingle\"\r\n
+    \       PUSH, __0_min_Single\r\n        PUSH, __1_intnl_SystemSingle\r\n        EXTERN,
+    \"SystemSingle.__op_UnaryMinus__SystemSingle__SystemSingle\"\r\n        PUSH,
+    __1_intnl_SystemSingle\r\n        PUSH, __0_maxsp_Single\r\n        PUSH, __2_intnl_SystemSingle\r\n
+    \       EXTERN, \"SystemSingle.__op_Division__SystemSingle_SystemSingle__SystemSingle\"\r\n
+    \       PUSH, __0_intnl_SystemSingle\r\n        PUSH, __2_intnl_SystemSingle\r\n
+    \       PUSH, __3_intnl_SystemSingle\r\n        EXTERN, \"SystemSingle.__op_Multiplication__SystemSingle_SystemSingle__SystemSingle\"\r\n
+    \       PUSH, __3_intnl_SystemSingle\r\n        PUSH, __0_const_intnl_SystemSingle\r\n
+    \       PUSH, __4_intnl_SystemSingle\r\n        EXTERN, \"SystemSingle.__op_Addition__SystemSingle_SystemSingle__SystemSingle\"\r\n
+    \       PUSH, __4_intnl_SystemSingle\r\n        PUSH, __0_min_Single\r\n        PUSH,
+    __0_const_intnl_SystemSingle\r\n        PUSH, __0_intnl_returnValSymbol_Single\r\n
+    \       EXTERN, \"UnityEngineMathf.__Clamp__SystemSingle_SystemSingle_SystemSingle__SystemSingle\"\r\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Explicit return sequence\r\n        COPY\r\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        PUSH, __0_intnl_returnTarget_UInt32
+    #Function epilogue\r\n        COPY\r\n        JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n
+    \       \r\n        \r\n         # void Start()\r\n    .export _start\r\n        \r\n
+    \   _start:\r\n        \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n        \r\n
+    \        # {\r\n        \r\n         # rigidBody = GetComponent<Rigidbody>();\r\n
+    \       PUSH, __0_this_intnl_DebugCarSystemWorking\r\n        PUSH, __0_const_intnl_SystemType\r\n
+    \       PUSH, rigidBody\r\n        EXTERN, \"UnityEngineRigidbody.__GetComponent__T\"\r\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n
+    \        # public void LateUpdate()\r\n    .export _lateUpdate\r\n        \r\n
+    \   _lateUpdate:\r\n        \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n
+    \       \r\n         # {\r\n        \r\n         # if (Networking.LocalPlayer
+    == null)\r\n        PUSH, __0_intnl_VRCSDKBaseVRCPlayerApi\r\n        EXTERN,
+    \"VRCSDKBaseNetworking.__get_LocalPlayer__VRCSDKBaseVRCPlayerApi\"\r\n        PUSH,
+    __0_intnl_VRCSDKBaseVRCPlayerApi\r\n        PUSH, __0_const_intnl_VRCSDKBaseVRCPlayerApi\r\n
+    \       PUSH, __0_intnl_SystemBoolean\r\n        EXTERN, \"SystemObject.__op_Equality__SystemObject_SystemObject__SystemBoolean\"\r\n
+    \       PUSH, __0_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000230\r\n
+    \       \r\n         # {\r\n        \r\n         # CalcCarVelocity();\r\n        PUSH,
+    __0_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x0000032C\r\n        \r\n
+    \        # ControllerEditorDebug();\r\n        PUSH, __1_const_intnl_exitJumpLoc_UInt32\r\n
+    \       JUMP, 0x000004E8\r\n        \r\n         # rigidBody.AddForce(0, Mathf.Abs(velocity)
+    * DOWN_FORCE, 0);\r\n        PUSH, velocity\r\n        PUSH, __5_intnl_SystemSingle\r\n
+    \       EXTERN, \"UnityEngineMathf.__Abs__SystemSingle__SystemSingle\"\r\n        PUSH,
+    __5_intnl_SystemSingle\r\n        PUSH, DOWN_FORCE\r\n        PUSH, __6_intnl_SystemSingle\r\n
+    \       EXTERN, \"SystemSingle.__op_Multiplication__SystemSingle_SystemSingle__SystemSingle\"\r\n
+    \       PUSH, __0_const_intnl_SystemInt32\r\n        PUSH, __7_intnl_SystemSingle\r\n
+    \       EXTERN, \"SystemConvert.__ToSingle__SystemInt32__SystemSingle\"\r\n        PUSH,
+    __0_const_intnl_SystemInt32\r\n        PUSH, __8_intnl_SystemSingle\r\n        EXTERN,
+    \"SystemConvert.__ToSingle__SystemInt32__SystemSingle\"\r\n        PUSH, rigidBody\r\n
+    \       PUSH, __7_intnl_SystemSingle\r\n        PUSH, __6_intnl_SystemSingle\r\n
+    \       PUSH, __8_intnl_SystemSingle\r\n        EXTERN, \"UnityEngineRigidbody.__AddForce__SystemSingle_SystemSingle_SystemSingle__SystemVoid\"\r\n
+    \       \r\n         # return;\r\n        PUSH, __0_intnl_returnTarget_UInt32
+    #Explicit return sequence\r\n        COPY\r\n        JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n
+    \        # private void ControllerDesktop()\r\n    ControllerDesktop:\r\n        \r\n
+    \       PUSH, __0_const_intnl_SystemUInt32\r\n        \r\n         # {\r\n        \r\n
+    \        # if (Input.GetKey(KeyCode.A))\r\n        PUSH, __0_const_intnl_UnityEngineKeyCode\r\n
+    \       PUSH, __1_intnl_SystemBoolean\r\n        EXTERN, \"UnityEngineInput.__GetKey__UnityEngineKeyCode__SystemBoolean\"\r\n
+    \       PUSH, __1_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000310\r\n
+    \       \r\n         # {\r\n        \r\n         # steering = -MAX_STEERING_ANGLE
+    * HandleMapping(velocity, 90, 0.2f);\r\n        PUSH, MAX_STEERING_ANGLE\r\n        PUSH,
+    __9_intnl_SystemSingle\r\n        EXTERN, \"SystemSingle.__op_UnaryMinus__SystemSingle__SystemSingle\"\r\n
+    \       PUSH, velocity\r\n        PUSH, __0_sp_Single\r\n        COPY\r\n        PUSH,
+    __1_const_intnl_SystemInt32\r\n        PUSH, __0_maxsp_Single\r\n        EXTERN,
+    \"SystemConvert.__ToSingle__SystemInt32__SystemSingle\"\r\n        PUSH, __1_const_intnl_SystemSingle\r\n
+    \       PUSH, __0_min_Single\r\n        COPY\r\n        PUSH, velocity\r\n        PUSH,
+    __10_intnl_SystemSingle\r\n        COPY # Copy-on-write symbol value dirtied\r\n
+    \       PUSH, __2_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x00000008\r\n
+    \       PUSH, __9_intnl_SystemSingle\r\n        PUSH, __0_intnl_returnValSymbol_Single\r\n
+    \       PUSH, steering\r\n        EXTERN, \"SystemSingle.__op_Multiplication__SystemSingle_SystemSingle__SystemSingle\"\r\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n
+    \        # private void CalcCarVelocity()\r\n    CalcCarVelocity:\r\n        \r\n
+    \       PUSH, __0_const_intnl_SystemUInt32\r\n        \r\n         # {\r\n        \r\n
+    \        # var direction = transform.forward;\r\n        PUSH, __0_this_intnl_UnityEngineTransform\r\n
+    \       PUSH, __0_intnl_UnityEngineVector3\r\n        EXTERN, \"UnityEngineTransform.__get_forward__UnityEngineVector3\"\r\n
+    \       PUSH, __0_intnl_UnityEngineVector3\r\n        PUSH, __0_direction_Vector3\r\n
+    \       COPY\r\n        \r\n         # if (rigidBody.velocity.magnitude < 0.0001f)\r\n
+    \       PUSH, rigidBody\r\n        PUSH, __1_intnl_UnityEngineVector3\r\n        EXTERN,
+    \"UnityEngineRigidbody.__get_velocity__UnityEngineVector3\"\r\n        PUSH, __1_intnl_UnityEngineVector3\r\n
+    \       PUSH, __11_intnl_SystemSingle\r\n        EXTERN, \"UnityEngineVector3.__get_magnitude__SystemSingle\"\r\n
+    \       PUSH, __11_intnl_SystemSingle\r\n        PUSH, __2_const_intnl_SystemSingle\r\n
+    \       PUSH, __2_intnl_SystemBoolean\r\n        EXTERN, \"SystemSingle.__op_LessThan__SystemSingle_SystemSingle__SystemBoolean\"\r\n
+    \       PUSH, __2_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x000003E0\r\n
+    \       \r\n         # {\r\n        \r\n         # velocity = 0.0f;\r\n        PUSH,
+    __3_const_intnl_SystemSingle\r\n        PUSH, velocity\r\n        COPY\r\n        \r\n
+    \        # return;\r\n        PUSH, __0_intnl_returnTarget_UInt32 #Explicit return
+    sequence\r\n        COPY\r\n        JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n
+    \       \r\n         # var sign = Mathf.Sign(Vector3.Dot(rigidBody.velocity.normalized,
+    direction));\r\n        PUSH, rigidBody\r\n        PUSH, __2_intnl_UnityEngineVector3\r\n
+    \       EXTERN, \"UnityEngineRigidbody.__get_velocity__UnityEngineVector3\"\r\n
+    \       PUSH, __2_intnl_UnityEngineVector3\r\n        PUSH, __3_intnl_UnityEngineVector3\r\n
+    \       EXTERN, \"UnityEngineVector3.__get_normalized__UnityEngineVector3\"\r\n
+    \       PUSH, __3_intnl_UnityEngineVector3\r\n        PUSH, __0_direction_Vector3\r\n
+    \       PUSH, __12_intnl_SystemSingle\r\n        EXTERN, \"UnityEngineVector3.__Dot__UnityEngineVector3_UnityEngineVector3__SystemSingle\"\r\n
+    \       PUSH, __12_intnl_SystemSingle\r\n        PUSH, __13_intnl_SystemSingle\r\n
+    \       EXTERN, \"UnityEngineMathf.__Sign__SystemSingle__SystemSingle\"\r\n        PUSH,
+    __13_intnl_SystemSingle\r\n        PUSH, __0_sign_Single\r\n        COPY\r\n        \r\n
+    \        # velocity = Vector3.Project(rigidBody.velocity, direction).magnitude
+    * sign;\r\n        PUSH, rigidBody\r\n        PUSH, __4_intnl_UnityEngineVector3\r\n
+    \       EXTERN, \"UnityEngineRigidbody.__get_velocity__UnityEngineVector3\"\r\n
+    \       PUSH, __4_intnl_UnityEngineVector3\r\n        PUSH, __0_direction_Vector3\r\n
+    \       PUSH, __5_intnl_UnityEngineVector3\r\n        EXTERN, \"UnityEngineVector3.__Project__UnityEngineVector3_UnityEngineVector3__UnityEngineVector3\"\r\n
+    \       PUSH, __5_intnl_UnityEngineVector3\r\n        PUSH, __14_intnl_SystemSingle\r\n
+    \       EXTERN, \"UnityEngineVector3.__get_magnitude__SystemSingle\"\r\n        PUSH,
+    __14_intnl_SystemSingle\r\n        PUSH, __0_sign_Single\r\n        PUSH, velocity\r\n
+    \       EXTERN, \"SystemSingle.__op_Multiplication__SystemSingle_SystemSingle__SystemSingle\"\r\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n        \r\n
+    \        # private void ControllerEditorDebug()\r\n    ControllerEditorDebug:\r\n
+    \       \r\n        PUSH, __0_const_intnl_SystemUInt32\r\n        \r\n         #
+    {\r\n        \r\n         # leftFrontWheel.brakeTorque = .0f;\r\n        PUSH,
+    leftFrontWheel\r\n        PUSH, __3_const_intnl_SystemSingle\r\n        EXTERN,
+    \"UnityEngineWheelCollider.__set_brakeTorque__SystemSingle__SystemVoid\"\r\n        \r\n
+    \        # rightFrontWheel.brakeTorque = .0f;\r\n        PUSH, rightFrontWheel\r\n
+    \       PUSH, __3_const_intnl_SystemSingle\r\n        EXTERN, \"UnityEngineWheelCollider.__set_brakeTorque__SystemSingle__SystemVoid\"\r\n
+    \       \r\n         # leftRearWheel.brakeTorque = .0f;\r\n        PUSH, leftRearWheel\r\n
+    \       PUSH, __3_const_intnl_SystemSingle\r\n        EXTERN, \"UnityEngineWheelCollider.__set_brakeTorque__SystemSingle__SystemVoid\"\r\n
+    \       \r\n         # rightRearWheel.brakeTorque = .0f;\r\n        PUSH, rightRearWheel\r\n
+    \       PUSH, __3_const_intnl_SystemSingle\r\n        EXTERN, \"UnityEngineWheelCollider.__set_brakeTorque__SystemSingle__SystemVoid\"\r\n
+    \       \r\n         # steering = 0f;\r\n        PUSH, __3_const_intnl_SystemSingle\r\n
+    \       PUSH, steering\r\n        COPY\r\n        \r\n         # ControllerDesktop();\r\n
+    \       PUSH, __3_const_intnl_exitJumpLoc_UInt32\r\n        JUMP, 0x0000024C\r\n
+    \       \r\n         # leftFrontWheel.steerAngle = steering;\r\n        PUSH,
+    leftFrontWheel\r\n        PUSH, steering\r\n        EXTERN, \"UnityEngineWheelCollider.__set_steerAngle__SystemSingle__SystemVoid\"\r\n
+    \       \r\n         # rightFrontWheel.steerAngle = steering;\r\n        PUSH,
+    rightFrontWheel\r\n        PUSH, steering\r\n        EXTERN, \"UnityEngineWheelCollider.__set_steerAngle__SystemSingle__SystemVoid\"\r\n
+    \       \r\n         # leftFrontWheel.motorTorque = motor;\r\n        PUSH, leftFrontWheel\r\n
+    \       PUSH, motor\r\n        EXTERN, \"UnityEngineWheelCollider.__set_motorTorque__SystemSingle__SystemVoid\"\r\n
+    \       \r\n         # rightFrontWheel.motorTorque = motor;\r\n        PUSH, rightFrontWheel\r\n
+    \       PUSH, motor\r\n        EXTERN, \"UnityEngineWheelCollider.__set_motorTorque__SystemSingle__SystemVoid\"\r\n
+    \       \r\n         # leftFrontWheel.brakeTorque = brake;\r\n        PUSH, leftFrontWheel\r\n
+    \       PUSH, brake\r\n        EXTERN, \"UnityEngineWheelCollider.__set_brakeTorque__SystemSingle__SystemVoid\"\r\n
+    \       \r\n         # rightFrontWheel.brakeTorque = brake;\r\n        PUSH, rightFrontWheel\r\n
+    \       PUSH, brake\r\n        EXTERN, \"UnityEngineWheelCollider.__set_brakeTorque__SystemSingle__SystemVoid\"\r\n
+    \       \r\n         # leftRearWheel.brakeTorque = brake;\r\n        PUSH, leftRearWheel\r\n
+    \       PUSH, brake\r\n        EXTERN, \"UnityEngineWheelCollider.__set_brakeTorque__SystemSingle__SystemVoid\"\r\n
+    \       \r\n         # rightRearWheel.brakeTorque = brake;\r\n        PUSH, rightRearWheel\r\n
+    \       PUSH, brake\r\n        EXTERN, \"UnityEngineWheelCollider.__set_brakeTorque__SystemSingle__SystemVoid\"\r\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n.code_end\r\n"
+  assemblyError: 
+  sourceCsScript: {fileID: 11500000, guid: 71b6a5125b30abc48a487eb527f074a9, type: 3}
+  behaviourIDHeapVarName: __refl_const_intnl_udonTypeID
+  compileErrors: []
+  debugInfo:
+    serializedDebugSpans:
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 0
+      endSourceChar: 502
+      line: 0
+      lineChar: 0
+      spanCodeSection: "// Script from https://github.com/kurotori4423/KurotoriUdonKart
+        modified by Occala that's a decent test for COW values leaking between scopes\r\n//
+        The line of interest is `steering = -MAX_STEERING_ANGLE * HandleMapping(velocity,
+        90, 0.2f);` \r\n// Prior to fixes for leaking of symbol values across scopes,
+        this was overwriting temporary float values that shouldn't have been modified.\r\n//
+        Do not move anything in this file around at all. Any changes are likely to
+        \"fix\" the issue this is looking for.\r\n\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 502
+      endSourceChar: 502
+      line: 5
+      lineChar: 0
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 502
+      endSourceChar: 508
+      line: 5
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 508
+      endSourceChar: 520
+      line: 5
+      lineChar: 6
+      spanCodeSection: "UdonSharp;\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 520
+      endSourceChar: 526
+      line: 6
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 526
+      endSourceChar: 540
+      line: 6
+      lineChar: 6
+      spanCodeSection: "UnityEngine;\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 540
+      endSourceChar: 546
+      line: 7
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 546
+      endSourceChar: 546
+      line: 7
+      lineChar: 6
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 546
+      endSourceChar: 558
+      line: 7
+      lineChar: 6
+      spanCodeSection: UnityEngine.
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 558
+      endSourceChar: 563
+      line: 7
+      lineChar: 18
+      spanCodeSection: "UI;\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 563
+      endSourceChar: 569
+      line: 8
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 569
+      endSourceChar: 569
+      line: 8
+      lineChar: 6
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 569
+      endSourceChar: 573
+      line: 8
+      lineChar: 6
+      spanCodeSection: VRC.
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 573
+      endSourceChar: 583
+      line: 8
+      lineChar: 10
+      spanCodeSection: "SDKBase;\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 583
+      endSourceChar: 589
+      line: 9
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 589
+      endSourceChar: 589
+      line: 9
+      lineChar: 6
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 589
+      endSourceChar: 593
+      line: 9
+      lineChar: 6
+      spanCodeSection: VRC.
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 593
+      endSourceChar: 602
+      line: 9
+      lineChar: 10
+      spanCodeSection: "Udon;\r\n\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 602
+      endSourceChar: 637
+      line: 11
+      lineChar: 0
+      spanCodeSection: 'public class DebugCarSystemWorking '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 637
+      endSourceChar: 639
+      line: 11
+      lineChar: 35
+      spanCodeSection: ': '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 639
+      endSourceChar: 639
+      line: 11
+      lineChar: 37
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 639
+      endSourceChar: 666
+      line: 11
+      lineChar: 37
+      spanCodeSection: "UdonSharpBehaviour\r\n{\r\n    "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 666
+      endSourceChar: 673
+      line: 13
+      lineChar: 4
+      spanCodeSection: 'public '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 673
+      endSourceChar: 673
+      line: 13
+      lineChar: 11
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 673
+      endSourceChar: 708
+      line: 13
+      lineChar: 11
+      spanCodeSection: "WheelCollider leftFrontWheel;\r\n    "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 708
+      endSourceChar: 715
+      line: 14
+      lineChar: 4
+      spanCodeSection: 'public '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 715
+      endSourceChar: 715
+      line: 14
+      lineChar: 11
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 715
+      endSourceChar: 753
+      line: 14
+      lineChar: 11
+      spanCodeSection: "WheelCollider rightFrontWheel;\r\n\r\n    "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 753
+      endSourceChar: 760
+      line: 16
+      lineChar: 4
+      spanCodeSection: 'public '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 760
+      endSourceChar: 760
+      line: 16
+      lineChar: 11
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 760
+      endSourceChar: 794
+      line: 16
+      lineChar: 11
+      spanCodeSection: "WheelCollider leftRearWheel;\r\n    "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 794
+      endSourceChar: 801
+      line: 17
+      lineChar: 4
+      spanCodeSection: 'public '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 801
+      endSourceChar: 801
+      line: 17
+      lineChar: 11
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 801
+      endSourceChar: 838
+      line: 17
+      lineChar: 11
+      spanCodeSection: "WheelCollider rightRearWheel;\r\n\r\n    "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 838
+      endSourceChar: 851
+      line: 19
+      lineChar: 4
+      spanCodeSection: 'public const '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 851
+      endSourceChar: 851
+      line: 19
+      lineChar: 17
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 851
+      endSourceChar: 904
+      line: 19
+      lineChar: 17
+      spanCodeSection: "float MAX_SPEED = 30.0f;          // \uFFFD\u0151\uFFFDX\uFFFDs\uFFFD[\uFFFDh\r\n
+        \   "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 904
+      endSourceChar: 917
+      line: 20
+      lineChar: 4
+      spanCodeSection: 'public const '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 917
+      endSourceChar: 917
+      line: 20
+      lineChar: 17
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 917
+      endSourceChar: 976
+      line: 20
+      lineChar: 17
+      spanCodeSection: "float MAX_MOTOR_TORQUE = 300;      // \uFFFD\u0151\u50C2\uFFFD[\uFFFD^\uFFFD[\uFFFDg\uFFFD\uFFFD\uFFFDN\r\n
+        \   "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 976
+      endSourceChar: 989
+      line: 21
+      lineChar: 4
+      spanCodeSection: 'public const '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 989
+      endSourceChar: 989
+      line: 21
+      lineChar: 17
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 989
+      endSourceChar: 1051
+      line: 21
+      lineChar: 17
+      spanCodeSection: "float MAX_STEERING_ANGLE = 30;     // \uFFFD\u0151\uFFFDX\uFFFDe\uFFFDA\uFFFD\uFFFD\uFFFD\uFFFD\uFFFDO\uFFFDp\uFFFDx\r\n
+        \   "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1051
+      endSourceChar: 1064
+      line: 22
+      lineChar: 4
+      spanCodeSection: 'public const '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1064
+      endSourceChar: 1064
+      line: 22
+      lineChar: 17
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1064
+      endSourceChar: 1124
+      line: 22
+      lineChar: 17
+      spanCodeSection: "float MAX_BRAKE_TORQUE = 500;      // \uFFFD\u0151\uFFFDu\uFFFD\uFFFD\uFFFD[\uFFFDL\uFFFDg\uFFFD\uFFFD\uFFFDN\r\n
+        \   "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1124
+      endSourceChar: 1137
+      line: 23
+      lineChar: 4
+      spanCodeSection: 'public const '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1137
+      endSourceChar: 1137
+      line: 23
+      lineChar: 17
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1137
+      endSourceChar: 1195
+      line: 23
+      lineChar: 17
+      spanCodeSection: "float CONST_BRAKE_TORQUE = 1.0f;   // \uFFFDP\uFFFD\uFFFDI\uFFFD\u0203u\uFFFD\uFFFD\uFFFD[\uFFFDL\r\n
+        \   "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1195
+      endSourceChar: 1208
+      line: 24
+      lineChar: 4
+      spanCodeSection: 'public const '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1208
+      endSourceChar: 1208
+      line: 24
+      lineChar: 17
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1208
+      endSourceChar: 1273
+      line: 24
+      lineChar: 17
+      spanCodeSection: "float DOWN_FORCE = 100.0f;           // \uFFFD_\uFFFDE\uFFFD\uFFFD\uFFFDt\uFFFDH\uFFFD[\uFFFDX\uFFFD\u030B\uFFFD\uFFFD\uFFFD\r\n
+        \   "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1273
+      endSourceChar: 1286
+      line: 25
+      lineChar: 4
+      spanCodeSection: 'public const '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1286
+      endSourceChar: 1286
+      line: 25
+      lineChar: 17
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1286
+      endSourceChar: 1339
+      line: 25
+      lineChar: 17
+      spanCodeSection: "float CENTER_MASS_POS = 0.0f;      // \uFFFDd\uFFFDS\uFFFD\u0312\u10B3\r\n\r\n
+        \   "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1339
+      endSourceChar: 1347
+      line: 27
+      lineChar: 4
+      spanCodeSection: 'private '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1347
+      endSourceChar: 1347
+      line: 27
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1347
+      endSourceChar: 1371
+      line: 27
+      lineChar: 12
+      spanCodeSection: "float motor = 0;\r\n\r\n    "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1371
+      endSourceChar: 1378
+      line: 29
+      lineChar: 4
+      spanCodeSection: 'public '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1378
+      endSourceChar: 1378
+      line: 29
+      lineChar: 11
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1378
+      endSourceChar: 1405
+      line: 29
+      lineChar: 11
+      spanCodeSection: "float steering = 0;\r\n\r\n    "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1405
+      endSourceChar: 1413
+      line: 31
+      lineChar: 4
+      spanCodeSection: 'private '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1413
+      endSourceChar: 1413
+      line: 31
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1413
+      endSourceChar: 1437
+      line: 31
+      lineChar: 12
+      spanCodeSection: "float brake = 0;\r\n\r\n    "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1437
+      endSourceChar: 1444
+      line: 33
+      lineChar: 4
+      spanCodeSection: 'public '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1444
+      endSourceChar: 1444
+      line: 33
+      lineChar: 11
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1444
+      endSourceChar: 1465
+      line: 33
+      lineChar: 11
+      spanCodeSection: "float velocity;\r\n    "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1465
+      endSourceChar: 1473
+      line: 34
+      lineChar: 4
+      spanCodeSection: 'private '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1473
+      endSourceChar: 1473
+      line: 34
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1473
+      endSourceChar: 1548
+      line: 34
+      lineChar: 12
+      spanCodeSection: "Rigidbody rigidBody;\r\n\r\n    // Clamp and control of steering
+        element?\r\n    "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1548
+      endSourceChar: 1568
+      line: 37
+      lineChar: 4
+      spanCodeSection: float HandleMapping(
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1568
+      endSourceChar: 1578
+      line: 37
+      lineChar: 24
+      spanCodeSection: 'float sp, '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 1578
+      endSourceChar: 1591
+      line: 37
+      lineChar: 34
+      spanCodeSection: 'float maxsp, '
+    - startInstruction: 0
+      endInstruction: 7
+      startSourceChar: 1591
+      endSourceChar: 1607
+      line: 37
+      lineChar: 47
+      spanCodeSection: "float min)\r\n    "
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 1607
+      endSourceChar: 1618
+      line: 38
+      lineChar: 4
+      spanCodeSection: "{\r\n        "
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 1618
+      endSourceChar: 1625
+      line: 39
+      lineChar: 8
+      spanCodeSection: 'return '
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 1625
+      endSourceChar: 1625
+      line: 39
+      lineChar: 15
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 1625
+      endSourceChar: 1625
+      line: 39
+      lineChar: 15
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 1625
+      endSourceChar: 1631
+      line: 39
+      lineChar: 15
+      spanCodeSection: Mathf.
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 1631
+      endSourceChar: 1637
+      line: 39
+      lineChar: 21
+      spanCodeSection: Clamp(
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 1637
+      endSourceChar: 1638
+      line: 39
+      lineChar: 27
+      spanCodeSection: (
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 1638
+      endSourceChar: 1638
+      line: 39
+      lineChar: 28
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 1638
+      endSourceChar: 1638
+      line: 39
+      lineChar: 28
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 1638
+      endSourceChar: 1638
+      line: 39
+      lineChar: 28
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 1638
+      endSourceChar: 1638
+      line: 39
+      lineChar: 28
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 1638
+      endSourceChar: 1644
+      line: 39
+      lineChar: 28
+      spanCodeSection: Mathf.
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 1644
+      endSourceChar: 1648
+      line: 39
+      lineChar: 34
+      spanCodeSection: Abs(
+    - startInstruction: 8
+      endInstruction: 31
+      startSourceChar: 1648
+      endSourceChar: 1654
+      line: 39
+      lineChar: 38
+      spanCodeSection: 'sp) * '
+    - startInstruction: 32
+      endInstruction: 31
+      startSourceChar: 1654
+      endSourceChar: 1655
+      line: 39
+      lineChar: 44
+      spanCodeSection: (
+    - startInstruction: 32
+      endInstruction: 31
+      startSourceChar: 1655
+      endSourceChar: 1655
+      line: 39
+      lineChar: 45
+      spanCodeSection: 
+    - startInstruction: 32
+      endInstruction: 31
+      startSourceChar: 1655
+      endSourceChar: 1656
+      line: 39
+      lineChar: 45
+      spanCodeSection: '-'
+    - startInstruction: 32
+      endInstruction: 55
+      startSourceChar: 1656
+      endSourceChar: 1662
+      line: 39
+      lineChar: 46
+      spanCodeSection: 'min / '
+    - startInstruction: 56
+      endInstruction: 119
+      startSourceChar: 1662
+      endSourceChar: 1671
+      line: 39
+      lineChar: 52
+      spanCodeSection: 'maxsp) + '
+    - startInstruction: 120
+      endInstruction: 151
+      startSourceChar: 1671
+      endSourceChar: 1678
+      line: 39
+      lineChar: 61
+      spanCodeSection: '1.0f), '
+    - startInstruction: 152
+      endInstruction: 151
+      startSourceChar: 1678
+      endSourceChar: 1683
+      line: 39
+      lineChar: 68
+      spanCodeSection: 'min, '
+    - startInstruction: 152
+      endInstruction: 231
+      startSourceChar: 1683
+      endSourceChar: 1704
+      line: 39
+      lineChar: 73
+      spanCodeSection: "1.0f);\r\n    }\r\n\r\n    "
+    - startInstruction: 232
+      endInstruction: 239
+      startSourceChar: 1704
+      endSourceChar: 1722
+      line: 42
+      lineChar: 4
+      spanCodeSection: "void Start()\r\n    "
+    - startInstruction: 240
+      endInstruction: 239
+      startSourceChar: 1722
+      endSourceChar: 1733
+      line: 43
+      lineChar: 4
+      spanCodeSection: "{\r\n        "
+    - startInstruction: 240
+      endInstruction: 239
+      startSourceChar: 1733
+      endSourceChar: 1733
+      line: 44
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 240
+      endInstruction: 239
+      startSourceChar: 1733
+      endSourceChar: 1733
+      line: 44
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 240
+      endInstruction: 239
+      startSourceChar: 1733
+      endSourceChar: 1745
+      line: 44
+      lineChar: 8
+      spanCodeSection: 'rigidBody = '
+    - startInstruction: 240
+      endInstruction: 239
+      startSourceChar: 1745
+      endSourceChar: 1745
+      line: 44
+      lineChar: 20
+      spanCodeSection: 
+    - startInstruction: 240
+      endInstruction: 239
+      startSourceChar: 1745
+      endSourceChar: 1757
+      line: 44
+      lineChar: 20
+      spanCodeSection: GetComponent
+    - startInstruction: 240
+      endInstruction: 239
+      startSourceChar: 1757
+      endSourceChar: 1758
+      line: 44
+      lineChar: 32
+      spanCodeSection: <
+    - startInstruction: 240
+      endInstruction: 291
+      startSourceChar: 1758
+      endSourceChar: 1786
+      line: 44
+      lineChar: 33
+      spanCodeSection: "Rigidbody>();\r\n    }\r\n\r\n    "
+    - startInstruction: 292
+      endInstruction: 299
+      startSourceChar: 1786
+      endSourceChar: 1816
+      line: 47
+      lineChar: 4
+      spanCodeSection: "public void LateUpdate()\r\n    "
+    - startInstruction: 300
+      endInstruction: 299
+      startSourceChar: 1816
+      endSourceChar: 1829
+      line: 48
+      lineChar: 4
+      spanCodeSection: "{\r\n\r\n        "
+    - startInstruction: 300
+      endInstruction: 299
+      startSourceChar: 1829
+      endSourceChar: 1833
+      line: 50
+      lineChar: 8
+      spanCodeSection: if (
+    - startInstruction: 300
+      endInstruction: 299
+      startSourceChar: 1833
+      endSourceChar: 1833
+      line: 50
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 300
+      endInstruction: 299
+      startSourceChar: 1833
+      endSourceChar: 1833
+      line: 50
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 300
+      endInstruction: 299
+      startSourceChar: 1833
+      endSourceChar: 1844
+      line: 50
+      lineChar: 12
+      spanCodeSection: Networking.
+    - startInstruction: 300
+      endInstruction: 315
+      startSourceChar: 1844
+      endSourceChar: 1859
+      line: 50
+      lineChar: 23
+      spanCodeSection: 'LocalPlayer == '
+    - startInstruction: 316
+      endInstruction: 363
+      startSourceChar: 1859
+      endSourceChar: 1874
+      line: 50
+      lineChar: 38
+      spanCodeSection: "null)\r\n        "
+    - startInstruction: 364
+      endInstruction: 363
+      startSourceChar: 1874
+      endSourceChar: 1889
+      line: 51
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 364
+      endInstruction: 363
+      startSourceChar: 1889
+      endSourceChar: 1889
+      line: 52
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 364
+      endInstruction: 363
+      startSourceChar: 1889
+      endSourceChar: 1889
+      line: 52
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 364
+      endInstruction: 379
+      startSourceChar: 1889
+      endSourceChar: 1921
+      line: 52
+      lineChar: 12
+      spanCodeSection: "CalcCarVelocity();\r\n            "
+    - startInstruction: 380
+      endInstruction: 379
+      startSourceChar: 1921
+      endSourceChar: 1921
+      line: 53
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 380
+      endInstruction: 379
+      startSourceChar: 1921
+      endSourceChar: 1921
+      line: 53
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 380
+      endInstruction: 395
+      startSourceChar: 1921
+      endSourceChar: 1959
+      line: 53
+      lineChar: 12
+      spanCodeSection: "ControllerEditorDebug();\r\n            "
+    - startInstruction: 396
+      endInstruction: 395
+      startSourceChar: 1959
+      endSourceChar: 1959
+      line: 54
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 396
+      endInstruction: 395
+      startSourceChar: 1959
+      endSourceChar: 1959
+      line: 54
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 396
+      endInstruction: 395
+      startSourceChar: 1959
+      endSourceChar: 1959
+      line: 54
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 396
+      endInstruction: 395
+      startSourceChar: 1959
+      endSourceChar: 1969
+      line: 54
+      lineChar: 12
+      spanCodeSection: rigidBody.
+    - startInstruction: 396
+      endInstruction: 395
+      startSourceChar: 1969
+      endSourceChar: 1978
+      line: 54
+      lineChar: 22
+      spanCodeSection: AddForce(
+    - startInstruction: 396
+      endInstruction: 395
+      startSourceChar: 1978
+      endSourceChar: 1981
+      line: 54
+      lineChar: 31
+      spanCodeSection: '0, '
+    - startInstruction: 396
+      endInstruction: 395
+      startSourceChar: 1981
+      endSourceChar: 1981
+      line: 54
+      lineChar: 34
+      spanCodeSection: 
+    - startInstruction: 396
+      endInstruction: 395
+      startSourceChar: 1981
+      endSourceChar: 1981
+      line: 54
+      lineChar: 34
+      spanCodeSection: 
+    - startInstruction: 396
+      endInstruction: 395
+      startSourceChar: 1981
+      endSourceChar: 1981
+      line: 54
+      lineChar: 34
+      spanCodeSection: 
+    - startInstruction: 396
+      endInstruction: 395
+      startSourceChar: 1981
+      endSourceChar: 1987
+      line: 54
+      lineChar: 34
+      spanCodeSection: Mathf.
+    - startInstruction: 396
+      endInstruction: 395
+      startSourceChar: 1987
+      endSourceChar: 1991
+      line: 54
+      lineChar: 40
+      spanCodeSection: Abs(
+    - startInstruction: 396
+      endInstruction: 419
+      startSourceChar: 1991
+      endSourceChar: 2003
+      line: 54
+      lineChar: 44
+      spanCodeSection: 'velocity) * '
+    - startInstruction: 420
+      endInstruction: 451
+      startSourceChar: 2003
+      endSourceChar: 2015
+      line: 54
+      lineChar: 56
+      spanCodeSection: 'DOWN_FORCE, '
+    - startInstruction: 452
+      endInstruction: 539
+      startSourceChar: 2015
+      endSourceChar: 2032
+      line: 54
+      lineChar: 68
+      spanCodeSection: "0);\r\n            "
+    - startInstruction: 540
+      endInstruction: 579
+      startSourceChar: 2032
+      endSourceChar: 2067
+      line: 55
+      lineChar: 12
+      spanCodeSection: "return;\r\n        }\r\n    }\r\n\r\n\r\n    "
+    - startInstruction: 580
+      endInstruction: 587
+      startSourceChar: 2067
+      endSourceChar: 2105
+      line: 60
+      lineChar: 4
+      spanCodeSection: "private void ControllerDesktop()\r\n    "
+    - startInstruction: 588
+      endInstruction: 587
+      startSourceChar: 2105
+      endSourceChar: 2899
+      line: 61
+      lineChar: 4
+      spanCodeSection: "{\r\n        //brake = 0.0f;\r\n        //steering = 0f;\r\n\r\n
+        \       //if (Input.GetKey(KeyCode.S))\r\n        //{\r\n        //    if
+        (velocity > 0.00001f)\r\n        //    {\r\n        //        motor = 0.0f;\r\n
+        \       //        brake = MAX_BRAKE_TORQUE;\r\n        //    }\r\n        //
+        \   else\r\n        //    {\r\n        //        motor = -MAX_MOTOR_TORQUE;\r\n
+        \       //    }\r\n        //}\r\n        //else if (Input.GetKey(KeyCode.W))\r\n
+        \       //{\r\n        //    if (velocity < -0.00001f)\r\n        //    {\r\n
+        \       //        motor = 0.0f;\r\n        //        brake = MAX_BRAKE_TORQUE;\r\n
+        \       //    }\r\n        //    else\r\n        //    {\r\n        //        motor
+        = MAX_MOTOR_TORQUE;\r\n        //    }\r\n        //}\r\n        //else\r\n
+        \       //{\r\n        //    motor = CONST_BRAKE_TORQUE;\r\n        //}\r\n\r\n\r\n
+        \       "
+    - startInstruction: 588
+      endInstruction: 587
+      startSourceChar: 2899
+      endSourceChar: 2903
+      line: 95
+      lineChar: 8
+      spanCodeSection: if (
+    - startInstruction: 588
+      endInstruction: 587
+      startSourceChar: 2903
+      endSourceChar: 2903
+      line: 95
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 588
+      endInstruction: 587
+      startSourceChar: 2903
+      endSourceChar: 2903
+      line: 95
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 588
+      endInstruction: 587
+      startSourceChar: 2903
+      endSourceChar: 2909
+      line: 95
+      lineChar: 12
+      spanCodeSection: Input.
+    - startInstruction: 588
+      endInstruction: 587
+      startSourceChar: 2909
+      endSourceChar: 2916
+      line: 95
+      lineChar: 18
+      spanCodeSection: GetKey(
+    - startInstruction: 588
+      endInstruction: 587
+      startSourceChar: 2916
+      endSourceChar: 2916
+      line: 95
+      lineChar: 25
+      spanCodeSection: 
+    - startInstruction: 588
+      endInstruction: 587
+      startSourceChar: 2916
+      endSourceChar: 2924
+      line: 95
+      lineChar: 25
+      spanCodeSection: KeyCode.
+    - startInstruction: 588
+      endInstruction: 627
+      startSourceChar: 2924
+      endSourceChar: 2937
+      line: 95
+      lineChar: 33
+      spanCodeSection: "A))\r\n        "
+    - startInstruction: 628
+      endInstruction: 627
+      startSourceChar: 2937
+      endSourceChar: 2983
+      line: 96
+      lineChar: 8
+      spanCodeSection: "{\r\n            //Debug.Log(-1f);\r\n            "
+    - startInstruction: 628
+      endInstruction: 627
+      startSourceChar: 2983
+      endSourceChar: 2983
+      line: 98
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 628
+      endInstruction: 627
+      startSourceChar: 2983
+      endSourceChar: 2983
+      line: 98
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 628
+      endInstruction: 627
+      startSourceChar: 2983
+      endSourceChar: 2994
+      line: 98
+      lineChar: 12
+      spanCodeSection: 'steering = '
+    - startInstruction: 628
+      endInstruction: 627
+      startSourceChar: 2994
+      endSourceChar: 2994
+      line: 98
+      lineChar: 23
+      spanCodeSection: 
+    - startInstruction: 628
+      endInstruction: 627
+      startSourceChar: 2994
+      endSourceChar: 2995
+      line: 98
+      lineChar: 23
+      spanCodeSection: '-'
+    - startInstruction: 628
+      endInstruction: 651
+      startSourceChar: 2995
+      endSourceChar: 3016
+      line: 98
+      lineChar: 24
+      spanCodeSection: 'MAX_STEERING_ANGLE * '
+    - startInstruction: 652
+      endInstruction: 651
+      startSourceChar: 3016
+      endSourceChar: 3016
+      line: 98
+      lineChar: 45
+      spanCodeSection: 
+    - startInstruction: 652
+      endInstruction: 651
+      startSourceChar: 3016
+      endSourceChar: 3030
+      line: 98
+      lineChar: 45
+      spanCodeSection: HandleMapping(
+    - startInstruction: 652
+      endInstruction: 651
+      startSourceChar: 3030
+      endSourceChar: 3040
+      line: 98
+      lineChar: 59
+      spanCodeSection: 'velocity, '
+    - startInstruction: 652
+      endInstruction: 651
+      startSourceChar: 3040
+      endSourceChar: 3044
+      line: 98
+      lineChar: 69
+      spanCodeSection: '90, '
+    - startInstruction: 652
+      endInstruction: 803
+      startSourceChar: 3044
+      endSourceChar: 3300
+      line: 98
+      lineChar: 73
+      spanCodeSection: "0.2f);\r\n        }\r\n        //else if (Input.GetKey(KeyCode.D))\r\n
+        \       //{\r\n        //    steering = MAX_STEERING_ANGLE * HandleMapping(velocity,
+        90, 0.2f);\r\n        //}\r\n        //else\r\n        //{\r\n        //    steering
+        = 0;\r\n        //}\r\n    }\r\n\r\n    "
+    - startInstruction: 804
+      endInstruction: 811
+      startSourceChar: 3300
+      endSourceChar: 3336
+      line: 110
+      lineChar: 4
+      spanCodeSection: "private void CalcCarVelocity()\r\n    "
+    - startInstruction: 812
+      endInstruction: 811
+      startSourceChar: 3336
+      endSourceChar: 3347
+      line: 111
+      lineChar: 4
+      spanCodeSection: "{\r\n        "
+    - startInstruction: 812
+      endInstruction: 811
+      startSourceChar: 3347
+      endSourceChar: 3347
+      line: 112
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 812
+      endInstruction: 811
+      startSourceChar: 3347
+      endSourceChar: 3347
+      line: 112
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 812
+      endInstruction: 811
+      startSourceChar: 3347
+      endSourceChar: 3361
+      line: 112
+      lineChar: 8
+      spanCodeSection: 'var direction '
+    - startInstruction: 812
+      endInstruction: 811
+      startSourceChar: 3361
+      endSourceChar: 3363
+      line: 112
+      lineChar: 22
+      spanCodeSection: '= '
+    - startInstruction: 812
+      endInstruction: 811
+      startSourceChar: 3363
+      endSourceChar: 3363
+      line: 112
+      lineChar: 24
+      spanCodeSection: 
+    - startInstruction: 812
+      endInstruction: 811
+      startSourceChar: 3363
+      endSourceChar: 3373
+      line: 112
+      lineChar: 24
+      spanCodeSection: transform.
+    - startInstruction: 812
+      endInstruction: 855
+      startSourceChar: 3373
+      endSourceChar: 3391
+      line: 112
+      lineChar: 34
+      spanCodeSection: "forward;\r\n        "
+    - startInstruction: 856
+      endInstruction: 855
+      startSourceChar: 3391
+      endSourceChar: 3395
+      line: 113
+      lineChar: 8
+      spanCodeSection: if (
+    - startInstruction: 856
+      endInstruction: 855
+      startSourceChar: 3395
+      endSourceChar: 3395
+      line: 113
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 856
+      endInstruction: 855
+      startSourceChar: 3395
+      endSourceChar: 3395
+      line: 113
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 856
+      endInstruction: 855
+      startSourceChar: 3395
+      endSourceChar: 3395
+      line: 113
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 856
+      endInstruction: 855
+      startSourceChar: 3395
+      endSourceChar: 3405
+      line: 113
+      lineChar: 12
+      spanCodeSection: rigidBody.
+    - startInstruction: 856
+      endInstruction: 855
+      startSourceChar: 3405
+      endSourceChar: 3414
+      line: 113
+      lineChar: 22
+      spanCodeSection: velocity.
+    - startInstruction: 856
+      endInstruction: 903
+      startSourceChar: 3414
+      endSourceChar: 3426
+      line: 113
+      lineChar: 31
+      spanCodeSection: 'magnitude < '
+    - startInstruction: 904
+      endInstruction: 951
+      startSourceChar: 3426
+      endSourceChar: 3444
+      line: 113
+      lineChar: 43
+      spanCodeSection: "0.0001f)\r\n        "
+    - startInstruction: 952
+      endInstruction: 951
+      startSourceChar: 3444
+      endSourceChar: 3459
+      line: 114
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 952
+      endInstruction: 951
+      startSourceChar: 3459
+      endSourceChar: 3459
+      line: 115
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 952
+      endInstruction: 951
+      startSourceChar: 3459
+      endSourceChar: 3459
+      line: 115
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 952
+      endInstruction: 951
+      startSourceChar: 3459
+      endSourceChar: 3470
+      line: 115
+      lineChar: 12
+      spanCodeSection: 'velocity = '
+    - startInstruction: 952
+      endInstruction: 971
+      startSourceChar: 3470
+      endSourceChar: 3489
+      line: 115
+      lineChar: 23
+      spanCodeSection: "0.0f;\r\n            "
+    - startInstruction: 972
+      endInstruction: 991
+      startSourceChar: 3489
+      endSourceChar: 3517
+      line: 116
+      lineChar: 12
+      spanCodeSection: "return;\r\n        }\r\n        "
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3517
+      endSourceChar: 3517
+      line: 118
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3517
+      endSourceChar: 3517
+      line: 118
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3517
+      endSourceChar: 3526
+      line: 118
+      lineChar: 8
+      spanCodeSection: 'var sign '
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3526
+      endSourceChar: 3528
+      line: 118
+      lineChar: 17
+      spanCodeSection: '= '
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3528
+      endSourceChar: 3528
+      line: 118
+      lineChar: 19
+      spanCodeSection: 
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3528
+      endSourceChar: 3528
+      line: 118
+      lineChar: 19
+      spanCodeSection: 
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3528
+      endSourceChar: 3534
+      line: 118
+      lineChar: 19
+      spanCodeSection: Mathf.
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3534
+      endSourceChar: 3539
+      line: 118
+      lineChar: 25
+      spanCodeSection: Sign(
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3539
+      endSourceChar: 3539
+      line: 118
+      lineChar: 30
+      spanCodeSection: 
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3539
+      endSourceChar: 3539
+      line: 118
+      lineChar: 30
+      spanCodeSection: 
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3539
+      endSourceChar: 3547
+      line: 118
+      lineChar: 30
+      spanCodeSection: Vector3.
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3547
+      endSourceChar: 3551
+      line: 118
+      lineChar: 38
+      spanCodeSection: Dot(
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3551
+      endSourceChar: 3551
+      line: 118
+      lineChar: 42
+      spanCodeSection: 
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3551
+      endSourceChar: 3551
+      line: 118
+      lineChar: 42
+      spanCodeSection: 
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3551
+      endSourceChar: 3561
+      line: 118
+      lineChar: 42
+      spanCodeSection: rigidBody.
+    - startInstruction: 992
+      endInstruction: 991
+      startSourceChar: 3561
+      endSourceChar: 3570
+      line: 118
+      lineChar: 52
+      spanCodeSection: velocity.
+    - startInstruction: 992
+      endInstruction: 1039
+      startSourceChar: 3570
+      endSourceChar: 3582
+      line: 118
+      lineChar: 61
+      spanCodeSection: 'normalized, '
+    - startInstruction: 1040
+      endInstruction: 1115
+      startSourceChar: 3582
+      endSourceChar: 3604
+      line: 118
+      lineChar: 73
+      spanCodeSection: "direction));\r\n        "
+    - startInstruction: 1116
+      endInstruction: 1115
+      startSourceChar: 3604
+      endSourceChar: 3604
+      line: 119
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1116
+      endInstruction: 1115
+      startSourceChar: 3604
+      endSourceChar: 3604
+      line: 119
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1116
+      endInstruction: 1115
+      startSourceChar: 3604
+      endSourceChar: 3615
+      line: 119
+      lineChar: 8
+      spanCodeSection: 'velocity = '
+    - startInstruction: 1116
+      endInstruction: 1115
+      startSourceChar: 3615
+      endSourceChar: 3615
+      line: 119
+      lineChar: 19
+      spanCodeSection: 
+    - startInstruction: 1116
+      endInstruction: 1115
+      startSourceChar: 3615
+      endSourceChar: 3615
+      line: 119
+      lineChar: 19
+      spanCodeSection: 
+    - startInstruction: 1116
+      endInstruction: 1115
+      startSourceChar: 3615
+      endSourceChar: 3615
+      line: 119
+      lineChar: 19
+      spanCodeSection: 
+    - startInstruction: 1116
+      endInstruction: 1115
+      startSourceChar: 3615
+      endSourceChar: 3615
+      line: 119
+      lineChar: 19
+      spanCodeSection: 
+    - startInstruction: 1116
+      endInstruction: 1115
+      startSourceChar: 3615
+      endSourceChar: 3623
+      line: 119
+      lineChar: 19
+      spanCodeSection: Vector3.
+    - startInstruction: 1116
+      endInstruction: 1115
+      startSourceChar: 3623
+      endSourceChar: 3631
+      line: 119
+      lineChar: 27
+      spanCodeSection: Project(
+    - startInstruction: 1116
+      endInstruction: 1115
+      startSourceChar: 3631
+      endSourceChar: 3631
+      line: 119
+      lineChar: 35
+      spanCodeSection: 
+    - startInstruction: 1116
+      endInstruction: 1115
+      startSourceChar: 3631
+      endSourceChar: 3641
+      line: 119
+      lineChar: 35
+      spanCodeSection: rigidBody.
+    - startInstruction: 1116
+      endInstruction: 1139
+      startSourceChar: 3641
+      endSourceChar: 3651
+      line: 119
+      lineChar: 45
+      spanCodeSection: 'velocity, '
+    - startInstruction: 1140
+      endInstruction: 1171
+      startSourceChar: 3651
+      endSourceChar: 3662
+      line: 119
+      lineChar: 55
+      spanCodeSection: direction).
+    - startInstruction: 1172
+      endInstruction: 1195
+      startSourceChar: 3662
+      endSourceChar: 3674
+      line: 119
+      lineChar: 66
+      spanCodeSection: 'magnitude * '
+    - startInstruction: 1196
+      endInstruction: 1247
+      startSourceChar: 3674
+      endSourceChar: 3694
+      line: 119
+      lineChar: 78
+      spanCodeSection: "sign;\r\n    }\r\n\r\n    "
+    - startInstruction: 1248
+      endInstruction: 1255
+      startSourceChar: 3694
+      endSourceChar: 3736
+      line: 122
+      lineChar: 4
+      spanCodeSection: "private void ControllerEditorDebug()\r\n    "
+    - startInstruction: 1256
+      endInstruction: 1255
+      startSourceChar: 3736
+      endSourceChar: 3784
+      line: 123
+      lineChar: 4
+      spanCodeSection: "{\r\n        // Editor\uFFFD\uFFFD\uFFFD[\uFFFDh\uFFFD\u0142\u0303f\uFFFDo\uFFFDb\uFFFDO\r\n\r\n
+        \       "
+    - startInstruction: 1256
+      endInstruction: 1255
+      startSourceChar: 3784
+      endSourceChar: 3784
+      line: 126
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1256
+      endInstruction: 1255
+      startSourceChar: 3784
+      endSourceChar: 3784
+      line: 126
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1256
+      endInstruction: 1255
+      startSourceChar: 3784
+      endSourceChar: 3784
+      line: 126
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1256
+      endInstruction: 1255
+      startSourceChar: 3784
+      endSourceChar: 3799
+      line: 126
+      lineChar: 8
+      spanCodeSection: leftFrontWheel.
+    - startInstruction: 1256
+      endInstruction: 1255
+      startSourceChar: 3799
+      endSourceChar: 3813
+      line: 126
+      lineChar: 23
+      spanCodeSection: 'brakeTorque = '
+    - startInstruction: 1256
+      endInstruction: 1279
+      startSourceChar: 3813
+      endSourceChar: 3827
+      line: 126
+      lineChar: 37
+      spanCodeSection: ".0f;\r\n        "
+    - startInstruction: 1280
+      endInstruction: 1279
+      startSourceChar: 3827
+      endSourceChar: 3827
+      line: 127
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1280
+      endInstruction: 1279
+      startSourceChar: 3827
+      endSourceChar: 3827
+      line: 127
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1280
+      endInstruction: 1279
+      startSourceChar: 3827
+      endSourceChar: 3827
+      line: 127
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1280
+      endInstruction: 1279
+      startSourceChar: 3827
+      endSourceChar: 3843
+      line: 127
+      lineChar: 8
+      spanCodeSection: rightFrontWheel.
+    - startInstruction: 1280
+      endInstruction: 1279
+      startSourceChar: 3843
+      endSourceChar: 3857
+      line: 127
+      lineChar: 24
+      spanCodeSection: 'brakeTorque = '
+    - startInstruction: 1280
+      endInstruction: 1303
+      startSourceChar: 3857
+      endSourceChar: 3871
+      line: 127
+      lineChar: 38
+      spanCodeSection: ".0f;\r\n        "
+    - startInstruction: 1304
+      endInstruction: 1303
+      startSourceChar: 3871
+      endSourceChar: 3871
+      line: 128
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1304
+      endInstruction: 1303
+      startSourceChar: 3871
+      endSourceChar: 3871
+      line: 128
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1304
+      endInstruction: 1303
+      startSourceChar: 3871
+      endSourceChar: 3871
+      line: 128
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1304
+      endInstruction: 1303
+      startSourceChar: 3871
+      endSourceChar: 3885
+      line: 128
+      lineChar: 8
+      spanCodeSection: leftRearWheel.
+    - startInstruction: 1304
+      endInstruction: 1303
+      startSourceChar: 3885
+      endSourceChar: 3899
+      line: 128
+      lineChar: 22
+      spanCodeSection: 'brakeTorque = '
+    - startInstruction: 1304
+      endInstruction: 1327
+      startSourceChar: 3899
+      endSourceChar: 3913
+      line: 128
+      lineChar: 36
+      spanCodeSection: ".0f;\r\n        "
+    - startInstruction: 1328
+      endInstruction: 1327
+      startSourceChar: 3913
+      endSourceChar: 3913
+      line: 129
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1328
+      endInstruction: 1327
+      startSourceChar: 3913
+      endSourceChar: 3913
+      line: 129
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1328
+      endInstruction: 1327
+      startSourceChar: 3913
+      endSourceChar: 3913
+      line: 129
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1328
+      endInstruction: 1327
+      startSourceChar: 3913
+      endSourceChar: 3928
+      line: 129
+      lineChar: 8
+      spanCodeSection: rightRearWheel.
+    - startInstruction: 1328
+      endInstruction: 1327
+      startSourceChar: 3928
+      endSourceChar: 3942
+      line: 129
+      lineChar: 23
+      spanCodeSection: 'brakeTorque = '
+    - startInstruction: 1328
+      endInstruction: 1351
+      startSourceChar: 3942
+      endSourceChar: 3956
+      line: 129
+      lineChar: 37
+      spanCodeSection: ".0f;\r\n        "
+    - startInstruction: 1352
+      endInstruction: 1351
+      startSourceChar: 3956
+      endSourceChar: 3956
+      line: 130
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1352
+      endInstruction: 1351
+      startSourceChar: 3956
+      endSourceChar: 3956
+      line: 130
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1352
+      endInstruction: 1351
+      startSourceChar: 3956
+      endSourceChar: 3967
+      line: 130
+      lineChar: 8
+      spanCodeSection: 'steering = '
+    - startInstruction: 1352
+      endInstruction: 1371
+      startSourceChar: 3967
+      endSourceChar: 3982
+      line: 130
+      lineChar: 19
+      spanCodeSection: "0f;\r\n\r\n        "
+    - startInstruction: 1372
+      endInstruction: 1371
+      startSourceChar: 3982
+      endSourceChar: 3982
+      line: 132
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1372
+      endInstruction: 1371
+      startSourceChar: 3982
+      endSourceChar: 3982
+      line: 132
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1372
+      endInstruction: 1387
+      startSourceChar: 3982
+      endSourceChar: 4014
+      line: 132
+      lineChar: 8
+      spanCodeSection: "ControllerDesktop();\r\n\r\n        "
+    - startInstruction: 1388
+      endInstruction: 1387
+      startSourceChar: 4014
+      endSourceChar: 4014
+      line: 134
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1388
+      endInstruction: 1387
+      startSourceChar: 4014
+      endSourceChar: 4014
+      line: 134
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1388
+      endInstruction: 1387
+      startSourceChar: 4014
+      endSourceChar: 4014
+      line: 134
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1388
+      endInstruction: 1387
+      startSourceChar: 4014
+      endSourceChar: 4029
+      line: 134
+      lineChar: 8
+      spanCodeSection: leftFrontWheel.
+    - startInstruction: 1388
+      endInstruction: 1387
+      startSourceChar: 4029
+      endSourceChar: 4042
+      line: 134
+      lineChar: 23
+      spanCodeSection: 'steerAngle = '
+    - startInstruction: 1388
+      endInstruction: 1411
+      startSourceChar: 4042
+      endSourceChar: 4061
+      line: 134
+      lineChar: 36
+      spanCodeSection: "steering;\r\n        "
+    - startInstruction: 1412
+      endInstruction: 1411
+      startSourceChar: 4061
+      endSourceChar: 4061
+      line: 135
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1412
+      endInstruction: 1411
+      startSourceChar: 4061
+      endSourceChar: 4061
+      line: 135
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1412
+      endInstruction: 1411
+      startSourceChar: 4061
+      endSourceChar: 4061
+      line: 135
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1412
+      endInstruction: 1411
+      startSourceChar: 4061
+      endSourceChar: 4077
+      line: 135
+      lineChar: 8
+      spanCodeSection: rightFrontWheel.
+    - startInstruction: 1412
+      endInstruction: 1411
+      startSourceChar: 4077
+      endSourceChar: 4090
+      line: 135
+      lineChar: 24
+      spanCodeSection: 'steerAngle = '
+    - startInstruction: 1412
+      endInstruction: 1435
+      startSourceChar: 4090
+      endSourceChar: 4206
+      line: 135
+      lineChar: 37
+      spanCodeSection: "steering;\r\n\r\n        //leftRearWheel.motorTorque = motor;\r\n
+        \       //rightRearWheel.motorTorque = motor;\r\n\r\n        "
+    - startInstruction: 1436
+      endInstruction: 1435
+      startSourceChar: 4206
+      endSourceChar: 4206
+      line: 140
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1436
+      endInstruction: 1435
+      startSourceChar: 4206
+      endSourceChar: 4206
+      line: 140
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1436
+      endInstruction: 1435
+      startSourceChar: 4206
+      endSourceChar: 4206
+      line: 140
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1436
+      endInstruction: 1435
+      startSourceChar: 4206
+      endSourceChar: 4221
+      line: 140
+      lineChar: 8
+      spanCodeSection: leftFrontWheel.
+    - startInstruction: 1436
+      endInstruction: 1435
+      startSourceChar: 4221
+      endSourceChar: 4235
+      line: 140
+      lineChar: 23
+      spanCodeSection: 'motorTorque = '
+    - startInstruction: 1436
+      endInstruction: 1459
+      startSourceChar: 4235
+      endSourceChar: 4251
+      line: 140
+      lineChar: 37
+      spanCodeSection: "motor;\r\n        "
+    - startInstruction: 1460
+      endInstruction: 1459
+      startSourceChar: 4251
+      endSourceChar: 4251
+      line: 141
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1460
+      endInstruction: 1459
+      startSourceChar: 4251
+      endSourceChar: 4251
+      line: 141
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1460
+      endInstruction: 1459
+      startSourceChar: 4251
+      endSourceChar: 4251
+      line: 141
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1460
+      endInstruction: 1459
+      startSourceChar: 4251
+      endSourceChar: 4267
+      line: 141
+      lineChar: 8
+      spanCodeSection: rightFrontWheel.
+    - startInstruction: 1460
+      endInstruction: 1459
+      startSourceChar: 4267
+      endSourceChar: 4281
+      line: 141
+      lineChar: 24
+      spanCodeSection: 'motorTorque = '
+    - startInstruction: 1460
+      endInstruction: 1483
+      startSourceChar: 4281
+      endSourceChar: 4299
+      line: 141
+      lineChar: 38
+      spanCodeSection: "motor;\r\n\r\n        "
+    - startInstruction: 1484
+      endInstruction: 1483
+      startSourceChar: 4299
+      endSourceChar: 4299
+      line: 143
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1484
+      endInstruction: 1483
+      startSourceChar: 4299
+      endSourceChar: 4299
+      line: 143
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1484
+      endInstruction: 1483
+      startSourceChar: 4299
+      endSourceChar: 4299
+      line: 143
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1484
+      endInstruction: 1483
+      startSourceChar: 4299
+      endSourceChar: 4314
+      line: 143
+      lineChar: 8
+      spanCodeSection: leftFrontWheel.
+    - startInstruction: 1484
+      endInstruction: 1483
+      startSourceChar: 4314
+      endSourceChar: 4328
+      line: 143
+      lineChar: 23
+      spanCodeSection: 'brakeTorque = '
+    - startInstruction: 1484
+      endInstruction: 1507
+      startSourceChar: 4328
+      endSourceChar: 4344
+      line: 143
+      lineChar: 37
+      spanCodeSection: "brake;\r\n        "
+    - startInstruction: 1508
+      endInstruction: 1507
+      startSourceChar: 4344
+      endSourceChar: 4344
+      line: 144
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1508
+      endInstruction: 1507
+      startSourceChar: 4344
+      endSourceChar: 4344
+      line: 144
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1508
+      endInstruction: 1507
+      startSourceChar: 4344
+      endSourceChar: 4344
+      line: 144
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1508
+      endInstruction: 1507
+      startSourceChar: 4344
+      endSourceChar: 4360
+      line: 144
+      lineChar: 8
+      spanCodeSection: rightFrontWheel.
+    - startInstruction: 1508
+      endInstruction: 1507
+      startSourceChar: 4360
+      endSourceChar: 4374
+      line: 144
+      lineChar: 24
+      spanCodeSection: 'brakeTorque = '
+    - startInstruction: 1508
+      endInstruction: 1531
+      startSourceChar: 4374
+      endSourceChar: 4390
+      line: 144
+      lineChar: 38
+      spanCodeSection: "brake;\r\n        "
+    - startInstruction: 1532
+      endInstruction: 1531
+      startSourceChar: 4390
+      endSourceChar: 4390
+      line: 145
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1532
+      endInstruction: 1531
+      startSourceChar: 4390
+      endSourceChar: 4390
+      line: 145
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1532
+      endInstruction: 1531
+      startSourceChar: 4390
+      endSourceChar: 4390
+      line: 145
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1532
+      endInstruction: 1531
+      startSourceChar: 4390
+      endSourceChar: 4404
+      line: 145
+      lineChar: 8
+      spanCodeSection: leftRearWheel.
+    - startInstruction: 1532
+      endInstruction: 1531
+      startSourceChar: 4404
+      endSourceChar: 4418
+      line: 145
+      lineChar: 22
+      spanCodeSection: 'brakeTorque = '
+    - startInstruction: 1532
+      endInstruction: 1555
+      startSourceChar: 4418
+      endSourceChar: 4434
+      line: 145
+      lineChar: 36
+      spanCodeSection: "brake;\r\n        "
+    - startInstruction: 1556
+      endInstruction: 1555
+      startSourceChar: 4434
+      endSourceChar: 4434
+      line: 146
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1556
+      endInstruction: 1555
+      startSourceChar: 4434
+      endSourceChar: 4434
+      line: 146
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1556
+      endInstruction: 1555
+      startSourceChar: 4434
+      endSourceChar: 4434
+      line: 146
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 1556
+      endInstruction: 1555
+      startSourceChar: 4434
+      endSourceChar: 4449
+      line: 146
+      lineChar: 8
+      spanCodeSection: rightRearWheel.
+    - startInstruction: 1556
+      endInstruction: 1555
+      startSourceChar: 4449
+      endSourceChar: 4463
+      line: 146
+      lineChar: 23
+      spanCodeSection: 'brakeTorque = '
+    - startInstruction: 1556
+      endInstruction: 1556
+      startSourceChar: 4463
+      endSourceChar: 4463
+      line: 146
+      lineChar: 37
+      spanCodeSection: 
+  hasInteractEvent: 0
+  serializationData:
+    SerializedFormat: 2
+    SerializedBytes: 
+    ReferencedUnityObjects: []
+    SerializedBytesString: 
+    Prefab: {fileID: 0}
+    PrefabModificationsReferencedUnityObjects: []
+    PrefabModifications: []
+    SerializationNodes:
+    - Name: fieldDefinitions
+      Entry: 7
+      Data: 0|System.Collections.Generic.Dictionary`2[[System.String, mscorlib],[UdonSharp.FieldDefinition,
+        UdonSharp.Editor]], mscorlib
+    - Name: comparer
+      Entry: 7
+      Data: 1|System.Collections.Generic.GenericEqualityComparer`1[[System.String,
+        mscorlib]], mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 12
+      Data: 16
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: leftFrontWheel
+    - Name: $v
+      Entry: 7
+      Data: 2|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 3|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 7
+      Data: 4|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: UnityEngine.WheelCollider, UnityEngine.VehiclesModule
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: UnityEngineWheelCollider
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: leftFrontWheel
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: leftFrontWheel
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 5|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: rightFrontWheel
+    - Name: $v
+      Entry: 7
+      Data: 6|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 7|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 4
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: UnityEngineWheelCollider
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: rightFrontWheel
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: rightFrontWheel
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 8|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: leftRearWheel
+    - Name: $v
+      Entry: 7
+      Data: 9|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 10|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 4
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: UnityEngineWheelCollider
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: leftRearWheel
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: leftRearWheel
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 11|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: rightRearWheel
+    - Name: $v
+      Entry: 7
+      Data: 12|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 13|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 4
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: UnityEngineWheelCollider
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: rightRearWheel
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: rightRearWheel
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 14|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: MAX_SPEED
+    - Name: $v
+      Entry: 7
+      Data: 15|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 16|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 7
+      Data: 17|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: System.Single, mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemSingle
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: MAX_SPEED
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: MAX_SPEED
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 18|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: MAX_MOTOR_TORQUE
+    - Name: $v
+      Entry: 7
+      Data: 19|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 20|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 17
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemSingle
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: MAX_MOTOR_TORQUE
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: MAX_MOTOR_TORQUE
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 21|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: MAX_STEERING_ANGLE
+    - Name: $v
+      Entry: 7
+      Data: 22|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 23|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 17
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemSingle
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: MAX_STEERING_ANGLE
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: MAX_STEERING_ANGLE
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 24|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: MAX_BRAKE_TORQUE
+    - Name: $v
+      Entry: 7
+      Data: 25|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 26|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 17
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemSingle
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: MAX_BRAKE_TORQUE
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: MAX_BRAKE_TORQUE
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 27|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: CONST_BRAKE_TORQUE
+    - Name: $v
+      Entry: 7
+      Data: 28|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 29|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 17
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemSingle
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: CONST_BRAKE_TORQUE
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: CONST_BRAKE_TORQUE
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 30|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: DOWN_FORCE
+    - Name: $v
+      Entry: 7
+      Data: 31|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 32|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 17
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemSingle
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: DOWN_FORCE
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: DOWN_FORCE
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 33|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: CENTER_MASS_POS
+    - Name: $v
+      Entry: 7
+      Data: 34|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 35|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 17
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemSingle
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: CENTER_MASS_POS
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: CENTER_MASS_POS
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 36|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: motor
+    - Name: $v
+      Entry: 7
+      Data: 37|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 38|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 17
+    - Name: declarationType
+      Entry: 3
+      Data: 2
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemSingle
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: motor
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: motor
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 39|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: steering
+    - Name: $v
+      Entry: 7
+      Data: 40|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 41|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 17
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemSingle
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: steering
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: steering
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 42|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: brake
+    - Name: $v
+      Entry: 7
+      Data: 43|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 44|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 17
+    - Name: declarationType
+      Entry: 3
+      Data: 2
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemSingle
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: brake
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: brake
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 45|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: velocity
+    - Name: $v
+      Entry: 7
+      Data: 46|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 47|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 17
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemSingle
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: velocity
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: velocity
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 48|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: rigidBody
+    - Name: $v
+      Entry: 7
+      Data: 49|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 50|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 7
+      Data: 51|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: UnityEngine.Rigidbody, UnityEngine.PhysicsModule
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: declarationType
+      Entry: 3
+      Data: 2
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: UnityEngineRigidbody
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: rigidBody
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: rigidBody
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 52|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 

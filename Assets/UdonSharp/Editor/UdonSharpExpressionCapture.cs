@@ -404,7 +404,7 @@ namespace UdonSharp
         {
             if (cowValue == null)
             {
-                cowValue = ExecuteGet().GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable);
+                cowValue = ExecuteGet().GetCOWValue(visitorContext);
             }
 
             return cowValue;
@@ -850,7 +850,7 @@ namespace UdonSharp
                             using (ExpressionCaptureScope paramArraySetterScope = new ExpressionCaptureScope(visitorContext, null))
                             {
                                 paramArraySetterScope.SetToLocalSymbol(paramsArraySymbol);
-                                using (SymbolDefinition.COWValue arrayIndex = arrayIndexSymbol.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable)) {
+                                using (SymbolDefinition.COWValue arrayIndex = arrayIndexSymbol.GetCOWValue(visitorContext)) {
                                     paramArraySetterScope.HandleArrayIndexerAccess(arrayIndex);
                                 }
                                 paramArraySetterScope.ExecuteSet(invokeParams[j]);
@@ -971,7 +971,7 @@ namespace UdonSharp
             using (ExpressionCaptureScope componentArrayGetter = new ExpressionCaptureScope(visitorContext, null))
             {
                 componentArrayGetter.SetToLocalSymbol(componentArray);
-                using (SymbolDefinition.COWValue arrayIndexValue = arrayIndex.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                using (SymbolDefinition.COWValue arrayIndexValue = arrayIndex.GetCOWValue(visitorContext))
                 {
                     componentArrayGetter.HandleArrayIndexerAccess(arrayIndexValue);
                 }
@@ -1093,7 +1093,7 @@ namespace UdonSharp
                 using (ExpressionCaptureScope componentArrayGetter = new ExpressionCaptureScope(visitorContext, null))
                 {
                     componentArrayGetter.SetToLocalSymbol(componentArray);
-                    using (SymbolDefinition.COWValue arrayIndexValue = arrayIndex.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                    using (SymbolDefinition.COWValue arrayIndexValue = arrayIndex.GetCOWValue(visitorContext))
                     {
                         componentArrayGetter.HandleArrayIndexerAccess(arrayIndexValue);
                     }
@@ -1209,7 +1209,7 @@ namespace UdonSharp
                 using (ExpressionCaptureScope componentArrayGetter = new ExpressionCaptureScope(visitorContext, null))
                 {
                     componentArrayGetter.SetToLocalSymbol(componentArray);
-                    using (SymbolDefinition.COWValue arrayIndexValue = arrayIndex.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                    using (SymbolDefinition.COWValue arrayIndexValue = arrayIndex.GetCOWValue(visitorContext))
                     {
                         componentArrayGetter.HandleArrayIndexerAccess(arrayIndexValue);
                     }
@@ -1242,7 +1242,7 @@ namespace UdonSharp
                 using (ExpressionCaptureScope setArrayValueScope = new ExpressionCaptureScope(visitorContext, null))
                 {
                     setArrayValueScope.SetToLocalSymbol(resultSymbol);
-                    using (SymbolDefinition.COWValue destIdxValue = destIdxSymbol.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                    using (SymbolDefinition.COWValue destIdxValue = destIdxSymbol.GetCOWValue(visitorContext))
                     {
                         setArrayValueScope.HandleArrayIndexerAccess(destIdxValue);
                     }
@@ -1250,7 +1250,7 @@ namespace UdonSharp
                     using (ExpressionCaptureScope sourceValueGetScope = new ExpressionCaptureScope(visitorContext, null))
                     {
                         sourceValueGetScope.SetToLocalSymbol(componentArray);
-                        using (SymbolDefinition.COWValue arrayIndexValue = arrayIndex.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable)) {
+                        using (SymbolDefinition.COWValue arrayIndexValue = arrayIndex.GetCOWValue(visitorContext)) {
                             sourceValueGetScope.HandleArrayIndexerAccess(arrayIndexValue);
                         }
 
@@ -2191,7 +2191,7 @@ namespace UdonSharp
             else
             {
                 // We needed to do a cast, so create a COW value for the post-cast value
-                using (SymbolDefinition.COWValue cowIndex = indexerSymbol.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                using (SymbolDefinition.COWValue cowIndex = indexerSymbol.GetCOWValue(visitorContext))
                 {
                     arrayIndexerIndexValue = cowIndex;
                 }
