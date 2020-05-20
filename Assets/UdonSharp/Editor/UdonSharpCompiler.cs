@@ -377,6 +377,9 @@ namespace UdonSharp
 
                 ResolverContext resolver = new ResolverContext();
                 SymbolTable classSymbols = new SymbolTable(resolver, null);
+
+                classSymbols.OpenSymbolTable();
+
                 LabelTable classLabels = new LabelTable();
                 
                 SyntaxTree tree = CSharpSyntaxTree.ParseText(programSource);
@@ -393,6 +396,8 @@ namespace UdonSharp
 
                     return null;
                 }
+
+                classSymbols.CloseSymbolTable();
 
                 classVisitor.classDefinition.classScript = udonSharpProgram.sourceCsScript;
                 classDefinitions.Add(classVisitor.classDefinition);

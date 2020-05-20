@@ -83,6 +83,8 @@ namespace UdonSharp
                 return errorCount;
             }
 
+            moduleSymbols.OpenSymbolTable();
+
             Profiler.BeginSample("Visit");
             UdonSharpFieldVisitor fieldVisitor = new UdonSharpFieldVisitor(fieldsWithInitializers);
             fieldVisitor.Visit(tree.GetRoot());
@@ -140,6 +142,8 @@ namespace UdonSharp
                 errorCount++;
             }
             Profiler.EndSample();
+
+            moduleSymbols.CloseSymbolTable();
 
             if (errorCount == 0)
             {

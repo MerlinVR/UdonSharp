@@ -101,23 +101,28 @@ namespace UdonSharp
 #endif
         }
 
-        public COWValue GetCOWValue(AssemblyBuilder assemblyBuilder, SymbolTable symbolTable)
+        public COWValue GetCOWValue(ASTVisitorContext visitorContext)
         {
             if (cowValue != null)
             {
-                if (cowValue.assemblyBuilder != assemblyBuilder)
+                if (cowValue.visitorContext != visitorContext)
                 {
                     // Hmm... new compilation context? Dirty it and get a new one.
                     cowValue.MarkDirty();
                     cowValue = null;
-                } else if (cowValue.isDirty) {
+                }
+                else if (cowValue.isDirty || cowValue.referenceCount == 0)
+                {
+                    // If the reference count is 0, we've probably moved scopes. We clear out the cowValue here to make sure that a cowValue is only used in one scope at a time. 
                     cowValue = null;
-                } else {
+                }
+                else
+                {
                     return new COWValue(cowValue);
                 }
             }
 
-            cowValue = new COWValueInternal(assemblyBuilder, this, symbolTable);
+            cowValue = new COWValueInternal(visitorContext, this);
             return new COWValue(cowValue);
         }
 
@@ -137,25 +142,25 @@ namespace UdonSharp
 
             public int instanceIndex = index++;
 
-            public AssemblyBuilder assemblyBuilder;
-
             public int referenceCount = 0;
             public bool isDirty = false;
 
             public SymbolDefinition symbol { get; private set; } = null;
             public SymbolDefinition originalSymbol { get; private set; } = null;
 
-            public SymbolTable symbolTable;
+            public ASTVisitorContext visitorContext { get; private set; } = null;
 
 #if UDONSHARP_DEBUG
             private HashSet<COWValue> holders = new HashSet<COWValue>();
 #endif
+            private SymbolTable tableCreationScope;
 
-            public COWValueInternal(AssemblyBuilder assemblyBuilder, SymbolDefinition symbol, SymbolTable table)
+            public COWValueInternal(ASTVisitorContext visitorContext, SymbolDefinition symbol)
             {
-                this.assemblyBuilder = assemblyBuilder;
                 this.symbol = this.originalSymbol = symbol;
-                this.symbolTable = table;
+                this.visitorContext = visitorContext;
+
+                tableCreationScope = visitorContext.topTable;
             }
 
             public void AddRef(COWValue holder)
@@ -164,6 +169,11 @@ namespace UdonSharp
 #if UDONSHARP_DEBUG
                 holders.Add(holder);
 #endif
+
+                if (visitorContext.topTable != tableCreationScope)
+                {
+                    throw new Exception($"COWSymbolValue for {originalSymbol} has had ref added from different symbol table scope.");
+                }
             }
 
             public void ClearRef(COWValue holder)
@@ -175,6 +185,11 @@ namespace UdonSharp
                     throw new Exception("No matching holder for COWValue");
                 }
 #endif
+
+                if (visitorContext.topTable != tableCreationScope)
+                {
+                    throw new Exception($"COWSymbolValue for {originalSymbol} has been disposed from different symbol table scope.");
+                }
             }
 
             public void AssertNoLeaks()
@@ -201,8 +216,8 @@ namespace UdonSharp
 
                 if (!isDirty)
                 {
-                    SymbolDefinition temporary = symbolTable.CreateUnnamedSymbol(symbol.internalType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
-                    assemblyBuilder.AddCopy(temporary, symbol, " Copy-on-write symbol value dirtied");
+                    SymbolDefinition temporary = visitorContext.topTable.CreateUnnamedSymbol(symbol.internalType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
+                    visitorContext.uasmBuilder.AddCopy(temporary, symbol, " Copy-on-write symbol value dirtied");
                     symbol = temporary;
                     isDirty = true;
                 }
@@ -278,6 +293,14 @@ namespace UdonSharp
 
         private Dictionary<string, int> namedSymbolCounters;
 
+        private bool IsTableReadOnly = true;
+
+#if UDONSHARP_DEBUG
+        private System.Diagnostics.StackTrace creationTrace;
+#endif
+
+        private List<(SymbolTable, Dictionary<string, int>)> initialSymbolCounters = new List<(SymbolTable, Dictionary<string, int>)>();
+
         public SymbolTable GetGlobalSymbolTable()
         {
             SymbolTable currentTable = this;
@@ -300,6 +323,30 @@ namespace UdonSharp
 
             symbolDefinitions = new List<SymbolDefinition>();
             namedSymbolCounters = new Dictionary<string, int>();
+
+#if UDONSHARP_DEBUG
+            creationTrace = new System.Diagnostics.StackTrace(true);
+#endif
+        }
+
+        public void OpenSymbolTable()
+        {
+            IsTableReadOnly = false;
+
+            // Copy the current symbol counters for checking when the symbol table has been closed
+            SymbolTable currentTable = parentSymbolTable;
+            while (currentTable != null)
+            {
+                initialSymbolCounters.Add((currentTable, new Dictionary<string, int>(currentTable.namedSymbolCounters)));
+                currentTable = currentTable.parentSymbolTable;
+            }
+        }
+
+        public void CloseSymbolTable()
+        {
+            IsTableReadOnly = true;
+            
+            ValidateParentTableCounters();
         }
 
         protected int IncrementUniqueNameCounter(string symbolName)
@@ -332,6 +379,38 @@ namespace UdonSharp
 
             // If nothing has defined a symbol with this name, then return -1 to signify that
             return -1;
+        }
+
+        public void ValidateParentTableCounters()
+        {
+            SymbolTable currentTable = parentSymbolTable;
+
+            int tableIdx = 0;
+
+            while (currentTable != null)
+            {
+                (SymbolTable, Dictionary<string, int>) counterPair = initialSymbolCounters[tableIdx];
+
+                if (counterPair.Item1 != currentTable)
+                    throw new Exception("Table mismatch, parent tables have changed during the lifetime of a symbol table.");
+
+                Dictionary<string, int> initialCounters = counterPair.Item2;
+
+                if (!currentTable.IsGlobalSymbolTable)
+                {
+                    foreach (var currentCounters in currentTable.namedSymbolCounters)
+                    {
+                        if (!initialCounters.ContainsKey(currentCounters.Key))
+                            throw new Exception($"Counter for symbol {currentCounters.Key} has been added while table is not valid for modification.");
+
+                        if (initialCounters[currentCounters.Key] != currentCounters.Value)
+                            throw new Exception($"Counter for symbol {currentCounters.Key} in symbol table has been modified while table is not valid for modification.");
+                    }
+                }
+
+                ++tableIdx;
+                currentTable = currentTable.parentSymbolTable;
+            }
         }
 
         /// <summary>
@@ -624,6 +703,35 @@ namespace UdonSharp
             else
             {
                 symbolDefinitions.Add(symbolDefinition);
+            }
+
+#if UDONSHARP_DEBUG
+            if (IsTableReadOnly)
+                throw new Exception($"Cannot add symbol {symbolDefinition}, symbol table is readonly. Symbol Table creation stacktrace \n\n{creationTrace}");
+#else
+            if (IsTableReadOnly)
+                throw new Exception($"Cannot add symbol {symbolDefinition}, symbol table is readonly.");
+#endif
+
+            if (IsGlobalSymbolTable)
+            {
+                bool anyChildTableOpen = false;
+                foreach (SymbolTable childTable in childSymbolTables)
+                {
+                    if (!childTable.IsTableReadOnly)
+                    {
+                        anyChildTableOpen = true;
+                        break;
+                    }
+                }
+
+                if (anyChildTableOpen)
+                {
+                    if (!declType.HasFlag(SymbolDeclTypeFlags.Reflection) &&
+                        !declType.HasFlag(SymbolDeclTypeFlags.Constant) &&
+                        !declType.HasFlag(SymbolDeclTypeFlags.This))
+                        throw new Exception($"Cannot add symbol {symbolDefinition} to root table while other tables are in use.");
+                }
             }
 
             return symbolDefinition;
