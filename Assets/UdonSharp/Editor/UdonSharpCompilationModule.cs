@@ -80,6 +80,8 @@ namespace UdonSharp
             {
                 return result;
             }
+
+            moduleSymbols.OpenSymbolTable();
             
             UdonSharpFieldVisitor fieldVisitor = new UdonSharpFieldVisitor(fieldsWithInitializers);
             fieldVisitor.Visit(tree.GetRoot());
@@ -138,6 +140,8 @@ namespace UdonSharp
             {
                 return result;
             }
+
+            moduleSymbols.CloseSymbolTable();
 
             if (errorCount == 0)
             {

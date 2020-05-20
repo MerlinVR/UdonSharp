@@ -59,13 +59,6 @@ namespace UdonSharp
             }
         }
 
-        public void PopTable()
-        {
-            if (symbolTableStack.Count == 1)
-                throw new System.Exception("Cannot pop root table, mismatched scope entry and exit!");
-
-            symbolTableStack.Pop();
-        }
 
         public void PushTable(SymbolTable newTable)
         {
@@ -73,6 +66,16 @@ namespace UdonSharp
                 throw new System.ArgumentException("Parent symbol table is not valid for given context.");
 
             symbolTableStack.Push(newTable);
+            newTable.OpenSymbolTable();
+        }
+
+        public void PopTable()
+        {
+            if (symbolTableStack.Count == 1)
+                throw new System.Exception("Cannot pop root table, mismatched scope entry and exit!");
+
+            SymbolTable table = symbolTableStack.Pop();
+            table.CloseSymbolTable();
         }
 
         public void PushCaptureScope(ExpressionCaptureScope captureScope)
@@ -498,7 +501,7 @@ namespace UdonSharp
                         using (ExpressionCaptureScope arraySetIdxScope = new ExpressionCaptureScope(visitorContext, null))
                         {
                             arraySetIdxScope.SetToLocalSymbol(arraySymbol);
-                            using (SymbolDefinition.COWValue arrayIndex = visitorContext.topTable.CreateConstSymbol(typeof(int), i).GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                            using (SymbolDefinition.COWValue arrayIndex = visitorContext.topTable.CreateConstSymbol(typeof(int), i).GetCOWValue(visitorContext))
                             {
                                 arraySetIdxScope.HandleArrayIndexerAccess(arrayIndex);
                             }
@@ -595,7 +598,7 @@ namespace UdonSharp
                 using (ExpressionCaptureScope arrayIdxSetScope = new ExpressionCaptureScope(visitorContext, null))
                 {
                     arrayIdxSetScope.SetToLocalSymbol(arraySymbol);
-                    using (SymbolDefinition.COWValue arrayIndex = visitorContext.topTable.CreateConstSymbol(typeof(int), i).GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                    using (SymbolDefinition.COWValue arrayIndex = visitorContext.topTable.CreateConstSymbol(typeof(int), i).GetCOWValue(visitorContext))
                     {
                         arrayIdxSetScope.HandleArrayIndexerAccess(arrayIndex);
                     }
@@ -2195,7 +2198,7 @@ namespace UdonSharp
             using (ExpressionCaptureScope indexAccessExecuteScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 indexAccessExecuteScope.SetToLocalSymbol(arraySymbol);
-                using (SymbolDefinition.COWValue arrayIndex = indexSymbol.GetCOWValue(visitorContext.uasmBuilder, visitorContext.topTable))
+                using (SymbolDefinition.COWValue arrayIndex = indexSymbol.GetCOWValue(visitorContext))
                 {
                     indexAccessExecuteScope.HandleArrayIndexerAccess(arrayIndex, valueSymbol);
                 }
