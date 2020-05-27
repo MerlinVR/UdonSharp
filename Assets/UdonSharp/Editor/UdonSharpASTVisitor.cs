@@ -797,9 +797,12 @@ namespace UdonSharp
 
             List<System.Attribute> fieldAttributes = GetFieldAttributes(node);
 
-            bool isPublic = (node.Modifiers.HasModifier("public") || fieldAttributes.Find(e => e is SerializeField) != null) && fieldAttributes.Find(e => e is System.NonSerializedAttribute) == null;
+            bool isPublic = (node.Modifiers.Any(SyntaxKind.PublicKeyword) || fieldAttributes.Find(e => e is SerializeField) != null) && fieldAttributes.Find(e => e is System.NonSerializedAttribute) == null;
+            bool isConst = (node.Modifiers.Any(SyntaxKind.ConstKeyword) || node.Modifiers.Any(SyntaxKind.ReadOnlyKeyword));
+            SymbolDeclTypeFlags flags = (isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private) | 
+                                        (isConst ? SymbolDeclTypeFlags.Readonly : 0);
 
-            List<SymbolDefinition> fieldSymbols = HandleVariableDeclaration(node.Declaration, isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private, fieldSyncMode);
+            List<SymbolDefinition> fieldSymbols = HandleVariableDeclaration(node.Declaration, flags, fieldSyncMode);
             foreach (SymbolDefinition fieldSymbol in fieldSymbols)
             {
                 FieldDefinition fieldDefinition = new FieldDefinition(fieldSymbol);
@@ -1858,7 +1861,10 @@ namespace UdonSharp
             System.Type targetType = null;
             SymbolDefinition expressionSymbol = null;
 
-            using (ExpressionCaptureScope castExpressionCapture = new ExpressionCaptureScope(visitorContext, null, visitorContext.requestedDestination))
+            //SymbolDefinition castOutSymbol = visitorContext.requestedDestination;
+            SymbolDefinition castOutSymbol = null;
+
+            using (ExpressionCaptureScope castExpressionCapture = new ExpressionCaptureScope(visitorContext, null, castOutSymbol))
             {
                 Visit(node.Expression);
 
@@ -1874,9 +1880,6 @@ namespace UdonSharp
 
                 targetType = castTypeCapture.captureType;
             }
-
-
-            SymbolDefinition castOutSymbol = visitorContext.requestedDestination;
 
             using (ExpressionCaptureScope castOutCapture = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
             {
@@ -2407,6 +2410,36 @@ namespace UdonSharp
             visitorContext.breakLabelStack.Pop();
         }
 
+        private void HandleNameOfExpression(InvocationExpressionSyntax node)
+        {
+            SyntaxNode currentNode = node.ArgumentList.Arguments[0].Expression;
+            string currentName = "";
+
+            while (currentNode != null)
+            {
+                switch (currentNode.Kind())
+                {
+                    case SyntaxKind.SimpleMemberAccessExpression:
+                        MemberAccessExpressionSyntax memberNode = (MemberAccessExpressionSyntax)currentNode;
+                        currentName = memberNode.Name.ToString();
+                        currentNode = memberNode.Name;
+                        break;
+                    default:
+                        currentNode = null;
+                        break;
+                }
+
+                if (currentNode != null)
+                    UpdateSyntaxNode(currentNode);
+            }
+
+            if (currentName == "")
+                throw new System.ArgumentException("Expression does not have a name");
+
+            if (visitorContext.topCaptureScope != null)
+                visitorContext.topCaptureScope.SetToLocalSymbol(visitorContext.topTable.CreateConstSymbol(typeof(string), currentName));
+        }
+
         public override void VisitCaseSwitchLabel(CaseSwitchLabelSyntax node)
         {
             UpdateSyntaxNode(node);
@@ -2464,6 +2497,12 @@ namespace UdonSharp
         public override void VisitInvocationExpression(InvocationExpressionSyntax node)
         {
             UpdateSyntaxNode(node);
+
+            if (node.Expression != null && node.Expression.ToString() == "nameof") // nameof is not a dedicated node and the Kind of the node isn't the nameof kind for whatever reason...
+            {
+                HandleNameOfExpression(node);
+                return;
+            }
 
             SymbolDefinition requestedDestination = visitorContext.requestedDestination;
 

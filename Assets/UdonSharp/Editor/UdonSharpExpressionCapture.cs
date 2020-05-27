@@ -544,7 +544,7 @@ namespace UdonSharp
         {
             CheckScopeValidity();
 
-            SymbolDefinition destinationSymbol = this.destinationSymbolForSet;
+            SymbolDefinition destinationSymbol = destinationSymbolForSet;
             SymbolDefinition convertedValue = CastSymbolToType(value, GetReturnType(true), explicitCast, false, destinationSymbol);
 
             // If it's a local symbol, it's just a simple COPY
@@ -686,7 +686,9 @@ namespace UdonSharp
             // Numeric conversion handling
             MethodInfo conversionFunction = UdonSharpUtils.GetNumericConversionMethod(targetType, sourceSymbol.symbolCsType);
 
-            if (conversionFunction != null && (isExplicit || isNumericCastValid))
+            if (conversionFunction != null && 
+                (isExplicit || isNumericCastValid) && 
+                (targetType != typeof(string) || sourceSymbol.userCsType != typeof(object))) // Convert.ToString(object) will convert null to an empty string, we do not want that.
             {
                 SymbolDefinition sourceNumericSymbol = sourceSymbol;
 
