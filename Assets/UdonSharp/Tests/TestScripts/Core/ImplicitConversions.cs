@@ -22,6 +22,9 @@ namespace UdonSharp.Tests
 
             // https://github.com/Merlin-san/UdonSharp/issues/32
             tester.TestAssertion("Null public string is null", selfRef.testStr == null);
+
+            testStr = "hello!";
+            tester.TestAssertion("Non-null public string is valid", selfRef.testStr == "hello!");
         }
     }
 }
