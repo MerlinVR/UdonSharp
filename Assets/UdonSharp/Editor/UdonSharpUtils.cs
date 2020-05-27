@@ -421,12 +421,13 @@ namespace UdonSharp
                    IsUserJaggedArray(type);
         }
 
-        private static Dictionary<System.Type, System.Type> userTypeToUdonTypeCache = new Dictionary<System.Type, System.Type>();
+        // Doesn't work in a multi threaded context, todo: consider making this a concurrent collection or making one for each thread.
+        //private static Dictionary<System.Type, System.Type> userTypeToUdonTypeCache = new Dictionary<System.Type, System.Type>();
 
         public static System.Type UserTypeToUdonType(System.Type type)
         {
-            System.Type udonType;
-            if (!userTypeToUdonTypeCache.TryGetValue(type, out udonType))
+            System.Type udonType = null;
+            //if (!userTypeToUdonTypeCache.TryGetValue(type, out udonType))
             {
                 if (IsUserDefinedType(type))
                 {
@@ -450,7 +451,7 @@ namespace UdonSharp
                 if (udonType == null)
                     udonType = type;
 
-                userTypeToUdonTypeCache.Add(type, udonType);
+                //userTypeToUdonTypeCache.Add(type, udonType);
             }
 
             return udonType;

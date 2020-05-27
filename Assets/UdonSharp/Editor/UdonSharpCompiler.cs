@@ -1,10 +1,12 @@
 ﻿using System.CodeDom;
 using System.CodeDom.Compiler;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -18,6 +20,22 @@ namespace UdonSharp
 {
     public class UdonSharpCompiler
     {
+        public class CompileError
+        {
+            public MonoScript script;
+            public string errorStr;
+            public int lineIdx;
+            public int charIdx;
+        }
+
+        public class CompileTaskResult
+        {
+            public UdonSharpProgramAsset programAsset;
+            public string compiledAssembly;
+            public uint symbolCount;
+            public List<CompileError> compileErrors = new List<CompileError>();
+        }
+
         private CompilationModule[] modules;
 
         private static int initAssemblyCounter = 0;
@@ -40,7 +58,6 @@ namespace UdonSharp
             compileTimer.Start();
 
             int totalErrorCount = 0;
-            int moduleCounter = 0;
 
             try
             {
@@ -50,14 +67,61 @@ namespace UdonSharp
 
                 if (totalErrorCount == 0)
                 {
+#if UDONSHARP_DEBUG // Single threaded compile
+                    List<CompileTaskResult> compileTasks = new List<CompileTaskResult>();
+
                     foreach (CompilationModule module in modules)
                     {
-                        EditorUtility.DisplayProgressBar("UdonSharp Compile",
-                                                        $"Compiling {AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript)}...",
-                                                        Mathf.Clamp01((moduleCounter++ / (float)modules.Length) + Random.Range(0.01f, 1f / modules.Length))); // Make it look like we're doing work :D
+                        compileTasks.Add(module.Compile(classDefinitions));
+                    }
+#else
+                    List<Task<CompileTaskResult>> compileTasks = new List<Task<CompileTaskResult>>();
 
-                        int moduleErrorCount = module.Compile(classDefinitions);
-                        totalErrorCount += moduleErrorCount;
+                    foreach (CompilationModule module in modules)
+                    {
+                        compileTasks.Add(Task.Factory.StartNew(() => module.Compile(classDefinitions)));
+                    }
+#endif
+
+                    int totalTaskCount = compileTasks.Count;
+
+                    while (compileTasks.Count > 0)
+                    {
+#if UDONSHARP_DEBUG
+                        CompileTaskResult compileResult = compileTasks.Last();
+                        compileTasks.RemoveAt(compileTasks.Count - 1);
+#else
+                        Task<CompileTaskResult> compileResultTask = Task.WhenAny(compileTasks).Result;
+                        compileTasks.Remove(compileResultTask);
+
+                        CompileTaskResult compileResult = compileResultTask.Result;
+#endif
+
+                        if (compileResult.compileErrors.Count == 0)
+                        {
+                            compileResult.programAsset.SetUdonAssembly(compileResult.compiledAssembly);
+                            compileResult.programAsset.AssembleCsProgram(compileResult.symbolCount);
+                        }
+                        else
+                        {
+                            foreach (CompileError error in compileResult.compileErrors)
+                            {
+                                string errorMessage = UdonSharpUtils.LogBuildError(error.errorStr,
+                                                                                   AssetDatabase.GetAssetPath(error.script).Replace("/", "\\"),
+                                                                                   error.lineIdx,
+                                                                                   error.charIdx);
+
+                                compileResult.programAsset.compileErrors.Add(errorMessage);
+                            }
+
+                            totalErrorCount += compileResult.compileErrors.Count;
+                        }
+
+                        int processedTaskCount = totalTaskCount - compileTasks.Count;
+
+                        EditorUtility.DisplayProgressBar("UdonSharp Compile",
+                                                         $"Compiling scripts ({processedTaskCount}/{totalTaskCount})...",
+                                                         Mathf.Clamp01((processedTaskCount / ((float)totalTaskCount + 1f))));
                     }
 
                     if (totalErrorCount == 0)

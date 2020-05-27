@@ -2,6 +2,7 @@
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Editor.ProgramSources;
 
@@ -67,6 +68,36 @@ namespace UdonSharp
             //AssetDatabase.SaveAssets();
 
             return newProgramAsset;
+        }
+
+        /// <summary>
+        /// Deletes an UdonSharp program asset and the serialized program asset associated with it
+        /// </summary>
+        /// <param name="programAsset"></param>
+        public static void DeleteProgramAsset(UdonSharpProgramAsset programAsset)
+        {
+            if (programAsset == null)
+                return;
+
+            AbstractSerializedUdonProgramAsset serializedAsset = programAsset.GetSerializedUdonProgramAsset();
+
+            if (serializedAsset != null)
+            {
+                string assetPath = AssetDatabase.GetAssetPath(serializedAsset);
+                serializedAsset = AssetDatabase.LoadAssetAtPath<AbstractSerializedUdonProgramAsset>(assetPath);
+
+                if (serializedAsset != null)
+                {
+                    AssetDatabase.DeleteAsset(assetPath);
+                }
+            }
+
+            string programAssetPath = AssetDatabase.GetAssetPath(programAsset);
+
+            programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(programAssetPath);
+
+            if (programAsset != null)
+                AssetDatabase.DeleteAsset(programAssetPath);
         }
     }
 }

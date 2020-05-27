@@ -127,6 +127,11 @@ namespace UdonSharp
         {
             // Right now just check that the capture scopes are empty and no one failed to close a scope.
             Debug.Assert(visitorContext.topCaptureScope == null, "AST visitor capture scope state invalid!");
+            
+            foreach (SymbolDefinition d in visitorContext.topTable.GetAllSymbols(true))
+            {
+                d.AssertCOWClosed();
+            }
         }
 
         public string GetCompiledUasm()
@@ -1257,7 +1262,7 @@ namespace UdonSharp
                         operandCapture.ExecuteSet(resultSymbol, true);
                     }
                 }
-                catch (System.Exception e)
+                catch (System.Exception)
                 {
                     throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operand of type '{UdonSharpUtils.PrettifyTypeName(operandCapture.GetReturnType())}'");
                 }

@@ -15,8 +15,6 @@ namespace UdonSharp
 
         private HashSet<string> externStringSet = new HashSet<string>();
 
-        static LabelTable currentLabelTable = null;
-
         public AssemblyBuilder()
         {
         }
@@ -34,13 +32,9 @@ namespace UdonSharp
 
             string assemblyString = assemblyTextBuilder.ToString();
 
-            currentLabelTable = labelTable;
-
 #if !USE_UDON_LABELS
             assemblyString = ReplaceLabels(assemblyString, labelTable);
 #endif
-
-            currentLabelTable = null;
 
             return assemblyString;
         }
