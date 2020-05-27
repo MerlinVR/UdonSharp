@@ -2424,6 +2424,11 @@ namespace UdonSharp
                         currentName = memberNode.Name.ToString();
                         currentNode = memberNode.Name;
                         break;
+                    case SyntaxKind.IdentifierName:
+                        IdentifierNameSyntax identifierName = (IdentifierNameSyntax)currentNode;
+                        currentName = identifierName.ToString();
+                        currentNode = null;
+                        break;
                     default:
                         currentNode = null;
                         break;

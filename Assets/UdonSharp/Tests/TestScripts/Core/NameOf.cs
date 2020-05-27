@@ -14,6 +14,9 @@ namespace UdonSharp.Tests
 
         public void ExecuteTests()
         {
+            tester.TestAssertion("Single name nameof", nameof(ExecuteTests) == "ExecuteTests");
+            tester.TestAssertion("Single type nameof", nameof(UdonSharpBehaviour) == "UdonSharpBehaviour");
+
             string functionName = nameof(NameOf.ExecuteTests);
 
             tester.TestAssertion("Function nameof", functionName == "ExecuteTests");
