@@ -1853,7 +1853,10 @@ namespace UdonSharp
             System.Type targetType = null;
             SymbolDefinition expressionSymbol = null;
 
-            using (ExpressionCaptureScope castExpressionCapture = new ExpressionCaptureScope(visitorContext, null, visitorContext.requestedDestination))
+            //SymbolDefinition castOutSymbol = visitorContext.requestedDestination;
+            SymbolDefinition castOutSymbol = null;
+
+            using (ExpressionCaptureScope castExpressionCapture = new ExpressionCaptureScope(visitorContext, null, castOutSymbol))
             {
                 Visit(node.Expression);
 
@@ -1869,9 +1872,6 @@ namespace UdonSharp
 
                 targetType = castTypeCapture.captureType;
             }
-
-
-            SymbolDefinition castOutSymbol = visitorContext.requestedDestination;
 
             using (ExpressionCaptureScope castOutCapture = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
             {

@@ -534,7 +534,7 @@ namespace UdonSharp
         {
             CheckScopeValidity();
 
-            SymbolDefinition destinationSymbol = this.destinationSymbolForSet;
+            SymbolDefinition destinationSymbol = destinationSymbolForSet;
             SymbolDefinition convertedValue = CastSymbolToType(value, GetReturnType(true), explicitCast, false, destinationSymbol);
 
             // If it's a local symbol, it's just a simple COPY
