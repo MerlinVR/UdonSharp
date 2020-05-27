@@ -676,7 +676,9 @@ namespace UdonSharp
             // Numeric conversion handling
             MethodInfo conversionFunction = UdonSharpUtils.GetNumericConversionMethod(targetType, sourceSymbol.symbolCsType);
 
-            if (conversionFunction != null && (isExplicit || isNumericCastValid))
+            if (conversionFunction != null && 
+                (isExplicit || isNumericCastValid) && 
+                (targetType != typeof(string) || sourceSymbol.userCsType != typeof(object))) // Convert.ToString(object) will convert null to an empty string, we do not want that.
             {
                 SymbolDefinition sourceNumericSymbol = sourceSymbol;
 
