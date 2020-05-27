@@ -792,9 +792,12 @@ namespace UdonSharp
 
             List<System.Attribute> fieldAttributes = GetFieldAttributes(node);
 
-            bool isPublic = (node.Modifiers.HasModifier("public") || fieldAttributes.Find(e => e is SerializeField) != null) && fieldAttributes.Find(e => e is System.NonSerializedAttribute) == null;
+            bool isPublic = (node.Modifiers.Any(SyntaxKind.PublicKeyword) || fieldAttributes.Find(e => e is SerializeField) != null) && fieldAttributes.Find(e => e is System.NonSerializedAttribute) == null;
+            bool isConst = (node.Modifiers.Any(SyntaxKind.ConstKeyword) || node.Modifiers.Any(SyntaxKind.ReadOnlyKeyword));
+            SymbolDeclTypeFlags flags = (isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private) | 
+                                        (isConst ? SymbolDeclTypeFlags.Readonly : 0);
 
-            List<SymbolDefinition> fieldSymbols = HandleVariableDeclaration(node.Declaration, isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private, fieldSyncMode);
+            List<SymbolDefinition> fieldSymbols = HandleVariableDeclaration(node.Declaration, flags, fieldSyncMode);
             foreach (SymbolDefinition fieldSymbol in fieldSymbols)
             {
                 FieldDefinition fieldDefinition = new FieldDefinition(fieldSymbol);

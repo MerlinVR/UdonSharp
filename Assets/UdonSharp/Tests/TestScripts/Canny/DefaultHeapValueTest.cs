@@ -24,6 +24,12 @@ namespace UdonSharp.Tests
         [HideInInspector]
         public string[] defaultPublicArr;
 
+        [SerializeField]
+        public readonly string readonlyStr = "aaa";
+
+        [SerializeField]
+        public const string constStr = "bbb";
+
         void TestPublicArray()
         {
             tester.TestAssertion("Default Public Array Initialized", defaultPublicArr != null && defaultPublicArr.Length == 0);

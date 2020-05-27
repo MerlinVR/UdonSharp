@@ -17,6 +17,7 @@ namespace UdonSharp
         Array = 32, // If this symbol is an array type
         This = 64, // defines one of the 3 builtin `this` assignments for UdonBehaviour, GameObject, and Transform
         Reflection = 128, // Metadata information for type checking and other editor time info
+        Readonly = 256, // Symbols marked as either const or readonly by the user, treat them the same for now. 
     }
 
     [Serializable]
