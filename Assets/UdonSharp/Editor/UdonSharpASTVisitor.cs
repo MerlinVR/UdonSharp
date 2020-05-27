@@ -2402,6 +2402,36 @@ namespace UdonSharp
             visitorContext.breakLabelStack.Pop();
         }
 
+        private void HandleNameOfExpression(InvocationExpressionSyntax node)
+        {
+            SyntaxNode currentNode = node.ArgumentList.Arguments[0].Expression;
+            string currentName = "";
+
+            while (currentNode != null)
+            {
+                switch (currentNode.Kind())
+                {
+                    case SyntaxKind.SimpleMemberAccessExpression:
+                        MemberAccessExpressionSyntax memberNode = (MemberAccessExpressionSyntax)currentNode;
+                        currentName = memberNode.Name.ToString();
+                        currentNode = memberNode.Name;
+                        break;
+                    default:
+                        currentNode = null;
+                        break;
+                }
+
+                if (currentNode != null)
+                    UpdateSyntaxNode(currentNode);
+            }
+
+            if (currentName == "")
+                throw new System.ArgumentException("Expression does not have a name");
+
+            if (visitorContext.topCaptureScope != null)
+                visitorContext.topCaptureScope.SetToLocalSymbol(visitorContext.topTable.CreateConstSymbol(typeof(string), currentName));
+        }
+
         public override void VisitCaseSwitchLabel(CaseSwitchLabelSyntax node)
         {
             UpdateSyntaxNode(node);
@@ -2459,6 +2489,12 @@ namespace UdonSharp
         public override void VisitInvocationExpression(InvocationExpressionSyntax node)
         {
             UpdateSyntaxNode(node);
+
+            if (node.Expression != null && node.Expression.ToString() == "nameof") // nameof is not a dedicated node and the Kind of the node isn't the nameof kind for whatever reason...
+            {
+                HandleNameOfExpression(node);
+                return;
+            }
 
             SymbolDefinition requestedDestination = visitorContext.requestedDestination;
 
