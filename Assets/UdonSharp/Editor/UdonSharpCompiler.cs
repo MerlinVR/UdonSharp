@@ -249,7 +249,7 @@ namespace UdonSharp
 
             int initializerErrorCount = 0;
 
-            SyntaxTree[] initializerTrees = new SyntaxTree[modulesToInitialize.Length];
+            Microsoft.CodeAnalysis.SyntaxTree[] initializerTrees = new Microsoft.CodeAnalysis.SyntaxTree[modulesToInitialize.Length];
             StringBuilder[] codeStringBuilders = new StringBuilder[modulesToInitialize.Length];
 
             for (int moduleIdx = 0; moduleIdx < modulesToInitialize.Length; ++moduleIdx)
@@ -339,7 +339,7 @@ namespace UdonSharp
                     provider.GenerateCodeFromCompileUnit(compileUnit, streamWriter, new CodeGeneratorOptions());
                 }
 
-                SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(sb.ToString());
+                Microsoft.CodeAnalysis.SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(sb.ToString());
 
                 initializerTrees[moduleIdx] = syntaxTree;
             }
@@ -445,8 +445,8 @@ namespace UdonSharp
                 classSymbols.OpenSymbolTable();
 
                 LabelTable classLabels = new LabelTable();
-                
-                SyntaxTree tree = CSharpSyntaxTree.ParseText(programSource);
+
+                Microsoft.CodeAnalysis.SyntaxTree tree = CSharpSyntaxTree.ParseText(programSource);
 
                 ClassVisitor classVisitor = new ClassVisitor(resolver, classSymbols, classLabels);
 
