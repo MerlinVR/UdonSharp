@@ -61,6 +61,10 @@ namespace UdonSharp.Tests
         [UdonSynced, HideInInspector]
         public string publicNetworkSyncedStringDefaultValue = "hello";
 
+        string privateUninitializedString;
+        string privateNullInitializedString = null;
+        string privateInitializedString = "Test";
+
         void TestSyncedString()
         {
             tester.TestAssertion("Uninitialized Synced String", networkSyncedString == "");
@@ -70,6 +74,10 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Uninitialized Public Synced String", publicNetworkSyncedString == "");
             tester.TestAssertion("Empty Public Synced String Value", publicNetworkSyncedStringDefaultEmpty == "");
             tester.TestAssertion("Default Public Synced String Value", publicNetworkSyncedStringDefaultValue == "hello");
+
+            tester.TestAssertion("Private uninitialized String", privateUninitializedString == null);
+            tester.TestAssertion("Private null initialized String", privateNullInitializedString == null);
+            tester.TestAssertion("Private initialized String", privateInitializedString == "Test");
         }
 
         string[] privateStrArr;
