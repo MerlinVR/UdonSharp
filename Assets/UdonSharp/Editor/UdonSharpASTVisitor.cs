@@ -443,7 +443,7 @@ namespace UdonSharp
 
             using (ExpressionCaptureScope varCaptureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
             {
-                if (arraySymbol == null)
+                if (arraySymbol == null || arraySymbol.userCsType != arrayType)
                 {
                     arraySymbol = visitorContext.topTable.CreateUnnamedSymbol(arrayType, SymbolDeclTypeFlags.Internal);
                 }
