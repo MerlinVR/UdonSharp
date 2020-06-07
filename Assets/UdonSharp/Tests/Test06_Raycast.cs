@@ -6,8 +6,6 @@ public class Test06_Raycast : UdonSharpBehaviour
 {
     private void Start()
     {
-        GameObject testObject = null;
-
         if (true /*&& false && testObject.activeSelf*/)
         {
             Debug.Log("Hello");

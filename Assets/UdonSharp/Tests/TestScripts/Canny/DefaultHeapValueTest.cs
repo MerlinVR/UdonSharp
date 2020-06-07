@@ -43,8 +43,10 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Default String Value", defaultString == "");
         }
 
+#pragma warning disable 0649
         [UdonSynced]
         string networkSyncedString;
+#pragma warning restore 0649
 
         [UdonSynced]
         string networkSyncedStringDefaultEmpty = "";
@@ -72,16 +74,17 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Default Public Synced String Value", publicNetworkSyncedStringDefaultValue == "hello");
         }
 
+#pragma warning disable 0649
         string[] privateStrArr;
+        string privateStr;
+#pragma warning restore 0649
+        string privateNullInitializedString = null;
+        string privateInitializedString = "Test";
 
         void TestPrivateArr()
         {
             tester.TestAssertion("Private Array Default Null", privateStrArr == null);
         }
-
-        string privateStr;
-        string privateNullInitializedString = null;
-        string privateInitializedString = "Test";
 
         void TestPrivateStr()
         {

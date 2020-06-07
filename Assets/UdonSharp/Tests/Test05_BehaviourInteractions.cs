@@ -54,8 +54,6 @@ public class Test05_BehaviourInteractions : UdonSharpBehaviour
         //textComponent.text = string.Format("{0:0.###}", totalSpectrumData * 10f);
         textComponent.text = $"Test: {totalSpectrumData * 10f:0.###}";
 
-        Transform testTransform = null; 
-
         Debug.Log(referenceTransform ?? GetTestObject());
 
         //transform.Rotate(Vector3.up, Time.deltaTime * degreesPerSecond);
