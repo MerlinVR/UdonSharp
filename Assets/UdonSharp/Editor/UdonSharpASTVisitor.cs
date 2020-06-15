@@ -2638,30 +2638,42 @@ namespace UdonSharp
 
             SymbolDefinition interpolatedString = visitorContext.topTable.CreateNamedSymbol("interpolatedStr", typeof(string), SymbolDeclTypeFlags.Internal);
 
-            using (ExpressionCaptureScope stringConcatMethodScope = new ExpressionCaptureScope(visitorContext, null))
+            if (node.Contents.Count > 0)
             {
-                stringConcatMethodScope.SetToMethods(GetOperators(typeof(string), BuiltinOperatorType.Addition));
-
-                for (int i = 0; i < node.Contents.Count; ++i)
+                using (ExpressionCaptureScope stringConcatMethodScope = new ExpressionCaptureScope(visitorContext, null))
                 {
-                    var interpolatedContents = node.Contents[i];
+                    stringConcatMethodScope.SetToMethods(GetOperators(typeof(string), BuiltinOperatorType.Addition));
 
-                    using (ExpressionCaptureScope stringExpressionCapture = new ExpressionCaptureScope(visitorContext, null))
+                    for (int i = 0; i < node.Contents.Count; ++i)
                     {
-                        Visit(interpolatedContents);
+                        var interpolatedContents = node.Contents[i];
 
-                        using (ExpressionCaptureScope setInterpolatedStringScope = new ExpressionCaptureScope(visitorContext, null))
+                        using (ExpressionCaptureScope stringExpressionCapture = new ExpressionCaptureScope(visitorContext, null))
                         {
-                            setInterpolatedStringScope.SetToLocalSymbol(interpolatedString);
+                            Visit(interpolatedContents);
 
-                            // This needs to be moved to direct set as well when we have support
+                            using (ExpressionCaptureScope setInterpolatedStringScope = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                setInterpolatedStringScope.SetToLocalSymbol(interpolatedString);
 
-                            if (i == 0)
-                                setInterpolatedStringScope.ExecuteSet(stringExpressionCapture.ExecuteGet());
-                            else
-                                setInterpolatedStringScope.ExecuteSet(stringConcatMethodScope.Invoke(new SymbolDefinition[] { interpolatedString, stringExpressionCapture.ExecuteGet() }));
+                                // This needs to be moved to direct set as well when we have support
+
+                                if (i == 0)
+                                    setInterpolatedStringScope.ExecuteSet(stringExpressionCapture.ExecuteGet());
+                                else
+                                    setInterpolatedStringScope.ExecuteSet(stringConcatMethodScope.Invoke(new SymbolDefinition[] { interpolatedString, stringExpressionCapture.ExecuteGet() }));
+                            }
                         }
                     }
+                }
+            }
+            else // Empty interpolation $""
+            {
+                using (ExpressionCaptureScope setInterpolatedStringScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    setInterpolatedStringScope.SetToLocalSymbol(interpolatedString);
+
+                    setInterpolatedStringScope.ExecuteSet(visitorContext.topTable.CreateConstSymbol(typeof(string), ""));
                 }
             }
 
