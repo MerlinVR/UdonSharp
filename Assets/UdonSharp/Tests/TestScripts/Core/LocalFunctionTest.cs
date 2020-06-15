@@ -22,6 +22,7 @@ namespace UdonSharp.Tests
             TestFunctionParameters();
             TestIntermediateReturn();
             TestObjectArrayArg();
+            TestStringCopy();
         }
 
         int GetCountAmount() => 4;
@@ -95,9 +96,42 @@ namespace UdonSharp.Tests
 #pragma warning restore CS0252 // Possible unintended reference comparison; left hand side needs cast
         }
 
-        //void TestOutParam(ref int output)
-        //{
-        //    output = 4;
-        //}
+        string targetVal = "";
+        void SetStr(string val)
+        {
+            targetVal = val;
+        }
+
+        // https://github.com/Merlin-san/UdonSharp/issues/40
+        // todo: should probably be moved to another more applicable test suite, probably a string interpolation suite
+        void TestStringCopy()
+        {
+            string testStr = $"test {1}";
+            testStr = $"";
+
+            tester.TestAssertion("Basic string interpolation clear", testStr == "");
+
+            testStr = $"no interpolation here";
+
+            tester.TestAssertion("Basic string interpolation set with no interpolation", testStr == "no interpolation here");
+
+            targetVal = "";
+
+            SetStr($"{20}");
+
+            tester.TestAssertion("Set string interpolation argument", targetVal == "20");
+
+            SetStr($"");
+
+            tester.TestAssertion("String interpolation arg clear", targetVal == "");
+
+            SetStr("Hello");
+
+            tester.TestAssertion("Basic string arg set", targetVal == "Hello");
+
+            SetStr("");
+
+            tester.TestAssertion("Basic string arg clear", targetVal == "");
+        }
     }
 }
