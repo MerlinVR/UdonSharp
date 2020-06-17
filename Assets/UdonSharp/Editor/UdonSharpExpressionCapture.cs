@@ -63,7 +63,7 @@ namespace UdonSharp
         // It should be noted that the expression MUST NOT write any intermediate values to this expression, as they could be observed
         // with function calls or recursive invocations of the UdonBehavior. The field can only be written to when there is no longer any 
         // possibility of any user code running in the context of the expression.
-        public SymbolDefinition requestedDestination { get; private set; } = null;
+        public SymbolDefinition requestedDestination { get; set; } = null;
 
         // If the caller requested a copy-on-write read, we'll store the COW reference here and clean it up on disposal.
         // Note that this is only a cache used to help with cleanup, and is not considered to be the value of the object
