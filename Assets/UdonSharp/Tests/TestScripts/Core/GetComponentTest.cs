@@ -23,11 +23,11 @@ namespace UdonSharp.Tests
 
             tester.TestAssertion("GetComponentsInChildren<BoxCollider>()", colliders.Length == 2);
 
-            tester.TestAssertion("GetComponentInChildren<PlayerModSetter>()", GetComponentInChildren<PlayerModSetter>() != null);
+            tester.TestAssertion("GetComponentInChildren<PlayerModSetter>()", GetComponentInChildren<NameOf>() != null);
 
-            PlayerModSetter[] modSetters = GetComponentsInChildren<PlayerModSetter>();
+            NameOf[] nameOfs = GetComponentsInChildren<NameOf>();
 
-            tester.TestAssertion("GetComponentsInChildren<PlayerModSetter>()", modSetters.Length == 3);
+            tester.TestAssertion("GetComponentsInChildren<PlayerModSetter>()", nameOfs.Length == 3);
             
             tester.TestAssertion("GetComponentsInChildren<MeshRenderer>()", GetComponentsInChildren<MeshRenderer>().Length == 2);
 
@@ -35,7 +35,7 @@ namespace UdonSharp.Tests
 
             tester.TestAssertion("Get UdonBehaviour typeof(UdonBehaviour)", getBehaviour != null);
 
-            long typeID = GetUdonTypeID<PlayerModSetter>();
+            long typeID = GetUdonTypeID<NameOf>();
 
             tester.TestAssertion("Type ID matches", typeID == getBehaviour.GetUdonTypeID());
 

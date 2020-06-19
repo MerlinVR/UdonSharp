@@ -19,65 +19,54 @@ MonoBehaviour:
     \   modObject: %UnityEngineGameObject, null\r\n    tester: %VRCUdonUdonBehaviour,
     null\r\n    __0_this_intnl_UdonSharpTestsGetComponentTest: %VRCUdonUdonBehaviour,
     this\r\n    __0_colliders_BoxColliderArray: %UnityEngineBoxColliderArray, null\r\n
-    \   __0_behaviour_Component: %UnityEngineComponent, null\r\n    __0_modSetters_PlayerModSetterArray:
-    %UnityEngineComponentArray, null\r\n    __0_typeID_Int64: %SystemInt64, null\r\n
-    \   __0_getBehaviour_UdonSharpBehaviour: %VRCUdonUdonBehaviour, null\r\n    __0_const_intnl_UdonSharpExamplesUtilitiesPlayerModSetterArray:
-    %UnityEngineComponentArray, null\r\n    __0_const_intnl_SystemInt32: %SystemInt32,
-    null\r\n    __1_const_intnl_SystemInt32: %SystemInt32, null\r\n    __2_const_intnl_SystemInt32:
-    %SystemInt32, null\r\n    __3_const_intnl_SystemInt32: %SystemInt32, null\r\n
-    \   __4_const_intnl_SystemInt32: %SystemInt32, null\r\n    __0_const_intnl_SystemInt64:
-    %SystemInt64, null\r\n    __1_const_intnl_SystemInt64: %SystemInt64, null\r\n
-    \   __0_const_intnl_SystemObject: %SystemObject, null\r\n    __0_const_intnl_SystemString:
-    %SystemString, null\r\n    __1_const_intnl_SystemString: %SystemString, null\r\n
-    \   __10_const_intnl_SystemString: %SystemString, null\r\n    __11_const_intnl_SystemString:
-    %SystemString, null\r\n    __12_const_intnl_SystemString: %SystemString, null\r\n
-    \   __13_const_intnl_SystemString: %SystemString, null\r\n    __14_const_intnl_SystemString:
-    %SystemString, null\r\n    __2_const_intnl_SystemString: %SystemString, null\r\n
-    \   __3_const_intnl_SystemString: %SystemString, null\r\n    __4_const_intnl_SystemString:
-    %SystemString, null\r\n    __5_const_intnl_SystemString: %SystemString, null\r\n
-    \   __6_const_intnl_SystemString: %SystemString, null\r\n    __7_const_intnl_SystemString:
-    %SystemString, null\r\n    __8_const_intnl_SystemString: %SystemString, null\r\n
-    \   __9_const_intnl_SystemString: %SystemString, null\r\n    __0_const_intnl_UnityEngineTransform:
-    %UnityEngineTransform, null\r\n    __0_const_intnl_SystemType: %SystemType, null\r\n
-    \   __1_const_intnl_SystemType: %SystemType, null\r\n    __2_const_intnl_SystemType:
-    %SystemType, null\r\n    __3_const_intnl_SystemType: %SystemType, null\r\n    __0_const_intnl_UdonSharpExamplesUtilitiesPlayerModSetter:
-    %VRCUdonUdonBehaviour, null\r\n    __0_const_intnl_SystemUInt32: %SystemUInt32,
-    null\r\n    __0_intnl_SystemBoolean: %SystemBoolean, null\r\n    __1_intnl_SystemBoolean:
-    %SystemBoolean, null\r\n    __10_intnl_SystemBoolean: %SystemBoolean, null\r\n
-    \   __11_intnl_SystemBoolean: %SystemBoolean, null\r\n    __12_intnl_SystemBoolean:
-    %SystemBoolean, null\r\n    __2_intnl_SystemBoolean: %SystemBoolean, null\r\n
-    \   __3_intnl_SystemBoolean: %SystemBoolean, null\r\n    __4_intnl_SystemBoolean:
-    %SystemBoolean, null\r\n    __5_intnl_SystemBoolean: %SystemBoolean, null\r\n
-    \   __6_intnl_SystemBoolean: %SystemBoolean, null\r\n    __7_intnl_SystemBoolean:
-    %SystemBoolean, null\r\n    __8_intnl_SystemBoolean: %SystemBoolean, null\r\n
-    \   __9_intnl_SystemBoolean: %SystemBoolean, null\r\n    __0_intnl_UnityEngineComponent:
-    %UnityEngineComponent, null\r\n    __1_intnl_UnityEngineComponent: %UnityEngineComponent,
-    null\r\n    __0_intnl_UdonSharpExamplesUtilitiesPlayerModSetterArray: %UnityEngineComponentArray,
-    null\r\n    __0_intnl_UnityEngineComponentArray: %UnityEngineComponentArray, null\r\n
-    \   __1_intnl_UnityEngineComponentArray: %UnityEngineComponentArray, null\r\n
+    \   __0_nameOfs_NameOfArray: %UnityEngineComponentArray, null\r\n    __0_typeID_Int64:
+    %SystemInt64, null\r\n    __0_getBehaviour_UdonSharpBehaviour: %VRCUdonUdonBehaviour,
+    null\r\n    __0_const_intnl_UdonSharpTestsNameOfArray: %UnityEngineComponentArray,
+    null\r\n    __0_const_intnl_SystemInt32: %SystemInt32, null\r\n    __1_const_intnl_SystemInt32:
+    %SystemInt32, null\r\n    __2_const_intnl_SystemInt32: %SystemInt32, null\r\n
+    \   __3_const_intnl_SystemInt32: %SystemInt32, null\r\n    __4_const_intnl_SystemInt32:
+    %SystemInt32, null\r\n    __0_const_intnl_SystemInt64: %SystemInt64, null\r\n
+    \   __1_const_intnl_SystemInt64: %SystemInt64, null\r\n    __0_const_intnl_SystemObject:
+    %SystemObject, null\r\n    __0_const_intnl_SystemString: %SystemString, null\r\n
+    \   __1_const_intnl_SystemString: %SystemString, null\r\n    __10_const_intnl_SystemString:
+    %SystemString, null\r\n    __11_const_intnl_SystemString: %SystemString, null\r\n
+    \   __2_const_intnl_SystemString: %SystemString, null\r\n    __3_const_intnl_SystemString:
+    %SystemString, null\r\n    __4_const_intnl_SystemString: %SystemString, null\r\n
+    \   __5_const_intnl_SystemString: %SystemString, null\r\n    __6_const_intnl_SystemString:
+    %SystemString, null\r\n    __7_const_intnl_SystemString: %SystemString, null\r\n
+    \   __8_const_intnl_SystemString: %SystemString, null\r\n    __9_const_intnl_SystemString:
+    %SystemString, null\r\n    __0_const_intnl_UnityEngineTransform: %UnityEngineTransform,
+    null\r\n    __0_const_intnl_SystemType: %SystemType, null\r\n    __1_const_intnl_SystemType:
+    %SystemType, null\r\n    __2_const_intnl_SystemType: %SystemType, null\r\n    __3_const_intnl_SystemType:
+    %SystemType, null\r\n    __0_const_intnl_UdonSharpTestsNameOf: %VRCUdonUdonBehaviour,
+    null\r\n    __0_const_intnl_SystemUInt32: %SystemUInt32, null\r\n    __0_intnl_SystemBoolean:
+    %SystemBoolean, null\r\n    __1_intnl_SystemBoolean: %SystemBoolean, null\r\n
+    \   __2_intnl_SystemBoolean: %SystemBoolean, null\r\n    __3_intnl_SystemBoolean:
+    %SystemBoolean, null\r\n    __4_intnl_SystemBoolean: %SystemBoolean, null\r\n
+    \   __5_intnl_SystemBoolean: %SystemBoolean, null\r\n    __6_intnl_SystemBoolean:
+    %SystemBoolean, null\r\n    __7_intnl_SystemBoolean: %SystemBoolean, null\r\n
+    \   __8_intnl_SystemBoolean: %SystemBoolean, null\r\n    __9_intnl_SystemBoolean:
+    %SystemBoolean, null\r\n    __0_intnl_UnityEngineComponent: %UnityEngineComponent,
+    null\r\n    __1_intnl_UnityEngineComponent: %UnityEngineComponent, null\r\n    __0_intnl_UdonSharpTestsNameOfArray:
+    %UnityEngineComponentArray, null\r\n    __0_intnl_UnityEngineComponentArray: %UnityEngineComponentArray,
+    null\r\n    __1_intnl_UnityEngineComponentArray: %UnityEngineComponentArray, null\r\n
     \   __2_intnl_UnityEngineComponentArray: %UnityEngineComponentArray, null\r\n
-    \   __3_intnl_UnityEngineComponentArray: %UnityEngineComponentArray, null\r\n
     \   __0_intnl_SystemInt32: %SystemInt32, null\r\n    __1_intnl_SystemInt32: %SystemInt32,
     null\r\n    __2_intnl_SystemInt32: %SystemInt32, null\r\n    __3_intnl_SystemInt32:
     %SystemInt32, null\r\n    __4_intnl_SystemInt32: %SystemInt32, null\r\n    __5_intnl_SystemInt32:
     %SystemInt32, null\r\n    __6_intnl_SystemInt32: %SystemInt32, null\r\n    __7_intnl_SystemInt32:
     %SystemInt32, null\r\n    __8_intnl_SystemInt32: %SystemInt32, null\r\n    __0_intnl_SystemInt64:
     %SystemInt64, null\r\n    __1_intnl_SystemInt64: %SystemInt64, null\r\n    __2_intnl_SystemInt64:
-    %SystemInt64, null\r\n    __3_intnl_SystemInt64: %SystemInt64, null\r\n    __4_intnl_SystemInt64:
-    %SystemInt64, null\r\n    __0_intnl_UnityEngineMeshRendererArray: %UnityEngineMeshRendererArray,
-    null\r\n    __0_intnl_SystemObject: %SystemObject, null\r\n    __1_intnl_SystemObject:
-    %SystemObject, null\r\n    __2_intnl_SystemObject: %SystemObject, null\r\n    __3_intnl_SystemObject:
-    %SystemObject, null\r\n    __0_intnl_SystemString: %SystemString, null\r\n    __1_intnl_SystemString:
-    %SystemString, null\r\n    __2_intnl_SystemString: %SystemString, null\r\n    __0_intnl_UnityEngineTransform:
-    %UnityEngineTransform, null\r\n    __0_intnl_UdonSharpExamplesUtilitiesPlayerModSetter:
-    %VRCUdonUdonBehaviour, null\r\n    __0_intnl_UdonSharpUdonSharpBehaviour: %VRCUdonUdonBehaviour,
-    null\r\n    __1_intnl_UdonSharpExamplesUtilitiesPlayerModSetter: %VRCUdonUdonBehaviour,
-    null\r\n    __2_intnl_UdonSharpExamplesUtilitiesPlayerModSetter: %VRCUdonUdonBehaviour,
-    null\r\n    __2_intnl_UnityEngineComponent: %UnityEngineComponent, null\r\n    __0_intnl_returnTarget_UInt32:
-    %SystemUInt32, null\r\n\r\n.data_end\r\n\r\n        \r\n         # using UdonSharp;\r\n
-    \       \r\n         # using UdonSharp.Examples.Utilities;\r\n        \r\n         #
-    using UnityEngine;\r\n        \r\n         # using VRC.SDKBase;\r\n        \r\n
-    \        # using VRC.Udon;\r\n        \r\n         # namespace UdonSharp.Tests\r\n
+    %SystemInt64, null\r\n    __3_intnl_SystemInt64: %SystemInt64, null\r\n    __0_intnl_UnityEngineMeshRendererArray:
+    %UnityEngineMeshRendererArray, null\r\n    __0_intnl_SystemObject: %SystemObject,
+    null\r\n    __1_intnl_SystemObject: %SystemObject, null\r\n    __0_intnl_UnityEngineTransform:
+    %UnityEngineTransform, null\r\n    __0_intnl_UdonSharpTestsNameOf: %VRCUdonUdonBehaviour,
+    null\r\n    __1_intnl_UdonSharpTestsNameOf: %VRCUdonUdonBehaviour, null\r\n    __2_intnl_UdonSharpTestsNameOf:
+    %VRCUdonUdonBehaviour, null\r\n    __2_intnl_UnityEngineComponent: %UnityEngineComponent,
+    null\r\n    __0_intnl_returnTarget_UInt32: %SystemUInt32, null\r\n\r\n.data_end\r\n\r\n
+    \       \r\n         # using UdonSharp;\r\n        \r\n         # using UdonSharp.Examples.Utilities;\r\n
+    \       \r\n         # using UnityEngine;\r\n        \r\n         # using VRC.SDKBase;\r\n
+    \       \r\n         # using VRC.Udon;\r\n        \r\n         # namespace UdonSharp.Tests\r\n
     \       \r\n         # [AddComponentMenu(\"Udon Sharp/Tests/GetComponentTest\")]\r\n
     \       \r\n         # public class GetComponentTest : UdonSharpBehaviour\r\n.code_start\r\n
     \       \r\n         # [System.NonSerialized]\r\n        \r\n         # public
@@ -111,23 +100,22 @@ MonoBehaviour:
     \       PUSH, tester\r\n        PUSH, __3_const_intnl_SystemString\r\n        EXTERN,
     \"VRCUdonCommonInterfacesIUdonEventReceiver.__SendCustomEvent__SystemString__SystemVoid\"\r\n
     \       \r\n         # tester.TestAssertion(\"GetComponentInChildren<PlayerModSetter>()\",
-    GetComponentInChildren<PlayerModSetter>() != null);\r\n        PUSH, __0_this_intnl_UdonSharpTestsGetComponentTest\r\n
+    GetComponentInChildren<NameOf>() != null);\r\n        PUSH, __0_this_intnl_UdonSharpTestsGetComponentTest\r\n
     \       PUSH, __2_const_intnl_SystemType\r\n        PUSH, __0_intnl_UnityEngineComponentArray\r\n
     \       EXTERN, \"UnityEngineComponent.__GetComponentsInChildren__SystemType__UnityEngineComponentArray\"\r\n
-    \       PUSH, __0_const_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n        PUSH,
-    __0_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n        COPY\r\n        PUSH,
-    __0_intnl_UnityEngineComponentArray\r\n        PUSH, __1_intnl_SystemInt32\r\n
-    \       EXTERN, \"UnityEngineComponentArray.__get_Length__SystemInt32\"\r\n        PUSH,
-    __1_const_intnl_SystemInt32\r\n        PUSH, __2_intnl_SystemInt32\r\n        COPY\r\n
-    \       PUSH, __2_intnl_SystemInt32\r\n        PUSH, __1_intnl_SystemInt32\r\n
+    \       PUSH, __0_const_intnl_UdonSharpTestsNameOf\r\n        PUSH, __0_intnl_UdonSharpTestsNameOf\r\n
+    \       COPY\r\n        PUSH, __0_intnl_UnityEngineComponentArray\r\n        PUSH,
+    __1_intnl_SystemInt32\r\n        EXTERN, \"UnityEngineComponentArray.__get_Length__SystemInt32\"\r\n
+    \       PUSH, __1_const_intnl_SystemInt32\r\n        PUSH, __2_intnl_SystemInt32\r\n
+    \       COPY\r\n        PUSH, __2_intnl_SystemInt32\r\n        PUSH, __1_intnl_SystemInt32\r\n
     \       PUSH, __2_intnl_SystemBoolean\r\n        EXTERN, \"SystemInt32.__op_LessThan__SystemInt32_SystemInt32__SystemBoolean\"\r\n
     \       PUSH, __2_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000334\r\n
     \       PUSH, __0_intnl_UnityEngineComponentArray\r\n        PUSH, __2_intnl_SystemInt32\r\n
     \       PUSH, __0_intnl_UnityEngineComponent\r\n        EXTERN, \"UnityEngineComponentArray.__Get__SystemInt32__UnityEngineComponent\"\r\n
-    \       PUSH, __0_intnl_UnityEngineComponent\r\n        PUSH, __1_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n
-    \       COPY\r\n        PUSH, __1_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n
-    \       PUSH, __6_const_intnl_SystemString\r\n        PUSH, __0_intnl_SystemObject\r\n
-    \       EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__GetProgramVariable__SystemString__SystemObject\"\r\n
+    \       PUSH, __0_intnl_UnityEngineComponent\r\n        PUSH, __1_intnl_UdonSharpTestsNameOf\r\n
+    \       COPY\r\n        PUSH, __1_intnl_UdonSharpTestsNameOf\r\n        PUSH,
+    __6_const_intnl_SystemString\r\n        PUSH, __0_intnl_SystemObject\r\n        EXTERN,
+    \"VRCUdonCommonInterfacesIUdonEventReceiver.__GetProgramVariable__SystemString__SystemObject\"\r\n
     \       PUSH, __0_intnl_SystemObject\r\n        PUSH, __0_const_intnl_SystemObject\r\n
     \       PUSH, __3_intnl_SystemBoolean\r\n        EXTERN, \"SystemObject.__op_Inequality__SystemObject_SystemObject__SystemBoolean\"\r\n
     \       PUSH, __3_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000298\r\n
@@ -139,26 +127,25 @@ MonoBehaviour:
     \       PUSH, __0_const_intnl_SystemInt64\r\n        PUSH, __4_intnl_SystemBoolean\r\n
     \       EXTERN, \"SystemInt64.__op_Equality__SystemInt64_SystemInt64__SystemBoolean\"\r\n
     \       PUSH, __4_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x000002F8\r\n
-    \       PUSH, __1_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n        PUSH,
-    __0_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n        COPY\r\n        JUMP,
-    0x00000334\r\n        PUSH, __2_intnl_SystemInt32\r\n        PUSH, __2_const_intnl_SystemInt32\r\n
-    \       PUSH, __3_intnl_SystemInt32\r\n        EXTERN, \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n
+    \       PUSH, __1_intnl_UdonSharpTestsNameOf\r\n        PUSH, __0_intnl_UdonSharpTestsNameOf\r\n
+    \       COPY\r\n        JUMP, 0x00000334\r\n        PUSH, __2_intnl_SystemInt32\r\n
+    \       PUSH, __2_const_intnl_SystemInt32\r\n        PUSH, __3_intnl_SystemInt32\r\n
+    \       EXTERN, \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n
     \       PUSH, __3_intnl_SystemInt32\r\n        PUSH, __2_intnl_SystemInt32\r\n
-    \       COPY\r\n        JUMP, 0x000001B0\r\n        PUSH, __0_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n
-    \       PUSH, __0_const_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n        PUSH,
-    __2_intnl_SystemBoolean\r\n        EXTERN, \"UnityEngineObject.__op_Inequality__UnityEngineObject_UnityEngineObject__SystemBoolean\"\r\n
+    \       COPY\r\n        JUMP, 0x000001B0\r\n        PUSH, __0_intnl_UdonSharpTestsNameOf\r\n
+    \       PUSH, __0_const_intnl_UdonSharpTestsNameOf\r\n        PUSH, __2_intnl_SystemBoolean\r\n
+    \       EXTERN, \"UnityEngineObject.__op_Inequality__UnityEngineObject_UnityEngineObject__SystemBoolean\"\r\n
     \       PUSH, tester\r\n        PUSH, __1_const_intnl_SystemString\r\n        PUSH,
     __5_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
     \       PUSH, tester\r\n        PUSH, __2_const_intnl_SystemString\r\n        PUSH,
     __2_intnl_SystemBoolean\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
     \       PUSH, tester\r\n        PUSH, __3_const_intnl_SystemString\r\n        EXTERN,
     \"VRCUdonCommonInterfacesIUdonEventReceiver.__SendCustomEvent__SystemString__SystemVoid\"\r\n
-    \       \r\n         # PlayerModSetter[] modSetters = GetComponentsInChildren<PlayerModSetter>();\r\n
+    \       \r\n         # NameOf[] nameOfs = GetComponentsInChildren<NameOf>();\r\n
     \       PUSH, __0_this_intnl_UdonSharpTestsGetComponentTest\r\n        PUSH, __2_const_intnl_SystemType\r\n
     \       PUSH, __1_intnl_UnityEngineComponentArray\r\n        EXTERN, \"UnityEngineComponent.__GetComponentsInChildren__SystemType__UnityEngineComponentArray\"\r\n
-    \       PUSH, __0_const_intnl_UdonSharpExamplesUtilitiesPlayerModSetterArray\r\n
-    \       PUSH, __0_intnl_UdonSharpExamplesUtilitiesPlayerModSetterArray\r\n        COPY\r\n
-    \       PUSH, __1_const_intnl_SystemInt32\r\n        PUSH, __1_intnl_SystemInt32\r\n
+    \       PUSH, __0_const_intnl_UdonSharpTestsNameOfArray\r\n        PUSH, __0_intnl_UdonSharpTestsNameOfArray\r\n
+    \       COPY\r\n        PUSH, __1_const_intnl_SystemInt32\r\n        PUSH, __1_intnl_SystemInt32\r\n
     \       COPY\r\n        PUSH, __1_intnl_UnityEngineComponentArray\r\n        PUSH,
     __2_intnl_SystemInt32\r\n        EXTERN, \"UnityEngineComponentArray.__get_Length__SystemInt32\"\r\n
     \       PUSH, __1_const_intnl_SystemInt32\r\n        PUSH, __3_intnl_SystemInt32\r\n
@@ -167,10 +154,10 @@ MonoBehaviour:
     \       PUSH, __3_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x000005BC\r\n
     \       PUSH, __1_intnl_UnityEngineComponentArray\r\n        PUSH, __3_intnl_SystemInt32\r\n
     \       PUSH, __0_intnl_UnityEngineComponent\r\n        EXTERN, \"UnityEngineComponentArray.__Get__SystemInt32__UnityEngineComponent\"\r\n
-    \       PUSH, __0_intnl_UnityEngineComponent\r\n        PUSH, __1_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n
-    \       COPY\r\n        PUSH, __1_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n
-    \       PUSH, __6_const_intnl_SystemString\r\n        PUSH, __0_intnl_SystemObject\r\n
-    \       EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__GetProgramVariable__SystemString__SystemObject\"\r\n
+    \       PUSH, __0_intnl_UnityEngineComponent\r\n        PUSH, __1_intnl_UdonSharpTestsNameOf\r\n
+    \       COPY\r\n        PUSH, __1_intnl_UdonSharpTestsNameOf\r\n        PUSH,
+    __6_const_intnl_SystemString\r\n        PUSH, __0_intnl_SystemObject\r\n        EXTERN,
+    \"VRCUdonCommonInterfacesIUdonEventReceiver.__GetProgramVariable__SystemString__SystemObject\"\r\n
     \       PUSH, __0_intnl_SystemObject\r\n        PUSH, __0_const_intnl_SystemObject\r\n
     \       PUSH, __4_intnl_SystemBoolean\r\n        EXTERN, \"SystemObject.__op_Inequality__SystemObject_SystemObject__SystemBoolean\"\r\n
     \       PUSH, __4_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000508\r\n
@@ -194,7 +181,7 @@ MonoBehaviour:
     \       PUSH, __6_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x0000081C\r\n
     \       PUSH, __1_intnl_SystemInt32\r\n        PUSH, __2_intnl_UnityEngineComponentArray\r\n
     \       EXTERN, \"UnityEngineComponentArray.__ctor__SystemInt32__UnityEngineComponentArray\"\r\n
-    \       PUSH, __2_intnl_UnityEngineComponentArray\r\n        PUSH, __0_intnl_UdonSharpExamplesUtilitiesPlayerModSetterArray\r\n
+    \       PUSH, __2_intnl_UnityEngineComponentArray\r\n        PUSH, __0_intnl_UdonSharpTestsNameOfArray\r\n
     \       COPY\r\n        PUSH, __1_const_intnl_SystemInt32\r\n        PUSH, __3_intnl_SystemInt32\r\n
     \       COPY\r\n        PUSH, __1_const_intnl_SystemInt32\r\n        PUSH, __6_intnl_SystemInt32\r\n
     \       COPY\r\n        PUSH, __3_intnl_SystemInt32\r\n        PUSH, __2_intnl_SystemInt32\r\n
@@ -202,10 +189,10 @@ MonoBehaviour:
     \       PUSH, __7_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x0000081C\r\n
     \       PUSH, __1_intnl_UnityEngineComponentArray\r\n        PUSH, __3_intnl_SystemInt32\r\n
     \       PUSH, __1_intnl_UnityEngineComponent\r\n        EXTERN, \"UnityEngineComponentArray.__Get__SystemInt32__UnityEngineComponent\"\r\n
-    \       PUSH, __1_intnl_UnityEngineComponent\r\n        PUSH, __2_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n
-    \       COPY\r\n        PUSH, __2_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n
-    \       PUSH, __6_const_intnl_SystemString\r\n        PUSH, __1_intnl_SystemObject\r\n
-    \       EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__GetProgramVariable__SystemString__SystemObject\"\r\n
+    \       PUSH, __1_intnl_UnityEngineComponent\r\n        PUSH, __2_intnl_UdonSharpTestsNameOf\r\n
+    \       COPY\r\n        PUSH, __2_intnl_UdonSharpTestsNameOf\r\n        PUSH,
+    __6_const_intnl_SystemString\r\n        PUSH, __1_intnl_SystemObject\r\n        EXTERN,
+    \"VRCUdonCommonInterfacesIUdonEventReceiver.__GetProgramVariable__SystemString__SystemObject\"\r\n
     \       PUSH, __1_intnl_SystemObject\r\n        PUSH, __0_const_intnl_SystemObject\r\n
     \       PUSH, __8_intnl_SystemBoolean\r\n        EXTERN, \"SystemObject.__op_Inequality__SystemObject_SystemObject__SystemBoolean\"\r\n
     \       PUSH, __8_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000728\r\n
@@ -219,22 +206,21 @@ MonoBehaviour:
     \       PUSH, __9_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x000007E0\r\n
     \       PUSH, __1_intnl_UnityEngineComponentArray\r\n        PUSH, __3_intnl_SystemInt32\r\n
     \       PUSH, __2_intnl_UnityEngineComponent\r\n        EXTERN, \"UnityEngineComponentArray.__Get__SystemInt32__UnityEngineComponent\"\r\n
-    \       PUSH, __0_intnl_UdonSharpExamplesUtilitiesPlayerModSetterArray\r\n        PUSH,
-    __6_intnl_SystemInt32\r\n        PUSH, __2_intnl_UnityEngineComponent\r\n        EXTERN,
-    \"UnityEngineComponentArray.__Set__SystemInt32_UnityEngineComponent__SystemVoid\"\r\n
+    \       PUSH, __0_intnl_UdonSharpTestsNameOfArray\r\n        PUSH, __6_intnl_SystemInt32\r\n
+    \       PUSH, __2_intnl_UnityEngineComponent\r\n        EXTERN, \"UnityEngineComponentArray.__Set__SystemInt32_UnityEngineComponent__SystemVoid\"\r\n
     \       PUSH, __6_intnl_SystemInt32\r\n        PUSH, __2_const_intnl_SystemInt32\r\n
     \       PUSH, __7_intnl_SystemInt32\r\n        EXTERN, \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n
     \       PUSH, __7_intnl_SystemInt32\r\n        PUSH, __6_intnl_SystemInt32\r\n
     \       COPY\r\n        PUSH, __3_intnl_SystemInt32\r\n        PUSH, __2_const_intnl_SystemInt32\r\n
     \       PUSH, __8_intnl_SystemInt32\r\n        EXTERN, \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n
     \       PUSH, __8_intnl_SystemInt32\r\n        PUSH, __3_intnl_SystemInt32\r\n
-    \       COPY\r\n        JUMP, 0x00000640\r\n        PUSH, __0_intnl_UdonSharpExamplesUtilitiesPlayerModSetterArray\r\n
-    \       PUSH, __0_modSetters_PlayerModSetterArray\r\n        COPY\r\n        \r\n
-    \        # tester.TestAssertion(\"GetComponentsInChildren<PlayerModSetter>()\",
-    modSetters.Length == 3);\r\n        PUSH, __0_modSetters_PlayerModSetterArray\r\n
-    \       PUSH, __1_intnl_SystemInt32\r\n        EXTERN, \"UnityEngineComponentArray.__get_Length__SystemInt32\"\r\n
-    \       PUSH, __1_intnl_SystemInt32\r\n        PUSH, __3_const_intnl_SystemInt32\r\n
-    \       PUSH, __3_intnl_SystemBoolean\r\n        EXTERN, \"SystemInt32.__op_Equality__SystemInt32_SystemInt32__SystemBoolean\"\r\n
+    \       COPY\r\n        JUMP, 0x00000640\r\n        PUSH, __0_intnl_UdonSharpTestsNameOfArray\r\n
+    \       PUSH, __0_nameOfs_NameOfArray\r\n        COPY\r\n        \r\n         #
+    tester.TestAssertion(\"GetComponentsInChildren<PlayerModSetter>()\", nameOfs.Length
+    == 3);\r\n        PUSH, __0_nameOfs_NameOfArray\r\n        PUSH, __1_intnl_SystemInt32\r\n
+    \       EXTERN, \"UnityEngineComponentArray.__get_Length__SystemInt32\"\r\n        PUSH,
+    __1_intnl_SystemInt32\r\n        PUSH, __3_const_intnl_SystemInt32\r\n        PUSH,
+    __3_intnl_SystemBoolean\r\n        EXTERN, \"SystemInt32.__op_Equality__SystemInt32_SystemInt32__SystemBoolean\"\r\n
     \       PUSH, tester\r\n        PUSH, __1_const_intnl_SystemString\r\n        PUSH,
     __7_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
     \       PUSH, tester\r\n        PUSH, __2_const_intnl_SystemString\r\n        PUSH,
@@ -261,15 +247,15 @@ MonoBehaviour:
     \       PUSH, __0_intnl_UnityEngineComponent\r\n        PUSH, __0_getBehaviour_UdonSharpBehaviour\r\n
     \       COPY\r\n        \r\n         # tester.TestAssertion(\"Get UdonBehaviour
     typeof(UdonBehaviour)\", getBehaviour != null);\r\n        PUSH, __0_getBehaviour_UdonSharpBehaviour\r\n
-    \       PUSH, __0_const_intnl_UdonSharpExamplesUtilitiesPlayerModSetter\r\n        PUSH,
-    __5_intnl_SystemBoolean\r\n        EXTERN, \"UnityEngineObject.__op_Inequality__UnityEngineObject_UnityEngineObject__SystemBoolean\"\r\n
+    \       PUSH, __0_const_intnl_UdonSharpTestsNameOf\r\n        PUSH, __5_intnl_SystemBoolean\r\n
+    \       EXTERN, \"UnityEngineObject.__op_Inequality__UnityEngineObject_UnityEngineObject__SystemBoolean\"\r\n
     \       PUSH, tester\r\n        PUSH, __1_const_intnl_SystemString\r\n        PUSH,
     __9_const_intnl_SystemString\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
     \       PUSH, tester\r\n        PUSH, __2_const_intnl_SystemString\r\n        PUSH,
     __5_intnl_SystemBoolean\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
     \       PUSH, tester\r\n        PUSH, __3_const_intnl_SystemString\r\n        EXTERN,
     \"VRCUdonCommonInterfacesIUdonEventReceiver.__SendCustomEvent__SystemString__SystemVoid\"\r\n
-    \       \r\n         # long typeID = GetUdonTypeID<PlayerModSetter>();\r\n        PUSH,
+    \       \r\n         # long typeID = GetUdonTypeID<NameOf>();\r\n        PUSH,
     __0_const_intnl_SystemInt64\r\n        PUSH, __0_typeID_Int64\r\n        COPY\r\n
     \       \r\n         # tester.TestAssertion(\"Type ID matches\", typeID == getBehaviour.GetUdonTypeID());\r\n
     \       PUSH, __0_getBehaviour_UdonSharpBehaviour\r\n        PUSH, __6_const_intnl_SystemString\r\n
@@ -304,58 +290,8 @@ MonoBehaviour:
     __8_intnl_SystemBoolean\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\r\n
     \       PUSH, tester\r\n        PUSH, __3_const_intnl_SystemString\r\n        EXTERN,
     \"VRCUdonCommonInterfacesIUdonEventReceiver.__SendCustomEvent__SystemString__SystemVoid\"\r\n
-    \       \r\n         # Debug.Log(getBehaviour.GetUdonTypeID());\r\n        PUSH,
-    __0_getBehaviour_UdonSharpBehaviour\r\n        PUSH, __6_const_intnl_SystemString\r\n
-    \       PUSH, __1_intnl_SystemObject\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__GetProgramVariable__SystemString__SystemObject\"\r\n
-    \       PUSH, __1_intnl_SystemObject\r\n        PUSH, __0_const_intnl_SystemObject\r\n
-    \       PUSH, __9_intnl_SystemBoolean\r\n        EXTERN, \"SystemObject.__op_Inequality__SystemObject_SystemObject__SystemBoolean\"\r\n
-    \       PUSH, __9_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000C74\r\n
-    \       PUSH, __1_intnl_SystemObject\r\n        PUSH, __4_intnl_SystemInt64\r\n
-    \       EXTERN, \"SystemConvert.__ToInt64__SystemObject__SystemInt64\"\r\n        PUSH,
-    __4_intnl_SystemInt64\r\n        PUSH, __3_intnl_SystemInt64\r\n        COPY\r\n
-    \       JUMP, 0x00000C88\r\n        PUSH, __1_const_intnl_SystemInt64\r\n        PUSH,
-    __3_intnl_SystemInt64\r\n        COPY\r\n        PUSH, __3_intnl_SystemInt64\r\n
-    \       EXTERN, \"UnityEngineDebug.__Log__SystemObject__SystemVoid\"\r\n        \r\n
-    \        # Debug.Log(getBehaviour.GetUdonTypeName());\r\n        PUSH, __0_getBehaviour_UdonSharpBehaviour\r\n
-    \       PUSH, __12_const_intnl_SystemString\r\n        PUSH, __2_intnl_SystemObject\r\n
-    \       EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__GetProgramVariable__SystemString__SystemObject\"\r\n
-    \       PUSH, __2_intnl_SystemObject\r\n        PUSH, __0_const_intnl_SystemObject\r\n
-    \       PUSH, __10_intnl_SystemBoolean\r\n        EXTERN, \"SystemObject.__op_Inequality__SystemObject_SystemObject__SystemBoolean\"\r\n
-    \       PUSH, __10_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000D04\r\n
-    \       PUSH, __2_intnl_SystemObject\r\n        PUSH, __0_intnl_SystemString\r\n
-    \       COPY\r\n        JUMP, 0x00000D18\r\n        PUSH, __13_const_intnl_SystemString\r\n
-    \       PUSH, __0_intnl_SystemString\r\n        COPY\r\n        PUSH, __0_intnl_SystemString\r\n
-    \       EXTERN, \"UnityEngineDebug.__Log__SystemObject__SystemVoid\"\r\n        \r\n
-    \        # foreach (Component behaviour in modObject.GetComponents(typeof(UdonBehaviour)))\r\n
-    \       PUSH, modObject\r\n        PUSH, __2_const_intnl_SystemType\r\n        PUSH,
-    __3_intnl_UnityEngineComponentArray\r\n        EXTERN, \"UnityEngineGameObject.__GetComponents__SystemType__UnityEngineComponentArray\"\r\n
-    \       PUSH, __1_const_intnl_SystemInt32\r\n        PUSH, __4_intnl_SystemInt32\r\n
-    \       COPY\r\n        PUSH, __3_intnl_UnityEngineComponentArray\r\n        PUSH,
-    __5_intnl_SystemInt32\r\n        EXTERN, \"UnityEngineComponentArray.__get_Length__SystemInt32\"\r\n
-    \       PUSH, __4_intnl_SystemInt32\r\n        PUSH, __5_intnl_SystemInt32\r\n
-    \       PUSH, __11_intnl_SystemBoolean\r\n        EXTERN, \"SystemInt32.__op_LessThan__SystemInt32_SystemInt32__SystemBoolean\"\r\n
-    \       PUSH, __11_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000EB0\r\n
-    \       PUSH, __3_intnl_UnityEngineComponentArray\r\n        PUSH, __4_intnl_SystemInt32\r\n
-    \       PUSH, __0_behaviour_Component\r\n        EXTERN, \"UnityEngineComponentArray.__Get__SystemInt32__UnityEngineComponent\"\r\n
-    \       \r\n         # {\r\n        \r\n         # Debug.Log(\"Component name:
-    \" + ((UdonSharpBehaviour)behaviour).GetUdonTypeName());\r\n        PUSH, __0_behaviour_Component\r\n
-    \       PUSH, __0_intnl_UdonSharpUdonSharpBehaviour\r\n        COPY\r\n        PUSH,
-    __0_intnl_UdonSharpUdonSharpBehaviour\r\n        PUSH, __12_const_intnl_SystemString\r\n
-    \       PUSH, __3_intnl_SystemObject\r\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__GetProgramVariable__SystemString__SystemObject\"\r\n
-    \       PUSH, __3_intnl_SystemObject\r\n        PUSH, __0_const_intnl_SystemObject\r\n
-    \       PUSH, __12_intnl_SystemBoolean\r\n        EXTERN, \"SystemObject.__op_Inequality__SystemObject_SystemObject__SystemBoolean\"\r\n
-    \       PUSH, __12_intnl_SystemBoolean\r\n        JUMP_IF_FALSE, 0x00000E44\r\n
-    \       PUSH, __3_intnl_SystemObject\r\n        PUSH, __1_intnl_SystemString\r\n
-    \       COPY\r\n        JUMP, 0x00000E58\r\n        PUSH, __13_const_intnl_SystemString\r\n
-    \       PUSH, __1_intnl_SystemString\r\n        COPY\r\n        PUSH, __14_const_intnl_SystemString\r\n
-    \       PUSH, __1_intnl_SystemString\r\n        PUSH, __2_intnl_SystemString\r\n
-    \       EXTERN, \"SystemString.__op_Addition__SystemString_SystemString__SystemString\"\r\n
-    \       PUSH, __2_intnl_SystemString\r\n        EXTERN, \"UnityEngineDebug.__Log__SystemObject__SystemVoid\"\r\n
-    \       PUSH, __4_intnl_SystemInt32\r\n        PUSH, __2_const_intnl_SystemInt32\r\n
-    \       PUSH, __4_intnl_SystemInt32\r\n        EXTERN, \"SystemInt32.__op_Addition__SystemInt32_SystemInt32__SystemInt32\"\r\n
-    \       JUMP, 0x00000D74\r\n        PUSH, __0_intnl_returnTarget_UInt32 #Function
-    epilogue\r\n        COPY\r\n        JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n
-    \       \r\n.code_end\r\n"
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\r\n        COPY\r\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\r\n        \r\n.code_end\r\n"
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: e3af4527108c21145afb1e6d2bf79fde, type: 3}
   behaviourIDHeapVarName: __refl_const_intnl_udonTypeID
@@ -926,947 +862,667 @@ MonoBehaviour:
     - startInstruction: 336
       endInstruction: 819
       startSourceChar: 821
-      endSourceChar: 843
+      endSourceChar: 834
       line: 25
       lineChar: 101
-      spanCodeSection: 'PlayerModSetter>() != '
+      spanCodeSection: 'NameOf>() != '
     - startInstruction: 820
       endInstruction: 939
-      startSourceChar: 843
-      endSourceChar: 865
+      startSourceChar: 834
+      endSourceChar: 856
       line: 25
-      lineChar: 123
+      lineChar: 114
       spanCodeSection: "null);\r\n\r\n            "
     - startInstruction: 940
       endInstruction: 939
-      startSourceChar: 865
-      endSourceChar: 865
+      startSourceChar: 856
+      endSourceChar: 856
       line: 27
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 940
       endInstruction: 939
-      startSourceChar: 865
-      endSourceChar: 865
+      startSourceChar: 856
+      endSourceChar: 856
       line: 27
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 940
       endInstruction: 939
-      startSourceChar: 865
-      endSourceChar: 865
+      startSourceChar: 856
+      endSourceChar: 856
       line: 27
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 940
       endInstruction: 939
-      startSourceChar: 865
-      endSourceChar: 865
+      startSourceChar: 856
+      endSourceChar: 856
       line: 27
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 940
       endInstruction: 939
-      startSourceChar: 865
-      endSourceChar: 894
+      startSourceChar: 856
+      endSourceChar: 873
       line: 27
       lineChar: 12
-      spanCodeSection: 'PlayerModSetter[] modSetters '
+      spanCodeSection: 'NameOf[] nameOfs '
     - startInstruction: 940
       endInstruction: 939
-      startSourceChar: 894
-      endSourceChar: 896
+      startSourceChar: 873
+      endSourceChar: 875
       line: 27
-      lineChar: 41
+      lineChar: 29
       spanCodeSection: '= '
     - startInstruction: 940
       endInstruction: 939
-      startSourceChar: 896
-      endSourceChar: 896
+      startSourceChar: 875
+      endSourceChar: 875
       line: 27
-      lineChar: 43
+      lineChar: 31
       spanCodeSection: 
     - startInstruction: 940
       endInstruction: 939
-      startSourceChar: 896
-      endSourceChar: 919
+      startSourceChar: 875
+      endSourceChar: 898
       line: 27
-      lineChar: 43
+      lineChar: 31
       spanCodeSection: GetComponentsInChildren
     - startInstruction: 940
       endInstruction: 939
-      startSourceChar: 919
-      endSourceChar: 920
+      startSourceChar: 898
+      endSourceChar: 899
       line: 27
-      lineChar: 66
+      lineChar: 54
       spanCodeSection: <
     - startInstruction: 940
       endInstruction: 2095
-      startSourceChar: 920
-      endSourceChar: 955
+      startSourceChar: 899
+      endSourceChar: 925
       line: 27
-      lineChar: 67
-      spanCodeSection: "PlayerModSetter>();\r\n\r\n            "
+      lineChar: 55
+      spanCodeSection: "NameOf>();\r\n\r\n            "
     - startInstruction: 2096
       endInstruction: 2095
-      startSourceChar: 955
-      endSourceChar: 955
+      startSourceChar: 925
+      endSourceChar: 925
       line: 29
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2096
       endInstruction: 2095
-      startSourceChar: 955
-      endSourceChar: 955
+      startSourceChar: 925
+      endSourceChar: 925
       line: 29
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2096
       endInstruction: 2095
-      startSourceChar: 955
-      endSourceChar: 955
+      startSourceChar: 925
+      endSourceChar: 925
       line: 29
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2096
       endInstruction: 2095
-      startSourceChar: 955
-      endSourceChar: 962
+      startSourceChar: 925
+      endSourceChar: 932
       line: 29
       lineChar: 12
       spanCodeSection: tester.
     - startInstruction: 2096
       endInstruction: 2095
-      startSourceChar: 962
-      endSourceChar: 976
+      startSourceChar: 932
+      endSourceChar: 946
       line: 29
       lineChar: 19
       spanCodeSection: TestAssertion(
     - startInstruction: 2096
       endInstruction: 2095
-      startSourceChar: 976
-      endSourceChar: 1022
+      startSourceChar: 946
+      endSourceChar: 992
       line: 29
       lineChar: 33
       spanCodeSection: '"GetComponentsInChildren<PlayerModSetter>()", '
     - startInstruction: 2096
       endInstruction: 2095
-      startSourceChar: 1022
-      endSourceChar: 1022
+      startSourceChar: 992
+      endSourceChar: 992
       line: 29
       lineChar: 79
       spanCodeSection: 
     - startInstruction: 2096
       endInstruction: 2095
-      startSourceChar: 1022
-      endSourceChar: 1022
+      startSourceChar: 992
+      endSourceChar: 992
       line: 29
       lineChar: 79
       spanCodeSection: 
     - startInstruction: 2096
       endInstruction: 2095
-      startSourceChar: 1022
-      endSourceChar: 1033
+      startSourceChar: 992
+      endSourceChar: 1000
       line: 29
       lineChar: 79
-      spanCodeSection: modSetters.
+      spanCodeSection: nameOfs.
     - startInstruction: 2096
       endInstruction: 2119
-      startSourceChar: 1033
-      endSourceChar: 1043
+      startSourceChar: 1000
+      endSourceChar: 1010
       line: 29
-      lineChar: 90
+      lineChar: 87
       spanCodeSection: 'Length == '
     - startInstruction: 2120
       endInstruction: 2239
-      startSourceChar: 1043
-      endSourceChar: 1074
+      startSourceChar: 1010
+      endSourceChar: 1041
       line: 29
-      lineChar: 100
+      lineChar: 97
       spanCodeSection: "3);\r\n            \r\n            "
     - startInstruction: 2240
       endInstruction: 2239
-      startSourceChar: 1074
-      endSourceChar: 1074
+      startSourceChar: 1041
+      endSourceChar: 1041
       line: 31
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2240
       endInstruction: 2239
-      startSourceChar: 1074
-      endSourceChar: 1074
+      startSourceChar: 1041
+      endSourceChar: 1041
       line: 31
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2240
       endInstruction: 2239
-      startSourceChar: 1074
-      endSourceChar: 1074
+      startSourceChar: 1041
+      endSourceChar: 1041
       line: 31
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2240
       endInstruction: 2239
-      startSourceChar: 1074
-      endSourceChar: 1081
+      startSourceChar: 1041
+      endSourceChar: 1048
       line: 31
       lineChar: 12
       spanCodeSection: tester.
     - startInstruction: 2240
       endInstruction: 2239
-      startSourceChar: 1081
-      endSourceChar: 1095
+      startSourceChar: 1048
+      endSourceChar: 1062
       line: 31
       lineChar: 19
       spanCodeSection: TestAssertion(
     - startInstruction: 2240
       endInstruction: 2239
-      startSourceChar: 1095
-      endSourceChar: 1138
+      startSourceChar: 1062
+      endSourceChar: 1105
       line: 31
       lineChar: 33
       spanCodeSection: '"GetComponentsInChildren<MeshRenderer>()", '
     - startInstruction: 2240
       endInstruction: 2239
-      startSourceChar: 1138
-      endSourceChar: 1138
+      startSourceChar: 1105
+      endSourceChar: 1105
       line: 31
       lineChar: 76
       spanCodeSection: 
     - startInstruction: 2240
       endInstruction: 2239
-      startSourceChar: 1138
-      endSourceChar: 1138
+      startSourceChar: 1105
+      endSourceChar: 1105
       line: 31
       lineChar: 76
       spanCodeSection: 
     - startInstruction: 2240
       endInstruction: 2239
-      startSourceChar: 1138
-      endSourceChar: 1138
+      startSourceChar: 1105
+      endSourceChar: 1105
       line: 31
       lineChar: 76
       spanCodeSection: 
     - startInstruction: 2240
       endInstruction: 2239
-      startSourceChar: 1138
-      endSourceChar: 1161
+      startSourceChar: 1105
+      endSourceChar: 1128
       line: 31
       lineChar: 76
       spanCodeSection: GetComponentsInChildren
     - startInstruction: 2240
       endInstruction: 2239
-      startSourceChar: 1161
-      endSourceChar: 1162
+      startSourceChar: 1128
+      endSourceChar: 1129
       line: 31
       lineChar: 99
       spanCodeSection: <
     - startInstruction: 2240
       endInstruction: 2271
-      startSourceChar: 1162
-      endSourceChar: 1178
+      startSourceChar: 1129
+      endSourceChar: 1145
       line: 31
       lineChar: 100
       spanCodeSection: MeshRenderer>().
     - startInstruction: 2272
       endInstruction: 2295
-      startSourceChar: 1178
-      endSourceChar: 1188
+      startSourceChar: 1145
+      endSourceChar: 1155
       line: 31
       lineChar: 116
       spanCodeSection: 'Length == '
     - startInstruction: 2296
       endInstruction: 2415
-      startSourceChar: 1188
-      endSourceChar: 1207
+      startSourceChar: 1155
+      endSourceChar: 1174
       line: 31
       lineChar: 126
       spanCodeSection: "2);\r\n\r\n            "
     - startInstruction: 2416
       endInstruction: 2415
-      startSourceChar: 1207
-      endSourceChar: 1207
+      startSourceChar: 1174
+      endSourceChar: 1174
       line: 33
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2416
       endInstruction: 2415
-      startSourceChar: 1207
-      endSourceChar: 1207
+      startSourceChar: 1174
+      endSourceChar: 1174
       line: 33
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2416
       endInstruction: 2415
-      startSourceChar: 1207
-      endSourceChar: 1207
+      startSourceChar: 1174
+      endSourceChar: 1174
       line: 33
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2416
       endInstruction: 2415
-      startSourceChar: 1207
-      endSourceChar: 1239
+      startSourceChar: 1174
+      endSourceChar: 1206
       line: 33
       lineChar: 12
       spanCodeSection: 'UdonSharpBehaviour getBehaviour '
     - startInstruction: 2416
       endInstruction: 2415
-      startSourceChar: 1239
-      endSourceChar: 1241
+      startSourceChar: 1206
+      endSourceChar: 1208
       line: 33
       lineChar: 44
       spanCodeSection: '= '
     - startInstruction: 2416
       endInstruction: 2415
-      startSourceChar: 1241
-      endSourceChar: 1261
+      startSourceChar: 1208
+      endSourceChar: 1228
       line: 33
       lineChar: 46
       spanCodeSection: (UdonSharpBehaviour)
     - startInstruction: 2416
       endInstruction: 2415
-      startSourceChar: 1261
-      endSourceChar: 1261
+      startSourceChar: 1228
+      endSourceChar: 1228
       line: 33
       lineChar: 66
       spanCodeSection: 
     - startInstruction: 2416
       endInstruction: 2415
-      startSourceChar: 1261
-      endSourceChar: 1261
+      startSourceChar: 1228
+      endSourceChar: 1228
       line: 33
       lineChar: 66
       spanCodeSection: 
     - startInstruction: 2416
       endInstruction: 2415
-      startSourceChar: 1261
-      endSourceChar: 1271
+      startSourceChar: 1228
+      endSourceChar: 1238
       line: 33
       lineChar: 66
       spanCodeSection: modObject.
     - startInstruction: 2416
       endInstruction: 2415
-      startSourceChar: 1271
-      endSourceChar: 1284
+      startSourceChar: 1238
+      endSourceChar: 1251
       line: 33
       lineChar: 76
       spanCodeSection: GetComponent(
     - startInstruction: 2416
       endInstruction: 2415
-      startSourceChar: 1284
-      endSourceChar: 1291
+      startSourceChar: 1251
+      endSourceChar: 1258
       line: 33
       lineChar: 89
       spanCodeSection: typeof(
     - startInstruction: 2416
       endInstruction: 2467
-      startSourceChar: 1291
-      endSourceChar: 1323
+      startSourceChar: 1258
+      endSourceChar: 1290
       line: 33
       lineChar: 96
       spanCodeSection: "UdonBehaviour));\r\n\r\n            "
     - startInstruction: 2468
       endInstruction: 2467
-      startSourceChar: 1323
-      endSourceChar: 1323
+      startSourceChar: 1290
+      endSourceChar: 1290
       line: 35
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2468
       endInstruction: 2467
-      startSourceChar: 1323
-      endSourceChar: 1323
+      startSourceChar: 1290
+      endSourceChar: 1290
       line: 35
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2468
       endInstruction: 2467
-      startSourceChar: 1323
-      endSourceChar: 1323
+      startSourceChar: 1290
+      endSourceChar: 1290
       line: 35
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2468
       endInstruction: 2467
-      startSourceChar: 1323
-      endSourceChar: 1330
+      startSourceChar: 1290
+      endSourceChar: 1297
       line: 35
       lineChar: 12
       spanCodeSection: tester.
     - startInstruction: 2468
       endInstruction: 2467
-      startSourceChar: 1330
-      endSourceChar: 1344
+      startSourceChar: 1297
+      endSourceChar: 1311
       line: 35
       lineChar: 19
       spanCodeSection: TestAssertion(
     - startInstruction: 2468
       endInstruction: 2467
-      startSourceChar: 1344
-      endSourceChar: 1387
+      startSourceChar: 1311
+      endSourceChar: 1354
       line: 35
       lineChar: 33
       spanCodeSection: '"Get UdonBehaviour typeof(UdonBehaviour)", '
     - startInstruction: 2468
       endInstruction: 2467
-      startSourceChar: 1387
-      endSourceChar: 1387
+      startSourceChar: 1354
+      endSourceChar: 1354
       line: 35
       lineChar: 76
       spanCodeSection: 
     - startInstruction: 2468
       endInstruction: 2467
-      startSourceChar: 1387
-      endSourceChar: 1403
+      startSourceChar: 1354
+      endSourceChar: 1370
       line: 35
       lineChar: 76
       spanCodeSection: 'getBehaviour != '
     - startInstruction: 2468
       endInstruction: 2587
-      startSourceChar: 1403
-      endSourceChar: 1425
+      startSourceChar: 1370
+      endSourceChar: 1392
       line: 35
       lineChar: 92
       spanCodeSection: "null);\r\n\r\n            "
     - startInstruction: 2588
       endInstruction: 2587
-      startSourceChar: 1425
-      endSourceChar: 1425
+      startSourceChar: 1392
+      endSourceChar: 1392
       line: 37
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2588
       endInstruction: 2587
-      startSourceChar: 1425
-      endSourceChar: 1425
+      startSourceChar: 1392
+      endSourceChar: 1392
       line: 37
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2588
       endInstruction: 2587
-      startSourceChar: 1425
-      endSourceChar: 1425
+      startSourceChar: 1392
+      endSourceChar: 1392
       line: 37
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2588
       endInstruction: 2587
-      startSourceChar: 1425
-      endSourceChar: 1437
+      startSourceChar: 1392
+      endSourceChar: 1404
       line: 37
       lineChar: 12
       spanCodeSection: 'long typeID '
     - startInstruction: 2588
       endInstruction: 2587
-      startSourceChar: 1437
-      endSourceChar: 1439
+      startSourceChar: 1404
+      endSourceChar: 1406
       line: 37
       lineChar: 24
       spanCodeSection: '= '
     - startInstruction: 2588
       endInstruction: 2587
-      startSourceChar: 1439
-      endSourceChar: 1439
+      startSourceChar: 1406
+      endSourceChar: 1406
       line: 37
       lineChar: 26
       spanCodeSection: 
     - startInstruction: 2588
       endInstruction: 2587
-      startSourceChar: 1439
-      endSourceChar: 1452
+      startSourceChar: 1406
+      endSourceChar: 1419
       line: 37
       lineChar: 26
       spanCodeSection: GetUdonTypeID
     - startInstruction: 2588
       endInstruction: 2587
-      startSourceChar: 1452
-      endSourceChar: 1453
+      startSourceChar: 1419
+      endSourceChar: 1420
       line: 37
       lineChar: 39
       spanCodeSection: <
     - startInstruction: 2588
       endInstruction: 2607
-      startSourceChar: 1453
-      endSourceChar: 1488
+      startSourceChar: 1420
+      endSourceChar: 1446
       line: 37
       lineChar: 40
-      spanCodeSection: "PlayerModSetter>();\r\n\r\n            "
+      spanCodeSection: "NameOf>();\r\n\r\n            "
     - startInstruction: 2608
       endInstruction: 2607
-      startSourceChar: 1488
-      endSourceChar: 1488
+      startSourceChar: 1446
+      endSourceChar: 1446
       line: 39
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2608
       endInstruction: 2607
-      startSourceChar: 1488
-      endSourceChar: 1488
+      startSourceChar: 1446
+      endSourceChar: 1446
       line: 39
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2608
       endInstruction: 2607
-      startSourceChar: 1488
-      endSourceChar: 1488
+      startSourceChar: 1446
+      endSourceChar: 1446
       line: 39
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2608
       endInstruction: 2607
-      startSourceChar: 1488
-      endSourceChar: 1495
+      startSourceChar: 1446
+      endSourceChar: 1453
       line: 39
       lineChar: 12
       spanCodeSection: tester.
     - startInstruction: 2608
       endInstruction: 2607
-      startSourceChar: 1495
-      endSourceChar: 1509
+      startSourceChar: 1453
+      endSourceChar: 1467
       line: 39
       lineChar: 19
       spanCodeSection: TestAssertion(
     - startInstruction: 2608
       endInstruction: 2607
-      startSourceChar: 1509
-      endSourceChar: 1528
+      startSourceChar: 1467
+      endSourceChar: 1486
       line: 39
       lineChar: 33
       spanCodeSection: '"Type ID matches", '
     - startInstruction: 2608
       endInstruction: 2607
-      startSourceChar: 1528
-      endSourceChar: 1528
+      startSourceChar: 1486
+      endSourceChar: 1486
       line: 39
       lineChar: 52
       spanCodeSection: 
     - startInstruction: 2608
       endInstruction: 2607
-      startSourceChar: 1528
-      endSourceChar: 1538
+      startSourceChar: 1486
+      endSourceChar: 1496
       line: 39
       lineChar: 52
       spanCodeSection: 'typeID == '
     - startInstruction: 2608
       endInstruction: 2607
-      startSourceChar: 1538
-      endSourceChar: 1538
+      startSourceChar: 1496
+      endSourceChar: 1496
       line: 39
       lineChar: 62
       spanCodeSection: 
     - startInstruction: 2608
       endInstruction: 2607
-      startSourceChar: 1538
-      endSourceChar: 1538
+      startSourceChar: 1496
+      endSourceChar: 1496
       line: 39
       lineChar: 62
       spanCodeSection: 
     - startInstruction: 2608
       endInstruction: 2607
-      startSourceChar: 1538
-      endSourceChar: 1551
+      startSourceChar: 1496
+      endSourceChar: 1509
       line: 39
       lineChar: 62
       spanCodeSection: getBehaviour.
     - startInstruction: 2608
       endInstruction: 2879
-      startSourceChar: 1551
-      endSourceChar: 1584
+      startSourceChar: 1509
+      endSourceChar: 1542
       line: 39
       lineChar: 75
       spanCodeSection: "GetUdonTypeID());\r\n\r\n            "
     - startInstruction: 2880
       endInstruction: 2879
-      startSourceChar: 1584
-      endSourceChar: 1584
+      startSourceChar: 1542
+      endSourceChar: 1542
       line: 41
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2880
       endInstruction: 2879
-      startSourceChar: 1584
-      endSourceChar: 1584
+      startSourceChar: 1542
+      endSourceChar: 1542
       line: 41
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2880
       endInstruction: 2879
-      startSourceChar: 1584
-      endSourceChar: 1584
+      startSourceChar: 1542
+      endSourceChar: 1542
       line: 41
       lineChar: 12
       spanCodeSection: 
     - startInstruction: 2880
       endInstruction: 2879
-      startSourceChar: 1584
-      endSourceChar: 1591
+      startSourceChar: 1542
+      endSourceChar: 1549
       line: 41
       lineChar: 12
       spanCodeSection: tester.
     - startInstruction: 2880
       endInstruction: 2879
-      startSourceChar: 1591
-      endSourceChar: 1605
+      startSourceChar: 1549
+      endSourceChar: 1563
       line: 41
       lineChar: 19
       spanCodeSection: TestAssertion(
     - startInstruction: 2880
       endInstruction: 2879
-      startSourceChar: 1605
-      endSourceChar: 1655
+      startSourceChar: 1563
+      endSourceChar: 1613
       line: 41
       lineChar: 33
       spanCodeSection: '"Correct number of UdonBehaviours on gameobject", '
     - startInstruction: 2880
       endInstruction: 2879
-      startSourceChar: 1655
-      endSourceChar: 1655
+      startSourceChar: 1613
+      endSourceChar: 1613
       line: 41
       lineChar: 83
       spanCodeSection: 
     - startInstruction: 2880
       endInstruction: 2879
-      startSourceChar: 1655
-      endSourceChar: 1655
+      startSourceChar: 1613
+      endSourceChar: 1613
       line: 41
       lineChar: 83
       spanCodeSection: 
     - startInstruction: 2880
       endInstruction: 2879
-      startSourceChar: 1655
-      endSourceChar: 1655
+      startSourceChar: 1613
+      endSourceChar: 1613
       line: 41
       lineChar: 83
       spanCodeSection: 
     - startInstruction: 2880
       endInstruction: 2879
-      startSourceChar: 1655
-      endSourceChar: 1655
+      startSourceChar: 1613
+      endSourceChar: 1613
       line: 41
       lineChar: 83
       spanCodeSection: 
     - startInstruction: 2880
       endInstruction: 2879
-      startSourceChar: 1655
-      endSourceChar: 1665
+      startSourceChar: 1613
+      endSourceChar: 1623
       line: 41
       lineChar: 83
       spanCodeSection: modObject.
     - startInstruction: 2880
       endInstruction: 2879
-      startSourceChar: 1665
-      endSourceChar: 1679
+      startSourceChar: 1623
+      endSourceChar: 1637
       line: 41
       lineChar: 93
       spanCodeSection: GetComponents(
     - startInstruction: 2880
       endInstruction: 2879
-      startSourceChar: 1679
-      endSourceChar: 1686
+      startSourceChar: 1637
+      endSourceChar: 1644
       line: 41
       lineChar: 107
       spanCodeSection: typeof(
     - startInstruction: 2880
       endInstruction: 2911
-      startSourceChar: 1686
-      endSourceChar: 1702
+      startSourceChar: 1644
+      endSourceChar: 1660
       line: 41
       lineChar: 114
       spanCodeSection: UdonBehaviour)).
     - startInstruction: 2912
       endInstruction: 2935
-      startSourceChar: 1702
-      endSourceChar: 1712
+      startSourceChar: 1660
+      endSourceChar: 1670
       line: 41
       lineChar: 130
       spanCodeSection: 'Length == '
     - startInstruction: 2936
-      endInstruction: 3055
-      startSourceChar: 1712
-      endSourceChar: 1731
+      endInstruction: 2936
+      startSourceChar: 1670
+      endSourceChar: 1670
       line: 41
       lineChar: 140
-      spanCodeSection: "4);\r\n\r\n            "
-    - startInstruction: 3056
-      endInstruction: 3055
-      startSourceChar: 1731
-      endSourceChar: 1731
-      line: 43
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 3056
-      endInstruction: 3055
-      startSourceChar: 1731
-      endSourceChar: 1731
-      line: 43
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 3056
-      endInstruction: 3055
-      startSourceChar: 1731
-      endSourceChar: 1731
-      line: 43
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 3056
-      endInstruction: 3055
-      startSourceChar: 1731
-      endSourceChar: 1737
-      line: 43
-      lineChar: 12
-      spanCodeSection: Debug.
-    - startInstruction: 3056
-      endInstruction: 3055
-      startSourceChar: 1737
-      endSourceChar: 1741
-      line: 43
-      lineChar: 18
-      spanCodeSection: Log(
-    - startInstruction: 3056
-      endInstruction: 3055
-      startSourceChar: 1741
-      endSourceChar: 1741
-      line: 43
-      lineChar: 22
-      spanCodeSection: 
-    - startInstruction: 3056
-      endInstruction: 3055
-      startSourceChar: 1741
-      endSourceChar: 1741
-      line: 43
-      lineChar: 22
-      spanCodeSection: 
-    - startInstruction: 3056
-      endInstruction: 3055
-      startSourceChar: 1741
-      endSourceChar: 1754
-      line: 43
-      lineChar: 22
-      spanCodeSection: getBehaviour.
-    - startInstruction: 3056
-      endInstruction: 3223
-      startSourceChar: 1754
-      endSourceChar: 1785
-      line: 43
-      lineChar: 35
-      spanCodeSection: "GetUdonTypeID());\r\n            "
-    - startInstruction: 3224
-      endInstruction: 3223
-      startSourceChar: 1785
-      endSourceChar: 1785
-      line: 44
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 3224
-      endInstruction: 3223
-      startSourceChar: 1785
-      endSourceChar: 1785
-      line: 44
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 3224
-      endInstruction: 3223
-      startSourceChar: 1785
-      endSourceChar: 1785
-      line: 44
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 3224
-      endInstruction: 3223
-      startSourceChar: 1785
-      endSourceChar: 1791
-      line: 44
-      lineChar: 12
-      spanCodeSection: Debug.
-    - startInstruction: 3224
-      endInstruction: 3223
-      startSourceChar: 1791
-      endSourceChar: 1795
-      line: 44
-      lineChar: 18
-      spanCodeSection: Log(
-    - startInstruction: 3224
-      endInstruction: 3223
-      startSourceChar: 1795
-      endSourceChar: 1795
-      line: 44
-      lineChar: 22
-      spanCodeSection: 
-    - startInstruction: 3224
-      endInstruction: 3223
-      startSourceChar: 1795
-      endSourceChar: 1795
-      line: 44
-      lineChar: 22
-      spanCodeSection: 
-    - startInstruction: 3224
-      endInstruction: 3223
-      startSourceChar: 1795
-      endSourceChar: 1808
-      line: 44
-      lineChar: 22
-      spanCodeSection: getBehaviour.
-    - startInstruction: 3224
-      endInstruction: 3367
-      startSourceChar: 1808
-      endSourceChar: 1843
-      line: 44
-      lineChar: 35
-      spanCodeSection: "GetUdonTypeName());\r\n\r\n            "
-    - startInstruction: 3368
-      endInstruction: 3367
-      startSourceChar: 1843
-      endSourceChar: 1852
-      line: 46
-      lineChar: 12
-      spanCodeSection: foreach (
-    - startInstruction: 3368
-      endInstruction: 3367
-      startSourceChar: 1852
-      endSourceChar: 1875
-      line: 46
-      lineChar: 21
-      spanCodeSection: 'Component behaviour in '
-    - startInstruction: 3368
-      endInstruction: 3367
-      startSourceChar: 1875
-      endSourceChar: 1875
-      line: 46
-      lineChar: 44
-      spanCodeSection: 
-    - startInstruction: 3368
-      endInstruction: 3367
-      startSourceChar: 1875
-      endSourceChar: 1875
-      line: 46
-      lineChar: 44
-      spanCodeSection: 
-    - startInstruction: 3368
-      endInstruction: 3367
-      startSourceChar: 1875
-      endSourceChar: 1885
-      line: 46
-      lineChar: 44
-      spanCodeSection: modObject.
-    - startInstruction: 3368
-      endInstruction: 3367
-      startSourceChar: 1885
-      endSourceChar: 1899
-      line: 46
-      lineChar: 54
-      spanCodeSection: GetComponents(
-    - startInstruction: 3368
-      endInstruction: 3367
-      startSourceChar: 1899
-      endSourceChar: 1906
-      line: 46
-      lineChar: 68
-      spanCodeSection: typeof(
-    - startInstruction: 3368
-      endInstruction: 3523
-      startSourceChar: 1906
-      endSourceChar: 1936
-      line: 46
-      lineChar: 75
-      spanCodeSection: "UdonBehaviour)))\r\n            "
-    - startInstruction: 3524
-      endInstruction: 3523
-      startSourceChar: 1936
-      endSourceChar: 1955
-      line: 47
-      lineChar: 12
-      spanCodeSection: "{\r\n                "
-    - startInstruction: 3524
-      endInstruction: 3523
-      startSourceChar: 1955
-      endSourceChar: 1955
-      line: 48
-      lineChar: 16
-      spanCodeSection: 
-    - startInstruction: 3524
-      endInstruction: 3523
-      startSourceChar: 1955
-      endSourceChar: 1955
-      line: 48
-      lineChar: 16
-      spanCodeSection: 
-    - startInstruction: 3524
-      endInstruction: 3523
-      startSourceChar: 1955
-      endSourceChar: 1955
-      line: 48
-      lineChar: 16
-      spanCodeSection: 
-    - startInstruction: 3524
-      endInstruction: 3523
-      startSourceChar: 1955
-      endSourceChar: 1961
-      line: 48
-      lineChar: 16
-      spanCodeSection: Debug.
-    - startInstruction: 3524
-      endInstruction: 3523
-      startSourceChar: 1961
-      endSourceChar: 1965
-      line: 48
-      lineChar: 22
-      spanCodeSection: Log(
-    - startInstruction: 3524
-      endInstruction: 3523
-      startSourceChar: 1965
-      endSourceChar: 1965
-      line: 48
-      lineChar: 26
-      spanCodeSection: 
-    - startInstruction: 3524
-      endInstruction: 3523
-      startSourceChar: 1965
-      endSourceChar: 1986
-      line: 48
-      lineChar: 26
-      spanCodeSection: '"Component name: " + '
-    - startInstruction: 3524
-      endInstruction: 3523
-      startSourceChar: 1986
-      endSourceChar: 1986
-      line: 48
-      lineChar: 47
-      spanCodeSection: 
-    - startInstruction: 3524
-      endInstruction: 3523
-      startSourceChar: 1986
-      endSourceChar: 1986
-      line: 48
-      lineChar: 47
-      spanCodeSection: 
-    - startInstruction: 3524
-      endInstruction: 3523
-      startSourceChar: 1986
-      endSourceChar: 1987
-      line: 48
-      lineChar: 47
-      spanCodeSection: (
-    - startInstruction: 3524
-      endInstruction: 3523
-      startSourceChar: 1987
-      endSourceChar: 2007
-      line: 48
-      lineChar: 48
-      spanCodeSection: (UdonSharpBehaviour)
-    - startInstruction: 3524
-      endInstruction: 3543
-      startSourceChar: 2007
-      endSourceChar: 2018
-      line: 48
-      lineChar: 68
-      spanCodeSection: behaviour).
-    - startInstruction: 3544
-      endInstruction: 3544
-      startSourceChar: 2018
-      endSourceChar: 2018
-      line: 48
-      lineChar: 79
       spanCodeSection: 
   hasInteractEvent: 0
   serializationData:
