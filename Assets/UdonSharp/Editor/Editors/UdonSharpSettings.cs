@@ -53,6 +53,8 @@ public class <TemplateClassName> : UdonSharpBehaviour
         public bool includeInlineCode = true;
         public bool listenForVRCExceptions = false;
 
+        public bool shouldForceCompile = false;
+
         public static UdonSharpSettings GetSettings()
         {
             UdonSharpSettings settings = AssetDatabase.LoadAssetAtPath<UdonSharpSettings>(SettingsSavePath);
@@ -126,6 +128,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
         private static readonly GUIContent includeInlineCodeLabel = new GUIContent("Inline code", "Include C# inline in generated assembly");
         private static readonly GUIContent listenForVRCExceptionsLabel = new GUIContent("Listen for client exceptions", "Listens for exceptions from Udon and tries to match them to scripts in the project");
         private static readonly GUIContent scanningBlackListLabel = new GUIContent("Scanning blacklist", "Directories to not watch for source code changes and not include in class lookups");
+        private static readonly GUIContent forceCompileLabel = new GUIContent("Force compile on upload", "Forces Unity to synchronously compile scripts when a world build is started. Unity will complain and throw errors, but it seems to work. This is a less intrusive way to prevent Unity from corrupting assemblies on upload.");
 
         [SettingsProvider]
         public static SettingsProvider CreateSettingsProvider()
@@ -165,6 +168,11 @@ public class <TemplateClassName> : UdonSharpBehaviour
                         EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.includeInlineCode)), includeInlineCodeLabel);
                         EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.listenForVRCExceptions)), listenForVRCExceptionsLabel);
                     }
+
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField("Experimental", EditorStyles.boldLabel);
+
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.shouldForceCompile)), forceCompileLabel);
 
                     if (EditorGUI.EndChangeCheck())
                     {
