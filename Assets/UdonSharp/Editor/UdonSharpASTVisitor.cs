@@ -1449,7 +1449,22 @@ namespace UdonSharp
         {
             UpdateSyntaxNode(node);
 
+            // We want to only propagate the destination to the right hand side of the expression
+            SymbolDefinition lastDestination = null;
+
+            if (visitorContext.topCaptureScope != null)
+            {
+                lastDestination = visitorContext.topCaptureScope.requestedDestination;
+                visitorContext.topCaptureScope.requestedDestination = null;
+            }
+
             Visit(node.Expression);
+
+            if (visitorContext.topCaptureScope != null)
+            {
+                visitorContext.topCaptureScope.requestedDestination = lastDestination;
+            }
+
             Visit(node.Name);
         }
         
@@ -1861,8 +1876,7 @@ namespace UdonSharp
             System.Type targetType = null;
             SymbolDefinition expressionSymbol = null;
 
-            //SymbolDefinition castOutSymbol = visitorContext.requestedDestination;
-            SymbolDefinition castOutSymbol = null;
+            SymbolDefinition castOutSymbol = visitorContext.requestedDestination;
 
             using (ExpressionCaptureScope castExpressionCapture = new ExpressionCaptureScope(visitorContext, null, castOutSymbol))
             {
@@ -2517,7 +2531,7 @@ namespace UdonSharp
             if (externalScope != null)
                 visitorContext.PushCaptureScope(externalScope);
 
-            using (ExpressionCaptureScope methodCaptureScope = new ExpressionCaptureScope(visitorContext, null, requestedDestination))
+            using (ExpressionCaptureScope methodCaptureScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 Visit(node.Expression);
                 
@@ -2525,8 +2539,6 @@ namespace UdonSharp
                     throw new System.Exception("Invocation requires method expression!");
                 
                 List<SymbolDefinition.COWValue> invocationArgs = new List<SymbolDefinition.COWValue>();
-
-                //visitorContext.PushTable(new SymbolTable(visitorContext.resolverContext, visitorContext.topTable));
 
                 SymbolDefinition[] argDestinations = methodCaptureScope.GetLocalMethodArgumentSymbols();
 
@@ -2543,6 +2555,9 @@ namespace UdonSharp
                     }
                 }
 
+                // We need to set the requested destination here to prevent propagation of the requested destination to the left hand side of the node in the Visit(node.Expression),
+                //   we only want it to propagate on the final right hand expression
+                methodCaptureScope.requestedDestination = requestedDestination;
                 SymbolDefinition functionReturnValue = methodCaptureScope.Invoke(
                     invocationArgs.Select((arg) => arg.symbol).ToArray()
                 );
@@ -2638,30 +2653,42 @@ namespace UdonSharp
 
             SymbolDefinition interpolatedString = visitorContext.topTable.CreateNamedSymbol("interpolatedStr", typeof(string), SymbolDeclTypeFlags.Internal);
 
-            using (ExpressionCaptureScope stringConcatMethodScope = new ExpressionCaptureScope(visitorContext, null))
+            if (node.Contents.Count > 0)
             {
-                stringConcatMethodScope.SetToMethods(GetOperators(typeof(string), BuiltinOperatorType.Addition));
-
-                for (int i = 0; i < node.Contents.Count; ++i)
+                using (ExpressionCaptureScope stringConcatMethodScope = new ExpressionCaptureScope(visitorContext, null))
                 {
-                    var interpolatedContents = node.Contents[i];
+                    stringConcatMethodScope.SetToMethods(GetOperators(typeof(string), BuiltinOperatorType.Addition));
 
-                    using (ExpressionCaptureScope stringExpressionCapture = new ExpressionCaptureScope(visitorContext, null))
+                    for (int i = 0; i < node.Contents.Count; ++i)
                     {
-                        Visit(interpolatedContents);
+                        var interpolatedContents = node.Contents[i];
 
-                        using (ExpressionCaptureScope setInterpolatedStringScope = new ExpressionCaptureScope(visitorContext, null))
+                        using (ExpressionCaptureScope stringExpressionCapture = new ExpressionCaptureScope(visitorContext, null))
                         {
-                            setInterpolatedStringScope.SetToLocalSymbol(interpolatedString);
+                            Visit(interpolatedContents);
 
-                            // This needs to be moved to direct set as well when we have support
+                            using (ExpressionCaptureScope setInterpolatedStringScope = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                setInterpolatedStringScope.SetToLocalSymbol(interpolatedString);
 
-                            if (i == 0)
-                                setInterpolatedStringScope.ExecuteSet(stringExpressionCapture.ExecuteGet());
-                            else
-                                setInterpolatedStringScope.ExecuteSet(stringConcatMethodScope.Invoke(new SymbolDefinition[] { interpolatedString, stringExpressionCapture.ExecuteGet() }));
+                                // This needs to be moved to direct set as well when we have support
+
+                                if (i == 0)
+                                    setInterpolatedStringScope.ExecuteSet(stringExpressionCapture.ExecuteGet());
+                                else
+                                    setInterpolatedStringScope.ExecuteSet(stringConcatMethodScope.Invoke(new SymbolDefinition[] { interpolatedString, stringExpressionCapture.ExecuteGet() }));
+                            }
                         }
                     }
+                }
+            }
+            else // Empty interpolation $""
+            {
+                using (ExpressionCaptureScope setInterpolatedStringScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    setInterpolatedStringScope.SetToLocalSymbol(interpolatedString);
+
+                    setInterpolatedStringScope.ExecuteSet(visitorContext.topTable.CreateConstSymbol(typeof(string), ""));
                 }
             }
 

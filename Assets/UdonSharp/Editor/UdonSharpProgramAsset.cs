@@ -287,18 +287,26 @@ namespace UdonSharp
             compiler.Compile();
         }
 
+        static UdonEditorInterface editorInterfaceInstance;
+        static UdonSharp.HeapFactory heapFactoryInstance;
+
         public void AssembleCsProgram(uint heapSize)
         {
-            // The heap size is determined by the symbol count + the unique extern string count
-            UdonSharp.HeapFactory heapFactory = new UdonSharp.HeapFactory(heapSize); 
-            UdonEditorInterface assemblerInterface = new UdonEditorInterface(null, heapFactory, null, null, null, null, null, null, null);
-            assemblerInterface.AddTypeResolver(new UdonBehaviourTypeResolver());
+            if (editorInterfaceInstance == null || heapFactoryInstance == null)
+            {
+                // The heap size is determined by the symbol count + the unique extern string count
+                heapFactoryInstance = new UdonSharp.HeapFactory();
+                editorInterfaceInstance = new UdonEditorInterface(null, heapFactoryInstance, null, null, null, null, null, null, null);
+                editorInterfaceInstance.AddTypeResolver(new UdonBehaviourTypeResolver()); // todo: can be removed with SDK's >= VRCSDK-UDON-2020.06.15.14.08_Public
+            }
+
+            heapFactoryInstance.FactoryHeapSize = heapSize;
 
             FieldInfo assemblyError = typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance);
 
             try
             {
-                program = assemblerInterface.Assemble(udonAssembly);
+                program = editorInterfaceInstance.Assemble(udonAssembly);
                 assemblyError.SetValue(this, null);
 
                 hasInteractEvent = false;

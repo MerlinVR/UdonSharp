@@ -8,21 +8,21 @@ namespace UdonSharp
 {
     public class HeapFactory : IUdonHeapFactory
     {
-        private uint factoryHeapSize;
+        public uint FactoryHeapSize { get; set; }
 
-        public HeapFactory(uint heapSizeIn)
+        public HeapFactory()
         {
-            factoryHeapSize = heapSizeIn;
+            FactoryHeapSize = 0;
         }
 
         public IUdonHeap ConstructUdonHeap()
         {
-            return new UdonHeap(factoryHeapSize);
+            return new UdonHeap(FactoryHeapSize);
         }
 
         public IUdonHeap ConstructUdonHeap(uint heapSize)
         {
-            return new UdonHeap(factoryHeapSize);
+            return new UdonHeap(FactoryHeapSize);
         }
     }
 }
