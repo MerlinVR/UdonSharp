@@ -42,6 +42,7 @@ namespace UdonSharp
 
         private bool showProgramUasm = false;
         private bool showExtraOptions = false;
+        private string customEventName = "";
 
         private UdonBehaviour currentBehaviour = null;
 
@@ -214,7 +215,22 @@ namespace UdonSharp
             showExtraOptions = EditorGUILayout.Foldout(showExtraOptions, "Utilities");
             if (showExtraOptions)
             {
+                EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
+
+                if (GUILayout.Button("Send Custom Event"))
+                {
+                    if (currentBehaviour != null)
+                        currentBehaviour.SendCustomEvent(customEventName);
+                }
+
+                customEventName = EditorGUILayout.TextField("Event Name:", customEventName);
+
+                EditorGUI.EndDisabledGroup();
+
                 EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
+
+                EditorGUILayout.Space();
+
                 if (GUILayout.Button("Export to Assembly Asset"))
                 {
                     string savePath = EditorUtility.SaveFilePanelInProject("Assembly asset save location", Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(sourceCsScript)), "asset", "Choose a save location for the assembly asset");
