@@ -3,9 +3,10 @@ using System.Runtime.Serialization;
 
 namespace UdonSharp.Serialization
 {
-    public class JaggedArraySerializer : Serializer
+    public class JaggedArraySerializer<T> : Serializer<T>
     {
         private Serializer rootArraySerializer;
+        private IValueStorage innerArrayValueStorage;
 
         public JaggedArraySerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)
@@ -19,6 +20,7 @@ namespace UdonSharp.Serialization
                     throw new ArgumentException("Array element metadata cannot be null on array type metadata");
 
                 rootArraySerializer = CreatePooled(new TypeSerializationMetadata(typeMetadata.arrayElementMetadata.cSharpType.MakeArrayType()) { arrayElementMetadata = typeMetadata.arrayElementMetadata });
+                innerArrayValueStorage = ValueStorageUtil.CreateStorage(rootArraySerializer.GetUdonStorageType());
                 
                 int arrayDepth = 0;
 
@@ -65,7 +67,8 @@ namespace UdonSharp.Serialization
             }
             else if (cSharpType.IsArray)
             {
-                rootArraySerializer.SerializeToCSharpTypeInPlace(ref targetElement, elementValue);
+                innerArrayValueStorage.Value = elementValue;
+                rootArraySerializer.ReadWeak(ref targetElement, innerArrayValueStorage);
             }
             else
             {
@@ -98,7 +101,8 @@ namespace UdonSharp.Serialization
             }
             else if (cSharpType.IsArray)
             {
-                rootArraySerializer.SerializeToCSharpTypeInPlace(ref targetElement, elementValue);
+                innerArrayValueStorage.Value = targetElement;
+                rootArraySerializer.WriteWeak(innerArrayValueStorage, elementValue);
             }
             else
             {
@@ -106,7 +110,7 @@ namespace UdonSharp.Serialization
             }
         }
 
-        public override void SerializeToUdonTypeInPlace(ref object targetObject, object sourceObject)
+        public override void ReadWeak(ref object targetObject, IValueStorage sourceObject)
         {
             VerifySerializationSanity();
 
@@ -116,14 +120,36 @@ namespace UdonSharp.Serialization
             ConvertToUdonArrayElement(ref targetObject, sourceObject, typeMetadata.cSharpType);
         }
 
-        public override void SerializeToCSharpTypeInPlace(ref object targetObject, object sourceObject)
+        public override void WriteWeak(IValueStorage targetObject, object sourceObject)
         {
             VerifySerializationSanity();
 
             if (sourceObject != null && !UdonSharpUtils.IsUserJaggedArray(sourceObject.GetType()))
                 throw new SerializationException($"Cannot convert {targetObject.GetType()} to {typeMetadata.cSharpType}");
 
-            ConvertToCSharpArrayElement(ref targetObject, sourceObject, typeMetadata.cSharpType);
+            object tarArray = targetObject.Value;
+            ConvertToCSharpArrayElement(ref tarArray, sourceObject, typeMetadata.cSharpType);
+            targetObject.Value = tarArray;
+        }
+
+        public override void Write(IValueStorage targetObject, in T sourceObject)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Read(ref T targetObject, IValueStorage sourceObject)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Type GetUdonStorageType()
+        {
+            return typeMetadata.udonStorageType;
+        }
+
+        protected override Serializer MakeSerializer(TypeSerializationMetadata typeMetadata)
+        {
+            throw new NotImplementedException();
         }
     }
 }

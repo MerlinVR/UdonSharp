@@ -2,9 +2,9 @@
 
 namespace UdonSharp.Serialization
 {
-    public class DefaultSerializer : Serializer
+    public class UdonSharpBehaviourSerializer<T> : Serializer<T> where T : UdonSharpBehaviour 
     {
-        public DefaultSerializer(TypeSerializationMetadata typeMetadata)
+        public UdonSharpBehaviourSerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)
         {
         }
@@ -19,12 +19,12 @@ namespace UdonSharp.Serialization
             throw new NotImplementedException();
         }
 
-        public override void ReadWeak(ref object targetObject, IValueStorage sourceObject)
+        public override void Read(ref T targetObject, IValueStorage sourceObject)
         {
             throw new NotImplementedException();
         }
 
-        public override void WriteWeak(IValueStorage targetObject, object sourceObject)
+        public override void Write(IValueStorage targetObject, in T sourceObject)
         {
             throw new NotImplementedException();
         }

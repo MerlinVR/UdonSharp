@@ -15,8 +15,8 @@ namespace UdonSharp.Serialization
         // Serializers that will be checked against the type, this list is ordered specifically based on priority, do not arbitrarily reorder it
         private static readonly List<Serializer> typeCheckSerializers = new List<Serializer>()
         {
-            new JaggedArraySerializer(null), 
-            new ArraySerializer(null),
+            new JaggedArraySerializer<object>(null), 
+            new ArraySerializer<object>(null),
             new DefaultSerializer(null),
         };
 
@@ -53,6 +53,8 @@ namespace UdonSharp.Serialization
             throw new System.Exception($"Failed to initialize a valid serializer for {typeMetadata}");
         }
 
+        protected abstract Serializer MakeSerializer(TypeSerializationMetadata typeMetadata);
+
         /// <summary>
         /// Returns true if this serializer should be used for a given type, returns false otherwise.
         /// </summary>
@@ -61,45 +63,18 @@ namespace UdonSharp.Serialization
         public abstract bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata);
 
         /// <summary>
-        /// Implements a conversion from an Udon value type to its equivalent C# type.
-        /// For instance, in Udon, jagged arrays are stored as object[]'s which store more array types down to the base array type.
-        /// These types need to be converted to their actual type, so a jagged array of int[][] would be converted from its storage type of object[] to an int[][]
-        /// </summary>
-        /// <param name="udonValue"></param>
-        /// <param name="typeMetadata"></param>
-        /// <returns></returns>
-        public virtual object SerializeToCSharpType(object udonValue)
-        {
-            object targetObj = null;
-            SerializeToCSharpTypeInPlace(ref targetObj, udonValue);
-            return targetObj;
-        }
-
-        /// <summary>
-        /// This goes in the opposite direction, it converts C# types to Udon types that can be stored
-        /// </summary>
-        /// <param name="cSharpValue"></param>
-        /// <returns></returns>
-        public virtual object SerializeToUdonType(object cSharpValue)
-        {
-            object targetObj = null;
-            SerializeToUdonTypeInPlace(ref targetObj, cSharpValue);
-            return targetObj;
-        }
-
-        /// <summary>
         /// Serializes the source C# object directly into the target Udon object and attempt to avoid creating new objects when possible.
         /// </summary>
         /// <param name="targetObject"></param>
         /// <param name="sourceObject"></param>
-        public abstract void SerializeToUdonTypeInPlace(ref object targetObject, object sourceObject);
+        public abstract void WriteWeak(IValueStorage targetObject, object sourceObject);
 
         /// <summary>
         /// Serializes the source Udon object directly into the target C# object and attempt to avoid creating new objects when possible.
         /// </summary>
         /// <param name="targetObject"></param>
         /// <param name="sourceObject"></param>
-        public abstract void SerializeToCSharpTypeInPlace(ref object targetObject, object sourceObject);
+        public abstract void ReadWeak(ref object targetObject, IValueStorage sourceObject);
 
         /// <summary>
         /// Verifies that this serializer is in the correct state to be using HandlesTypeSerialization()
@@ -117,6 +92,44 @@ namespace UdonSharp.Serialization
         {
             if (typeMetadata == null)
                 throw new System.Exception("Serializer is not in correct state to serialize data");
+        }
+
+        public abstract System.Type GetUdonStorageType();
+    }
+
+    public abstract class Serializer<T> : Serializer
+    {
+        protected Serializer(TypeSerializationMetadata typeMetadata) : base(typeMetadata)
+        {
+        }
+
+        public abstract void Write(IValueStorage targetObject, in T sourceObject);
+
+        public override void WriteWeak(IValueStorage targetObject, object sourceObject)
+        {
+            T sourceObj = (T)sourceObject;
+            Write(targetObject, in sourceObj);
+        }
+
+        public abstract void Read(ref T targetObject, IValueStorage sourceObject);
+
+        public override void ReadWeak(ref object targetObject, IValueStorage sourceObject)
+        {
+            T outObj = default;
+            Read(ref outObj, sourceObject);
+            targetObject = outObj;
+        }
+
+        public virtual void Serialize(IValueStorage targetStorage, in T sourceObject)
+        {
+            Write(targetStorage, in sourceObject);
+        }
+
+        public virtual T Deserialize(IValueStorage sourceObject)
+        {
+            T output = default(T);
+            Read(ref output, sourceObject);
+            return output;
         }
     }
 }
