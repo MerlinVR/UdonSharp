@@ -17,6 +17,34 @@ namespace UdonSharp.Tests
             string testStr = string.Concat("a", "bc", "d", "e", "fg", "hij", "klmn", "opq", "rstuv", "wx", "yz");
 
             tester.TestAssertion("Params arrays", testStr == "abcdefghijklmnopqrstuvwxyz");
+            
+            string joinedStr = string.Join(", ", new[] { "Hello", "test", "join" });
+            string joinedStr2 = string.Join(", ", "Hello", "test", "join" );
+
+            tester.TestAssertion("Param parameter without expanding", joinedStr == "Hello, test, join");
+            tester.TestAssertion("Param parameter with expanding", joinedStr2 == "Hello, test, join");
+
+            string formatStr = string.Format("{0}, {1}", this, this);
+            tester.TestAssertion("FormatStr 1", formatStr == "MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour)");
+
+            string formatStr2 = string.Format("{0}", this);
+            tester.TestAssertion("FormatStr 2", formatStr2 == "MethodCalls (VRC.Udon.UdonBehaviour)");
+
+            var objArr = new object[] { this };
+            string formatStr3 = string.Format("{0}", objArr);
+            tester.TestAssertion("FormatStr 3", formatStr3 == "MethodCalls (VRC.Udon.UdonBehaviour)");
+
+            //Debug.Log(string.Join(", ", this, this, this, this)); // Runtime exception `Function '__Join__SystemString_SystemObjectArray__SystemString' is not implemented yet`
         }
+
+        //public void test(int a, bool b, float c = 5f, params float[] d)
+        //{
+        //    test(a, b);
+        //}
+
+        //public void test2(params object[] strings)
+        //{
+        //    test2(new string[] { "aa", "bbb" });
+        //}
     }
 }
