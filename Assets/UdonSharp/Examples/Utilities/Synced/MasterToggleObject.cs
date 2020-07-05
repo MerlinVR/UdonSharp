@@ -28,6 +28,8 @@ namespace UdonSharp.Examples.Utilities
         {
             if (!Networking.IsMaster)
                 return;
+            else if (!Networking.IsOwner(gameObject)) // The object may have transfer ownership on collision checked which would allow people to take ownership by accident
+                Networking.SetOwner(Networking.LocalPlayer, gameObject);
 
             isObjectEnabled = !isObjectEnabled;
             toggleObject.SetActive(isObjectEnabled);
