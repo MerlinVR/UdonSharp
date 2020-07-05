@@ -1,0 +1,615 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
+  m_Name: MasterToggleObject
+  m_EditorClassIdentifier: 
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 52f39c33469876a4ea12ade2f2f733ad,
+    type: 2}
+  udonAssembly: ".data_start\n\n    .export toggleObject\n    .sync isObjectEnabled,
+    none\n\n    __refl_const_intnl_udonTypeID: %SystemInt64, null\n    __refl_const_intnl_udonTypeName:
+    %SystemString, null\n    toggleObject: %UnityEngineGameObject, null\n    isObjectEnabled:
+    %SystemBoolean, null\n    __0_const_intnl_SystemUInt32: %SystemUInt32, null\n
+    \   __0_intnl_SystemBoolean: %SystemBoolean, null\n    __1_intnl_SystemBoolean:
+    %SystemBoolean, null\n    __0_intnl_returnTarget_UInt32: %SystemUInt32, null\n\n.data_end\n\n
+    \       \n         # using UnityEngine;\n        \n         # using VRC.SDKBase;\n
+    \       \n         # namespace UdonSharp.Examples.Utilities\n        \n         #
+    public class MasterToggleObject : UdonSharpBehaviour\n.code_start\n        \n
+    \        # public GameObject toggleObject;\n        \n         # [UdonSynced]\n
+    \       \n         # bool isObjectEnabled;\n        \n         # private void
+    Start()\n    .export _start\n        \n    _start:\n        \n        PUSH, __0_const_intnl_SystemUInt32\n
+    \       \n         # {\n        \n         # isObjectEnabled = toggleObject.activeSelf;\n
+    \       PUSH, toggleObject\n        PUSH, isObjectEnabled\n        EXTERN, \"UnityEngineGameObject.__get_activeSelf__SystemBoolean\"\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\n        COPY\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\n        \n        \n         #
+    public override void OnDeserialization()\n    .export _onDeserialization\n        \n
+    \   _onDeserialization:\n        \n        PUSH, __0_const_intnl_SystemUInt32\n
+    \       \n         # {\n        \n         # toggleObject.SetActive(isObjectEnabled);\n
+    \       PUSH, toggleObject\n        PUSH, isObjectEnabled\n        EXTERN, \"UnityEngineGameObject.__SetActive__SystemBoolean__SystemVoid\"\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\n        COPY\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\n        \n        \n         #
+    public override void Interact()\n    .export _interact\n        \n    _interact:\n
+    \       \n        PUSH, __0_const_intnl_SystemUInt32\n        \n         # {\n
+    \       \n         # if (!Networking.IsMaster)\n        PUSH, __0_intnl_SystemBoolean\n
+    \       EXTERN, \"VRCSDKBaseNetworking.__get_IsMaster__SystemBoolean\"\n        PUSH,
+    __0_intnl_SystemBoolean\n        PUSH, __1_intnl_SystemBoolean\n        EXTERN,
+    \"SystemBoolean.__op_UnaryNegation__SystemBoolean__SystemBoolean\"\n        PUSH,
+    __1_intnl_SystemBoolean\n        JUMP_IF_FALSE, 0x000000BC\n        \n         #
+    return;\n        PUSH, __0_intnl_returnTarget_UInt32 #Explicit return sequence\n
+    \       COPY\n        JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\n        \n
+    \        # isObjectEnabled = !isObjectEnabled;\n        PUSH, isObjectEnabled\n
+    \       PUSH, isObjectEnabled\n        EXTERN, \"SystemBoolean.__op_UnaryNegation__SystemBoolean__SystemBoolean\"\n
+    \       \n         # toggleObject.SetActive(isObjectEnabled);\n        PUSH, toggleObject\n
+    \       PUSH, isObjectEnabled\n        EXTERN, \"UnityEngineGameObject.__SetActive__SystemBoolean__SystemVoid\"\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\n        COPY\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\n        \n.code_end\n"
+  assemblyError: 
+  sourceCsScript: {fileID: 11500000, guid: fe5e5216dff1add40961bf62f441e92d, type: 3}
+  behaviourIDHeapVarName: __refl_const_intnl_udonTypeID
+  compileErrors: []
+  debugInfo:
+    serializedDebugSpans:
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 0
+      endSourceChar: 2
+      line: 0
+      lineChar: 0
+      spanCodeSection: "\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 2
+      endSourceChar: 2
+      line: 1
+      lineChar: 0
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 2
+      endSourceChar: 8
+      line: 1
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 8
+      endSourceChar: 22
+      line: 1
+      lineChar: 6
+      spanCodeSection: "UnityEngine;\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 22
+      endSourceChar: 28
+      line: 2
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 28
+      endSourceChar: 28
+      line: 2
+      lineChar: 6
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 28
+      endSourceChar: 32
+      line: 2
+      lineChar: 6
+      spanCodeSection: VRC.
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 32
+      endSourceChar: 44
+      line: 2
+      lineChar: 10
+      spanCodeSection: "SDKBase;\r\n\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 44
+      endSourceChar: 210
+      line: 4
+      lineChar: 0
+      spanCodeSection: "namespace UdonSharp.Examples.Utilities\r\n{\r\n    /// <summary>\r\n
+        \   /// Allows the master and only the master to toggle a game object globally\r\n
+        \   /// </summary>\r\n    "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 210
+      endSourceChar: 242
+      line: 9
+      lineChar: 4
+      spanCodeSection: 'public class MasterToggleObject '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 242
+      endSourceChar: 244
+      line: 9
+      lineChar: 36
+      spanCodeSection: ': '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 244
+      endSourceChar: 244
+      line: 9
+      lineChar: 38
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 244
+      endSourceChar: 280
+      line: 9
+      lineChar: 38
+      spanCodeSection: "UdonSharpBehaviour \r\n    {\r\n        "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 280
+      endSourceChar: 287
+      line: 11
+      lineChar: 8
+      spanCodeSection: 'public '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 287
+      endSourceChar: 287
+      line: 11
+      lineChar: 15
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 287
+      endSourceChar: 323
+      line: 11
+      lineChar: 15
+      spanCodeSection: "GameObject toggleObject;\r\n\r\n        "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 323
+      endSourceChar: 324
+      line: 13
+      lineChar: 8
+      spanCodeSection: '['
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 324
+      endSourceChar: 324
+      line: 13
+      lineChar: 9
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 324
+      endSourceChar: 345
+      line: 13
+      lineChar: 9
+      spanCodeSection: "UdonSynced]\r\n        "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 345
+      endSourceChar: 345
+      line: 14
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 345
+      endSourceChar: 378
+      line: 14
+      lineChar: 8
+      spanCodeSection: "bool isObjectEnabled;\r\n\r\n        "
+    - startInstruction: 0
+      endInstruction: 7
+      startSourceChar: 378
+      endSourceChar: 408
+      line: 16
+      lineChar: 8
+      spanCodeSection: "private void Start()\r\n        "
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 408
+      endSourceChar: 423
+      line: 17
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 423
+      endSourceChar: 423
+      line: 18
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 423
+      endSourceChar: 423
+      line: 18
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 423
+      endSourceChar: 441
+      line: 18
+      lineChar: 12
+      spanCodeSection: 'isObjectEnabled = '
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 441
+      endSourceChar: 441
+      line: 18
+      lineChar: 30
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 441
+      endSourceChar: 454
+      line: 18
+      lineChar: 30
+      spanCodeSection: toggleObject.
+    - startInstruction: 8
+      endInstruction: 51
+      startSourceChar: 454
+      endSourceChar: 488
+      line: 18
+      lineChar: 43
+      spanCodeSection: "activeSelf;\r\n        }\r\n\r\n        "
+    - startInstruction: 52
+      endInstruction: 59
+      startSourceChar: 488
+      endSourceChar: 538
+      line: 21
+      lineChar: 8
+      spanCodeSection: "public override void OnDeserialization()\r\n        "
+    - startInstruction: 60
+      endInstruction: 59
+      startSourceChar: 538
+      endSourceChar: 553
+      line: 22
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 60
+      endInstruction: 59
+      startSourceChar: 553
+      endSourceChar: 553
+      line: 23
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 60
+      endInstruction: 59
+      startSourceChar: 553
+      endSourceChar: 553
+      line: 23
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 60
+      endInstruction: 59
+      startSourceChar: 553
+      endSourceChar: 553
+      line: 23
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 60
+      endInstruction: 59
+      startSourceChar: 553
+      endSourceChar: 566
+      line: 23
+      lineChar: 12
+      spanCodeSection: toggleObject.
+    - startInstruction: 60
+      endInstruction: 59
+      startSourceChar: 566
+      endSourceChar: 576
+      line: 23
+      lineChar: 25
+      spanCodeSection: SetActive(
+    - startInstruction: 60
+      endInstruction: 103
+      startSourceChar: 576
+      endSourceChar: 616
+      line: 23
+      lineChar: 35
+      spanCodeSection: "isObjectEnabled);\r\n        }\r\n\r\n        "
+    - startInstruction: 104
+      endInstruction: 111
+      startSourceChar: 616
+      endSourceChar: 657
+      line: 26
+      lineChar: 8
+      spanCodeSection: "public override void Interact()\r\n        "
+    - startInstruction: 112
+      endInstruction: 111
+      startSourceChar: 657
+      endSourceChar: 672
+      line: 27
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 112
+      endInstruction: 111
+      startSourceChar: 672
+      endSourceChar: 676
+      line: 28
+      lineChar: 12
+      spanCodeSection: if (
+    - startInstruction: 112
+      endInstruction: 111
+      startSourceChar: 676
+      endSourceChar: 677
+      line: 28
+      lineChar: 16
+      spanCodeSection: '!'
+    - startInstruction: 112
+      endInstruction: 111
+      startSourceChar: 677
+      endSourceChar: 677
+      line: 28
+      lineChar: 17
+      spanCodeSection: 
+    - startInstruction: 112
+      endInstruction: 111
+      startSourceChar: 677
+      endSourceChar: 688
+      line: 28
+      lineChar: 17
+      spanCodeSection: Networking.
+    - startInstruction: 112
+      endInstruction: 167
+      startSourceChar: 688
+      endSourceChar: 715
+      line: 28
+      lineChar: 28
+      spanCodeSection: "IsMaster)\r\n                "
+    - startInstruction: 168
+      endInstruction: 187
+      startSourceChar: 715
+      endSourceChar: 738
+      line: 29
+      lineChar: 16
+      spanCodeSection: "return;\r\n\r\n            "
+    - startInstruction: 188
+      endInstruction: 187
+      startSourceChar: 738
+      endSourceChar: 738
+      line: 31
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 188
+      endInstruction: 187
+      startSourceChar: 738
+      endSourceChar: 738
+      line: 31
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 188
+      endInstruction: 187
+      startSourceChar: 738
+      endSourceChar: 756
+      line: 31
+      lineChar: 12
+      spanCodeSection: 'isObjectEnabled = '
+    - startInstruction: 188
+      endInstruction: 187
+      startSourceChar: 756
+      endSourceChar: 757
+      line: 31
+      lineChar: 30
+      spanCodeSection: '!'
+    - startInstruction: 188
+      endInstruction: 211
+      startSourceChar: 757
+      endSourceChar: 787
+      line: 31
+      lineChar: 31
+      spanCodeSection: "isObjectEnabled;\r\n            "
+    - startInstruction: 212
+      endInstruction: 211
+      startSourceChar: 787
+      endSourceChar: 787
+      line: 32
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 212
+      endInstruction: 211
+      startSourceChar: 787
+      endSourceChar: 787
+      line: 32
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 212
+      endInstruction: 211
+      startSourceChar: 787
+      endSourceChar: 787
+      line: 32
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 212
+      endInstruction: 211
+      startSourceChar: 787
+      endSourceChar: 800
+      line: 32
+      lineChar: 12
+      spanCodeSection: toggleObject.
+    - startInstruction: 212
+      endInstruction: 211
+      startSourceChar: 800
+      endSourceChar: 810
+      line: 32
+      lineChar: 25
+      spanCodeSection: SetActive(
+    - startInstruction: 212
+      endInstruction: 212
+      startSourceChar: 810
+      endSourceChar: 810
+      line: 32
+      lineChar: 35
+      spanCodeSection: 
+  hasInteractEvent: 1
+  serializationData:
+    SerializedFormat: 0
+    SerializedBytes: 0101100000006600690065006c00640044006500660069006e006900740069006f006e0073002f00000000017a000000530079007300740065006d002e0043006f006c006c0065006300740069006f006e0073002e00470065006e0065007200690063002e00440069006300740069006f006e00610072007900600032005b005b00530079007300740065006d002e0053007400720069006e0067002c0020006d00730063006f0072006c00690062005d002c005b00550064006f006e00530068006100720070002e004600690065006c00640044006500660069006e006900740069006f006e002c002000550064006f006e00530068006100720070002e0045006400690074006f0072005d005d002c0020006d00730063006f0072006c00690062000000000001010800000063006f006d00700061007200650072002f010000000159000000530079007300740065006d002e0043006f006c006c0065006300740069006f006e0073002e00470065006e0065007200690063002e00470065006e00650072006900630045007100750061006c0069007400790043006f006d0070006100720065007200600031005b005b00530079007300740065006d002e0053007400720069006e0067002c0020006d00730063006f0072006c00690062005d005d002c0020006d00730063006f0072006c00690062000100000005060200000000000000042e27010200000024006b00010c00000074006f00670067006c0065004f0062006a00650063007400010102000000240076002f02000000012b000000550064006f006e00530068006100720070002e004600690065006c00640044006500660069006e006900740069006f006e002c002000550064006f006e00530068006100720070002e0045006400690074006f0072000200000001010b0000006600690065006c006400530079006d0062006f006c002f03000000012c000000550064006f006e00530068006100720070002e00530079006d0062006f006c0044006500660069006e006900740069006f006e002c002000550064006f006e00530068006100720070002e0045006400690074006f0072000300000001010c00000069006e007400650072006e0061006c0054007900700065002f04000000011c000000530079007300740065006d002e00520075006e00740069006d00650054007900700065002c0020006d00730063006f0072006c00690062000400000028012e00000055006e0069007400790045006e00670069006e0065002e00470061006d0065004f0062006a006500630074002c00200055006e0069007400790045006e00670069006e0065002e0043006f00720065004d006f00640075006c006500051d010f0000006400650063006c00610072006100740069006f006e00540079007000650001000000000000001d0108000000730079006e0063004d006f00640065000000000000000000270116000000730079006d0062006f006c005200650073006f006c0076006500640054007900700065004e0061006d006500011500000055006e0069007400790045006e00670069006e006500470061006d0065004f0062006a00650063007400270112000000730079006d0062006f006c004f0072006900670069006e0061006c004e0061006d006500010c00000074006f00670067006c0065004f0062006a00650063007400270110000000730079006d0062006f006c0055006e0069007100750065004e0061006d006500010c00000074006f00670067006c0065004f0062006a006500630074002d0112000000730079006d0062006f006c00440065006600610075006c007400560061006c00750065000501010f0000006600690065006c00640041007400740072006900620075007400650073002f050000000149000000530079007300740065006d002e0043006f006c006c0065006300740069006f006e0073002e00470065006e0065007200690063002e004c00690073007400600031005b005b00530079007300740065006d002e004100740074007200690062007500740065002c0020006d00730063006f0072006c00690062005d005d002c0020006d00730063006f0072006c00690062000500000006000000000000000007052d011300000075007300650072004200650068006100760069006f007500720053006f0075007200630065000505042e27010200000024006b00010f000000690073004f0062006a0065006300740045006e00610062006c00650064000101020000002400760030020000000600000001010b0000006600690065006c006400530079006d0062006f006c0030030000000700000001010c00000069006e007400650072006e0061006c005400790070006500300400000008000000280118000000530079007300740065006d002e0042006f006f006c00650061006e002c0020006d00730063006f0072006c0069006200051d010f0000006400650063006c00610072006100740069006f006e00540079007000650002000000000000001d0108000000730079006e0063004d006f00640065000100000000000000270116000000730079006d0062006f006c005200650073006f006c0076006500640054007900700065004e0061006d006500010d000000530079007300740065006d0042006f006f006c00650061006e00270112000000730079006d0062006f006c004f0072006900670069006e0061006c004e0061006d006500010f000000690073004f0062006a0065006300740045006e00610062006c0065006400270110000000730079006d0062006f006c0055006e0069007100750065004e0061006d006500010f000000690073004f0062006a0065006300740045006e00610062006c00650064002d0112000000730079006d0062006f006c00440065006600610075006c007400560061006c00750065000501010f0000006600690065006c0064004100740074007200690062007500740065007300300500000009000000060100000000000000022f060000000130000000550064006f006e00530068006100720070002e00550064006f006e00530079006e006300650064004100740074007200690062007500740065002c002000550064006f006e00530068006100720070002e00520075006e00740069006d0065000a0000000507052d011300000075007300650072004200650068006100760069006f007500720053006f00750072006300650005050705
+    ReferencedUnityObjects: []
+    SerializedBytesString: 
+    Prefab: {fileID: 0}
+    PrefabModificationsReferencedUnityObjects: []
+    PrefabModifications: []
+    SerializationNodes:
+    - Name: fieldDefinitions
+      Entry: 7
+      Data: 0|System.Collections.Generic.Dictionary`2[[System.String, mscorlib],[UdonSharp.FieldDefinition,
+        UdonSharp.Editor]], mscorlib
+    - Name: comparer
+      Entry: 7
+      Data: 1|System.Collections.Generic.GenericEqualityComparer`1[[System.String,
+        mscorlib]], mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 12
+      Data: 2
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: toggleObject
+    - Name: $v
+      Entry: 7
+      Data: 2|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 3|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 7
+      Data: 4|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: UnityEngine.GameObject, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: UnityEngineGameObject
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: toggleObject
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: toggleObject
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 5|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: isObjectEnabled
+    - Name: $v
+      Entry: 7
+      Data: 6|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 7|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 7
+      Data: 8|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: System.Boolean, mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: declarationType
+      Entry: 3
+      Data: 2
+    - Name: syncMode
+      Entry: 3
+      Data: 1
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemBoolean
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: isObjectEnabled
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: isObjectEnabled
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 9|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 10|UdonSharp.UdonSyncedAttribute, UdonSharp.Runtime
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
