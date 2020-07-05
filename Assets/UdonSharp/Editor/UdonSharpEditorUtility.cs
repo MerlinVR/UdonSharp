@@ -1,12 +1,17 @@
 ﻿
+using JetBrains.Annotations;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
+using UdonSharp;
 using UnityEditor;
 using UnityEngine;
 using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Editor.ProgramSources;
 
-namespace UdonSharp
+namespace UdonSharpEditor
 {
     public static class UdonSharpEditorUtility
     {
@@ -16,6 +21,7 @@ namespace UdonSharp
         /// <param name="udonSharpProgramAsset">The source program asset</param>
         /// <param name="savePath">The save path for the asset file. Save path is only needed here because Udon needs a GUID for saving the serialized program asset and it'd be a pain to break that requirement at the moment</param>
         /// <returns>The exported UdonAssemblyProgramAsset</returns>
+        [PublicAPI]
         public static UdonAssemblyProgramAsset UdonSharpProgramToAssemblyProgram(UdonSharpProgramAsset udonSharpProgramAsset, string savePath)
         {
             if (EditorApplication.isPlaying)
@@ -74,6 +80,7 @@ namespace UdonSharp
         /// Deletes an UdonSharp program asset and the serialized program asset associated with it
         /// </summary>
         /// <param name="programAsset"></param>
+        [PublicAPI]
         public static void DeleteProgramAsset(UdonSharpProgramAsset programAsset)
         {
             if (programAsset == null)
@@ -98,6 +105,108 @@ namespace UdonSharp
 
             if (programAsset != null)
                 AssetDatabase.DeleteAsset(programAssetPath);
+        }
+
+        /// <summary>
+        /// Converts a set of UdonSharpBehaviour components to their equivalent UdonBehaviour components
+        /// </summary>
+        /// <param name="components"></param>
+        /// <returns></returns>
+        [PublicAPI]
+        public static UdonBehaviour[] ConvertToUdonBehaviours(UdonSharpBehaviour[] components)
+        {
+            return ConvertToUdonBehavioursInternal(components, false, false);
+        }
+
+        /// <summary>
+        /// Converts a set of UdonSharpBehaviour components to their equivalent UdonBehaviour components
+        /// Registers an Undo operation for the conversion
+        /// </summary>
+        /// <param name="components"></param>
+        /// <returns></returns>
+        [PublicAPI]
+        public static UdonBehaviour[] ConvertToUdonBehavioursWithUndo(UdonSharpBehaviour[] components)
+        {
+            return ConvertToUdonBehavioursInternal(components, true, false);
+        }
+
+        private static UdonSharpProgramAsset GetUdonSharpProgram(MonoScript programScript)
+        {
+            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
+
+            foreach (string dataGuid in udonSharpDataAssets)
+            {
+                UdonSharpProgramAsset programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid));
+
+                if (programAsset && programAsset.sourceCsScript == programScript)
+                {
+                    return programAsset;
+                }
+            }
+
+            return null;
+        }
+
+        internal static UdonBehaviour[] ConvertToUdonBehavioursInternal(UdonSharpBehaviour[] components, bool shouldUndo, bool createScriptPrompt)
+        {
+            components = components.Distinct().ToArray();
+
+            if (shouldUndo)
+                Undo.RegisterCompleteObjectUndo(components, "Convert to UdonBehaviour");
+
+            List<UdonBehaviour> createdComponents = new List<UdonBehaviour>();
+            foreach (UdonSharpBehaviour targetObject in components)
+            {
+                MonoScript behaviourScript = MonoScript.FromMonoBehaviour(targetObject);
+                UdonSharpProgramAsset programAsset = GetUdonSharpProgram(behaviourScript);
+
+                if (programAsset == null)
+                {
+                    if (createScriptPrompt)
+                    {
+                        string scriptPath = AssetDatabase.GetAssetPath(behaviourScript);
+                        string scriptDirectory = Path.GetDirectoryName(scriptPath);
+                        string scriptFileName = Path.GetFileNameWithoutExtension(scriptPath);
+
+                        string assetPath = Path.Combine(scriptDirectory, $"{scriptFileName}.asset").Replace('\\', '/');
+
+                        if (AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(assetPath) != null)
+                        {
+                            if (!EditorUtility.DisplayDialog("Existing file found", $"Asset file {assetPath} already exists, do you want to overwrite it?", "Ok", "Cancel"))
+                                continue;
+                        }
+
+                        programAsset = ScriptableObject.CreateInstance<UdonSharpProgramAsset>();
+                        programAsset.sourceCsScript = behaviourScript;
+                        programAsset.CompileCsProgram();
+
+                        AssetDatabase.CreateAsset(programAsset, assetPath);
+                        AssetDatabase.SaveAssets();
+
+                        AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                    }
+                    else
+                        continue;
+                }
+
+                GameObject targetGameObject = targetObject.gameObject;
+
+                if (shouldUndo)
+                    Undo.DestroyObjectImmediate(targetObject);
+                else
+                    Object.DestroyImmediate(targetObject);
+
+                UdonBehaviour udonBehaviour = targetGameObject.AddComponent<UdonBehaviour>();
+
+                udonBehaviour.programSource = programAsset;
+
+                if (shouldUndo)
+                    Undo.RegisterCreatedObjectUndo(udonBehaviour, "Convert to UdonBehaviour");
+
+                createdComponents.Add(udonBehaviour);
+            }
+
+            return createdComponents.ToArray();
         }
     }
 }

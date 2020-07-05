@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using UdonSharpEditor;
 using UnityEditor;
 using UnityEngine;
 using VRC.Udon;
@@ -981,5 +982,33 @@ namespace UdonSharp
     [CustomEditor(typeof(UdonSharpProgramAsset))]
     public class UdonSharpProgramAssetEditor : UdonAssemblyProgramAssetEditor
     {
+        // Allow people to drag program assets onto objects in the scene and automatically create a corresponding UdonBehaviour with everything set up
+        // https://forum.unity.com/threads/drag-and-drop-scriptable-object-to-scene.546975/#post-4534333
+        void OnSceneDrag(SceneView sceneView)
+        {
+            Event e = Event.current;
+            GameObject gameObject = HandleUtility.PickGameObject(e.mousePosition, false);
+
+            if (e.type == EventType.DragUpdated)
+            {
+                if (gameObject)
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Link;
+                else
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
+
+                e.Use();
+            }
+            else if (e.type == EventType.DragPerform)
+            {
+                DragAndDrop.AcceptDrag();
+                e.Use();
+                
+                if (gameObject)
+                {
+                    UdonBehaviour component = Undo.AddComponent<UdonBehaviour>(gameObject);
+                    component.programSource = target as UdonSharpProgramAsset;
+                }
+            }
+        }
     }
 }
