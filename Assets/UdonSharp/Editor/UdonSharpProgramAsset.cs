@@ -113,6 +113,9 @@ namespace UdonSharp
 
             currentBehaviour = udonBehaviour;
 
+            EditorGUI.BeginDisabledGroup(udonBehaviour);
+            if (udonBehaviour)
+                EditorGUI.indentLevel++;
             EditorGUI.BeginChangeCheck();
             MonoScript newSourceCsScript = (MonoScript)EditorGUILayout.ObjectField("Source Script", sourceCsScript, typeof(MonoScript), false);
             if (EditorGUI.EndChangeCheck())
@@ -121,6 +124,9 @@ namespace UdonSharp
                 sourceCsScript = newSourceCsScript;
                 dirty = true;
             }
+            if (udonBehaviour)
+                EditorGUI.indentLevel--;
+            EditorGUI.EndDisabledGroup();
 
             if (sourceCsScript == null)
             {
@@ -502,15 +508,25 @@ namespace UdonSharp
 
             currentUserScript = null;
 
-            System.Type variableRootType = fieldDefinition.fieldSymbol.userCsType;
-            while (variableRootType.IsArray)
-                variableRootType = variableRootType.GetElementType();
+            string labelText;
+            System.Type variableType = fieldDefinition.fieldSymbol.userCsType;
 
-            string labelText = "";
-            if (objectFieldValue != null)
-                labelText = $"{objectFieldValue.name} ({variableRootType.Name})";
+            while (variableType.IsArray)
+                variableType = variableType.GetElementType();
+
+            if (objectFieldValue == null)
+            {
+                labelText = $"None ({ObjectNames.NicifyVariableName(variableType.Name)})";
+            }
             else
-                labelText = $"None ({variableRootType.Name})";
+            {
+                UdonBehaviour targetBehaviour = objectFieldValue as UdonBehaviour;
+                UdonSharpProgramAsset targetProgramAsset = targetBehaviour?.programSource as UdonSharpProgramAsset;
+                if (targetProgramAsset && targetProgramAsset.sourceCsScript)
+                    variableType = targetProgramAsset.sourceCsScript.GetClass();
+
+                labelText = $"{objectFieldValue.name} ({variableType.Name})";
+            }
             
             // Overwrite any content already on the background from drawing the normal object field
             GUI.Box(originalRect, GUIContent.none, clearColorStyle);
@@ -671,6 +687,19 @@ namespace UdonSharp
                             for (int i = 0; i < newLength && i < valueArray.Length; ++i)
                             {
                                 newArray.SetValue(valueArray.GetValue(i), i);
+                            }
+
+                            // Fill the empty elements with the last element's value when expanding the array
+                            if (valueArray.Length > 0 && newLength > valueArray.Length)
+                            {
+                                object lastElementVal = valueArray.GetValue(valueArray.Length - 1);
+                                if (!(lastElementVal is Array)) // We do not want copies of the reference to a jagged array element to be copied
+                                {
+                                    for (int i = valueArray.Length; i < newLength; ++i)
+                                    {
+                                        newArray.SetValue(lastElementVal, i);
+                                    }
+                                }
                             }
 
                             EditorGUI.indentLevel--;
