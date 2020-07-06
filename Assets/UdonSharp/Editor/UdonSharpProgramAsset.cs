@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using UdonSharpEditor;
 using UnityEditor;
 using UnityEngine;
 using VRC.Udon;
@@ -112,6 +113,9 @@ namespace UdonSharp
 
             currentBehaviour = udonBehaviour;
 
+            EditorGUI.BeginDisabledGroup(udonBehaviour);
+            if (udonBehaviour)
+                EditorGUI.indentLevel++;
             EditorGUI.BeginChangeCheck();
             MonoScript newSourceCsScript = (MonoScript)EditorGUILayout.ObjectField("Source Script", sourceCsScript, typeof(MonoScript), false);
             if (EditorGUI.EndChangeCheck())
@@ -120,6 +124,9 @@ namespace UdonSharp
                 sourceCsScript = newSourceCsScript;
                 dirty = true;
             }
+            if (udonBehaviour)
+                EditorGUI.indentLevel--;
+            EditorGUI.EndDisabledGroup();
 
             if (sourceCsScript == null)
             {
@@ -501,15 +508,25 @@ namespace UdonSharp
 
             currentUserScript = null;
 
-            System.Type variableRootType = fieldDefinition.fieldSymbol.userCsType;
-            while (variableRootType.IsArray)
-                variableRootType = variableRootType.GetElementType();
+            string labelText;
+            System.Type variableType = fieldDefinition.fieldSymbol.userCsType;
 
-            string labelText = "";
-            if (objectFieldValue != null)
-                labelText = $"{objectFieldValue.name} ({variableRootType.Name})";
+            while (variableType.IsArray)
+                variableType = variableType.GetElementType();
+
+            if (objectFieldValue == null)
+            {
+                labelText = $"None ({ObjectNames.NicifyVariableName(variableType.Name)})";
+            }
             else
-                labelText = $"None ({variableRootType.Name})";
+            {
+                UdonBehaviour targetBehaviour = objectFieldValue as UdonBehaviour;
+                UdonSharpProgramAsset targetProgramAsset = targetBehaviour?.programSource as UdonSharpProgramAsset;
+                if (targetProgramAsset && targetProgramAsset.sourceCsScript)
+                    variableType = targetProgramAsset.sourceCsScript.GetClass();
+
+                labelText = $"{objectFieldValue.name} ({variableType.Name})";
+            }
             
             // Overwrite any content already on the background from drawing the normal object field
             GUI.Box(originalRect, GUIContent.none, clearColorStyle);
@@ -670,6 +687,19 @@ namespace UdonSharp
                             for (int i = 0; i < newLength && i < valueArray.Length; ++i)
                             {
                                 newArray.SetValue(valueArray.GetValue(i), i);
+                            }
+
+                            // Fill the empty elements with the last element's value when expanding the array
+                            if (valueArray.Length > 0 && newLength > valueArray.Length)
+                            {
+                                object lastElementVal = valueArray.GetValue(valueArray.Length - 1);
+                                if (!(lastElementVal is Array)) // We do not want copies of the reference to a jagged array element to be copied
+                                {
+                                    for (int i = valueArray.Length; i < newLength; ++i)
+                                    {
+                                        newArray.SetValue(lastElementVal, i);
+                                    }
+                                }
                             }
 
                             EditorGUI.indentLevel--;
@@ -981,5 +1011,33 @@ namespace UdonSharp
     [CustomEditor(typeof(UdonSharpProgramAsset))]
     public class UdonSharpProgramAssetEditor : UdonAssemblyProgramAssetEditor
     {
+        // Allow people to drag program assets onto objects in the scene and automatically create a corresponding UdonBehaviour with everything set up
+        // https://forum.unity.com/threads/drag-and-drop-scriptable-object-to-scene.546975/#post-4534333
+        void OnSceneDrag(SceneView sceneView)
+        {
+            Event e = Event.current;
+            GameObject gameObject = HandleUtility.PickGameObject(e.mousePosition, false);
+
+            if (e.type == EventType.DragUpdated)
+            {
+                if (gameObject)
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Link;
+                else
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
+
+                e.Use();
+            }
+            else if (e.type == EventType.DragPerform)
+            {
+                DragAndDrop.AcceptDrag();
+                e.Use();
+                
+                if (gameObject)
+                {
+                    UdonBehaviour component = Undo.AddComponent<UdonBehaviour>(gameObject);
+                    component.programSource = target as UdonSharpProgramAsset;
+                }
+            }
+        }
     }
 }

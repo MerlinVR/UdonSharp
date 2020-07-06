@@ -1,0 +1,1010 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
+  m_Name: GlobalToggleObject
+  m_EditorClassIdentifier: 
+  serializedUdonProgramAsset: {fileID: 11400000, guid: d506330560c14c9468210842de37fe4f,
+    type: 2}
+  udonAssembly: ".data_start\n\n    .export toggleObject\n    .sync isEnabledGlobal,
+    none\n\n    __refl_const_intnl_udonTypeID: %SystemInt64, null\n    __refl_const_intnl_udonTypeName:
+    %SystemString, null\n    toggleObject: %UnityEngineGameObject, null\n    isEnabledGlobal:
+    %SystemBoolean, null\n    isEnabledLocal: %SystemBoolean, null\n    __0_this_intnl_UnityEngineGameObject:
+    %UnityEngineGameObject, this\n    __0_const_intnl_SystemUInt32: %SystemUInt32,
+    null\n    __0_intnl_SystemBoolean: %SystemBoolean, null\n    __1_intnl_SystemBoolean:
+    %SystemBoolean, null\n    __2_intnl_SystemBoolean: %SystemBoolean, null\n    __3_intnl_SystemBoolean:
+    %SystemBoolean, null\n    __0_intnl_returnTarget_UInt32: %SystemUInt32, null\n
+    \   __0_intnl_VRCSDKBaseVRCPlayerApi: %VRCSDKBaseVRCPlayerApi, null\n\n.data_end\n\n
+    \       \n         # using UnityEngine;\n        \n         # using VRC.SDK3.Components;\n
+    \       \n         # using VRC.SDKBase;\n        \n         # using VRC.Udon;\n
+    \       \n         # namespace UdonSharp.Examples.Utilities\n        \n         #
+    public class GlobalToggleObject : UdonSharpBehaviour\n.code_start\n        \n
+    \        # public GameObject toggleObject;\n        \n         # [UdonSynced]\n
+    \       \n         # bool isEnabledGlobal;\n        \n         # bool isEnabledLocal;\n
+    \       \n         # private void Start()\n    .export _start\n        \n    _start:\n
+    \       \n        PUSH, __0_const_intnl_SystemUInt32\n        \n         # {\n
+    \       \n         # isEnabledGlobal = isEnabledLocal = toggleObject.activeSelf;\n
+    \       PUSH, toggleObject\n        PUSH, isEnabledLocal\n        EXTERN, \"UnityEngineGameObject.__get_activeSelf__SystemBoolean\"\n
+    \       PUSH, isEnabledLocal\n        PUSH, isEnabledGlobal\n        COPY\n        PUSH,
+    __0_intnl_returnTarget_UInt32 #Function epilogue\n        COPY\n        JUMP_INDIRECT,
+    __0_intnl_returnTarget_UInt32\n        \n        \n         # public override
+    void OnDeserialization()\n    .export _onDeserialization\n        \n    _onDeserialization:\n
+    \       \n        PUSH, __0_const_intnl_SystemUInt32\n        \n         # {\n
+    \       \n         # if (!Networking.IsOwner(gameObject))\n        PUSH, __0_this_intnl_UnityEngineGameObject\n
+    \       PUSH, __0_intnl_SystemBoolean\n        EXTERN, \"VRCSDKBaseNetworking.__IsOwner__UnityEngineGameObject__SystemBoolean\"\n
+    \       PUSH, __0_intnl_SystemBoolean\n        PUSH, __1_intnl_SystemBoolean\n
+    \       EXTERN, \"SystemBoolean.__op_UnaryNegation__SystemBoolean__SystemBoolean\"\n
+    \       PUSH, __1_intnl_SystemBoolean\n        JUMP_IF_FALSE, 0x000000BC\n        \n
+    \        # {\n        \n         # toggleObject.SetActive(isEnabledGlobal);\n
+    \       PUSH, toggleObject\n        PUSH, isEnabledGlobal\n        EXTERN, \"UnityEngineGameObject.__SetActive__SystemBoolean__SystemVoid\"\n
+    \       \n         # isEnabledLocal = isEnabledGlobal;\n        PUSH, isEnabledGlobal\n
+    \       PUSH, isEnabledLocal\n        COPY\n        PUSH, __0_intnl_returnTarget_UInt32
+    #Function epilogue\n        COPY\n        JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\n
+    \       \n        \n         # public override void OnPreSerialization()\n    .export
+    _onPreSerialization\n        \n    _onPreSerialization:\n        \n        PUSH,
+    __0_const_intnl_SystemUInt32\n        \n         # {\n        \n         # isEnabledGlobal
+    = isEnabledLocal;\n        PUSH, isEnabledLocal\n        PUSH, isEnabledGlobal\n
+    \       COPY\n        PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\n
+    \       COPY\n        JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\n        \n
+    \       \n         # public override void Interact()\n    .export _interact\n
+    \       \n    _interact:\n        \n        PUSH, __0_const_intnl_SystemUInt32\n
+    \       \n         # {\n        \n         # if (!Networking.IsOwner(gameObject))\n
+    \       PUSH, __0_this_intnl_UnityEngineGameObject\n        PUSH, __2_intnl_SystemBoolean\n
+    \       EXTERN, \"VRCSDKBaseNetworking.__IsOwner__UnityEngineGameObject__SystemBoolean\"\n
+    \       PUSH, __2_intnl_SystemBoolean\n        PUSH, __3_intnl_SystemBoolean\n
+    \       EXTERN, \"SystemBoolean.__op_UnaryNegation__SystemBoolean__SystemBoolean\"\n
+    \       PUSH, __3_intnl_SystemBoolean\n        JUMP_IF_FALSE, 0x00000170\n        \n
+    \        # Networking.SetOwner(Networking.LocalPlayer, gameObject);\n        PUSH,
+    __0_intnl_VRCSDKBaseVRCPlayerApi\n        EXTERN, \"VRCSDKBaseNetworking.__get_LocalPlayer__VRCSDKBaseVRCPlayerApi\"\n
+    \       PUSH, __0_intnl_VRCSDKBaseVRCPlayerApi\n        PUSH, __0_this_intnl_UnityEngineGameObject\n
+    \       EXTERN, \"VRCSDKBaseNetworking.__SetOwner__VRCSDKBaseVRCPlayerApi_UnityEngineGameObject__SystemVoid\"\n
+    \       \n         # isEnabledLocal = isEnabledGlobal = !isEnabledGlobal;\n        PUSH,
+    isEnabledGlobal\n        PUSH, isEnabledGlobal\n        EXTERN, \"SystemBoolean.__op_UnaryNegation__SystemBoolean__SystemBoolean\"\n
+    \       PUSH, isEnabledGlobal\n        PUSH, isEnabledLocal\n        COPY\n        \n
+    \        # toggleObject.SetActive(isEnabledLocal);\n        PUSH, toggleObject\n
+    \       PUSH, isEnabledLocal\n        EXTERN, \"UnityEngineGameObject.__SetActive__SystemBoolean__SystemVoid\"\n
+    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\n        COPY\n
+    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\n        \n.code_end\n"
+  assemblyError: 
+  sourceCsScript: {fileID: 11500000, guid: a3d8ddeb56f3a0c4daf49fe9d7447a3e, type: 3}
+  behaviourIDHeapVarName: __refl_const_intnl_udonTypeID
+  compileErrors: []
+  debugInfo:
+    serializedDebugSpans:
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 0
+      endSourceChar: 2
+      line: 0
+      lineChar: 0
+      spanCodeSection: "\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 2
+      endSourceChar: 2
+      line: 1
+      lineChar: 0
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 2
+      endSourceChar: 8
+      line: 1
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 8
+      endSourceChar: 22
+      line: 1
+      lineChar: 6
+      spanCodeSection: "UnityEngine;\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 22
+      endSourceChar: 28
+      line: 2
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 28
+      endSourceChar: 28
+      line: 2
+      lineChar: 6
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 28
+      endSourceChar: 28
+      line: 2
+      lineChar: 6
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 28
+      endSourceChar: 32
+      line: 2
+      lineChar: 6
+      spanCodeSection: VRC.
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 32
+      endSourceChar: 37
+      line: 2
+      lineChar: 10
+      spanCodeSection: SDK3.
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 37
+      endSourceChar: 50
+      line: 2
+      lineChar: 15
+      spanCodeSection: "Components;\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 50
+      endSourceChar: 56
+      line: 3
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 56
+      endSourceChar: 56
+      line: 3
+      lineChar: 6
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 56
+      endSourceChar: 60
+      line: 3
+      lineChar: 6
+      spanCodeSection: VRC.
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 60
+      endSourceChar: 70
+      line: 3
+      lineChar: 10
+      spanCodeSection: "SDKBase;\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 70
+      endSourceChar: 76
+      line: 4
+      lineChar: 0
+      spanCodeSection: 'using '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 76
+      endSourceChar: 76
+      line: 4
+      lineChar: 6
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 76
+      endSourceChar: 80
+      line: 4
+      lineChar: 6
+      spanCodeSection: VRC.
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 80
+      endSourceChar: 89
+      line: 4
+      lineChar: 10
+      spanCodeSection: "Udon;\r\n\r\n"
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 89
+      endSourceChar: 371
+      line: 6
+      lineChar: 0
+      spanCodeSection: "namespace UdonSharp.Examples.Utilities\r\n{\r\n    /// <summary>\r\n
+        \   /// This class allows anyone to toggle a gameobject for everyone in the
+        world. \r\n    /// This script assumes that the object it is on will not have
+        other things transferring ownership of it.\r\n    /// </summary>\r\n    "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 371
+      endSourceChar: 403
+      line: 12
+      lineChar: 4
+      spanCodeSection: 'public class GlobalToggleObject '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 403
+      endSourceChar: 405
+      line: 12
+      lineChar: 36
+      spanCodeSection: ': '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 405
+      endSourceChar: 405
+      line: 12
+      lineChar: 38
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 405
+      endSourceChar: 441
+      line: 12
+      lineChar: 38
+      spanCodeSection: "UdonSharpBehaviour \r\n    {\r\n        "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 441
+      endSourceChar: 448
+      line: 14
+      lineChar: 8
+      spanCodeSection: 'public '
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 448
+      endSourceChar: 448
+      line: 14
+      lineChar: 15
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 448
+      endSourceChar: 484
+      line: 14
+      lineChar: 15
+      spanCodeSection: "GameObject toggleObject;\r\n\r\n        "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 484
+      endSourceChar: 485
+      line: 16
+      lineChar: 8
+      spanCodeSection: '['
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 485
+      endSourceChar: 485
+      line: 16
+      lineChar: 9
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 485
+      endSourceChar: 506
+      line: 16
+      lineChar: 9
+      spanCodeSection: "UdonSynced]\r\n        "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 506
+      endSourceChar: 506
+      line: 17
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 506
+      endSourceChar: 537
+      line: 17
+      lineChar: 8
+      spanCodeSection: "bool isEnabledGlobal;\r\n        "
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 537
+      endSourceChar: 537
+      line: 18
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 537
+      endSourceChar: 537
+      line: 18
+      lineChar: 8
+      spanCodeSection: 
+    - startInstruction: 0
+      endInstruction: -1
+      startSourceChar: 537
+      endSourceChar: 569
+      line: 18
+      lineChar: 8
+      spanCodeSection: "bool isEnabledLocal;\r\n\r\n        "
+    - startInstruction: 0
+      endInstruction: 7
+      startSourceChar: 569
+      endSourceChar: 599
+      line: 20
+      lineChar: 8
+      spanCodeSection: "private void Start()\r\n        "
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 599
+      endSourceChar: 614
+      line: 21
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 614
+      endSourceChar: 614
+      line: 22
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 614
+      endSourceChar: 614
+      line: 22
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 614
+      endSourceChar: 632
+      line: 22
+      lineChar: 12
+      spanCodeSection: 'isEnabledGlobal = '
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 632
+      endSourceChar: 632
+      line: 22
+      lineChar: 30
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 632
+      endSourceChar: 649
+      line: 22
+      lineChar: 30
+      spanCodeSection: 'isEnabledLocal = '
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 649
+      endSourceChar: 649
+      line: 22
+      lineChar: 47
+      spanCodeSection: 
+    - startInstruction: 8
+      endInstruction: 7
+      startSourceChar: 649
+      endSourceChar: 662
+      line: 22
+      lineChar: 47
+      spanCodeSection: toggleObject.
+    - startInstruction: 8
+      endInstruction: 71
+      startSourceChar: 662
+      endSourceChar: 696
+      line: 22
+      lineChar: 60
+      spanCodeSection: "activeSelf;\r\n        }\r\n\r\n        "
+    - startInstruction: 72
+      endInstruction: 79
+      startSourceChar: 696
+      endSourceChar: 746
+      line: 25
+      lineChar: 8
+      spanCodeSection: "public override void OnDeserialization()\r\n        "
+    - startInstruction: 80
+      endInstruction: 79
+      startSourceChar: 746
+      endSourceChar: 761
+      line: 26
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 80
+      endInstruction: 79
+      startSourceChar: 761
+      endSourceChar: 765
+      line: 27
+      lineChar: 12
+      spanCodeSection: if (
+    - startInstruction: 80
+      endInstruction: 79
+      startSourceChar: 765
+      endSourceChar: 766
+      line: 27
+      lineChar: 16
+      spanCodeSection: '!'
+    - startInstruction: 80
+      endInstruction: 79
+      startSourceChar: 766
+      endSourceChar: 766
+      line: 27
+      lineChar: 17
+      spanCodeSection: 
+    - startInstruction: 80
+      endInstruction: 79
+      startSourceChar: 766
+      endSourceChar: 766
+      line: 27
+      lineChar: 17
+      spanCodeSection: 
+    - startInstruction: 80
+      endInstruction: 79
+      startSourceChar: 766
+      endSourceChar: 777
+      line: 27
+      lineChar: 17
+      spanCodeSection: Networking.
+    - startInstruction: 80
+      endInstruction: 79
+      startSourceChar: 777
+      endSourceChar: 785
+      line: 27
+      lineChar: 28
+      spanCodeSection: IsOwner(
+    - startInstruction: 80
+      endInstruction: 143
+      startSourceChar: 785
+      endSourceChar: 811
+      line: 27
+      lineChar: 36
+      spanCodeSection: "gameObject))\r\n            "
+    - startInstruction: 144
+      endInstruction: 143
+      startSourceChar: 811
+      endSourceChar: 830
+      line: 28
+      lineChar: 12
+      spanCodeSection: "{\r\n                "
+    - startInstruction: 144
+      endInstruction: 143
+      startSourceChar: 830
+      endSourceChar: 830
+      line: 29
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 144
+      endInstruction: 143
+      startSourceChar: 830
+      endSourceChar: 830
+      line: 29
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 144
+      endInstruction: 143
+      startSourceChar: 830
+      endSourceChar: 830
+      line: 29
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 144
+      endInstruction: 143
+      startSourceChar: 830
+      endSourceChar: 843
+      line: 29
+      lineChar: 16
+      spanCodeSection: toggleObject.
+    - startInstruction: 144
+      endInstruction: 143
+      startSourceChar: 843
+      endSourceChar: 853
+      line: 29
+      lineChar: 29
+      spanCodeSection: SetActive(
+    - startInstruction: 144
+      endInstruction: 167
+      startSourceChar: 853
+      endSourceChar: 888
+      line: 29
+      lineChar: 39
+      spanCodeSection: "isEnabledGlobal);\r\n                "
+    - startInstruction: 168
+      endInstruction: 167
+      startSourceChar: 888
+      endSourceChar: 888
+      line: 30
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 168
+      endInstruction: 167
+      startSourceChar: 888
+      endSourceChar: 888
+      line: 30
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 168
+      endInstruction: 167
+      startSourceChar: 888
+      endSourceChar: 905
+      line: 30
+      lineChar: 16
+      spanCodeSection: 'isEnabledLocal = '
+    - startInstruction: 168
+      endInstruction: 207
+      startSourceChar: 905
+      endSourceChar: 959
+      line: 30
+      lineChar: 33
+      spanCodeSection: "isEnabledGlobal;\r\n            }\r\n        }\r\n\r\n        "
+    - startInstruction: 208
+      endInstruction: 215
+      startSourceChar: 959
+      endSourceChar: 1010
+      line: 34
+      lineChar: 8
+      spanCodeSection: "public override void OnPreSerialization()\r\n        "
+    - startInstruction: 216
+      endInstruction: 215
+      startSourceChar: 1010
+      endSourceChar: 1025
+      line: 35
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 216
+      endInstruction: 215
+      startSourceChar: 1025
+      endSourceChar: 1025
+      line: 36
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 216
+      endInstruction: 215
+      startSourceChar: 1025
+      endSourceChar: 1025
+      line: 36
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 216
+      endInstruction: 215
+      startSourceChar: 1025
+      endSourceChar: 1043
+      line: 36
+      lineChar: 12
+      spanCodeSection: 'isEnabledGlobal = '
+    - startInstruction: 216
+      endInstruction: 255
+      startSourceChar: 1043
+      endSourceChar: 1081
+      line: 36
+      lineChar: 30
+      spanCodeSection: "isEnabledLocal;\r\n        }\r\n\r\n        "
+    - startInstruction: 256
+      endInstruction: 263
+      startSourceChar: 1081
+      endSourceChar: 1122
+      line: 39
+      lineChar: 8
+      spanCodeSection: "public override void Interact()\r\n        "
+    - startInstruction: 264
+      endInstruction: 263
+      startSourceChar: 1122
+      endSourceChar: 1137
+      line: 40
+      lineChar: 8
+      spanCodeSection: "{\r\n            "
+    - startInstruction: 264
+      endInstruction: 263
+      startSourceChar: 1137
+      endSourceChar: 1141
+      line: 41
+      lineChar: 12
+      spanCodeSection: if (
+    - startInstruction: 264
+      endInstruction: 263
+      startSourceChar: 1141
+      endSourceChar: 1142
+      line: 41
+      lineChar: 16
+      spanCodeSection: '!'
+    - startInstruction: 264
+      endInstruction: 263
+      startSourceChar: 1142
+      endSourceChar: 1142
+      line: 41
+      lineChar: 17
+      spanCodeSection: 
+    - startInstruction: 264
+      endInstruction: 263
+      startSourceChar: 1142
+      endSourceChar: 1142
+      line: 41
+      lineChar: 17
+      spanCodeSection: 
+    - startInstruction: 264
+      endInstruction: 263
+      startSourceChar: 1142
+      endSourceChar: 1153
+      line: 41
+      lineChar: 17
+      spanCodeSection: Networking.
+    - startInstruction: 264
+      endInstruction: 263
+      startSourceChar: 1153
+      endSourceChar: 1161
+      line: 41
+      lineChar: 28
+      spanCodeSection: IsOwner(
+    - startInstruction: 264
+      endInstruction: 327
+      startSourceChar: 1161
+      endSourceChar: 1191
+      line: 41
+      lineChar: 36
+      spanCodeSection: "gameObject))\r\n                "
+    - startInstruction: 328
+      endInstruction: 327
+      startSourceChar: 1191
+      endSourceChar: 1191
+      line: 42
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 328
+      endInstruction: 327
+      startSourceChar: 1191
+      endSourceChar: 1191
+      line: 42
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 328
+      endInstruction: 327
+      startSourceChar: 1191
+      endSourceChar: 1191
+      line: 42
+      lineChar: 16
+      spanCodeSection: 
+    - startInstruction: 328
+      endInstruction: 327
+      startSourceChar: 1191
+      endSourceChar: 1202
+      line: 42
+      lineChar: 16
+      spanCodeSection: Networking.
+    - startInstruction: 328
+      endInstruction: 327
+      startSourceChar: 1202
+      endSourceChar: 1211
+      line: 42
+      lineChar: 27
+      spanCodeSection: SetOwner(
+    - startInstruction: 328
+      endInstruction: 327
+      startSourceChar: 1211
+      endSourceChar: 1211
+      line: 42
+      lineChar: 36
+      spanCodeSection: 
+    - startInstruction: 328
+      endInstruction: 327
+      startSourceChar: 1211
+      endSourceChar: 1222
+      line: 42
+      lineChar: 36
+      spanCodeSection: Networking.
+    - startInstruction: 328
+      endInstruction: 343
+      startSourceChar: 1222
+      endSourceChar: 1235
+      line: 42
+      lineChar: 47
+      spanCodeSection: 'LocalPlayer, '
+    - startInstruction: 344
+      endInstruction: 367
+      startSourceChar: 1235
+      endSourceChar: 1263
+      line: 42
+      lineChar: 60
+      spanCodeSection: "gameObject);\r\n\r\n            "
+    - startInstruction: 368
+      endInstruction: 367
+      startSourceChar: 1263
+      endSourceChar: 1263
+      line: 44
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 368
+      endInstruction: 367
+      startSourceChar: 1263
+      endSourceChar: 1263
+      line: 44
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 368
+      endInstruction: 367
+      startSourceChar: 1263
+      endSourceChar: 1280
+      line: 44
+      lineChar: 12
+      spanCodeSection: 'isEnabledLocal = '
+    - startInstruction: 368
+      endInstruction: 367
+      startSourceChar: 1280
+      endSourceChar: 1280
+      line: 44
+      lineChar: 29
+      spanCodeSection: 
+    - startInstruction: 368
+      endInstruction: 367
+      startSourceChar: 1280
+      endSourceChar: 1298
+      line: 44
+      lineChar: 29
+      spanCodeSection: 'isEnabledGlobal = '
+    - startInstruction: 368
+      endInstruction: 367
+      startSourceChar: 1298
+      endSourceChar: 1299
+      line: 44
+      lineChar: 47
+      spanCodeSection: '!'
+    - startInstruction: 368
+      endInstruction: 411
+      startSourceChar: 1299
+      endSourceChar: 1329
+      line: 44
+      lineChar: 48
+      spanCodeSection: "isEnabledGlobal;\r\n            "
+    - startInstruction: 412
+      endInstruction: 411
+      startSourceChar: 1329
+      endSourceChar: 1329
+      line: 45
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 412
+      endInstruction: 411
+      startSourceChar: 1329
+      endSourceChar: 1329
+      line: 45
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 412
+      endInstruction: 411
+      startSourceChar: 1329
+      endSourceChar: 1329
+      line: 45
+      lineChar: 12
+      spanCodeSection: 
+    - startInstruction: 412
+      endInstruction: 411
+      startSourceChar: 1329
+      endSourceChar: 1342
+      line: 45
+      lineChar: 12
+      spanCodeSection: toggleObject.
+    - startInstruction: 412
+      endInstruction: 411
+      startSourceChar: 1342
+      endSourceChar: 1352
+      line: 45
+      lineChar: 25
+      spanCodeSection: SetActive(
+    - startInstruction: 412
+      endInstruction: 412
+      startSourceChar: 1352
+      endSourceChar: 1352
+      line: 45
+      lineChar: 35
+      spanCodeSection: 
+  hasInteractEvent: 1
+  serializationData:
+    SerializedFormat: 0
+    SerializedBytes: 0101100000006600690065006c00640044006500660069006e006900740069006f006e0073002f00000000017a000000530079007300740065006d002e0043006f006c006c0065006300740069006f006e0073002e00470065006e0065007200690063002e00440069006300740069006f006e00610072007900600032005b005b00530079007300740065006d002e0053007400720069006e0067002c0020006d00730063006f0072006c00690062005d002c005b00550064006f006e00530068006100720070002e004600690065006c00640044006500660069006e006900740069006f006e002c002000550064006f006e00530068006100720070002e0045006400690074006f0072005d005d002c0020006d00730063006f0072006c00690062000000000001010800000063006f006d00700061007200650072002f010000000159000000530079007300740065006d002e0043006f006c006c0065006300740069006f006e0073002e00470065006e0065007200690063002e00470065006e00650072006900630045007100750061006c0069007400790043006f006d0070006100720065007200600031005b005b00530079007300740065006d002e0053007400720069006e0067002c0020006d00730063006f0072006c00690062005d005d002c0020006d00730063006f0072006c00690062000100000005060300000000000000042e27010200000024006b00010c00000074006f00670067006c0065004f0062006a00650063007400010102000000240076002f02000000012b000000550064006f006e00530068006100720070002e004600690065006c00640044006500660069006e006900740069006f006e002c002000550064006f006e00530068006100720070002e0045006400690074006f0072000200000001010b0000006600690065006c006400530079006d0062006f006c002f03000000012c000000550064006f006e00530068006100720070002e00530079006d0062006f006c0044006500660069006e006900740069006f006e002c002000550064006f006e00530068006100720070002e0045006400690074006f0072000300000001010c00000069006e007400650072006e0061006c0054007900700065002f04000000011c000000530079007300740065006d002e00520075006e00740069006d00650054007900700065002c0020006d00730063006f0072006c00690062000400000028012e00000055006e0069007400790045006e00670069006e0065002e00470061006d0065004f0062006a006500630074002c00200055006e0069007400790045006e00670069006e0065002e0043006f00720065004d006f00640075006c006500051d010f0000006400650063006c00610072006100740069006f006e00540079007000650001000000000000001d0108000000730079006e0063004d006f00640065000000000000000000270116000000730079006d0062006f006c005200650073006f006c0076006500640054007900700065004e0061006d006500011500000055006e0069007400790045006e00670069006e006500470061006d0065004f0062006a00650063007400270112000000730079006d0062006f006c004f0072006900670069006e0061006c004e0061006d006500010c00000074006f00670067006c0065004f0062006a00650063007400270110000000730079006d0062006f006c0055006e0069007100750065004e0061006d006500010c00000074006f00670067006c0065004f0062006a006500630074002d0112000000730079006d0062006f006c00440065006600610075006c007400560061006c00750065000501010f0000006600690065006c00640041007400740072006900620075007400650073002f050000000149000000530079007300740065006d002e0043006f006c006c0065006300740069006f006e0073002e00470065006e0065007200690063002e004c00690073007400600031005b005b00530079007300740065006d002e004100740074007200690062007500740065002c0020006d00730063006f0072006c00690062005d005d002c0020006d00730063006f0072006c00690062000500000006000000000000000007052d011300000075007300650072004200650068006100760069006f007500720053006f0075007200630065000505042e27010200000024006b00010f0000006900730045006e00610062006c006500640047006c006f00620061006c000101020000002400760030020000000600000001010b0000006600690065006c006400530079006d0062006f006c0030030000000700000001010c00000069006e007400650072006e0061006c005400790070006500300400000008000000280118000000530079007300740065006d002e0042006f006f006c00650061006e002c0020006d00730063006f0072006c0069006200051d010f0000006400650063006c00610072006100740069006f006e00540079007000650002000000000000001d0108000000730079006e0063004d006f00640065000100000000000000270116000000730079006d0062006f006c005200650073006f006c0076006500640054007900700065004e0061006d006500010d000000530079007300740065006d0042006f006f006c00650061006e00270112000000730079006d0062006f006c004f0072006900670069006e0061006c004e0061006d006500010f0000006900730045006e00610062006c006500640047006c006f00620061006c00270110000000730079006d0062006f006c0055006e0069007100750065004e0061006d006500010f0000006900730045006e00610062006c006500640047006c006f00620061006c002d0112000000730079006d0062006f006c00440065006600610075006c007400560061006c00750065000501010f0000006600690065006c0064004100740074007200690062007500740065007300300500000009000000060100000000000000022f060000000130000000550064006f006e00530068006100720070002e00550064006f006e00530079006e006300650064004100740074007200690062007500740065002c002000550064006f006e00530068006100720070002e00520075006e00740069006d0065000a0000000507052d011300000075007300650072004200650068006100760069006f007500720053006f0075007200630065000505042e27010200000024006b00010e0000006900730045006e00610062006c00650064004c006f00630061006c000101020000002400760030020000000b00000001010b0000006600690065006c006400530079006d0062006f006c0030030000000c00000009010c00000069006e007400650072006e0061006c005400790070006500080000001d010f0000006400650063006c00610072006100740069006f006e00540079007000650002000000000000001d0108000000730079006e0063004d006f00640065000000000000000000270116000000730079006d0062006f006c005200650073006f006c0076006500640054007900700065004e0061006d006500010d000000530079007300740065006d0042006f006f006c00650061006e00270112000000730079006d0062006f006c004f0072006900670069006e0061006c004e0061006d006500010e0000006900730045006e00610062006c00650064004c006f00630061006c00270110000000730079006d0062006f006c0055006e0069007100750065004e0061006d006500010e0000006900730045006e00610062006c00650064004c006f00630061006c002d0112000000730079006d0062006f006c00440065006600610075006c007400560061006c00750065000501010f0000006600690065006c006400410074007400720069006200750074006500730030050000000d00000006000000000000000007052d011300000075007300650072004200650068006100760069006f007500720053006f00750072006300650005050705
+    ReferencedUnityObjects: []
+    SerializedBytesString: 
+    Prefab: {fileID: 0}
+    PrefabModificationsReferencedUnityObjects: []
+    PrefabModifications: []
+    SerializationNodes:
+    - Name: fieldDefinitions
+      Entry: 7
+      Data: 0|System.Collections.Generic.Dictionary`2[[System.String, mscorlib],[UdonSharp.FieldDefinition,
+        UdonSharp.Editor]], mscorlib
+    - Name: comparer
+      Entry: 7
+      Data: 1|System.Collections.Generic.GenericEqualityComparer`1[[System.String,
+        mscorlib]], mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 12
+      Data: 3
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: toggleObject
+    - Name: $v
+      Entry: 7
+      Data: 2|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 3|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 7
+      Data: 4|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: UnityEngine.GameObject, UnityEngine.CoreModule
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: declarationType
+      Entry: 3
+      Data: 1
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: UnityEngineGameObject
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: toggleObject
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: toggleObject
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 5|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: isEnabledGlobal
+    - Name: $v
+      Entry: 7
+      Data: 6|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 7|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 7
+      Data: 8|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: System.Boolean, mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: declarationType
+      Entry: 3
+      Data: 2
+    - Name: syncMode
+      Entry: 3
+      Data: 1
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemBoolean
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: isEnabledGlobal
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: isEnabledGlobal
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 9|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 1
+    - Name: 
+      Entry: 7
+      Data: 10|UdonSharp.UdonSyncedAttribute, UdonSharp.Runtime
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: isEnabledLocal
+    - Name: $v
+      Entry: 7
+      Data: 11|UdonSharp.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 12|UdonSharp.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 8
+    - Name: declarationType
+      Entry: 3
+      Data: 2
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemBoolean
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: isEnabledLocal
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: isEnabledLocal
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 13|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
