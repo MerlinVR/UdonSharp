@@ -19,6 +19,7 @@ namespace UdonSharp.Tests
             TestSyncedString();
             TestPrivateArr();
             TestPrivateStr();
+            TestDefaultByte();
         }
 
         [HideInInspector]
@@ -91,6 +92,13 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Private String Default Null", privateStr == null);
             tester.TestAssertion("Private null initialized String", privateNullInitializedString == null);
             tester.TestAssertion("Private initialized String", privateInitializedString == "Test");
+        }
+        
+        byte byteVal = 0b1000_0000;
+
+        void TestDefaultByte()
+        {
+            tester.TestAssertion("Byte type match", byteVal.GetType() == typeof(byte));
         }
     }
 }
