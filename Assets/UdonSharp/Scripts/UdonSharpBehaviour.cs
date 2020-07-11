@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 
 namespace UdonSharp
@@ -114,5 +115,10 @@ namespace UdonSharp
         public virtual void OnVideoStart() { }
         public virtual void OnPreSerialization() { }
         public virtual void OnDeserialization() { }
+
+        // Used for tracking serialization data in editor
+#if UNITY_EDITOR
+        private IUdonBehaviour _backingUdonBehaviour;
+#endif
     }
 }

@@ -17,7 +17,8 @@ namespace UdonSharp.Serialization
         {
             new JaggedArraySerializer<object>(null), 
             new ArraySerializer<object>(null),
-            new DefaultSerializer(null),
+            new UdonSharpBehaviourSerializer<UdonSharpBehaviour>(null),
+            new DefaultSerializer<object>(null),
         };
 
         private static Dictionary<TypeSerializationMetadata, Serializer> typeSerializerDictionary = new Dictionary<TypeSerializationMetadata, Serializer>();
@@ -37,6 +38,20 @@ namespace UdonSharp.Serialization
             return serializer;
         }
 
+        public static Serializer<T> CreatePooled<T>()
+        {
+            TypeSerializationMetadata typeMetadata = new TypeSerializationMetadata(typeof(T));
+
+            Serializer serializer;
+            if (!typeSerializerDictionary.TryGetValue(typeMetadata, out serializer))
+            {
+                serializer = Create(typeMetadata);
+                typeSerializerDictionary.Add(typeMetadata, serializer);
+            }
+
+            return (Serializer<T>)serializer;
+        }
+
         public static Serializer Create(TypeSerializationMetadata typeMetadata)
         {
             if (typeMetadata == null)
@@ -46,7 +61,7 @@ namespace UdonSharp.Serialization
             {
                 if (checkSerializer.HandlesTypeSerialization(typeMetadata))
                 {
-                    return (Serializer)System.Activator.CreateInstance(checkSerializer.GetType(), new object[] { typeMetadata });
+                    return checkSerializer.MakeSerializer(typeMetadata);
                 }
             }
 

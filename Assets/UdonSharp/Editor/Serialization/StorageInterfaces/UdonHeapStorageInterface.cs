@@ -1,5 +1,7 @@
 ﻿
 using System.Collections.Generic;
+using System.Reflection;
+using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 
 namespace UdonSharp.Serialization
@@ -9,32 +11,32 @@ namespace UdonSharp.Serialization
         class UdonHeapValueStorage<T> : ValueStorage<T>
         {
             IUdonHeap heap;
-            IUdonSymbolTable symbolTable;
             uint symbolAddress;
-            bool isValid;
 
             public UdonHeapValueStorage(IUdonHeap heap, IUdonSymbolTable symbolTable, string symbolKey)
             {
                 this.heap = heap;
-                this.symbolTable = symbolTable;
                 
-                isValid = symbolTable.TryGetAddressFromSymbol(symbolKey, out symbolAddress) && 
-                          heap.GetHeapVariableType(symbolAddress) == typeof(T) &&
-                          heap.TryGetHeapVariable<T>(symbolAddress, out var validityCheckPlaceholder);
+                bool isValid = symbolTable.TryGetAddressFromSymbol(symbolKey, out symbolAddress) && 
+                               heap.GetHeapVariableType(symbolAddress) == typeof(T) &&
+                               heap.TryGetHeapVariable<T>(symbolAddress, out var validityCheckPlaceholder);
+
+                if (!isValid)
+                    symbolAddress = 0xFFFFFFFF;
             }
 
             public override T Value
             {
                 get
                 {
-                    if (!isValid)
+                    if (symbolAddress == 0xFFFFFFFF)
                         return default;
 
                     return heap.GetHeapVariable<T>(symbolAddress);
                 }
                 set
                 {
-                    if (!isValid)
+                    if (symbolAddress == 0xFFFFFFFF)
                         return;
 
                     heap.SetHeapVariable<T>(symbolAddress, value);
@@ -47,18 +49,24 @@ namespace UdonSharp.Serialization
             }
         }
 
-
+        UdonBehaviour behaviour;
         IUdonHeap heap;
         IUdonSymbolTable symbolTable;
-        IUdonProgram sourceProgram;
         List<IValueStorage> heapValueRefs = new List<IValueStorage>();
 
-        public UdonHeapStorageInterface(IUdonProgram program)
-        {
-            sourceProgram = program;
+        static FieldInfo programField;
 
-            heap = program.Heap;
-            symbolTable = program.SymbolTable;
+        public UdonHeapStorageInterface(UdonBehaviour udonBehaviour)
+        {
+            behaviour = udonBehaviour;
+
+            if (programField == null)
+                programField = typeof(UdonBehaviour).GetField("_program", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            IUdonProgram sourceProgram = (IUdonProgram)programField.GetValue(udonBehaviour);
+
+            heap = sourceProgram.Heap;
+            symbolTable = sourceProgram.SymbolTable;
         }
 
         void IHeapStorage.SetElementValue<T>(string elementKey, T value)
@@ -133,7 +141,7 @@ namespace UdonSharp.Serialization
 
         public IValueStorage GetElementStorage(string elementKey)
         {
-            IValueStorage udonHeapValue = (IValueStorage)System.Activator.CreateInstance(heap.GetHeapVariableType(symbolTable.GetAddressFromSymbol(elementKey)), heap, symbolTable, elementKey);
+            IValueStorage udonHeapValue = (IValueStorage)System.Activator.CreateInstance(typeof(UdonHeapValueStorage<>).MakeGenericType(heap.GetHeapVariableType(symbolTable.GetAddressFromSymbol(elementKey))), heap, symbolTable, elementKey);
 
             heapValueRefs.Add(udonHeapValue);
 

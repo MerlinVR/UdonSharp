@@ -1,8 +1,9 @@
 ﻿using System;
+using UnityEngine;
 
 namespace UdonSharp.Serialization
 {
-    public class DefaultSerializer : Serializer
+    public class DefaultSerializer<T> : Serializer<T>
     {
         public DefaultSerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)
@@ -11,27 +12,46 @@ namespace UdonSharp.Serialization
 
         public override Type GetUdonStorageType()
         {
-            throw new NotImplementedException();
+            return typeof(T);
         }
 
         public override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
         {
-            throw new NotImplementedException();
+            VerifyTypeCheckSanity();
+            return true;
         }
 
-        public override void ReadWeak(ref object targetObject, IValueStorage sourceObject)
+        public override void Read(ref T targetObject, IValueStorage sourceObject)
         {
-            throw new NotImplementedException();
+            VerifySerializationSanity();
+            ValueStorage<T> storage = sourceObject as ValueStorage<T>;
+            if (storage == null)
+            {
+                Debug.LogError($"Type {typeof(T)} not compatible with serializer {sourceObject}");
+                return;
+            }
+
+            targetObject = storage.Value;
         }
 
-        public override void WriteWeak(IValueStorage targetObject, object sourceObject)
+        public override void Write(IValueStorage targetObject, in T sourceObject)
         {
-            throw new NotImplementedException();
+            VerifySerializationSanity();
+            ValueStorage<T> storage = targetObject as ValueStorage<T>;
+            if (storage == null)
+            {
+                Debug.LogError($"Type {typeof(T)} not compatible with serializer {targetObject}");
+                return;
+            }
+
+            storage.Value = sourceObject;
         }
 
         protected override Serializer MakeSerializer(TypeSerializationMetadata typeMetadata)
         {
-            throw new NotImplementedException();
+            VerifyTypeCheckSanity();
+
+            return (Serializer)System.Activator.CreateInstance(typeof(DefaultSerializer<>).MakeGenericType(typeMetadata.cSharpType), typeMetadata);
         }
     }
 }

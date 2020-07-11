@@ -11,13 +11,16 @@ namespace UdonSharp.Serialization
         public ArraySerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)
         {
-            if (typeMetadata.arrayElementMetadata == null)
-                throw new ArgumentException("Array element metadata cannot be null on array type metadata");
-
-            if (UdonSharpUtils.IsUserDefinedType(typeMetadata.arrayElementMetadata.cSharpType))
+            if (typeMetadata != null)
             {
-                elementSerializer = (Serializer<T>)CreatePooled(typeMetadata.arrayElementMetadata);
-                elementValueStorage = ValueStorageUtil.CreateStorage(elementSerializer.GetUdonStorageType());
+                if (typeMetadata.arrayElementMetadata == null)
+                    throw new ArgumentException("Array element metadata cannot be null on array type metadata");
+
+                if (UdonSharpUtils.IsUserDefinedType(typeMetadata.arrayElementMetadata.cSharpType))
+                {
+                    elementSerializer = (Serializer<T>)CreatePooled(typeMetadata.arrayElementMetadata);
+                    elementValueStorage = ValueStorageUtil.CreateStorage(elementSerializer.GetUdonStorageType());
+                }
             }
         }
 
@@ -31,7 +34,7 @@ namespace UdonSharp.Serialization
         {
             VerifyTypeCheckSanity();
 
-            return (Serializer)System.Activator.CreateInstance(typeof(ArraySerializer<>).MakeGenericType(typeMetadata.cSharpType.GetElementType()));
+            return (Serializer)System.Activator.CreateInstance(typeof(ArraySerializer<>).MakeGenericType(typeMetadata.cSharpType.GetElementType()), typeMetadata);
         }
 
         public override void Write(IValueStorage targetObject, in T[] sourceObject)
