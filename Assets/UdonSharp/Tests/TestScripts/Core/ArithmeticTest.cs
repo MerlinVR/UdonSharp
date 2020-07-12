@@ -28,6 +28,7 @@ namespace UdonSharp.Tests
             IntTruncate();
             UintBitOps();
             StringAddition();
+            DecimalOps();
         }
 
         void IntBinaryOps()
@@ -277,6 +278,15 @@ namespace UdonSharp.Tests
             // https://github.com/Merlin-san/UdonSharp/issues/23
             //x = (x ^ 3);
             //tester.TestAssertion("uint ^", x == 10);
+        }
+
+        void DecimalOps()
+        {
+            decimal x = 4;
+
+            tester.TestAssertion("Decimal equality", x == 4);
+            tester.TestAssertion("Decimal addition", (x + 5) == 9);
+            tester.TestAssertion("Decimal mul", (3 * 0.5m) == 1.5m);
         }
 
         void StringAddition()
