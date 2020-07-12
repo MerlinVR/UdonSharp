@@ -12,6 +12,8 @@ namespace UdonSharp.Tests
         [System.NonSerialized]
         public bool printPassedTests = false;
 
+        public bool runSuiteTests = true;
+
 #pragma warning disable CS0649
         [SerializeField] string testSuiteName;
         [SerializeField] bool forcePrintPassedTests = false;
@@ -28,6 +30,9 @@ namespace UdonSharp.Tests
 
         public void RunTests()
         {
+            if (!runSuiteTests)
+                return;
+
             testTotalCount = 0;
             testSuccessCount = 0;
 

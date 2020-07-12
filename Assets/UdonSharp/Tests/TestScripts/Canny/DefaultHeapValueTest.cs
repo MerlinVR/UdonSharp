@@ -20,6 +20,7 @@ namespace UdonSharp.Tests
             TestPrivateArr();
             TestPrivateStr();
             TestDefaultByte();
+            TestJaggedArrays();
         }
 
         [HideInInspector]
@@ -99,6 +100,20 @@ namespace UdonSharp.Tests
         void TestDefaultByte()
         {
             tester.TestAssertion("Byte type match", byteVal.GetType() == typeof(byte));
+        }
+
+        int[][] jaggedArrayInitialVal = new[] { new[] { 1, 2 }, new[] { 3, 4 }, null };
+
+        void TestJaggedArrays()
+        {
+            tester.TestAssertion("Jagged array initialized", jaggedArrayInitialVal != null);
+            tester.TestAssertion("Jagged array type", jaggedArrayInitialVal.GetType() == typeof(object[]));
+            tester.TestAssertion("Jagged array element type", jaggedArrayInitialVal[0].GetType() == typeof(int[]));
+            tester.TestAssertion("Jagged array values", jaggedArrayInitialVal[0][0] == 1 &&
+                                                        jaggedArrayInitialVal[0][1] == 2 &&
+                                                        jaggedArrayInitialVal[1][0] == 3 &&
+                                                        jaggedArrayInitialVal[1][1] == 4 &&
+                                                        jaggedArrayInitialVal[2] == null);
         }
     }
 }

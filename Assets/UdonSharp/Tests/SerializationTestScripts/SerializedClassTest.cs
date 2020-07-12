@@ -28,10 +28,12 @@ public class SerializedClassTest : UdonSharpBehaviour
         foreach (var ints in jagged)
         {
             if (ints != null)
+            {
                 foreach (int val in ints)
                 {
                     Debug.Log(val);
                 }
+            }
         }
     }
 }
