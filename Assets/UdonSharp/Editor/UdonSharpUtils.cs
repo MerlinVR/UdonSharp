@@ -421,6 +421,14 @@ namespace UdonSharp
                    IsUserJaggedArray(type);
         }
 
+        public static System.Type GetRootElementType(System.Type type)
+        {
+            while (type.IsArray)
+                type = type.GetElementType();
+
+            return type;
+        }
+
         // Doesn't work in a multi threaded context, todo: consider making this a concurrent collection or making one for each thread.
         //private static Dictionary<System.Type, System.Type> userTypeToUdonTypeCache = new Dictionary<System.Type, System.Type>();
 

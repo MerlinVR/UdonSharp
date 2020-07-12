@@ -453,7 +453,7 @@ namespace UdonSharp
                 foreach (ArrayRankSpecifierSyntax rankSpecifierSyntax in node.Type.RankSpecifiers)
                 {
                     if (rankSpecifierSyntax.Sizes.Count != 1)
-                        throw new System.NotSupportedException("UdonSharp does not support multidimensional arrays at the moment");
+                        throw new System.NotSupportedException("UdonSharp does not support multidimensional arrays at the moment, use jagged arrays instead for now.");
                 }
 
                 SymbolDefinition arrayRankSymbol = null;
@@ -618,7 +618,7 @@ namespace UdonSharp
                 Visit(node.Expression);
 
                 if (node.ArgumentList.Arguments.Count != 1)
-                    throw new System.NotSupportedException("UdonSharp does not support multidimensional accesses yet");
+                    throw new System.NotSupportedException("UdonSharp does not support multidimensional array accesses yet");
 
                 using (ExpressionCaptureScope indexerCaptureScope = new ExpressionCaptureScope(visitorContext, null))
                 {

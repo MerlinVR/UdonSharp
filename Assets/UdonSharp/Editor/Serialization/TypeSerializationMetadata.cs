@@ -100,17 +100,7 @@ namespace UdonSharp.Serialization
 
         public TypeSerializationMetadata(System.Type cSharpType)
         {
-            this.cSharpType = cSharpType;
-            if (cSharpType != null && cSharpType.IsArray)
-            {
-                System.Type elementType = cSharpType;
-                while (elementType.IsArray)
-                    elementType = elementType.GetElementType();
-
-                arrayElementMetadata = new TypeSerializationMetadata(elementType);
-            }
-
-            udonStorageType = UdonSharpUtils.UserTypeToUdonType(cSharpType);
+            SetToType(cSharpType);
         }
 
         public override bool Equals(object obj)
@@ -137,6 +127,21 @@ namespace UdonSharp.Serialization
         public override string ToString()
         {
             return $"Serialization metadata - C# T:{cSharpType}, U# T: {udonStorageType}";
+        }
+
+        public void SetToType(System.Type type)
+        {
+            cSharpType = type;
+            if (cSharpType != null && cSharpType.IsArray)
+            {
+                System.Type elementType = cSharpType;
+                while (elementType.IsArray)
+                    elementType = elementType.GetElementType();
+
+                arrayElementMetadata = new TypeSerializationMetadata(elementType);
+            }
+
+            udonStorageType = UdonSharpUtils.UserTypeToUdonType(cSharpType);
         }
     }
 }

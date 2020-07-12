@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CSharp;
+using UdonSharp.Serialization;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -238,6 +239,47 @@ namespace UdonSharp
 
             return fieldInitializerErrorCount;
         }
+        
+        // Called from the generated assembly to assign values to the program
+        static void SetHeapField<T>(IUdonProgram program, T value, string symbolName)
+        {
+            if (UdonSharpUtils.IsUserJaggedArray(typeof(T)))
+            {
+                Serializer<T> serializer = Serializer.CreatePooled<T>();
+
+                SimpleValueStorage<object[]> arrayStorage = new SimpleValueStorage<object[]>();
+                serializer.Write(arrayStorage, in value);
+                
+                program.Heap.SetHeapVariable<object[]>(program.SymbolTable.GetAddressFromSymbol(symbolName), arrayStorage.Value);
+            }
+            else
+            {
+                program.Heap.SetHeapVariable<T>(program.SymbolTable.GetAddressFromSymbol(symbolName), value);
+            }
+        }
+
+        string GetFullTypeQualifiedName(System.Type type)
+        {
+            string namespaceStr = "";
+
+            if (type.Namespace != null &&
+                type.Namespace.Length > 0)
+            {
+                namespaceStr = type.Namespace + ".";
+            }
+
+            string nestedTypeStr = "";
+
+            System.Type declaringType = type.DeclaringType;
+
+            while (declaringType != null)
+            {
+                nestedTypeStr = $"{declaringType.Name}.{nestedTypeStr}";
+                declaringType = declaringType.DeclaringType;
+            }
+
+            return namespaceStr + nestedTypeStr + type.Name;
+        }
 
         private int RunFieldInitalizers(CompilationModule[] compiledModules)
         {
@@ -273,6 +315,7 @@ namespace UdonSharp
                 method.ReturnType = new CodeTypeReference(typeof(void));
                 method.Name = "DoInit";
                 method.Parameters.Add(new CodeParameterDeclarationExpression(typeof(IUdonProgram), "program"));
+                method.Parameters.Add(new CodeParameterDeclarationExpression(typeof(MethodInfo), "heapSetMethod"));
 
                 foreach (var fieldDeclarationSyntax in module.fieldsWithInitializers)
                 {
@@ -286,29 +329,7 @@ namespace UdonSharp
 
                         string typeQualifiedName = type.ToString().Replace('+', '.');
                         if (fieldDef != null)
-                        {
-                            string namespaceStr = "";
-
-                            System.Type symbolType = fieldDef.fieldSymbol.symbolCsType;
-
-                            if (symbolType.Namespace != null &&
-                                symbolType.Namespace.Length > 0)
-                            {
-                                namespaceStr = symbolType.Namespace + ".";
-                            }
-
-                            string nestedTypeStr = "";
-
-                            System.Type declaringType = symbolType.DeclaringType;
-
-                            while (declaringType != null)
-                            {
-                                nestedTypeStr = $"{declaringType.Name}.{nestedTypeStr}";
-                                declaringType = declaringType.DeclaringType;
-                            }
-
-                            typeQualifiedName = namespaceStr + nestedTypeStr + fieldDef.fieldSymbol.symbolCsType.Name;
-                        }
+                            typeQualifiedName = GetFullTypeQualifiedName(fieldDef.fieldSymbol.symbolCsType);
 
                         if (variable.Initializer != null)
                         {
@@ -322,8 +343,16 @@ namespace UdonSharp
                                 method.Statements.Add(new CodeSnippetStatement($"{typeQualifiedName} {name} {variable.Initializer};"));
                             }
 
-                            method.Statements.Add(new CodeSnippetStatement(
-                                $"program.Heap.SetHeapVariable(program.SymbolTable.GetAddressFromSymbol(\"{variable.Identifier}\"), {name});"));
+                            if (UdonSharpUtils.IsUserJaggedArray(fieldDef.fieldSymbol.userCsType))
+                            {
+                                method.Statements.Add(new CodeSnippetStatement(
+                                    "heapSetMethod.MakeGenericMethod(typeof(" + GetFullTypeQualifiedName(fieldDef.fieldSymbol.userCsType) + ")).Invoke(null, new object[] { program, " + name + ", \"" + variable.Identifier + "\"});"));
+                            }
+                            else
+                            {
+                                method.Statements.Add(new CodeSnippetStatement(
+                                    $"program.Heap.SetHeapVariable(program.SymbolTable.GetAddressFromSymbol(\"{variable.Identifier}\"), {name});"));
+                            }
 
                             count++;
                         }
@@ -391,7 +420,7 @@ namespace UdonSharp
 
                         System.Type cls = assembly.GetType($"FieldInitialzers.Initializer{moduleIdx}");
                         MethodInfo methodInfo = cls.GetMethod("DoInit", BindingFlags.Public | BindingFlags.Static);
-                        methodInfo.Invoke(null, new[] { program });
+                        methodInfo.Invoke(null, new object[] { program, typeof(UdonSharpCompiler).GetMethod("SetHeapField", BindingFlags.NonPublic | BindingFlags.Static) });
 
                         foreach (var fieldDeclarationSyntax in module.fieldsWithInitializers)
                         {
@@ -403,7 +432,7 @@ namespace UdonSharp
 
                                 if (heapValue != null && UdonSharpUtils.IsUserDefinedType(heapValue.GetType()))
                                 {
-                                    string fieldError = $"Field: '{varName}' UdonSharp does not yet support field initializers on user-defined types or jagged arrays";
+                                    string fieldError = $"Field: '{varName}' UdonSharp does not yet support field initializers on user-defined types";
 
                                     UdonSharpUtils.LogBuildError(fieldError, AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript), 0, 0);
 

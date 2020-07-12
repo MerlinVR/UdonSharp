@@ -38,13 +38,15 @@ namespace UdonSharp.Serialization
             return serializer;
         }
 
+        static TypeSerializationMetadata lookupPooledTypeData = new TypeSerializationMetadata();
         public static Serializer<T> CreatePooled<T>()
         {
-            TypeSerializationMetadata typeMetadata = new TypeSerializationMetadata(typeof(T));
+            lookupPooledTypeData.SetToType(typeof(T));
 
             Serializer serializer;
-            if (!typeSerializerDictionary.TryGetValue(typeMetadata, out serializer))
+            if (!typeSerializerDictionary.TryGetValue(lookupPooledTypeData, out serializer))
             {
+                TypeSerializationMetadata typeMetadata = new TypeSerializationMetadata(typeof(T));
                 serializer = Create(typeMetadata);
                 typeSerializerDictionary.Add(typeMetadata, serializer);
             }
