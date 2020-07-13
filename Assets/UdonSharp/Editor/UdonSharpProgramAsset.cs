@@ -537,8 +537,7 @@ namespace UdonSharp
 
             return objectFieldValue;
         }
-
-        [NonSerialized]
+        
         private Dictionary<string, bool> foldoutStates = new Dictionary<string, bool>();
 
         private object DrawFieldForType(string fieldName, string symbol, (object value, Type declaredType, FieldDefinition symbolField) publicVariable, System.Type currentType, ref bool dirty, bool enabled)
@@ -555,8 +554,6 @@ namespace UdonSharp
             GUIContent fieldLabel = null;
 
             TooltipAttribute tooltip = fieldDefinition == null ? null : fieldDefinition.GetAttribute<TooltipAttribute>();
-
-            RangeAttribute range = fieldDefinition == null ? null : fieldDefinition.GetAttribute<RangeAttribute>();
 
             if (tooltip != null)
                 fieldLabel = new GUIContent(fieldName, tooltip.tooltip);
@@ -749,28 +746,30 @@ namespace UdonSharp
             }
             else if (declaredType == typeof(float))
             {
-                if(range != null)
+                RangeAttribute range = fieldDefinition?.GetAttribute<RangeAttribute>();
+
+                if (range != null)
                     return EditorGUILayout.Slider(fieldLabel, (float?)value ?? default, range.min, range.max);
                 else
                     return EditorGUILayout.FloatField(fieldLabel, (float?)value ?? default);
             }
             else if (declaredType == typeof(double))
             {
-                if(range != null)
+                RangeAttribute range = fieldDefinition?.GetAttribute<RangeAttribute>();
+
+                if (range != null)
                     return EditorGUILayout.Slider(fieldLabel, (float)((double?)value ?? default), range.min, range.max);
                 else
                     return EditorGUILayout.DoubleField(fieldLabel, (double?)value ?? default);
             }
             else if (declaredType == typeof(int))
             {
-                if(range != null)
+                RangeAttribute range = fieldDefinition?.GetAttribute<RangeAttribute>();
+
+                if (range != null)
                     return EditorGUILayout.IntSlider(fieldLabel, (int?)value ?? default, (int)range.min, (int)range.max);
                 else
                     return EditorGUILayout.IntField(fieldLabel, (int?)value ?? default);
-            }
-            else if (declaredType == typeof(long))
-            {
-                return EditorGUILayout.LongField(fieldLabel, (long?)value ?? default);
             }
             else if (declaredType == typeof(bool))
             {
@@ -868,6 +867,38 @@ namespace UdonSharp
             else if (declaredType == typeof(AnimationCurve))
             {
                 return EditorGUILayout.CurveField(fieldLabel, (AnimationCurve)value);
+            }
+            else if (declaredType == typeof(char))
+            {
+                string stringVal = EditorGUILayout.TextField(fieldLabel, (((char?)value) ?? default).ToString());
+                if (stringVal.Length > 0)
+                    return stringVal[0];
+                else
+                    return value;
+            }
+            else if (declaredType == typeof(uint))
+            {
+                return (uint)Math.Min(Math.Max(EditorGUILayout.LongField(fieldLabel, (uint?)value ?? default), uint.MinValue), uint.MaxValue);
+            }
+            else if (declaredType == typeof(long))
+            {
+                return EditorGUILayout.LongField(fieldLabel, (long?)value ?? default);
+            }
+            else if (declaredType == typeof(byte))
+            {
+                return (byte)Mathf.Clamp(EditorGUILayout.IntField(fieldLabel, (byte?)value ?? default), byte.MinValue, byte.MaxValue);
+            }
+            else if (declaredType == typeof(sbyte))
+            {
+                return (sbyte)Mathf.Clamp(EditorGUILayout.IntField(fieldLabel, (sbyte?)value ?? default), sbyte.MinValue, sbyte.MaxValue);
+            }
+            else if (declaredType == typeof(short))
+            {
+                return (short)Mathf.Clamp(EditorGUILayout.IntField(fieldLabel, (short?)value ?? default), short.MinValue, short.MaxValue);
+            }
+            else if (declaredType == typeof(ushort))
+            {
+                return (ushort)Mathf.Clamp(EditorGUILayout.IntField(fieldLabel, (ushort?)value ?? default), ushort.MinValue, ushort.MaxValue);
             }
             else
             {

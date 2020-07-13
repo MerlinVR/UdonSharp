@@ -13,12 +13,19 @@ public class SerializedClassTest : UdonSharpBehaviour
     public int defaultVal = 45;
     public int defaultVal2 = 600;
 
+    public sbyte sbyteVal = 4;
+
+    public char charField = 'a';
+
+    public uint uintField = 42134;
+
     //public Vector3[] vecArr;
 
     public int[][] jagged = new int[][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
 
     void Start()
     {
+        Debug.Log(sbyteVal);
         //jagged = new int[][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
 
