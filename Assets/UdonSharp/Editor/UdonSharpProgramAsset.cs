@@ -20,7 +20,6 @@ namespace UdonSharp
     [CreateAssetMenu(menuName = "VRChat/Udon/Udon C# Program Asset", fileName = "New Udon C# Program Asset")]
     public class UdonSharpProgramAsset : UdonAssemblyProgramAsset
     {
-        [SerializeField]
         public MonoScript sourceCsScript;
 
         [NonSerialized, OdinSerialize]
