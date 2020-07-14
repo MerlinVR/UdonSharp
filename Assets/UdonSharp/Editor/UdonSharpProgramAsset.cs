@@ -112,35 +112,29 @@ namespace UdonSharp
 
             currentBehaviour = udonBehaviour;
 
-            EditorGUI.BeginDisabledGroup(udonBehaviour);
-            if (udonBehaviour)
-                EditorGUI.indentLevel++;
-            EditorGUI.BeginChangeCheck();
-            MonoScript newSourceCsScript = (MonoScript)EditorGUILayout.ObjectField("Source Script", sourceCsScript, typeof(MonoScript), false);
-            if (EditorGUI.EndChangeCheck())
-            {
-                Undo.RecordObject(this, "Changed source C# script");
-                sourceCsScript = newSourceCsScript;
-                dirty = true;
-            }
-            if (udonBehaviour)
-                EditorGUI.indentLevel--;
-            EditorGUI.EndDisabledGroup();
-
             if (!udonBehaviour)
             {
+                EditorGUI.BeginChangeCheck();
+                MonoScript newSourceCsScript = (MonoScript)EditorGUILayout.ObjectField("Source Script", sourceCsScript, typeof(MonoScript), false);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(this, "Changed source C# script");
+                    sourceCsScript = newSourceCsScript;
+                    dirty = true;
+                }
+
                 EditorGUI.BeginDisabledGroup(true);
                 EditorGUILayout.ObjectField("Serialized Udon Program Asset", serializedUdonProgramAsset, typeof(AbstractSerializedUdonProgramAsset), false);
                 EditorGUI.EndDisabledGroup();
-            }
 
-            if (sourceCsScript == null)
-            {
-                if (DrawCreateScriptButton())
+                if (sourceCsScript == null)
                 {
-                    dirty = true;
+                    if (DrawCreateScriptButton())
+                    {
+                        dirty = true;
+                    }
+                    return;
                 }
-                return;
             }
             
             object behaviourID = null;
@@ -158,31 +152,6 @@ namespace UdonSharp
             // Just manually break the disabled scope in the UdonBehaviourEditor default drawing for now
             GUI.enabled = GUI.enabled || shouldUseRuntimeValue;
             shouldUseRuntimeValue &= GUI.enabled;
-
-            if (currentBehaviour != null && hasInteractEvent)
-            {
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Interact", EditorStyles.boldLabel);
-
-                EditorGUI.BeginChangeCheck();
-                string newInteractText = EditorGUILayout.TextField("Interaction Text", currentBehaviour.interactText);
-                float newProximity = EditorGUILayout.Slider("Proximity", currentBehaviour.proximity, 0f, 100f);
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    Undo.RecordObject(currentBehaviour, "Change interact property");
-
-                    currentBehaviour.interactText = newInteractText;
-                    currentBehaviour.proximity = newProximity;
-                }
-
-                EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
-                if (GUILayout.Button("Trigger Interact"))
-                    currentBehaviour.SendCustomEvent("_interact");
-                EditorGUI.EndDisabledGroup();
-            }
-
-            EditorGUILayout.Space();
 
             DrawPublicVariables(udonBehaviour, ref dirty);
 

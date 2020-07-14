@@ -267,9 +267,6 @@ namespace UdonSharpEditor
             // Interact settings
             if ((bool)hasInteractField.GetValue(udonSharpProgram))
             {
-                //EditorGUILayout.Space();
-                //EditorGUILayout.LabelField("Interact", EditorStyles.boldLabel);
-
                 EditorGUI.BeginChangeCheck();
                 string newInteractText = EditorGUILayout.TextField("Interaction Text", behaviour.interactText);
                 float newProximity = EditorGUILayout.Slider("Proximity", behaviour.proximity, 0f, 100f);
@@ -291,6 +288,8 @@ namespace UdonSharpEditor
             EditorGUILayout.Space();
 
             // Variable drawing
+            bool dirty = false;
+            udonSharpProgram.RunEditorUpdate(behaviour, ref dirty);
         }
 
         // Force repaint for variable update in play mode
