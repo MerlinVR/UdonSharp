@@ -127,6 +127,13 @@ namespace UdonSharp
                 EditorGUI.indentLevel--;
             EditorGUI.EndDisabledGroup();
 
+            if (!udonBehaviour)
+            {
+                EditorGUI.BeginDisabledGroup(true);
+                EditorGUILayout.ObjectField("Serialized Udon Program Asset", serializedUdonProgramAsset, typeof(AbstractSerializedUdonProgramAsset), false);
+                EditorGUI.EndDisabledGroup();
+            }
+
             if (sourceCsScript == null)
             {
                 if (DrawCreateScriptButton())

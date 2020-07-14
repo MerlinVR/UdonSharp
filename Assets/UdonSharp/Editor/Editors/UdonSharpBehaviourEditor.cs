@@ -80,7 +80,8 @@ namespace UdonSharpEditor
             base.OnInspectorGUI();
         }
     }
-    
+
+    #region Drawer override boilerplate
     [InitializeOnLoad]
     internal class UdonBehaviourDrawerOverride
     {
@@ -189,18 +190,113 @@ namespace UdonSharpEditor
             addTypeMethod.Invoke(customEditorDictionary, addTypeInvokeParams);
         }
     }
+    #endregion
 
+    /// <summary>
+    /// Custom U# editor for UdonBehaviours that can have custom behavior for drawing stuff like sync position and the program asset info
+    /// Will also allow people to override the inspector for their own custom inspectors
+    /// </summary>
     internal class UdonBehaviourOverrideEditor : Editor
     {
         Editor baseEditor;
+        static FieldInfo serializedAssetField;
+        static FieldInfo hasInteractField;
+        static readonly GUIContent ownershipTransferOnCollisionContent = new GUIContent("Allow Ownership Transfer on Collision", 
+                                                                                        "Transfer ownership on collision, requires a Collision component on the same game object");
 
         public override void OnInspectorGUI()
         {
-            EditorGUILayout.LabelField("My custom GUI", EditorStyles.boldLabel);
+            if (serializedAssetField == null)
+            {
+                serializedAssetField = typeof(UdonBehaviour).GetField("serializedProgramAsset", BindingFlags.NonPublic | BindingFlags.Instance);
+                hasInteractField = typeof(UdonSharpProgramAsset).GetField("hasInteractEvent", BindingFlags.NonPublic | BindingFlags.Instance);
+            }
 
-            Editor.CreateCachedEditor(targets, typeof(UdonBehaviourEditor), ref baseEditor);
+            UdonBehaviour behaviour = target as UdonBehaviour;
 
-            baseEditor.OnInspectorGUI();
+            // Fall back to the default Udon inspector if not a U# behaviour
+            if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset udonSharpProgram))
+            {
+                Editor.CreateCachedEditor(targets, typeof(UdonBehaviourEditor), ref baseEditor);
+                baseEditor.OnInspectorGUI();
+                return;
+            }
+
+            // Program source
+            EditorGUI.BeginDisabledGroup(Application.isPlaying);
+            
+            EditorGUI.BeginChangeCheck();
+            AbstractUdonProgramSource newProgramSource = (AbstractUdonProgramSource)EditorGUILayout.ObjectField("Program Source", behaviour.programSource, typeof(AbstractUdonProgramSource), false);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(behaviour, "Change program source");
+                behaviour.programSource = newProgramSource;
+                serializedAssetField.SetValue(behaviour, newProgramSource != null ? newProgramSource.SerializedProgramAsset : null);
+            }
+
+            EditorGUI.indentLevel++;
+            EditorGUI.BeginDisabledGroup(true);
+            EditorGUILayout.ObjectField("Program Script", ((UdonSharpProgramAsset)behaviour.programSource)?.sourceCsScript, typeof(MonoScript), false);
+            EditorGUI.EndDisabledGroup();
+            EditorGUI.indentLevel--;
+
+            // Sync settings
+            EditorGUI.BeginChangeCheck();
+            bool newSyncPos = EditorGUILayout.Toggle("Synchronize Position", behaviour.SynchronizePosition);
+            bool newCollisionTransfer = behaviour.AllowCollisionOwnershipTransfer;
+            if (behaviour.GetComponent<Collider>() != null)
+            {
+                newCollisionTransfer = EditorGUILayout.Toggle(ownershipTransferOnCollisionContent, behaviour.AllowCollisionOwnershipTransfer);
+            }
+            //else
+            //{
+            //    EditorGUI.BeginDisabledGroup(true);
+            //    newCollisionTransfer = EditorGUILayout.Toggle(ownershipTransferOnCollisionContent, false);
+            //    EditorGUI.EndDisabledGroup();
+            //}
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(behaviour, "Change sync setting");
+                behaviour.SynchronizePosition = newSyncPos;
+                behaviour.AllowCollisionOwnershipTransfer = newCollisionTransfer;
+            }
+
+            EditorGUI.EndDisabledGroup();
+
+            // Interact settings
+            if ((bool)hasInteractField.GetValue(udonSharpProgram))
+            {
+                //EditorGUILayout.Space();
+                //EditorGUILayout.LabelField("Interact", EditorStyles.boldLabel);
+
+                EditorGUI.BeginChangeCheck();
+                string newInteractText = EditorGUILayout.TextField("Interaction Text", behaviour.interactText);
+                float newProximity = EditorGUILayout.Slider("Proximity", behaviour.proximity, 0f, 100f);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(behaviour, "Change interact property");
+
+                    behaviour.interactText = newInteractText;
+                    behaviour.proximity = newProximity;
+                }
+
+                EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
+                if (GUILayout.Button("Trigger Interact", GUILayout.Height(22f)))
+                    behaviour.SendCustomEvent("_interact");
+                EditorGUI.EndDisabledGroup();
+            }
+
+            EditorGUILayout.Space();
+
+            // Variable drawing
+        }
+
+        // Force repaint for variable update in play mode
+        public override bool RequiresConstantRepaint()
+        {
+            return Application.isPlaying;
         }
     }
 }
