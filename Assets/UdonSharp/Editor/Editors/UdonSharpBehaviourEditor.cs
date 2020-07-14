@@ -1,15 +1,20 @@
 ﻿
 using System;
+using System.Collections.Generic;
 using System.IO;
-using UdonSharpEditor;
+using System.Linq;
+using System.Reflection;
+using UdonSharp;
 using UnityEditor;
 using UnityEngine;
+using VRC.Udon;
+using VRC.Udon.Editor;
 
-namespace UdonSharp
+namespace UdonSharpEditor
 {
     [CustomEditor(typeof(UdonSharpBehaviour), true)]
     [CanEditMultipleObjects]
-    public class UdonSharpBehaviourEditor : Editor
+    internal class UdonSharpBehaviourEditor : Editor
     {
         [MenuItem("Assets/Create/U# Script", false, 5)]
         private static void CreateUSharpScript()
@@ -73,6 +78,129 @@ namespace UdonSharp
             EditorGUILayout.Space();
 
             base.OnInspectorGUI();
+        }
+    }
+    
+    [InitializeOnLoad]
+    internal class UdonBehaviourDrawerOverride
+    {
+        static UdonBehaviourDrawerOverride()
+        {
+            OverrideUdonBehaviourDrawer();
+        }
+
+        // https://stackoverflow.com/questions/12898282/type-gettype-not-working 
+        static System.Type FindTypeInAllAssemblies(string qualifiedTypeName)
+        {
+            System.Type t = System.Type.GetType(qualifiedTypeName);
+
+            if (t != null)
+            {
+                return t;
+            }
+            else
+            {
+                foreach (System.Reflection.Assembly asm in System.AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    t = asm.GetType(qualifiedTypeName);
+                    if (t != null)
+                        return t;
+                }
+
+                return null;
+            }
+        }
+
+        static FieldInfo customEditorField;
+        static MethodInfo removeTypeMethod;
+        static MethodInfo addTypeMethod;
+
+        static System.Type monoEditorTypeType;
+        static System.Type monoEditorTypeListType;
+        static MethodInfo listAddTypeMethod;
+        static MethodInfo listClearMethod;
+        static FieldInfo monoEditorTypeInspectedTypeField;
+        static FieldInfo monoEditorTypeInspectorTypeField;
+
+        static readonly object[] udonBehaviourTypeArr = new object[] { typeof(UdonBehaviour) };
+        static readonly object[] addTypeInvokeParams = new object[] { typeof(UdonBehaviour), null };
+        static readonly object[] listCreateParams = new object[] { 1 };
+
+        static object customEditorDictionary;
+        static object editorTypeList;
+        static object editorTypeObject;
+
+        /// <summary>
+        /// Handles removing the reference to the default UdonBehaviourEditor and injecting our own custom editor UdonBehaviourOverrideEditor
+        /// </summary>
+        static void OverrideUdonBehaviourDrawer() 
+        {
+            if (customEditorField == null)
+            {
+                System.Type editorAttributesClass = FindTypeInAllAssemblies("UnityEditor.CustomEditorAttributes");
+                customEditorField = editorAttributesClass.GetField("kSCustomEditors", BindingFlags.NonPublic | BindingFlags.Static);
+
+                System.Type fieldType = customEditorField.FieldType;
+
+                removeTypeMethod = fieldType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                                            .FirstOrDefault(e => e.Name == "Remove" &&
+                                                                 e.GetParameters().Length == 1 &&
+                                                                 e.GetParameters()[0].ParameterType == typeof(System.Type));
+
+                monoEditorTypeType = editorAttributesClass.GetNestedType("MonoEditorType", BindingFlags.NonPublic);
+                monoEditorTypeInspectedTypeField = monoEditorTypeType.GetField("m_InspectedType", BindingFlags.Public | BindingFlags.Instance);
+                monoEditorTypeInspectorTypeField = monoEditorTypeType.GetField("m_InspectorType", BindingFlags.Public | BindingFlags.Instance);
+
+                monoEditorTypeListType = typeof(List<>).MakeGenericType(monoEditorTypeType);
+
+
+                addTypeMethod = fieldType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                                         .FirstOrDefault(e => e.Name == "Add" &&
+                                                              e.GetParameters().Length == 2 &&
+                                                              e.GetParameters()[0].ParameterType == typeof(System.Type) &&
+                                                              e.GetParameters()[1].ParameterType == monoEditorTypeListType);
+
+                listAddTypeMethod = monoEditorTypeListType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                                                          .FirstOrDefault(e => e.Name == "Add" &&
+                                                                               e.GetParameters().Length == 1 &&
+                                                                               e.GetParameters()[0].ParameterType == monoEditorTypeType);
+
+                listClearMethod = monoEditorTypeListType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                                                        .FirstOrDefault(e => e.Name == "Clear" &&
+                                                                             e.GetParameters().Length == 0);
+
+                customEditorDictionary = customEditorField.GetValue(null);
+
+                editorTypeObject = Activator.CreateInstance(monoEditorTypeType);
+                monoEditorTypeInspectedTypeField.SetValue(editorTypeObject, typeof(UdonBehaviour));
+                monoEditorTypeInspectorTypeField.SetValue(editorTypeObject, typeof(UdonBehaviourOverrideEditor));
+
+                editorTypeList = Activator.CreateInstance(monoEditorTypeListType);
+
+                listCreateParams[0] = editorTypeObject;
+            }
+
+            listClearMethod.Invoke(editorTypeList, null);
+            listAddTypeMethod.Invoke(editorTypeList, listCreateParams);
+
+            removeTypeMethod.Invoke(customEditorDictionary, udonBehaviourTypeArr);
+
+            addTypeInvokeParams[1] = editorTypeList;
+            addTypeMethod.Invoke(customEditorDictionary, addTypeInvokeParams);
+        }
+    }
+
+    internal class UdonBehaviourOverrideEditor : Editor
+    {
+        Editor baseEditor;
+
+        public override void OnInspectorGUI()
+        {
+            EditorGUILayout.LabelField("My custom GUI", EditorStyles.boldLabel);
+
+            Editor.CreateCachedEditor(targets, typeof(UdonBehaviourEditor), ref baseEditor);
+
+            baseEditor.OnInspectorGUI();
         }
     }
 }
