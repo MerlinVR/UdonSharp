@@ -3,8 +3,8 @@
     "references": [
         "VRC.Udon",
         "VRC.Udon.Editor",
-        "UdonSharp.Runtime",
-        "VRC.Udon.Serialization.OdinSerializer"
+        "VRC.Udon.Serialization.OdinSerializer",
+        "UdonSharp.Runtime"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [
@@ -25,7 +25,8 @@
         "VRC.Udon.ClientBindings.dll",
         "VRCSDK3.dll",
         "VRCSDKBase.dll",
-        "System.Collections.Immutable.dll"
+        "System.Collections.Immutable.dll",
+        "VRCSDKBase-Editor.dll"
     ],
     "autoReferenced": true,
     "defineConstraints": []
