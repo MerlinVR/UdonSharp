@@ -35,6 +35,7 @@ This compiler is in an early state and I have no prior experience making compile
 - User defined methods currently cannot be recursive. They will technically compile, but will likely break because all invocations of a function currently share the same "stack" variables. Support for this is planned as an optional attribute since implementing recursion with Udon's primitives makes it very performance heavy.
 - Field initilizers are evaluated at compile time, if you have any init logic that depends on other objects in the scene you should use Start for this.
 - Use the `UdonSynced` attribute on fields that you want to sync.  
+- Numeric casts are checked for overflow due to UdonVM limitations
 
 ## Udon bugs that affect U#
 - Heap variables do not get initialized immediately which can cause unexpected behavior. Mainly when you use VRCInstantiate to create an object, the UdonBehaviour components on the instantiated object will not be setup until the next frame. So you cannot set values on the UdonBehaviour script immediately after initialization and attempts to get variables will return null. Due to how `GetComponent<T>` on user defined types works, it will also fail and return null until the behaviour has a chance to initialize its heap. This also happens if you have a UdonBehaviour that has never been enabled. https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/heap-values-are-not-initialized-in-some-cases-so-getprogramvariable-returns-null

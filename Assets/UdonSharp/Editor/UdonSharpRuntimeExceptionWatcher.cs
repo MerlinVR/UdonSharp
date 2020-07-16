@@ -35,10 +35,13 @@ namespace UdonSharp
 
             if (EditorApplication.isCompiling || EditorApplication.isUpdating)
                 return false;
-            
-            AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
 
             UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
+
+            if (udonSharpSettings == null || !udonSharpSettings.listenForVRCExceptions)
+                return false;
+
+            AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
 
             if (logDirectoryWatcher == null)
             {
