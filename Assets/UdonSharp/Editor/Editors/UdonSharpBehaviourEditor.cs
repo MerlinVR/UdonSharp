@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using UdonSharp;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using VRC.Udon;
 using VRC.Udon.Editor;
@@ -198,11 +199,13 @@ namespace UdonSharpEditor
     /// </summary>
     internal class UdonBehaviourOverrideEditor : Editor
     {
-        Editor baseEditor;
+
         static FieldInfo serializedAssetField;
         static FieldInfo hasInteractField;
         static readonly GUIContent ownershipTransferOnCollisionContent = new GUIContent("Allow Ownership Transfer on Collision", 
                                                                                         "Transfer ownership on collision, requires a Collision component on the same game object");
+
+        static Dictionary<UdonBehaviour, Editor> cachedEditors = new Dictionary<UdonBehaviour, Editor>();
 
         public override void OnInspectorGUI()
         {
@@ -217,7 +220,23 @@ namespace UdonSharpEditor
             // Fall back to the default Udon inspector if not a U# behaviour
             if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset udonSharpProgram))
             {
-                Editor.CreateCachedEditor(targets, typeof(UdonBehaviourEditor), ref baseEditor);
+                // We can't use CreateCachedEditor since it apparently leaks its cache around between play/edit mode and throws errors as a result
+                //Editor.CreateCachedEditor(targets, typeof(UdonBehaviourEditor), ref baseEditor);
+
+                Editor baseEditor;
+                if (!cachedEditors.TryGetValue(behaviour, out baseEditor))
+                {
+                    baseEditor = Editor.CreateEditor(behaviour, typeof(UdonBehaviourEditor));
+                    cachedEditors.Add(behaviour, baseEditor);
+                }
+
+                // Targets on the editors turn null sometimes when exiting play mode, so recreate them here in that case.
+                if (baseEditor.target == null)
+                {
+                    baseEditor = Editor.CreateEditor(behaviour, typeof(UdonBehaviourEditor));
+                    cachedEditors[behaviour] = baseEditor;
+                }
+
                 baseEditor.OnInspectorGUI();
                 return;
             }
@@ -285,11 +304,28 @@ namespace UdonSharpEditor
                 EditorGUI.EndDisabledGroup();
             }
 
-            EditorGUILayout.Space();
+            DrawPublicVariables(behaviour);
 
-            // Variable drawing
             bool dirty = false;
-            udonSharpProgram.RunEditorUpdate(behaviour, ref dirty);
+            behaviour.RunEditorUpdate(ref dirty);
+
+        }
+
+        void DrawPublicVariables(UdonBehaviour behaviour)
+        {
+            bool dirty = false;
+
+            if (behaviour.programSource == null)
+                return;
+
+            UdonSharpProgramAsset udonSharpProgramAsset = (UdonSharpProgramAsset)behaviour.programSource;
+
+            udonSharpProgramAsset.UpdateProgram();
+
+
+
+            if (dirty)
+                EditorSceneManager.MarkSceneDirty(behaviour.gameObject.scene);
         }
 
         // Force repaint for variable update in play mode
