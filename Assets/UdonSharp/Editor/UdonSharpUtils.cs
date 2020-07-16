@@ -231,6 +231,60 @@ namespace UdonSharp
             return false;
         }
 
+        public static bool IsExplicitlyAssignableFrom(this System.Type targetType, System.Type assignee)
+        {
+            // Normal explicit assign
+            if (targetType.IsAssignableFrom(assignee))
+                return true;
+
+            // Numeric conversions
+            if (IsNumericType(targetType) && IsNumericType(assignee))
+                return true;
+
+            // Handle user-defined implicit conversion operators defined on both sides
+            // Roughly follows https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/conversions#processing-of-user-defined-implicit-conversions
+
+            // I doubt I'll ever deal with properly supporting nullable but ¯\_(ツ)_/¯
+            if (System.Nullable.GetUnderlyingType(targetType) != null)
+                targetType = System.Nullable.GetUnderlyingType(targetType);
+            if (System.Nullable.GetUnderlyingType(assignee) != null)
+                assignee = System.Nullable.GetUnderlyingType(assignee);
+
+            List<System.Type> operatorTypes = new List<System.Type>();
+            operatorTypes.Add(targetType);
+
+            System.Type currentSourceType = assignee;
+            while (currentSourceType != null)
+            {
+                operatorTypes.Add(currentSourceType);
+                currentSourceType = currentSourceType.BaseType;
+            }
+
+            foreach (System.Type operatorType in operatorTypes)
+            {
+                IEnumerable<MethodInfo> methods = operatorType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Implicit");
+
+                foreach (MethodInfo methodInfo in methods)
+                {
+                    if (methodInfo.ReturnType == targetType && (methodInfo.GetParameters()[0].ParameterType == assignee || methodInfo.GetParameters()[0].ParameterType == typeof(UnityEngine.Object)))
+                        return true;
+                }
+            }
+
+            foreach (System.Type operatorType in operatorTypes)
+            {
+                IEnumerable<MethodInfo> methods = operatorType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Explicit");
+
+                foreach (MethodInfo methodInfo in methods)
+                {
+                    if (methodInfo.ReturnType == targetType && (methodInfo.GetParameters()[0].ParameterType == assignee || methodInfo.GetParameters()[0].ParameterType == typeof(UnityEngine.Object)))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         public static bool IsValidNumericImplictCastSourceType(this System.Type sourceType)
         {
             return implicitBuiltinConversions.ContainsKey(sourceType);

@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CSharp;
 using UdonSharp.Serialization;
+using UdonSharpEditor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -137,6 +138,9 @@ namespace UdonSharp
                             {
                                 module.programAsset.ApplyProgram();
                             }
+
+                            EditorUtility.DisplayProgressBar("UdonSharp Compile", "Post Build Scene Fixup", 1f);
+                            UdonSharpEditorManager.RunPostBuildSceneFixup();
                         }
                     }
                 }
