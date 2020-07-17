@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UdonSharp;
+using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -13,8 +14,19 @@ using VRC.Udon.Serialization.OdinSerializer.Utilities;
 
 namespace UdonSharpEditor
 {
+    [InitializeOnLoad]
     public class UdonSharpEditorManager
     {
+        static UdonSharpEditorManager()
+        {
+            EditorSceneManager.sceneOpened += EditorSceneManager_sceneOpened;
+        }
+
+        private static void EditorSceneManager_sceneOpened(Scene scene, OpenSceneMode mode)
+        {
+            UpdatePublicVariables(GetAllUdonBehaviours(scene));
+        }
+
         public static void RunPostBuildSceneFixup()
         {
             UpdatePublicVariables();
@@ -47,9 +59,25 @@ namespace UdonSharpEditor
             return behaviourList;
         }
 
-        static void UpdatePublicVariables()
+        static List<UdonBehaviour> GetAllUdonBehaviours(Scene scene)
         {
-            List<UdonBehaviour> udonBehaviours = GetAllUdonBehaviours();
+            int rootCount = scene.rootCount;
+            GameObject[] rootObjects = scene.GetRootGameObjects();
+
+            List<UdonBehaviour> behaviourList = new List<UdonBehaviour>();
+
+            for (int j = 0; j < rootCount; ++j)
+            {
+                behaviourList.AddRange(rootObjects[j].GetComponentsInChildren<UdonBehaviour>());
+            }
+
+            return behaviourList;
+        }
+
+        static void UpdatePublicVariables(List<UdonBehaviour> udonBehaviours = null)
+        {
+            if (udonBehaviours == null)
+                udonBehaviours = GetAllUdonBehaviours();
 
             int updatedBehaviourVariables = 0;
 

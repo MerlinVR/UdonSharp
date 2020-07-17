@@ -41,6 +41,7 @@ namespace UdonSharp
         private SerializationData serializationData;
 
         private bool showProgramUasm = false;
+        private bool showProgramDisassembly = false;
         private bool showExtraOptions = false;
         private string customEventName = "";
 
@@ -74,8 +75,8 @@ namespace UdonSharp
 
         protected override void DrawProgramSourceGUI(UdonBehaviour udonBehaviour, ref bool dirty)
         {
-            if (undoLabelStyle == null || 
-                undoArrowDark == null || 
+            if (undoLabelStyle == null ||
+                undoArrowDark == null ||
                 undoArrowLight == null ||
                 clearColorDark == null ||
                 clearColorLight == null ||
@@ -106,7 +107,7 @@ namespace UdonSharp
 
                 clearColorStyle = new GUIStyle();
             }
-            
+
             undoArrowContent = EditorGUIUtility.isProSkin ? undoArrowLight : undoArrowDark;
             clearColorStyle.normal.background = EditorGUIUtility.isProSkin ? clearColorDark : clearColorLight;
 
@@ -136,7 +137,7 @@ namespace UdonSharp
                     return;
                 }
             }
-            
+
             object behaviourID = null;
             bool shouldUseRuntimeValue = EditorApplication.isPlaying && currentBehaviour != null;
 
@@ -182,9 +183,12 @@ namespace UdonSharp
 
             EditorGUILayout.Space();
 
-            if (GUILayout.Button("Force Compile Script"))
+            if (!udonBehaviour)
             {
-                CompileCsProgram();
+                if (GUILayout.Button("Compile Program"))
+                {
+                    CompileCsProgram();
+                }
             }
 
             if (GUILayout.Button("Compile All UdonSharp Programs"))
@@ -192,23 +196,28 @@ namespace UdonSharp
                 CompileAllCsPrograms();
             }
 
-            EditorGUILayout.Space();
-            
-            showExtraOptions = EditorGUILayout.Foldout(showExtraOptions, "Utilities");
-            if (showExtraOptions)
+            if (udonBehaviour)
             {
-                EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
+                EditorGUILayout.Space();
 
-                if (GUILayout.Button("Send Custom Event"))
+                showExtraOptions = EditorGUILayout.Foldout(showExtraOptions, "Utilities");
+                if (showExtraOptions)
                 {
-                    if (currentBehaviour != null)
-                        currentBehaviour.SendCustomEvent(customEventName);
+                    EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
+
+                    if (GUILayout.Button("Send Custom Event"))
+                    {
+                        if (currentBehaviour != null)
+                            currentBehaviour.SendCustomEvent(customEventName);
+                    }
+
+                    customEventName = EditorGUILayout.TextField("Event Name:", customEventName);
+
+                    EditorGUI.EndDisabledGroup();
                 }
-
-                customEventName = EditorGUILayout.TextField("Event Name:", customEventName);
-
-                EditorGUI.EndDisabledGroup();
-
+            }
+            else
+            {
                 EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
 
                 EditorGUILayout.Space();
@@ -223,15 +232,21 @@ namespace UdonSharp
                     }
                 }
                 EditorGUI.EndDisabledGroup();
-            }
 
-            showProgramUasm = EditorGUILayout.Foldout(showProgramUasm, "Compiled C# Assembly");
-            if (showProgramUasm)
-            {
-                DrawAssemblyTextArea(/*!Application.isPlaying*/ false, ref dirty);
+                EditorGUILayout.Space();
+
+                showProgramUasm = EditorGUILayout.Foldout(showProgramUasm, "Compiled C# Udon Assembly");
+                if (showProgramUasm)
+                {
+                    DrawAssemblyTextArea(false, ref dirty);
+                }
 
                 if (program != null)
-                    DrawProgramDisassembly();
+                {
+                    showProgramDisassembly = EditorGUILayout.Foldout(showProgramDisassembly, "Program Disassembly");
+                    if (showProgramDisassembly)
+                        DrawProgramDisassembly();
+                }
             }
 
             currentBehaviour = null;
@@ -254,6 +269,11 @@ namespace UdonSharp
         protected override object GetPublicVariableDefaultValue(string symbol, Type type)
         {
             return program.Heap.GetHeapVariable(program.SymbolTable.GetAddressFromSymbol(symbol));
+        }
+
+        public object GetPublicVariableDefaultValue(string symbol)
+        {
+            return GetPublicVariableDefaultValue(symbol, null);
         }
 
         public void CompileCsProgram()
@@ -340,6 +360,15 @@ namespace UdonSharp
         public IUdonProgram GetRealProgram()
         {
             return program;
+        }
+
+        public void UpdateProgram()
+        {
+            if (program == null && SerializedProgramAsset != null)
+                program = SerializedProgramAsset.RetrieveProgram();
+
+            if (program == null)
+                RefreshProgram();
         }
 
         // Skips the property since it will create an asset if one doesn't exist and we do not want that.
