@@ -1024,8 +1024,7 @@ namespace UdonSharp
             IUdonSymbolTable symbolTable = program.SymbolTable;
 
             // todo: This will be removed with serialization update which has handling for updating variables on compile instead which is more reliable.
-            // We'll eat the overhead of the HashSet for smaller numbers of variables in hope that it's decently faster for bigger classes
-            HashSet<string> exportedSymbolNames = new HashSet<string>(symbolTable.GetExportedSymbols()); 
+            string[] exportedSymbolNames = symbolTable.GetExportedSymbols(); 
 
             if (publicVariables != null)
             {
@@ -1037,7 +1036,7 @@ namespace UdonSharp
             }
             // End remove block
 
-            if (exportedSymbolNames.Count == 0)
+            if (exportedSymbolNames.Length == 0)
             {
                 EditorGUILayout.LabelField(noPublicVariablesLabel);
                 EditorGUI.indentLevel--;
@@ -1060,7 +1059,7 @@ namespace UdonSharp
                         hiddenCount++;
                 }
 
-                if (hiddenCount >= exportedSymbolNames.Count)
+                if (hiddenCount >= exportedSymbolNames.Length)
                 {
                     EditorGUILayout.LabelField(noPublicVariablesLabel);
                     EditorGUI.indentLevel--;
