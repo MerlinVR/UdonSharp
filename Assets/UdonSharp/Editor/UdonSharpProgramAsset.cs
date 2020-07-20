@@ -5,8 +5,10 @@ using System.Linq;
 using System.Reflection;
 using UdonSharpEditor;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using VRC.Udon;
+using VRC.Udon.Common;
 using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Editor.ProgramSources;
 using VRC.Udon.Editor.ProgramSources.Attributes;
@@ -1028,6 +1030,128 @@ namespace UdonSharp
             EditorGUI.EndDisabledGroup();
 
             return variableValue;
+        }
+
+        private static readonly GUIContent noPublicVariablesLabel = new GUIContent("No public variables");
+
+        new void DrawPublicVariables(UdonBehaviour behaviour, ref bool dirty)
+        {
+            IUdonVariable CreateUdonVariable(string symbolName, object value, System.Type type)
+            {
+                System.Type udonVariableType = typeof(UdonVariable<>).MakeGenericType(type);
+                return (IUdonVariable)Activator.CreateInstance(udonVariableType, symbolName, value);
+            }
+
+            IUdonVariableTable publicVariables = null;
+            if (behaviour)
+                publicVariables = behaviour.publicVariables;
+
+            EditorGUILayout.LabelField("Public Variables", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+
+            if (program?.SymbolTable == null)
+            {
+                EditorGUILayout.LabelField(noPublicVariablesLabel);
+                EditorGUI.indentLevel--;
+                return;
+            }
+            
+            IUdonSymbolTable symbolTable = program.SymbolTable;
+
+            // todo: This will be removed with serialization update which has handling for updating variables on compile instead which is more reliable.
+            // We'll eat the overhead of the HashSet for smaller numbers of variables in hope that it's decently faster for bigger classes
+            HashSet<string> exportedSymbolNames = new HashSet<string>(symbolTable.GetExportedSymbols()); 
+
+            if (publicVariables != null)
+            {
+                foreach (string variableSymbol in publicVariables.VariableSymbols.ToArray())
+                {
+                    if (!exportedSymbolNames.Contains(variableSymbol))
+                        publicVariables.RemoveVariable(variableSymbol);
+                }
+            }
+            // End remove block
+
+            if (exportedSymbolNames.Count == 0)
+            {
+                EditorGUILayout.LabelField(noPublicVariablesLabel);
+                EditorGUI.indentLevel--;
+                return;
+            }
+
+            // Check if all fields are marked HideInInspector
+            Dictionary<string, FieldDefinition> fields = (behaviour?.programSource as UdonSharpProgramAsset)?.fieldDefinitions;
+
+            if (fields != null)
+            {
+                int hiddenCount = 0;
+                foreach (string exportedSymbol in exportedSymbolNames)
+                {
+                    FieldDefinition fieldDef;
+                    if (!fields.TryGetValue(exportedSymbol, out fieldDef))
+                        continue;
+
+                    if (fieldDef.GetAttribute<HideInInspector>() != null)
+                        hiddenCount++;
+                }
+
+                if (hiddenCount >= exportedSymbolNames.Count)
+                {
+                    EditorGUILayout.LabelField(noPublicVariablesLabel);
+                    EditorGUI.indentLevel--;
+                    return;
+                }
+            }
+
+            foreach (string exportedSymbol in exportedSymbolNames)
+            {
+                System.Type symbolType = symbolTable.GetSymbolType(exportedSymbol);
+                if (publicVariables == null)
+                {
+                    DrawPublicVariableField(exportedSymbol, GetPublicVariableDefaultValue(exportedSymbol, null), symbolType, ref dirty, false);
+                    continue;
+                }
+
+                // todo: This can be removed with serialization changes as well since the type change will be handled once by the compile fixer
+                if (!publicVariables.TryGetVariableType(exportedSymbol, out System.Type declaredType) || declaredType != symbolType)
+                {
+                    publicVariables.RemoveVariable(exportedSymbol);
+                    if (!publicVariables.TryAddVariable(CreateUdonVariable(exportedSymbol, GetPublicVariableDefaultValue(exportedSymbol, null), symbolType)))
+                    {
+                        EditorGUILayout.LabelField($"Error drawing field for symbol '{exportedSymbol}'");
+                        continue;
+                    }
+                    dirty = true;
+                }
+
+                // This can also be removed
+                if (!publicVariables.TryGetVariableValue(exportedSymbol, out object variableValue))
+                {
+                    variableValue = GetPublicVariableDefaultValue(exportedSymbol, null);
+                    dirty = true;
+                }
+
+                variableValue = DrawPublicVariableField(exportedSymbol, variableValue, symbolType, ref dirty, true);
+                if (!dirty)
+                    continue;
+
+                Undo.RecordObject(behaviour, "Modify variable");
+
+                if (!publicVariables.TrySetVariableValue(exportedSymbol, variableValue))
+                {
+                    if (!publicVariables.TryAddVariable(CreateUdonVariable(exportedSymbol, variableValue, symbolType)))
+                    {
+                        Debug.LogError($"Failed to set public variable '{exportedSymbol}' value.");
+                    }
+                }
+
+                EditorSceneManager.MarkSceneDirty(behaviour.gameObject.scene);
+
+                if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+            }
+
+            EditorGUI.indentLevel--;
         }
 
         protected override void OnBeforeSerialize()
