@@ -151,6 +151,9 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Unsigned Integer Prefix Decrement", --testVal == 5);
             tester.TestAssertion("Unsigned Integer Postfix Decrement", testVal-- == 5);
             tester.TestAssertion("Unsigned Integer Postfix Decrement 2", testVal == 4);
+
+            testVal = 0;
+            tester.TestAssertion("UInt overflow", (testVal - 1u) == uint.MaxValue);
         }
 
         void IntAssignment()

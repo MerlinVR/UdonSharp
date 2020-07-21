@@ -34,7 +34,8 @@ namespace UdonSharp.Tests
             string formatStr3 = string.Format("{0}", objArr);
             tester.TestAssertion("FormatStr 3", formatStr3 == "MethodCalls (VRC.Udon.UdonBehaviour)");
 
-            //Debug.Log(string.Join(", ", this, this, this, this)); // Runtime exception `Function '__Join__SystemString_SystemObjectArray__SystemString' is not implemented yet`
+            tester.TestAssertion("String Join Objects params", string.Join(", ", this, this, this, this) == "MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour)"); 
+            tester.TestAssertion("String Join Objects array", string.Join(", ", new object[] { this, this, this, this }) == "MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour)"); 
         }
 
         //public void test(int a, bool b, float c = 5f, params float[] d)
