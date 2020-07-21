@@ -29,7 +29,7 @@ namespace UdonSharpEditor
 
         public static void RunPostBuildSceneFixup()
         {
-            UpdatePublicVariables();
+            UpdatePublicVariables(GetAllUdonBehaviours());
         }
 
         static List<UdonBehaviour> GetAllUdonBehaviours()
@@ -74,11 +74,8 @@ namespace UdonSharpEditor
             return behaviourList;
         }
 
-        static void UpdatePublicVariables(List<UdonBehaviour> udonBehaviours = null)
+        static void UpdatePublicVariables(List<UdonBehaviour> udonBehaviours)
         {
-            if (udonBehaviours == null)
-                udonBehaviours = GetAllUdonBehaviours();
-
             int updatedBehaviourVariables = 0;
 
             foreach (UdonBehaviour behaviour in udonBehaviours)
@@ -96,6 +93,7 @@ namespace UdonSharpEditor
                 {
                     try
                     {
+                        // Remove variables that have been removed from the program asset
                         FieldDefinition fieldDefinition;
                         if (!fieldDefinitions.TryGetValue(variableSymbol, out fieldDefinition))
                         {
@@ -148,7 +146,7 @@ namespace UdonSharpEditor
                     }
                     catch (Exception e)
                     {
-                        Debug.LogError($"Failed to convert variable {variableSymbol}, exception {e}");
+                        Debug.LogError($"Failed to update public variable {variableSymbol} on behaviour {behaviour}, exception {e}\n\nPlease report this error to Merlin!");
                     }
                 }
             }

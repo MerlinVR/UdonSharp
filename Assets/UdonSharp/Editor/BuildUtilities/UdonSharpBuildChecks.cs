@@ -39,8 +39,8 @@ namespace UdonSharp
                     return false;
                 }
             }
-             
-            return true; 
+            
+            return true;
         }
     }
 }

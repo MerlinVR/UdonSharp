@@ -6,6 +6,7 @@ using System.Reflection;
 using UdonSharpEditor;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEditorInternal;
 using UnityEngine;
 using VRC.Udon;
 using VRC.Udon.Common;
@@ -560,7 +561,7 @@ namespace UdonSharp
 
             GUIContent fieldLabel = null;
 
-            TooltipAttribute tooltip = fieldDefinition == null ? null : fieldDefinition.GetAttribute<TooltipAttribute>();
+            TooltipAttribute tooltip = fieldDefinition?.GetAttribute<TooltipAttribute>();
 
             if (tooltip != null)
                 fieldLabel = new GUIContent(fieldName, tooltip.tooltip);
@@ -841,6 +842,8 @@ namespace UdonSharp
             }
             else if (declaredType == typeof(LayerMask)) // Lazy layermask support, todo: make it more like the editor layer mask and also don't do all these LINQ operations and such every draw
             {
+                // Using 'Everything' with this method does not actually enable all layers correctly when you have unused layers so it's not a functional solution
+                //return InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(EditorGUILayout.MaskField(fieldLabel, InternalEditorUtility.LayerMaskToConcatenatedLayersMask((LayerMask?)value ?? default), InternalEditorUtility.layers));
                 return (LayerMask)EditorGUILayout.MaskField(fieldLabel, (LayerMask?)value ?? default, Enumerable.Range(0, 32).Select(e => LayerMask.LayerToName(e).Length > 0 ? e + ": " + LayerMask.LayerToName(e) : "").ToArray());
             }
             else if (declaredType.IsEnum)
@@ -881,7 +884,7 @@ namespace UdonSharp
                 if (stringVal.Length > 0)
                     return stringVal[0];
                 else
-                    return value;
+                    return (char?)value ?? default;
             }
             else if (declaredType == typeof(uint))
             {
@@ -906,6 +909,12 @@ namespace UdonSharp
             else if (declaredType == typeof(ushort))
             {
                 return (ushort)Mathf.Clamp(EditorGUILayout.IntField(fieldLabel, (ushort?)value ?? default), ushort.MinValue, ushort.MaxValue);
+            }
+            else if (declaredType == typeof(VRC.SDKBase.VRCUrl))
+            {
+                VRC.SDKBase.VRCUrl url = (VRC.SDKBase.VRCUrl)value ?? new VRC.SDKBase.VRCUrl();
+                url.Set(EditorGUILayout.TextField(fieldLabel, url.Get()));
+                return url;
             }
             else
             {
@@ -1057,19 +1066,8 @@ namespace UdonSharp
             }
             
             IUdonSymbolTable symbolTable = program.SymbolTable;
-
-            // todo: This will be removed with serialization update which has handling for updating variables on compile instead which is more reliable.
+            
             string[] exportedSymbolNames = symbolTable.GetExportedSymbols(); 
-
-            if (publicVariables != null)
-            {
-                foreach (string variableSymbol in publicVariables.VariableSymbols.ToArray())
-                {
-                    if (!exportedSymbolNames.Contains(variableSymbol))
-                        publicVariables.RemoveVariable(variableSymbol);
-                }
-            }
-            // End remove block
 
             if (exportedSymbolNames.Length == 0)
             {
@@ -1109,18 +1107,6 @@ namespace UdonSharp
                 {
                     DrawPublicVariableField(exportedSymbol, GetPublicVariableDefaultValue(exportedSymbol, null), symbolType, ref dirty, false);
                     continue;
-                }
-
-                // todo: This can be removed with serialization changes as well since the type change will be handled once by the compile fixer
-                if (!publicVariables.TryGetVariableType(exportedSymbol, out System.Type declaredType) || declaredType != symbolType)
-                {
-                    publicVariables.RemoveVariable(exportedSymbol);
-                    if (!publicVariables.TryAddVariable(CreateUdonVariable(exportedSymbol, GetPublicVariableDefaultValue(exportedSymbol, null), symbolType)))
-                    {
-                        EditorGUILayout.LabelField($"Error drawing field for symbol '{exportedSymbol}'");
-                        continue;
-                    }
-                    dirty = true;
                 }
 
                 // This can also be removed

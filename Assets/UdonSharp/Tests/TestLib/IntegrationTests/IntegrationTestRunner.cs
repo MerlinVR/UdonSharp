@@ -14,10 +14,14 @@ namespace UdonSharp.Tests
 
         public IntegrationTestSuite[] integrationTests;
 
+        public LayerMask mask;
+
         void Start()
         {
             if (runTestOnStart)
                 RunTests();
+
+            Debug.Log((int)mask);
         }
 
         public override void Interact()
