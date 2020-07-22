@@ -16,9 +16,9 @@ namespace UdonSharp.Serialization
     {
         const string RUNTIME_ASSEMBLY_NAME = "UdonSharp.Serialization.RuntimeEmittedFormatters";
 
-        public delegate void ReadDataMethodDelegate<T>(IValueStorage[] sourceObject, ref T targetObject);
+        public delegate void ReadDataMethodDelegate<T>(IValueStorage[] sourceObject, ref T targetObject, bool includeNonSerialized);
 
-        public delegate void WriteDataMethodDelegate<T>(IValueStorage[] targetObject, ref T sourceObject);
+        public delegate void WriteDataMethodDelegate<T>(IValueStorage[] targetObject, ref T sourceObject, bool includeNonSerialized);
 
         // Force a ref equality lookup in case VRC implements an Equals or GetHashCode overrides in the future that don't act like we need them to
         class RefEqualityComparer<RefT> : EqualityComparer<RefT> where RefT : class
@@ -35,7 +35,7 @@ namespace UdonSharp.Serialization
             }
             else
             {
-                throw new System.NotImplementedException();
+                return new UdonVariableStorageInterface(behaviour);
             }
         }
 
@@ -108,12 +108,12 @@ namespace UdonSharp.Serialization
 
             public override void Read(ref T targetObject, IValueStorage sourceObject)
             {
-                readDelegate(UdonSharpBehaviourFormatterManager.GetHeapData((UdonBehaviour)sourceObject.Value).heapFieldValues, ref targetObject);
+                readDelegate(UdonSharpBehaviourFormatterManager.GetHeapData((UdonBehaviour)sourceObject.Value).heapFieldValues, ref targetObject, EditorApplication.isPlaying);
             }
 
             public override void Write(IValueStorage targetObject, T sourceObject)
             {
-                writeDelegate(UdonSharpBehaviourFormatterManager.GetHeapData((UdonBehaviour)targetObject.Value).heapFieldValues, ref sourceObject);
+                writeDelegate(UdonSharpBehaviourFormatterManager.GetHeapData((UdonBehaviour)targetObject.Value).heapFieldValues, ref sourceObject, EditorApplication.isPlaying);
             }
         }
 
@@ -133,8 +133,29 @@ namespace UdonSharp.Serialization
                     return (Formatter<T>)formatter;
                 }
 
-                FieldInfo[] publicFields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-                FieldInfo[] privateFields = typeof(T).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                //FieldInfo[] publicFields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                //FieldInfo[] privateFields = typeof(T).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+                List<FieldInfo> serializedFieldList = new List<FieldInfo>();
+                List<FieldInfo> nonSerializedFieldList = new List<FieldInfo>();
+
+                FieldInfo[] allFields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+                foreach (FieldInfo field in allFields)
+                {
+                    if ((field.IsPublic && field.GetAttribute<System.NonSerializedAttribute>() == null) ||
+                        (!field.IsPublic && field.GetAttribute<SerializeField>() != null))
+                    {
+                        serializedFieldList.Add(field);
+                    }
+                    else
+                    {
+                        nonSerializedFieldList.Add(field);
+                    }
+                }
+
+                FieldInfo[] publicFields = serializedFieldList.ToArray();
+                FieldInfo[] privateFields = nonSerializedFieldList.ToArray();
                 
                 EmittedFormatter<T>.Init(publicFields, privateFields);
 
@@ -151,7 +172,7 @@ namespace UdonSharp.Serialization
                 {
                     System.Type readDelegateType = typeof(ReadDataMethodDelegate<>).MakeGenericType(typeof(T));
                     MethodInfo readDataMethod = formatterType.GetMethods(Flags.InstancePublic).Where(e => e.Name == "Read" && e.GetParameters().Length == 2).First();
-                    DynamicMethod readMethod = new DynamicMethod($"Dynamic_{typeof(T).GetCompilableNiceFullName()}_Read", null, new[] { typeof(IValueStorage[]), typeof(T).MakeByRefType() }, true);
+                    DynamicMethod readMethod = new DynamicMethod($"Dynamic_{typeof(T).GetCompilableNiceFullName()}_Read", null, new[] { typeof(IValueStorage[]), typeof(T).MakeByRefType(), typeof(bool) }, true);
 
                     foreach (ParameterInfo param in readDataMethod.GetParameters())
                         readMethod.DefineParameter(param.Position, param.Attributes, param.Name);
@@ -165,7 +186,7 @@ namespace UdonSharp.Serialization
                 {
                     System.Type writeDelegateType = typeof(WriteDataMethodDelegate<>).MakeGenericType(typeof(T));
                     MethodInfo writeDataMethod = formatterType.GetMethods(Flags.InstancePublic).Where(e => e.Name == "Write" && e.GetParameters().Length == 2).First();
-                    DynamicMethod writeMethod = new DynamicMethod($"Dynamic_{typeof(T).GetCompilableNiceFullName()}_Write", null, new[] { typeof(IValueStorage[]), typeof(T).MakeByRefType() }, true);
+                    DynamicMethod writeMethod = new DynamicMethod($"Dynamic_{typeof(T).GetCompilableNiceFullName()}_Write", null, new[] { typeof(IValueStorage[]), typeof(T).MakeByRefType(), typeof(bool) }, true);
 
                     foreach (ParameterInfo param in writeDataMethod.GetParameters())
                         writeMethod.DefineParameter(param.Position, param.Attributes, param.Name);
@@ -230,7 +251,7 @@ namespace UdonSharp.Serialization
 
             {
                 MethodInfo serializerCreateMethod = typeof(Serializer).GetMethod("CreatePooled", Flags.StaticPublic, null, new System.Type[] { }, null);
-                MethodInfo typeofMethod = typeof(System.Type).GetMethod("GetTypeFromHandle", Flags.StaticPublic, null, new[] { typeof(System.RuntimeTypeHandle) }, null);
+                //MethodInfo typeofMethod = typeof(System.Type).GetMethod("GetTypeFromHandle", Flags.StaticPublic, null, new[] { typeof(System.RuntimeTypeHandle) }, null);
                 ConstructorBuilder staticConstructor = typeBuilder.DefineTypeInitializer();
                 ILGenerator generator = staticConstructor.GetILGenerator();
 
@@ -290,11 +311,11 @@ namespace UdonSharp.Serialization
                                    FieldInfo[] privateFields, 
                                    Dictionary<System.Type, FieldBuilder> serializerFields)
         {
-            FieldInfo[] allFields = publicFields.Append(privateFields).ToArray();
+            Label skipNonSerializedLabel = generator.DefineLabel();
 
-            for (int i = 0; i < allFields.Length; ++i)
+            for (int i = 0; i < publicFields.Length; ++i)
             {
-                FieldInfo currentField = allFields[i];
+                FieldInfo currentField = publicFields[i];
                 FieldBuilder serializerField = serializerFields[currentField.FieldType];
                 generator.Emit(OpCodes.Ldsfld, serializerField); // Load serializer field
                 
@@ -309,6 +330,28 @@ namespace UdonSharp.Serialization
                 generator.Emit(OpCodes.Callvirt, serializerField.FieldType.GetMethod("Read")); // Call the serializer's Read method
             }
 
+            generator.Emit(OpCodes.Ldarg_2); // load includeNonSerialized bool arg
+            generator.Emit(OpCodes.Brfalse_S, skipNonSerializedLabel); // Jump to exit if includeNonSerialized is false
+
+            for (int i = 0; i < privateFields.Length; ++i)
+            {
+                FieldInfo currentField = privateFields[i];
+                FieldBuilder serializerField = serializerFields[currentField.FieldType];
+                generator.Emit(OpCodes.Ldsfld, serializerField); // Load serializer field
+
+                generator.Emit(OpCodes.Ldarg_1); // Load the serialized type arg
+                generator.Emit(OpCodes.Ldind_Ref); // Read by ref type
+                generator.Emit(OpCodes.Ldflda, currentField); // Get field address to read to
+
+                generator.Emit(OpCodes.Ldarg_0); // Load the IValueStorage array
+                EmitConstInt(generator, i + publicFields.Length); // Emit the element index
+                generator.Emit(OpCodes.Ldelem_Ref); // Read element, push to stack
+
+                generator.Emit(OpCodes.Callvirt, serializerField.FieldType.GetMethod("Read")); // Call the serializer's Read method
+            }
+
+            generator.MarkLabel(skipNonSerializedLabel);
+
             generator.Emit(OpCodes.Ret);
         }
 
@@ -318,11 +361,11 @@ namespace UdonSharp.Serialization
                                     FieldInfo[] privateFields,
                                     Dictionary<System.Type, FieldBuilder> serializerFields)
         {
-            FieldInfo[] allFields = publicFields.Append(privateFields).ToArray();
+            Label skipNonSerializedLabel = generator.DefineLabel();
 
-            for (int i = 0; i < allFields.Length; ++i)
+            for (int i = 0; i < publicFields.Length; ++i)
             {
-                FieldInfo currentField = allFields[i];
+                FieldInfo currentField = publicFields[i];
                 FieldBuilder serializerField = serializerFields[currentField.FieldType];
                 generator.Emit(OpCodes.Ldsfld, serializerField); // Load serializer field
                 
@@ -337,6 +380,27 @@ namespace UdonSharp.Serialization
                 generator.Emit(OpCodes.Callvirt, serializerField.FieldType.GetMethod("Write")); // Call the serializer's Write method
             }
 
+            generator.Emit(OpCodes.Ldarg_2); // load includeNonSerialized bool arg
+            generator.Emit(OpCodes.Brfalse_S, skipNonSerializedLabel); // Jump to exit if includeNonSerialized is false
+
+            for (int i = 0; i < privateFields.Length; ++i)
+            {
+                FieldInfo currentField = privateFields[i];
+                FieldBuilder serializerField = serializerFields[currentField.FieldType];
+                generator.Emit(OpCodes.Ldsfld, serializerField); // Load serializer field
+
+                generator.Emit(OpCodes.Ldarg_0); // Load the IValueStorage array
+                EmitConstInt(generator, i + publicFields.Length); // Emit the element index
+                generator.Emit(OpCodes.Ldelem_Ref); // Read element, push to stack
+
+                generator.Emit(OpCodes.Ldarg_1); // Load the serialized type arg
+                generator.Emit(OpCodes.Ldind_Ref); // Read by ref type
+                generator.Emit(OpCodes.Ldflda, currentField); // Get field address to read from
+
+                generator.Emit(OpCodes.Callvirt, serializerField.FieldType.GetMethod("Write")); // Call the serializer's Write method
+            }
+
+            generator.MarkLabel(skipNonSerializedLabel);
             generator.Emit(OpCodes.Ret);
         }
     }

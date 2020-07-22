@@ -15,7 +15,7 @@ public class ClassSerializer : MonoBehaviour
 
     void Init()
     {
-        if (ranInit)
+        if (Application.isPlaying && ranInit)
             return;
 
         cComponent = GetComponent<SerializedClassTest>();

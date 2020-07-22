@@ -13,7 +13,7 @@ public class SerializedClassTest : UdonSharpBehaviour
     public int defaultVal = 45;
     public int defaultVal2 = 600;
 
-    public sbyte sbyteVal = 4;
+    public sbyte sbyteVal = 5;
 
     public char charField = 'a';
 
@@ -25,7 +25,7 @@ public class SerializedClassTest : UdonSharpBehaviour
 
     void Start()
     {
-        Debug.Log(sbyteVal);
+        //Debug.Log(sbyteVal);
         //jagged = new int[][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
 
@@ -43,4 +43,8 @@ public class SerializedClassTest : UdonSharpBehaviour
             }
         }
     }
+
+    //public override void Interact()
+    //{
+    //}
 }

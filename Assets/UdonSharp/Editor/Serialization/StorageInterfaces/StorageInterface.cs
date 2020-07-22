@@ -1,5 +1,4 @@
 ﻿
-using System;
 
 namespace UdonSharp.Serialization
 {
@@ -23,23 +22,12 @@ namespace UdonSharp.Serialization
 
         void SetElementValue<T>(string elementKey, T value);
 
-        /// <summary>
-        /// Marks all the IStorageElementRef's created as dirty because the format of the underlying storage has potentially changed from a compile or something else.
-        /// </summary>
-        void InvalidateInterface();
-
         IValueStorage GetElementStorage(string elementKey);
     }
 
     public interface IValueStorage
     {
         object Value { get; set; }
-
-        /// <summary>
-        /// Invalidates the underlying value storage
-        /// If this is a complex storage type that references a heap that may have been modified, this allows it to update to the changes in the heap
-        /// </summary>
-        void InvalidateStorage();
     }
 
     public abstract class ValueStorage<T> : IValueStorage
@@ -49,8 +37,6 @@ namespace UdonSharp.Serialization
         object IValueStorage.Value { get { return Value; } set => Value = (T)value; }
 
         public System.Type ValueType { get { return typeof(T); } }
-
-        public abstract void InvalidateStorage();
     }
 
     /// <summary>
@@ -71,8 +57,6 @@ namespace UdonSharp.Serialization
         {
             _value = value;
         }
-
-        public override void InvalidateStorage() { }
     }
 
     public static class ValueStorageUtil

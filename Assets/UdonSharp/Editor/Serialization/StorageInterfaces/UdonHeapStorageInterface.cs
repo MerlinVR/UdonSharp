@@ -42,11 +42,6 @@ namespace UdonSharp.Serialization
                     heap.SetHeapVariable<T>(symbolAddress, value);
                 }
             }
-
-            public override void InvalidateStorage()
-            {
-                throw new System.NotImplementedException();
-            }
         }
 
         UdonBehaviour behaviour;
@@ -133,10 +128,7 @@ namespace UdonSharp.Serialization
 
         public void InvalidateInterface()
         {
-            foreach (IValueStorage value in heapValueRefs)
-            {
-                value.InvalidateStorage();
-            }
+
         }
 
         public IValueStorage GetElementStorage(string elementKey)
