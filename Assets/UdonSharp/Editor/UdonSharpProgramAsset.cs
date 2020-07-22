@@ -295,17 +295,22 @@ namespace UdonSharp
 
         public static void CompileAllCsPrograms()
         {
+            UdonSharpCompiler compiler = new UdonSharpCompiler(GetAllUdonSharpPrograms());
+            compiler.Compile();
+        }
+
+        public static UdonSharpProgramAsset[] GetAllUdonSharpPrograms()
+        {
             string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
 
-            List<UdonSharpProgramAsset> udonSharpPrograms = new List<UdonSharpProgramAsset>();
+            UdonSharpProgramAsset[] udonSharpPrograms = new UdonSharpProgramAsset[udonSharpDataAssets.Length];
 
-            foreach (string dataGuid in udonSharpDataAssets)
+            for (int i = 0; i < udonSharpPrograms.Length; ++i)
             {
-                udonSharpPrograms.Add(AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid)));
+                udonSharpPrograms[i] = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(udonSharpDataAssets[i]));
             }
 
-            UdonSharpCompiler compiler = new UdonSharpCompiler(udonSharpPrograms.ToArray());
-            compiler.Compile();
+            return udonSharpPrograms;
         }
 
         static UdonEditorInterface editorInterfaceInstance;

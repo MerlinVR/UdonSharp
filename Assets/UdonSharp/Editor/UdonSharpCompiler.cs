@@ -453,14 +453,7 @@ namespace UdonSharp
 
         private List<ClassDefinition> BuildClassDefinitions()
         {
-            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
-
-            List<UdonSharpProgramAsset> udonSharpPrograms = new List<UdonSharpProgramAsset>();
-
-            foreach (string dataGuid in udonSharpDataAssets)
-            {
-                udonSharpPrograms.Add(AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid)));
-            }
+            UdonSharpProgramAsset[] udonSharpPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
 
             List<ClassDefinition> classDefinitions = new List<ClassDefinition>();
 
