@@ -133,9 +133,6 @@ namespace UdonSharp.Serialization
                     return (Formatter<T>)formatter;
                 }
 
-                //FieldInfo[] publicFields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-                //FieldInfo[] privateFields = typeof(T).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-
                 List<FieldInfo> serializedFieldList = new List<FieldInfo>();
                 List<FieldInfo> nonSerializedFieldList = new List<FieldInfo>();
 

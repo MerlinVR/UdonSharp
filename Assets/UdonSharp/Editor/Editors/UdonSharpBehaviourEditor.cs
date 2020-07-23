@@ -71,7 +71,7 @@ namespace UdonSharpEditor
 
             if (GUILayout.Button("Convert to UdonBehaviour", GUILayout.Height(25)))
             {
-                UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(Array.ConvertAll(targets, e => e as UdonSharpBehaviour), true, true);
+                USharpEditorUtility.ConvertToUdonBehavioursInternal(Array.ConvertAll(targets, e => e as UdonSharpBehaviour), true, true);
 
                 return;
             }
@@ -209,12 +209,6 @@ namespace UdonSharpEditor
 
         public override void OnInspectorGUI()
         {
-            if (serializedAssetField == null)
-            {
-                serializedAssetField = typeof(UdonBehaviour).GetField("serializedProgramAsset", BindingFlags.NonPublic | BindingFlags.Instance);
-                hasInteractField = typeof(UdonSharpProgramAsset).GetField("hasInteractEvent", BindingFlags.NonPublic | BindingFlags.Instance);
-            }
-
             UdonBehaviour behaviour = target as UdonBehaviour;
 
             // Fall back to the default Udon inspector if not a U# behaviour
@@ -241,9 +235,14 @@ namespace UdonSharpEditor
                 return;
             }
 
+            if (serializedAssetField == null)
+            {
+                serializedAssetField = typeof(UdonBehaviour).GetField("serializedProgramAsset", BindingFlags.NonPublic | BindingFlags.Instance);
+                hasInteractField = typeof(UdonSharpProgramAsset).GetField("hasInteractEvent", BindingFlags.NonPublic | BindingFlags.Instance);
+            }
+
             // Program source
-            EditorGUI.BeginDisabledGroup(Application.isPlaying);
-            
+            EditorGUI.BeginDisabledGroup(true);
             EditorGUI.BeginChangeCheck();
             AbstractUdonProgramSource newProgramSource = (AbstractUdonProgramSource)EditorGUILayout.ObjectField("Program Source", behaviour.programSource, typeof(AbstractUdonProgramSource), false);
             if (EditorGUI.EndChangeCheck())
@@ -254,10 +253,9 @@ namespace UdonSharpEditor
             }
 
             EditorGUI.indentLevel++;
-            EditorGUI.BeginDisabledGroup(true);
             EditorGUILayout.ObjectField("Program Script", ((UdonSharpProgramAsset)behaviour.programSource)?.sourceCsScript, typeof(MonoScript), false);
-            EditorGUI.EndDisabledGroup();
             EditorGUI.indentLevel--;
+            EditorGUI.EndDisabledGroup();
 
             // Sync settings
             EditorGUI.BeginChangeCheck();
@@ -273,6 +271,8 @@ namespace UdonSharpEditor
             //    newCollisionTransfer = EditorGUILayout.Toggle(ownershipTransferOnCollisionContent, false);
             //    EditorGUI.EndDisabledGroup();
             //}
+
+            EditorGUI.BeginDisabledGroup(Application.isPlaying);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -304,11 +304,23 @@ namespace UdonSharpEditor
                 EditorGUI.EndDisabledGroup();
             }
 
-            DrawPublicVariables(behaviour);
+            UdonSharpProgramAsset udonSharpProgramAsset = (UdonSharpProgramAsset)behaviour.programSource;
+
+            //Color lineColor = new Color32(128, 128, 128, 255);
+            //UdonSharpGUI.DrawUILine(lineColor, 2, 4);
+            EditorGUILayout.Space();
+            
+            //DrawPublicVariables(behaviour);
+
+            udonSharpProgramAsset.DrawErrorTextAreas();
 
             bool dirty = false;
-            behaviour.RunEditorUpdate(ref dirty);
+            int fieldCount = UdonSharpGUI.DrawPublicVariables(behaviour, udonSharpProgramAsset, ref dirty);
+            
+            if (fieldCount > 0)
+                EditorGUILayout.Space();
 
+            UdonSharpGUI.DrawUtilities(behaviour, udonSharpProgramAsset);
         }
 
         void DrawPublicVariables(UdonBehaviour behaviour)

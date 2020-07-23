@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using UdonSharp;
+using UdonSharp.Serialization;
 using UnityEditor;
 using UnityEngine;
 using VRC.Udon;
@@ -13,7 +14,7 @@ using VRC.Udon.Editor.ProgramSources;
 
 namespace UdonSharpEditor
 {
-    public static class UdonSharpEditorUtility
+    public static class USharpEditorUtility
     {
         /// <summary>
         /// Creates a new UdonAssemblyProgramAsset from an UdonSharpProgramAsset for the sake of portability. Most info used for the inspector gets stripped so this isn't a great solution for remotely complex assets.
@@ -25,7 +26,7 @@ namespace UdonSharpEditor
         public static UdonAssemblyProgramAsset UdonSharpProgramToAssemblyProgram(UdonSharpProgramAsset udonSharpProgramAsset, string savePath)
         {
             if (EditorApplication.isPlaying)
-                throw new System.NotSupportedException("UdonSharpEditorUtility.UdonSharpProgramToAssemblyProgram() cannot be called in play mode");
+                throw new System.NotSupportedException("USharpEditorUtility.UdonSharpProgramToAssemblyProgram() cannot be called in play mode");
 
             UdonAssemblyProgramAsset newProgramAsset = ScriptableObject.CreateInstance<UdonAssemblyProgramAsset>();
             AssetDatabase.CreateAsset(newProgramAsset, savePath);
@@ -130,7 +131,7 @@ namespace UdonSharpEditor
             return ConvertToUdonBehavioursInternal(components, true, false);
         }
 
-        private static UdonSharpProgramAsset GetUdonSharpProgram(MonoScript programScript)
+        private static UdonSharpProgramAsset GetUdonSharpProgramAsset(MonoScript programScript)
         {
             string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
 
@@ -147,6 +148,12 @@ namespace UdonSharpEditor
             return null;
         }
 
+        [PublicAPI]
+        public static UdonSharpProgramAsset GetUdonSharpProgramAsset(UdonSharpBehaviour udonSharpBehaviour)
+        {
+            return GetUdonSharpProgramAsset(MonoScript.FromMonoBehaviour(udonSharpBehaviour));
+        }
+
         internal static UdonBehaviour[] ConvertToUdonBehavioursInternal(UdonSharpBehaviour[] components, bool shouldUndo, bool createScriptPrompt)
         {
             components = components.Distinct().ToArray();
@@ -158,7 +165,7 @@ namespace UdonSharpEditor
             foreach (UdonSharpBehaviour targetObject in components)
             {
                 MonoScript behaviourScript = MonoScript.FromMonoBehaviour(targetObject);
-                UdonSharpProgramAsset programAsset = GetUdonSharpProgram(behaviourScript);
+                UdonSharpProgramAsset programAsset = GetUdonSharpProgramAsset(behaviourScript);
 
                 if (programAsset == null)
                 {
@@ -207,6 +214,104 @@ namespace UdonSharpEditor
             }
 
             return createdComponents.ToArray();
+        }
+
+        private static readonly FieldInfo _backingBehaviourField = typeof(UdonSharpBehaviour).GetField("_backingUdonBehaviour", BindingFlags.NonPublic | BindingFlags.Instance);
+        internal static UdonBehaviour GetBackingUdonBehaviour(UdonSharpBehaviour behaviour)
+        {
+            return (UdonBehaviour)_backingBehaviourField.GetValue(behaviour);
+        }
+
+        internal static void SetBackingUdonBehaviour(UdonSharpBehaviour behaviour, UdonBehaviour backingBehaviour)
+        {
+            _backingBehaviourField.SetValue(behaviour, backingBehaviour);
+        }
+
+        /// <summary>
+        /// Returns true if the given behaviour is a proxy behaviour that's linked to an UdonBehaviour.
+        /// Proxy behaviours are used to interact with Udon heap data using a C# proxy of the UdonBehaviour's UdonSharpProgramAsset program, 
+        ///   and should not be used to do anything other than interact with this data
+        /// </summary>
+        /// <param name="behaviour"></param>
+        /// <returns></returns>
+        [PublicAPI]
+        public static bool IsProxyBehaviour(UdonSharpBehaviour behaviour)
+        {
+            return GetBackingUdonBehaviour(behaviour) != null;
+        }
+
+        static Dictionary<UdonBehaviour, UdonSharpBehaviour> _proxyBehaviourLookup = new Dictionary<UdonBehaviour, UdonSharpBehaviour>();
+
+        /// <summary>
+        /// Gets the C# version of an UdonSharpBehaviour that proxies an UdonBehaviour with the program asset for the matching UdonSharpBehaviour type
+        /// </summary>
+        /// <param name="udonBehaviour"></param>
+        /// <returns></returns>
+        [PublicAPI]
+        public static UdonSharpBehaviour GetProxyBehaviour(UdonBehaviour udonBehaviour)
+        {
+            if (udonBehaviour == null)
+                throw new System.ArgumentNullException("Source Udon Behaviour cannot be null");
+
+            if (udonBehaviour.programSource == null)
+                throw new System.ArgumentNullException("Program source on UdonBehaviour cannot be null");
+
+            UdonSharpProgramAsset udonSharpProgram = udonBehaviour.programSource as UdonSharpProgramAsset;
+
+            if (udonSharpProgram == null)
+                throw new System.ArgumentException("UdonBehaviour must be using an UdonSharp program");
+
+            UdonSharpBehaviour proxyBehaviour;
+            if (_proxyBehaviourLookup.TryGetValue(udonBehaviour, out proxyBehaviour))
+                return proxyBehaviour;
+
+            UdonSharpBehaviour[] behaviours = udonBehaviour.GetComponents<UdonSharpBehaviour>();
+
+            foreach (UdonSharpBehaviour udonSharpBehaviour in behaviours)
+            {
+                IUdonBehaviour backingBehaviour = GetBackingUdonBehaviour(udonSharpBehaviour);
+                if (ReferenceEquals(backingBehaviour, udonBehaviour))
+                {
+                    _proxyBehaviourLookup.Add(udonBehaviour, udonSharpBehaviour);
+                    return udonSharpBehaviour;
+                }
+            }
+
+            // We've failed to find an existing proxy behaviour so we need to create one
+            System.Type scriptType = udonSharpProgram.sourceCsScript.GetClass();
+
+            proxyBehaviour = (UdonSharpBehaviour)udonBehaviour.gameObject.AddComponent(scriptType);
+            proxyBehaviour.hideFlags = HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor | HideFlags.HideInInspector;
+            proxyBehaviour.enabled = false;
+
+            SetBackingUdonBehaviour(proxyBehaviour, udonBehaviour);
+
+            _proxyBehaviourLookup.Add(udonBehaviour, proxyBehaviour);
+
+            return proxyBehaviour;
+        }
+
+        [PublicAPI]
+        public static void WriteProxyToBacker<T>(T proxy) where T : UdonSharpBehaviour
+        {
+            SimpleValueStorage<UdonBehaviour> udonBehaviourStorage = new SimpleValueStorage<UdonBehaviour>(GetBackingUdonBehaviour(proxy));
+            Serializer.CreatePooled<T>().Write(udonBehaviourStorage, proxy);
+        }
+
+        [PublicAPI]
+        public static UdonBehaviour CreateBehavourForProxy<T>(T udonSharpBehaviour) where T : UdonSharpBehaviour
+        {
+            UdonBehaviour backingBehaviour = GetBackingUdonBehaviour(udonSharpBehaviour);
+
+            if (backingBehaviour == null)
+            {
+                backingBehaviour = udonSharpBehaviour.gameObject.AddComponent<UdonBehaviour>();
+                backingBehaviour.programSource = GetUdonSharpProgramAsset(udonSharpBehaviour);
+            }
+
+            WriteProxyToBacker<T>(udonSharpBehaviour);
+
+            return backingBehaviour;
         }
     }
 }
