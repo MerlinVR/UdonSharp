@@ -1,4 +1,5 @@
-﻿using System;
+﻿using JetBrains.Annotations;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -97,6 +98,7 @@ namespace UdonSharpEditor
             return editorState;
         }
 
+        [PublicAPI]
         public static void DrawUtilities(UdonBehaviour udonBehaviour, UdonSharpProgramAsset programAsset)
         {
             USharpEditorState editorState = GetEditorState(programAsset);
@@ -149,7 +151,7 @@ namespace UdonSharpEditor
 
                     if (savePath.Length > 0)
                     {
-                        USharpEditorUtility.UdonSharpProgramToAssemblyProgram(programAsset, savePath);
+                        UdonSharpEditorUtility.UdonSharpProgramToAssemblyProgram(programAsset, savePath);
                     }
                 }
                 EditorGUI.EndDisabledGroup();
@@ -753,7 +755,7 @@ namespace UdonSharpEditor
             return value;
         }
 
-        public static object DrawPublicVariableField(UdonBehaviour currentBehaviour, UdonSharpProgramAsset programAsset, string symbol, object variableValue, Type variableType, ref bool dirty, bool enabled)
+        private static object DrawPublicVariableField(UdonBehaviour currentBehaviour, UdonSharpProgramAsset programAsset, string symbol, object variableValue, Type variableType, ref bool dirty, bool enabled)
         {
             bool shouldUseRuntimeValue = EditorApplication.isPlaying && currentBehaviour != null && GUI.enabled; // GUI.enabled is determined in DrawProgramSourceGUI
 
@@ -868,7 +870,8 @@ namespace UdonSharpEditor
             return variableValue;
         }
 
-        public static int DrawPublicVariables(UdonBehaviour behaviour, UdonSharpProgramAsset programAsset, ref bool dirty)
+        [PublicAPI]
+        public static void DrawPublicVariables(UdonBehaviour behaviour, UdonSharpProgramAsset programAsset, ref bool dirty)
         {
             SetupGUI();
 
@@ -890,7 +893,7 @@ namespace UdonSharpEditor
             IUdonProgram program = programAsset?.GetRealProgram();
             if (program?.SymbolTable == null)
             {
-                return 0;
+                return;
             }
 
             IUdonSymbolTable symbolTable = program.SymbolTable;
@@ -899,7 +902,7 @@ namespace UdonSharpEditor
 
             if (exportedSymbolNames.Length == 0)
             {
-                return 0;
+                return;
             }
 
             foreach (string exportedSymbol in exportedSymbolNames)
@@ -937,22 +940,22 @@ namespace UdonSharpEditor
                 if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
                     PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
             }
-
-            return exportedSymbolNames.Length;
         }
 
-        //public static void DrawUILine(Color color, int thickness = 2, int padding = 10)
-        //{
-        //    Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(padding + thickness));
-        //    r.height = thickness;
-        //    r.y += padding / 2;
-        //    r.x -= 2;
-        //    r.width += 6;
-        //    EditorGUI.DrawRect(r, color);
-        //}
-        
+        // https://forum.unity.com/threads/horizontal-line-in-editor-window.520812/#post-3534861
+        public static void DrawUILine(Color color, int thickness = 2, int padding = 10)
+        {
+            Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(padding + thickness));
+            r.height = thickness;
+            r.y += padding / 2;
+            r.x -= 2;
+            r.width += 6;
+            EditorGUI.DrawRect(r, color);
+        }
+
         static FieldInfo serializedAssetField;
         // Returns if the rest of the inspector drawing should early out due to an empty program script
+        [PublicAPI]
         public static bool DrawProgramSource(UdonBehaviour behaviour)
         {
             if (serializedAssetField == null)
@@ -992,36 +995,35 @@ namespace UdonSharpEditor
 
         static readonly GUIContent ownershipTransferOnCollisionContent = new GUIContent("Allow Ownership Transfer on Collision",
                                                                                         "Transfer ownership on collision, requires a Collision component on the same game object");
-
+        [PublicAPI]
         public static void DrawSyncSettings(UdonBehaviour behaviour)
         {
             EditorGUI.BeginChangeCheck();
+
+            EditorGUI.BeginDisabledGroup(Application.isPlaying);
             bool newSyncPos = EditorGUILayout.Toggle("Synchronize Position", behaviour.SynchronizePosition);
             bool newCollisionTransfer = behaviour.AllowCollisionOwnershipTransfer;
             if (behaviour.GetComponent<Collider>() != null)
             {
                 newCollisionTransfer = EditorGUILayout.Toggle(ownershipTransferOnCollisionContent, behaviour.AllowCollisionOwnershipTransfer);
             }
-
-            EditorGUI.BeginDisabledGroup(Application.isPlaying);
+            EditorGUI.EndDisabledGroup();
 
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(behaviour, "Change sync setting");
                 behaviour.SynchronizePosition = newSyncPos;
                 behaviour.AllowCollisionOwnershipTransfer = newCollisionTransfer;
+
+                if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
             }
-
-            EditorGUI.EndDisabledGroup();
         }
-
-        static FieldInfo hasInteractField;
+        
+        [PublicAPI]
         public static void DrawInteractSettings(UdonBehaviour behaviour)
         {
-            if (hasInteractField == null)
-                hasInteractField = typeof(UdonSharpProgramAsset).GetField("hasInteractEvent", BindingFlags.NonPublic | BindingFlags.Instance);
-
-            if ((bool)hasInteractField.GetValue(behaviour.programSource))
+            if (((UdonSharpProgramAsset)behaviour.programSource).hasInteractEvent)
             {
                 EditorGUI.BeginChangeCheck();
                 string newInteractText = EditorGUILayout.TextField("Interaction Text", behaviour.interactText);
@@ -1033,13 +1035,34 @@ namespace UdonSharpEditor
 
                     behaviour.interactText = newInteractText;
                     behaviour.proximity = newProximity;
+
+                    if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
                 }
 
                 EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
-                if (GUILayout.Button("Trigger Interact", GUILayout.Height(22f)))
+                if (GUILayout.Button("Trigger Interact"/*, GUILayout.Height(22f)*/))
                     behaviour.SendCustomEvent("_interact");
                 EditorGUI.EndDisabledGroup();
             }
+        }
+
+        [PublicAPI]
+        public static bool DrawConvertToUdonBehaviourButton(UdonSharpBehaviour target)
+        {
+            if (!UdonSharpEditorUtility.IsProxyBehaviour(target))
+            {
+                EditorGUILayout.HelpBox("Udon Sharp Behaviours need to be converted to Udon Behaviours to work in game. Click the convert button below to automatically convert the script.", MessageType.Warning);
+
+                if (GUILayout.Button("Convert to UdonBehaviour", GUILayout.Height(25)))
+                {
+                    UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(new[] { target }, true, true);
+
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

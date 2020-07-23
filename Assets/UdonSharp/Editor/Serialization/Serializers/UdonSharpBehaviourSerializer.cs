@@ -74,7 +74,14 @@ namespace UdonSharp.Serialization
 
             UdonSharpBehaviourSerializationTracker.serializedBehaviourSet.Add(targetObject);
 
-            UdonSharpBehaviourFormatterEmitter.GetFormatter<T>().Read(ref targetObject, sourceObject);
+            try
+            {
+                UdonSharpBehaviourFormatterEmitter.GetFormatter<T>().Read(ref targetObject, sourceObject);
+            }
+            finally
+            {
+                UdonSharpBehaviourSerializationTracker.serializedBehaviourSet.Remove(targetObject);
+            }
 
             UdonSharpBehaviourSerializationTracker.serializedBehaviourSet.Remove(targetObject);
         }
@@ -91,8 +98,15 @@ namespace UdonSharp.Serialization
                 return;
 
             UdonSharpBehaviourSerializationTracker.serializedBehaviourSet.Add(sourceObject);
-            
-            UdonSharpBehaviourFormatterEmitter.GetFormatter<T>().Write(targetObject, sourceObject);
+
+            try
+            {
+                UdonSharpBehaviourFormatterEmitter.GetFormatter<T>().Write(targetObject, sourceObject);
+            }
+            finally
+            {
+                UdonSharpBehaviourSerializationTracker.serializedBehaviourSet.Remove(sourceObject);
+            }
 
             UdonSharpBehaviourSerializationTracker.serializedBehaviourSet.Remove(sourceObject);
         }

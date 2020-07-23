@@ -70,7 +70,7 @@ namespace UdonSharpEditor
 
             if (GUILayout.Button("Convert to UdonBehaviour", GUILayout.Height(25)))
             {
-                USharpEditorUtility.ConvertToUdonBehavioursInternal(Array.ConvertAll(targets, e => e as UdonSharpBehaviour), true, true);
+                UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(Array.ConvertAll(targets, e => e as UdonSharpBehaviour), true, true);
 
                 return;
             }
@@ -192,6 +192,44 @@ namespace UdonSharpEditor
     }
     #endregion
 
+    [InitializeOnLoad]
+    static class UdonSharpCustomEditorManager
+    {
+        static Dictionary<System.Type, System.Type> _typeInspectorMap;
+
+        static UdonSharpCustomEditorManager()
+        {
+            _typeInspectorMap = new Dictionary<Type, Type>();
+            FieldInfo inspectedTypeField = typeof(CustomEditor).GetField("m_InspectedType", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (Type editorType in asm.GetTypes())
+                {
+                    CustomEditor editorAttribute = editorType.GetCustomAttribute<CustomEditor>();
+
+                    if (editorAttribute != null)
+                    {
+                        Type inspectedType = (Type)inspectedTypeField.GetValue(editorAttribute);
+
+                        if (inspectedType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+                        {
+                            _typeInspectorMap.Add(inspectedType, editorType);
+                        }
+                    }
+                }
+            }
+        }
+
+        public static System.Type GetInspectorEditorType(System.Type udonSharpBehaviourType)
+        {
+            System.Type editorType;
+            _typeInspectorMap.TryGetValue(udonSharpBehaviourType, out editorType);
+
+            return editorType;
+        }
+    }
+
     /// <summary>
     /// Custom U# editor for UdonBehaviours that can have custom behavior for drawing stuff like sync position and the program asset info
     /// Will also allow people to override the inspector for their own custom inspectors
@@ -220,6 +258,31 @@ namespace UdonSharpEditor
                 return;
             }
 
+            System.Type customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(((UdonSharpProgramAsset)behaviour.programSource).sourceCsScript.GetClass());
+            if (customEditorType != null)
+            {
+                if (baseEditor != null && baseEditor.GetType() != customEditorType)
+                    DestroyImmediate(baseEditor);
+
+                UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.GetProxyBehaviour(behaviour);
+                inspectorTarget.enabled = false;
+
+                Editor.CreateCachedEditorWithContext(inspectorTarget, this, customEditorType, ref baseEditor);
+
+                baseEditor.OnInspectorGUI();
+                if (GUI.changed)
+                    UdonSharpEditorUtility.CopyProxyToBacker(inspectorTarget);
+
+                return;
+            }
+
+            DrawDefaultUdonSharpInspector();
+        }
+
+        void DrawDefaultUdonSharpInspector()
+        {
+            UdonBehaviour behaviour = target as UdonBehaviour;
+
             if (UdonSharpGUI.DrawProgramSource(behaviour))
                 return;
 
@@ -227,18 +290,15 @@ namespace UdonSharpEditor
             UdonSharpGUI.DrawInteractSettings(behaviour);
 
             UdonSharpProgramAsset udonSharpProgramAsset = (UdonSharpProgramAsset)behaviour.programSource;
-            
-            EditorGUILayout.Space();
+
+            UdonSharpGUI.DrawUtilities(behaviour, udonSharpProgramAsset);
+
+            UdonSharpGUI.DrawUILine(Color.gray, 2, 4);
 
             udonSharpProgramAsset.DrawErrorTextAreas();
 
             bool dirty = false;
-            int fieldCount = UdonSharpGUI.DrawPublicVariables(behaviour, udonSharpProgramAsset, ref dirty);
-            
-            if (fieldCount > 0)
-                EditorGUILayout.Space();
-
-            UdonSharpGUI.DrawUtilities(behaviour, udonSharpProgramAsset);
+            UdonSharpGUI.DrawPublicVariables(behaviour, udonSharpProgramAsset, ref dirty);
         }
 
         // Force repaint for variable update in play mode

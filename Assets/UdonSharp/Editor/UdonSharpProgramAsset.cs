@@ -32,11 +32,9 @@ namespace UdonSharp
 
         [HideInInspector]
         public ClassDebugInfo debugInfo = null;
-
-#pragma warning disable CS0414
-        [SerializeField]
-        private bool hasInteractEvent = false; // Referenced via reflection
-#pragma warning restore CS0414
+        
+        [HideInInspector]
+        public bool hasInteractEvent = false;
 
         [SerializeField, HideInInspector]
         private SerializationData serializationData;

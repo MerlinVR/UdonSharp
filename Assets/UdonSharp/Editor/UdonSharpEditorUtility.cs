@@ -14,7 +14,7 @@ using VRC.Udon.Editor.ProgramSources;
 
 namespace UdonSharpEditor
 {
-    public static class USharpEditorUtility
+    public static class UdonSharpEditorUtility
     {
         /// <summary>
         /// Creates a new UdonAssemblyProgramAsset from an UdonSharpProgramAsset for the sake of portability. Most info used for the inspector gets stripped so this isn't a great solution for remotely complex assets.
@@ -263,16 +263,27 @@ namespace UdonSharpEditor
 
             UdonSharpBehaviour proxyBehaviour;
             if (_proxyBehaviourLookup.TryGetValue(udonBehaviour, out proxyBehaviour))
-                return proxyBehaviour;
+            {
+                if (proxyBehaviour != null)
+                {
+                    CopyBackerToProxy(proxyBehaviour);
+                    return proxyBehaviour;
+                }
+                else
+                {
+                    _proxyBehaviourLookup.Remove(udonBehaviour);
+                }
+            }
 
             UdonSharpBehaviour[] behaviours = udonBehaviour.GetComponents<UdonSharpBehaviour>();
 
             foreach (UdonSharpBehaviour udonSharpBehaviour in behaviours)
             {
                 IUdonBehaviour backingBehaviour = GetBackingUdonBehaviour(udonSharpBehaviour);
-                if (ReferenceEquals(backingBehaviour, udonBehaviour))
+                if (backingBehaviour != null &&  ReferenceEquals(backingBehaviour, udonBehaviour))
                 {
                     _proxyBehaviourLookup.Add(udonBehaviour, udonSharpBehaviour);
+                    CopyBackerToProxy(proxyBehaviour);
                     return udonSharpBehaviour;
                 }
             }
@@ -288,18 +299,29 @@ namespace UdonSharpEditor
 
             _proxyBehaviourLookup.Add(udonBehaviour, proxyBehaviour);
 
+            CopyBackerToProxy(proxyBehaviour);
+
             return proxyBehaviour;
         }
 
         [PublicAPI]
-        public static void WriteProxyToBacker<T>(T proxy) where T : UdonSharpBehaviour
+        public static void CopyProxyToBacker(UdonSharpBehaviour proxy)
         {
             SimpleValueStorage<UdonBehaviour> udonBehaviourStorage = new SimpleValueStorage<UdonBehaviour>(GetBackingUdonBehaviour(proxy));
-            Serializer.CreatePooled<T>().Write(udonBehaviourStorage, proxy);
+            Serializer.CreatePooled(new TypeSerializationMetadata(proxy.GetType())).WriteWeak(udonBehaviourStorage, proxy);
         }
 
         [PublicAPI]
-        public static UdonBehaviour CreateBehavourForProxy<T>(T udonSharpBehaviour) where T : UdonSharpBehaviour
+        public static void CopyBackerToProxy(UdonSharpBehaviour proxy)
+        {
+            SimpleValueStorage<UdonBehaviour> udonBehaviourStorage = new SimpleValueStorage<UdonBehaviour>(GetBackingUdonBehaviour(proxy));
+
+            object proxyObj = proxy;
+            Serializer.CreatePooled(new TypeSerializationMetadata(proxy.GetType())).ReadWeak(ref proxyObj, udonBehaviourStorage);
+        }
+
+        [PublicAPI]
+        public static UdonBehaviour CreateBehavourForProxy(UdonSharpBehaviour udonSharpBehaviour)
         {
             UdonBehaviour backingBehaviour = GetBackingUdonBehaviour(udonSharpBehaviour);
 
@@ -309,7 +331,7 @@ namespace UdonSharpEditor
                 backingBehaviour.programSource = GetUdonSharpProgramAsset(udonSharpBehaviour);
             }
 
-            WriteProxyToBacker<T>(udonSharpBehaviour);
+            CopyProxyToBacker(udonSharpBehaviour);
 
             return backingBehaviour;
         }
