@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reflection;
 using UdonSharp;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using VRC.Udon;
 using VRC.Udon.Editor;
@@ -199,118 +198,43 @@ namespace UdonSharpEditor
     /// </summary>
     internal class UdonBehaviourOverrideEditor : Editor
     {
+        Editor baseEditor;
 
-        static FieldInfo serializedAssetField;
-        static FieldInfo hasInteractField;
-        static readonly GUIContent ownershipTransferOnCollisionContent = new GUIContent("Allow Ownership Transfer on Collision", 
-                                                                                        "Transfer ownership on collision, requires a Collision component on the same game object");
+        private void OnEnable()
+        {
+            UdonBehaviour behaviour = target as UdonBehaviour;
+            if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset udonSharpProgram))
+            {
+                Editor.CreateCachedEditorWithContext(targets, this, typeof(UdonBehaviourEditor), ref baseEditor);
+            }
+        }
 
-        static Dictionary<UdonBehaviour, Editor> cachedEditors = new Dictionary<UdonBehaviour, Editor>();
+        private void OnDisable()
+        {
+            if (baseEditor)
+                DestroyImmediate(baseEditor);
+        }
 
         public override void OnInspectorGUI()
         {
             UdonBehaviour behaviour = target as UdonBehaviour;
 
             // Fall back to the default Udon inspector if not a U# behaviour
-            if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset udonSharpProgram))
+            if (baseEditor)
             {
-                // We can't use CreateCachedEditor since it apparently leaks its cache around between play/edit mode and throws errors as a result
-                //Editor.CreateCachedEditor(targets, typeof(UdonBehaviourEditor), ref baseEditor);
-
-                Editor baseEditor;
-                if (!cachedEditors.TryGetValue(behaviour, out baseEditor))
-                {
-                    baseEditor = Editor.CreateEditor(behaviour, typeof(UdonBehaviourEditor));
-                    cachedEditors.Add(behaviour, baseEditor);
-                }
-
-                // Targets on the editors turn null sometimes when exiting play mode, so recreate them here in that case.
-                if (baseEditor.target == null)
-                {
-                    baseEditor = Editor.CreateEditor(behaviour, typeof(UdonBehaviourEditor));
-                    cachedEditors[behaviour] = baseEditor;
-                }
-
                 baseEditor.OnInspectorGUI();
                 return;
             }
 
-            if (serializedAssetField == null)
-            {
-                serializedAssetField = typeof(UdonBehaviour).GetField("serializedProgramAsset", BindingFlags.NonPublic | BindingFlags.Instance);
-                hasInteractField = typeof(UdonSharpProgramAsset).GetField("hasInteractEvent", BindingFlags.NonPublic | BindingFlags.Instance);
-            }
+            if (UdonSharpGUI.DrawProgramSource(behaviour))
+                return;
 
-            // Program source
-            EditorGUI.BeginDisabledGroup(true);
-            EditorGUI.BeginChangeCheck();
-            AbstractUdonProgramSource newProgramSource = (AbstractUdonProgramSource)EditorGUILayout.ObjectField("Program Source", behaviour.programSource, typeof(AbstractUdonProgramSource), false);
-            if (EditorGUI.EndChangeCheck())
-            {
-                Undo.RecordObject(behaviour, "Change program source");
-                behaviour.programSource = newProgramSource;
-                serializedAssetField.SetValue(behaviour, newProgramSource != null ? newProgramSource.SerializedProgramAsset : null);
-            }
-
-            EditorGUI.indentLevel++;
-            EditorGUILayout.ObjectField("Program Script", ((UdonSharpProgramAsset)behaviour.programSource)?.sourceCsScript, typeof(MonoScript), false);
-            EditorGUI.indentLevel--;
-            EditorGUI.EndDisabledGroup();
-
-            // Sync settings
-            EditorGUI.BeginChangeCheck();
-            bool newSyncPos = EditorGUILayout.Toggle("Synchronize Position", behaviour.SynchronizePosition);
-            bool newCollisionTransfer = behaviour.AllowCollisionOwnershipTransfer;
-            if (behaviour.GetComponent<Collider>() != null)
-            {
-                newCollisionTransfer = EditorGUILayout.Toggle(ownershipTransferOnCollisionContent, behaviour.AllowCollisionOwnershipTransfer);
-            }
-            //else
-            //{
-            //    EditorGUI.BeginDisabledGroup(true);
-            //    newCollisionTransfer = EditorGUILayout.Toggle(ownershipTransferOnCollisionContent, false);
-            //    EditorGUI.EndDisabledGroup();
-            //}
-
-            EditorGUI.BeginDisabledGroup(Application.isPlaying);
-
-            if (EditorGUI.EndChangeCheck())
-            {
-                Undo.RecordObject(behaviour, "Change sync setting");
-                behaviour.SynchronizePosition = newSyncPos;
-                behaviour.AllowCollisionOwnershipTransfer = newCollisionTransfer;
-            }
-
-            EditorGUI.EndDisabledGroup();
-
-            // Interact settings
-            if ((bool)hasInteractField.GetValue(udonSharpProgram))
-            {
-                EditorGUI.BeginChangeCheck();
-                string newInteractText = EditorGUILayout.TextField("Interaction Text", behaviour.interactText);
-                float newProximity = EditorGUILayout.Slider("Proximity", behaviour.proximity, 0f, 100f);
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    Undo.RecordObject(behaviour, "Change interact property");
-
-                    behaviour.interactText = newInteractText;
-                    behaviour.proximity = newProximity;
-                }
-
-                EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
-                if (GUILayout.Button("Trigger Interact", GUILayout.Height(22f)))
-                    behaviour.SendCustomEvent("_interact");
-                EditorGUI.EndDisabledGroup();
-            }
+            UdonSharpGUI.DrawSyncSettings(behaviour);
+            UdonSharpGUI.DrawInteractSettings(behaviour);
 
             UdonSharpProgramAsset udonSharpProgramAsset = (UdonSharpProgramAsset)behaviour.programSource;
-
-            //Color lineColor = new Color32(128, 128, 128, 255);
-            //UdonSharpGUI.DrawUILine(lineColor, 2, 4);
-            EditorGUILayout.Space();
             
-            //DrawPublicVariables(behaviour);
+            EditorGUILayout.Space();
 
             udonSharpProgramAsset.DrawErrorTextAreas();
 
@@ -321,23 +245,6 @@ namespace UdonSharpEditor
                 EditorGUILayout.Space();
 
             UdonSharpGUI.DrawUtilities(behaviour, udonSharpProgramAsset);
-        }
-
-        void DrawPublicVariables(UdonBehaviour behaviour)
-        {
-            bool dirty = false;
-
-            if (behaviour.programSource == null)
-                return;
-
-            UdonSharpProgramAsset udonSharpProgramAsset = (UdonSharpProgramAsset)behaviour.programSource;
-
-            udonSharpProgramAsset.UpdateProgram();
-
-
-
-            if (dirty)
-                EditorSceneManager.MarkSceneDirty(behaviour.gameObject.scene);
         }
 
         // Force repaint for variable update in play mode

@@ -941,15 +941,105 @@ namespace UdonSharpEditor
             return exportedSymbolNames.Length;
         }
 
-        public static void DrawUILine(Color color, int thickness = 2, int padding = 10)
+        //public static void DrawUILine(Color color, int thickness = 2, int padding = 10)
+        //{
+        //    Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(padding + thickness));
+        //    r.height = thickness;
+        //    r.y += padding / 2;
+        //    r.x -= 2;
+        //    r.width += 6;
+        //    EditorGUI.DrawRect(r, color);
+        //}
+        
+        static FieldInfo serializedAssetField;
+        // Returns if the rest of the inspector drawing should early out due to an empty program script
+        public static bool DrawProgramSource(UdonBehaviour behaviour)
         {
-            Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(padding + thickness));
-            r.height = thickness;
-            r.y += padding / 2;
-            r.x -= 2;
-            r.width += 6;
-            EditorGUI.DrawRect(r, color);
+            if (serializedAssetField == null)
+                serializedAssetField = typeof(UdonBehaviour).GetField("serializedProgramAsset", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            // Program source
+            EditorGUI.BeginDisabledGroup(true);
+            EditorGUI.BeginChangeCheck();
+            AbstractUdonProgramSource newProgramSource = (AbstractUdonProgramSource)EditorGUILayout.ObjectField("Program Source", behaviour.programSource, typeof(AbstractUdonProgramSource), false);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(behaviour, "Change program source");
+                behaviour.programSource = newProgramSource;
+                serializedAssetField.SetValue(behaviour, newProgramSource != null ? newProgramSource.SerializedProgramAsset : null);
+            }
+            EditorGUI.EndDisabledGroup();
+
+            if (((UdonSharpProgramAsset)behaviour.programSource).sourceCsScript == null)
+            {
+                if (UdonSharpGUI.DrawCreateScriptButton((UdonSharpProgramAsset)behaviour.programSource))
+                {
+                    EditorUtility.SetDirty(behaviour.programSource);
+                }
+                return true;
+            }
+            else
+            {
+                EditorGUI.BeginDisabledGroup(true);
+                EditorGUI.indentLevel++;
+                EditorGUILayout.ObjectField("Program Script", ((UdonSharpProgramAsset)behaviour.programSource)?.sourceCsScript, typeof(MonoScript), false);
+                EditorGUI.indentLevel--;
+                EditorGUI.EndDisabledGroup();
+            }
+
+            return false;
         }
 
+        static readonly GUIContent ownershipTransferOnCollisionContent = new GUIContent("Allow Ownership Transfer on Collision",
+                                                                                        "Transfer ownership on collision, requires a Collision component on the same game object");
+
+        public static void DrawSyncSettings(UdonBehaviour behaviour)
+        {
+            EditorGUI.BeginChangeCheck();
+            bool newSyncPos = EditorGUILayout.Toggle("Synchronize Position", behaviour.SynchronizePosition);
+            bool newCollisionTransfer = behaviour.AllowCollisionOwnershipTransfer;
+            if (behaviour.GetComponent<Collider>() != null)
+            {
+                newCollisionTransfer = EditorGUILayout.Toggle(ownershipTransferOnCollisionContent, behaviour.AllowCollisionOwnershipTransfer);
+            }
+
+            EditorGUI.BeginDisabledGroup(Application.isPlaying);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(behaviour, "Change sync setting");
+                behaviour.SynchronizePosition = newSyncPos;
+                behaviour.AllowCollisionOwnershipTransfer = newCollisionTransfer;
+            }
+
+            EditorGUI.EndDisabledGroup();
+        }
+
+        static FieldInfo hasInteractField;
+        public static void DrawInteractSettings(UdonBehaviour behaviour)
+        {
+            if (hasInteractField == null)
+                hasInteractField = typeof(UdonSharpProgramAsset).GetField("hasInteractEvent", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            if ((bool)hasInteractField.GetValue(behaviour.programSource))
+            {
+                EditorGUI.BeginChangeCheck();
+                string newInteractText = EditorGUILayout.TextField("Interaction Text", behaviour.interactText);
+                float newProximity = EditorGUILayout.Slider("Proximity", behaviour.proximity, 0f, 100f);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(behaviour, "Change interact property");
+
+                    behaviour.interactText = newInteractText;
+                    behaviour.proximity = newProximity;
+                }
+
+                EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
+                if (GUILayout.Button("Trigger Interact", GUILayout.Height(22f)))
+                    behaviour.SendCustomEvent("_interact");
+                EditorGUI.EndDisabledGroup();
+            }
+        }
     }
 }
