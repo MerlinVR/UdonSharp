@@ -199,17 +199,8 @@ namespace UdonSharpEditor
     internal class UdonBehaviourOverrideEditor : Editor
     {
         Editor baseEditor;
-
-        private void OnEnable()
-        {
-            UdonBehaviour behaviour = target as UdonBehaviour;
-            if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset udonSharpProgram))
-            {
-                Editor.CreateCachedEditorWithContext(targets, this, typeof(UdonBehaviourEditor), ref baseEditor);
-            }
-        }
-
-        private void OnDisable()
+        
+        private void OnDestroy()
         {
             if (baseEditor)
                 DestroyImmediate(baseEditor);
@@ -220,8 +211,11 @@ namespace UdonSharpEditor
             UdonBehaviour behaviour = target as UdonBehaviour;
 
             // Fall back to the default Udon inspector if not a U# behaviour
-            if (baseEditor)
+            if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset udonSharpProgram))
             {
+                if (!baseEditor)
+                    Editor.CreateCachedEditorWithContext(targets, this, typeof(UdonBehaviourEditor), ref baseEditor);
+            
                 baseEditor.OnInspectorGUI();
                 return;
             }
