@@ -144,6 +144,8 @@ namespace UdonSharp
             { "_onTriggerStay2D", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(Collider2D), "onTriggerStay2DOther") } },
             { "_onPlayerJoined", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerJoinedPlayer") } },
             { "_onPlayerLeft", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerLeftPlayer") } },
+            { "_onStationEntered", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onStationEnteredPlayer") } },
+            { "_onStationExited", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onStationExitedPlayer") } },
         };
 
         public System.Tuple<System.Type, string>[] GetMethodCustomArgs(string methodName)

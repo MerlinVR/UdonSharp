@@ -1368,17 +1368,24 @@ namespace UdonSharp
                 System.Tuple<System.Type, string>[] customEventArgs = visitorContext.resolverContext.GetMethodCustomArgs(functionName);
                 if (customEventArgs != null)
                 {
-                    if (customEventArgs.Length != definition.parameters.Length)
-                        throw new System.Exception($"Event {functionName} must have the correct argument types for the Unity event");
-
-                    for (int i = 0; i < customEventArgs.Length; ++i)
+                    if (definition.parameters.Length == 0 && (functionName == "_onStationEntered" || functionName == "_onStationExited"))
                     {
-                        SymbolDefinition autoAssignedEventSymbol = visitorContext.topTable.GetGlobalSymbolTable().CreateNamedSymbol(customEventArgs[i].Item2, customEventArgs[i].Item1, SymbolDeclTypeFlags.Private);
+                        // It's the old version of the station entered events
+                    }
+                    else
+                    {
+                        if (customEventArgs.Length != definition.parameters.Length)
+                            throw new System.Exception($"Event {functionName} must have the correct argument types for the Unity event");
 
-                        using (ExpressionCaptureScope argAssignmentScope = new ExpressionCaptureScope(visitorContext, null))
+                        for (int i = 0; i < customEventArgs.Length; ++i)
                         {
-                            argAssignmentScope.SetToLocalSymbol(definition.parameters[i].paramSymbol);
-                            argAssignmentScope.ExecuteSet(autoAssignedEventSymbol);
+                            SymbolDefinition autoAssignedEventSymbol = visitorContext.topTable.GetGlobalSymbolTable().CreateNamedSymbol(customEventArgs[i].Item2, customEventArgs[i].Item1, SymbolDeclTypeFlags.Private);
+
+                            using (ExpressionCaptureScope argAssignmentScope = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                argAssignmentScope.SetToLocalSymbol(definition.parameters[i].paramSymbol);
+                                argAssignmentScope.ExecuteSet(autoAssignedEventSymbol);
+                            }
                         }
                     }
                 }

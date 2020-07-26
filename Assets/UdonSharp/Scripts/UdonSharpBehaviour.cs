@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using VRC.Udon.Common.Interfaces;
@@ -106,13 +107,20 @@ namespace UdonSharp
         public virtual void OnPlayerJoined(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerLeft(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnSpawn() { }
-        public virtual void OnStationEntered() { }
-        public virtual void OnStationExited() { }
+        public virtual void OnStationEntered(VRC.SDKBase.VRCPlayerApi player) { }
+        public virtual void OnStationExited(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnVideoEnd() { }
         public virtual void OnVideoPause() { }
         public virtual void OnVideoPlay() { }
         public virtual void OnVideoStart() { }
         public virtual void OnPreSerialization() { }
         public virtual void OnDeserialization() { }
+
+        [Obsolete("The OnStationEntered() event is deprecated use the OnStationEntered(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
+        public virtual void OnStationEntered() { }
+
+        [Obsolete("The OnStationExited() event is deprecated use the OnStationExited(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
+        public virtual void OnStationExited() { }
+
     }
 }
