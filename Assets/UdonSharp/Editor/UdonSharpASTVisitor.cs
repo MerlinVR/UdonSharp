@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Text;
 using UnityEngine;
 
-namespace UdonSharp
+namespace UdonSharp.Compiler
 {
     public class ASTVisitorContext
     {

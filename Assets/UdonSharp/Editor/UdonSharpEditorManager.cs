@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UdonSharp;
+using UdonSharp.Compiler;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;

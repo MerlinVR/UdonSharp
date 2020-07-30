@@ -2,6 +2,8 @@
 
 using UdonSharpEditor;
 using UnityEditor;
+using UnityEngine;
+using VRC.Udon;
 
 namespace UdonSharp.Examples.Inspectors
 {
@@ -12,6 +14,11 @@ namespace UdonSharp.Examples.Inspectors
         {
             if (UdonSharpGUI.DrawConvertToUdonBehaviourButton(target as UdonSharpBehaviour))
                 return;
+
+            UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(target as UdonSharpBehaviour);
+
+            if (backingBehaviour)
+                UdonSharpGUI.DrawProgramSource(backingBehaviour, false);
 
             base.OnInspectorGUI();
         }

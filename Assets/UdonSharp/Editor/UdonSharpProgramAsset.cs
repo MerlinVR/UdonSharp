@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using UdonSharp.Compiler;
 using UdonSharpEditor;
 using UnityEditor;
 using UnityEngine;

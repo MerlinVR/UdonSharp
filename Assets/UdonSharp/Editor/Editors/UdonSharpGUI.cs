@@ -1,11 +1,11 @@
 ﻿using JetBrains.Annotations;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using UdonSharp;
+using UdonSharp.Compiler;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -954,9 +954,15 @@ namespace UdonSharpEditor
         }
 
         static FieldInfo serializedAssetField;
-        // Returns if the rest of the inspector drawing should early out due to an empty program script
+        /// <summary>
+        /// Draws the program asset field, and program source field optionally. Also handles drawing the create script button when the script on the program asset is null.
+        /// Returns true if the rest of the inspector drawing should early out due to an empty program script
+        /// </summary>
+        /// <param name="behaviour"></param>
+        /// <param name="drawScript"></param>
+        /// <returns></returns>
         [PublicAPI]
-        public static bool DrawProgramSource(UdonBehaviour behaviour)
+        public static bool DrawProgramSource(UdonBehaviour behaviour, bool drawScript = true)
         {
             if (serializedAssetField == null)
                 serializedAssetField = typeof(UdonBehaviour).GetField("serializedProgramAsset", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -981,7 +987,7 @@ namespace UdonSharpEditor
                 }
                 return true;
             }
-            else
+            else if (drawScript)
             {
                 EditorGUI.BeginDisabledGroup(true);
                 EditorGUI.indentLevel++;

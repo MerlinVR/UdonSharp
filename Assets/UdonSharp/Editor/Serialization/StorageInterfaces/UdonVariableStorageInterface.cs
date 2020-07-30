@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using UdonSharp.Compiler;
 using UnityEngine;
 using VRC.Udon;
 using VRC.Udon.Common;

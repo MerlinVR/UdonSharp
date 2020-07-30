@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
-namespace UdonSharp
+namespace UdonSharp.Compiler
 {
     public enum ExpressionCaptureArchetype
     {

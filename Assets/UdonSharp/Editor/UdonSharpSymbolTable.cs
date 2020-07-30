@@ -5,7 +5,7 @@ using System.Threading;
 using UnityEngine;
 using VRC.Udon.Serialization.OdinSerializer;
 
-namespace UdonSharp
+namespace UdonSharp.Compiler
 {
     [Flags]
     public enum SymbolDeclTypeFlags

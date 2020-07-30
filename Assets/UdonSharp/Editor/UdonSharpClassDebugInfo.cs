@@ -1,11 +1,10 @@
 ﻿
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace UdonSharp
+namespace UdonSharp.Compiler
 {
     [System.Serializable]
     public class ClassDebugInfo

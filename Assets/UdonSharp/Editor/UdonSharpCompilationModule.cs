@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using static UdonSharp.UdonSharpCompiler;
+using static UdonSharp.Compiler.UdonSharpCompiler;
 
-namespace UdonSharp
+namespace UdonSharp.Compiler
 {
 
     /// <summary>

@@ -2,7 +2,7 @@
 
 using System.Collections.Generic;
 
-namespace UdonSharp
+namespace UdonSharp.Compiler
 {
     [System.Serializable]
     public class FieldDefinition

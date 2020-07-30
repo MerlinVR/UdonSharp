@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using UdonSharp.Compiler;
 using UnityEditor;
 using UnityEngine;
 using VRC.Udon.Common.Interfaces;
