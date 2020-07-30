@@ -39,20 +39,26 @@ namespace UdonSharp.Serialization
             return serializer;
         }
 
-        static TypeSerializationMetadata lookupPooledTypeData = new TypeSerializationMetadata();
         public static Serializer<T> CreatePooled<T>()
         {
-            lookupPooledTypeData.SetToType(typeof(T));
+            return (Serializer<T>)CreatePooled(typeof(T));
+        }
+
+        static TypeSerializationMetadata lookupPooledTypeData = new TypeSerializationMetadata();
+
+        public static Serializer CreatePooled(System.Type type)
+        {
+            lookupPooledTypeData.SetToType(type);
 
             Serializer serializer;
             if (!typeSerializerDictionary.TryGetValue(lookupPooledTypeData, out serializer))
             {
-                TypeSerializationMetadata typeMetadata = new TypeSerializationMetadata(typeof(T));
+                TypeSerializationMetadata typeMetadata = new TypeSerializationMetadata(type);
                 serializer = Create(typeMetadata);
                 typeSerializerDictionary.Add(typeMetadata, serializer);
             }
 
-            return (Serializer<T>)serializer;
+            return serializer;
         }
 
         public static Serializer Create(TypeSerializationMetadata typeMetadata)

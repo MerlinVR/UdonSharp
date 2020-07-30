@@ -217,7 +217,8 @@ namespace UdonSharpEditor
         }
 
         private static readonly FieldInfo _backingBehaviourField = typeof(UdonSharpBehaviour).GetField("_backingUdonBehaviour", BindingFlags.NonPublic | BindingFlags.Instance);
-        internal static UdonBehaviour GetBackingUdonBehaviour(UdonSharpBehaviour behaviour)
+        [PublicAPI]
+        public static UdonBehaviour GetBackingUdonBehaviour(UdonSharpBehaviour behaviour)
         {
             return (UdonBehaviour)_backingBehaviourField.GetValue(behaviour);
         }
@@ -283,7 +284,7 @@ namespace UdonSharpEditor
             foreach (UdonSharpBehaviour udonSharpBehaviour in behaviours)
             {
                 IUdonBehaviour backingBehaviour = GetBackingUdonBehaviour(udonSharpBehaviour);
-                if (backingBehaviour != null &&  ReferenceEquals(backingBehaviour, udonBehaviour))
+                if (backingBehaviour != null && ReferenceEquals(backingBehaviour, udonBehaviour))
                 {
                     _proxyBehaviourLookup.Add(udonBehaviour, udonSharpBehaviour);
 
@@ -315,7 +316,7 @@ namespace UdonSharpEditor
         public static void CopyProxyToBacker(UdonSharpBehaviour proxy)
         {
             SimpleValueStorage<UdonBehaviour> udonBehaviourStorage = new SimpleValueStorage<UdonBehaviour>(GetBackingUdonBehaviour(proxy));
-            Serializer.CreatePooled(new TypeSerializationMetadata(proxy.GetType())).WriteWeak(udonBehaviourStorage, proxy);
+            Serializer.CreatePooled(proxy.GetType()).WriteWeak(udonBehaviourStorage, proxy);
         }
 
         [PublicAPI]
@@ -324,7 +325,7 @@ namespace UdonSharpEditor
             SimpleValueStorage<UdonBehaviour> udonBehaviourStorage = new SimpleValueStorage<UdonBehaviour>(GetBackingUdonBehaviour(proxy));
 
             object proxyObj = proxy;
-            Serializer.CreatePooled(new TypeSerializationMetadata(proxy.GetType())).ReadWeak(ref proxyObj, udonBehaviourStorage);
+            Serializer.CreatePooled(proxy.GetType()).ReadWeak(ref proxyObj, udonBehaviourStorage);
         }
 
         [PublicAPI]
