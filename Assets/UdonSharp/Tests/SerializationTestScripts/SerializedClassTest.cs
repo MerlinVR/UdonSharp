@@ -23,6 +23,8 @@ public class SerializedClassTest : UdonSharpBehaviour
 
     public int[][] jagged = new int[][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
 
+    public Vector2 vec2;
+
     void Start()
     {
         //Debug.Log(sbyteVal);

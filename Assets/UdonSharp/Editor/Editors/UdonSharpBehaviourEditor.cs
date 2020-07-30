@@ -241,11 +241,13 @@ namespace UdonSharpEditor
         private void OnEnable()
         {
             Undo.undoRedoPerformed += OnUndoRedo;
+            UdonEditorManager.Instance.WantRepaint += Repaint;
         }
 
         private void OnDisable()
         {
             Undo.undoRedoPerformed -= OnUndoRedo;
+            UdonEditorManager.Instance.WantRepaint -= Repaint;
         }
 
         void OnUndoRedo()

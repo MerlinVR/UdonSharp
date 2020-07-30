@@ -11,6 +11,7 @@ using UnityEngine.SceneManagement;
 using VRC.Udon;
 using VRC.Udon.Common;
 using VRC.Udon.Common.Interfaces;
+using VRC.Udon.Editor;
 using VRC.Udon.Serialization.OdinSerializer.Utilities;
 
 namespace UdonSharpEditor
@@ -31,6 +32,7 @@ namespace UdonSharpEditor
         public static void RunPostBuildSceneFixup()
         {
             UpdatePublicVariables(GetAllUdonBehaviours());
+            UdonEditorManager.Instance.RefreshQueuedProgramSources();
         }
 
         static List<UdonBehaviour> GetAllUdonBehaviours()
