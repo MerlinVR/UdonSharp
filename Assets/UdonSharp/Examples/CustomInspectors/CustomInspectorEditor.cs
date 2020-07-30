@@ -1,9 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿#if UNITY_EDITOR
+
 using UdonSharpEditor;
 using UnityEditor;
-using UnityEngine;
-
 
 namespace UdonSharp.Examples.Inspectors
 {
@@ -20,3 +18,4 @@ namespace UdonSharp.Examples.Inspectors
     }
 }
 
+#endif

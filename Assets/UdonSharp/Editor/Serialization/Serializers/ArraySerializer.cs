@@ -16,9 +16,15 @@ namespace UdonSharp.Serialization
                 if (typeMetadata.arrayElementMetadata == null)
                     throw new ArgumentException("Array element metadata cannot be null on array type metadata");
 
-                if (UdonSharpUtils.IsUserDefinedType(typeMetadata.arrayElementMetadata.cSharpType))
+                elementSerializer = (Serializer<T>)CreatePooled(typeMetadata.arrayElementMetadata);
+
+                // If using the default serializer, we can just copy the array without iterating through each element.
+                if (elementSerializer is DefaultSerializer<T>) 
                 {
-                    elementSerializer = (Serializer<T>)CreatePooled(typeMetadata.arrayElementMetadata);
+                    elementSerializer = null;
+                }
+                else
+                {
                     elementValueStorage = ValueStorageUtil.CreateStorage(elementSerializer.GetUdonStorageType());
                 }
             }

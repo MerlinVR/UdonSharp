@@ -107,8 +107,6 @@ namespace UdonSharp.Serialization
             {
                 UdonSharpBehaviourSerializationTracker.serializedBehaviourSet.Remove(sourceObject);
             }
-
-            UdonSharpBehaviourSerializationTracker.serializedBehaviourSet.Remove(sourceObject);
         }
 
         protected override Serializer MakeSerializer(TypeSerializationMetadata typeMetadata)
