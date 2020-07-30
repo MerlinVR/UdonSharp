@@ -247,8 +247,9 @@ namespace UdonSharpEditor
         /// </summary>
         /// <param name="udonBehaviour"></param>
         /// <returns></returns>
+        /// 
         [PublicAPI]
-        public static UdonSharpBehaviour GetProxyBehaviour(UdonBehaviour udonBehaviour)
+        public static UdonSharpBehaviour GetProxyBehaviour(UdonBehaviour udonBehaviour, bool copyBackerToProxy = true)
         {
             if (udonBehaviour == null)
                 throw new System.ArgumentNullException("Source Udon Behaviour cannot be null");
@@ -266,7 +267,9 @@ namespace UdonSharpEditor
             {
                 if (proxyBehaviour != null)
                 {
-                    CopyBackerToProxy(proxyBehaviour);
+                    if (copyBackerToProxy)
+                        CopyBackerToProxy(proxyBehaviour);
+
                     return proxyBehaviour;
                 }
                 else
@@ -283,7 +286,10 @@ namespace UdonSharpEditor
                 if (backingBehaviour != null &&  ReferenceEquals(backingBehaviour, udonBehaviour))
                 {
                     _proxyBehaviourLookup.Add(udonBehaviour, udonSharpBehaviour);
-                    CopyBackerToProxy(proxyBehaviour);
+
+                    if (copyBackerToProxy)
+                        CopyBackerToProxy(proxyBehaviour);
+
                     return udonSharpBehaviour;
                 }
             }
@@ -299,7 +305,8 @@ namespace UdonSharpEditor
 
             _proxyBehaviourLookup.Add(udonBehaviour, proxyBehaviour);
 
-            CopyBackerToProxy(proxyBehaviour);
+            if (copyBackerToProxy)
+                CopyBackerToProxy(proxyBehaviour);
 
             return proxyBehaviour;
         }

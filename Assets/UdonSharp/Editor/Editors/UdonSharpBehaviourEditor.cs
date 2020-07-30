@@ -237,7 +237,27 @@ namespace UdonSharpEditor
     internal class UdonBehaviourOverrideEditor : Editor
     {
         Editor baseEditor;
-        
+
+        private void OnEnable()
+        {
+            Undo.undoRedoPerformed += OnUndoRedo;
+        }
+
+        private void OnDisable()
+        {
+            Undo.undoRedoPerformed -= OnUndoRedo;
+        }
+
+        void OnUndoRedo()
+        {
+            UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.GetProxyBehaviour(target as UdonBehaviour, false);
+
+            if (inspectorTarget)
+            {
+                UdonSharpEditorUtility.CopyProxyToBacker(inspectorTarget);
+            }
+        }
+
         private void OnDestroy()
         {
             if (baseEditor)
