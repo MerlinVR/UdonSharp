@@ -18,7 +18,7 @@ using UnityEngine;
 using UnityEngine.Profiling;
 using VRC.Udon.Common.Interfaces;
 
-namespace UdonSharp
+namespace UdonSharp.Compiler
 {
     public class UdonSharpCompiler
     {
