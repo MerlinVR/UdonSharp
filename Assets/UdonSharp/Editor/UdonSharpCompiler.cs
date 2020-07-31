@@ -137,6 +137,7 @@ namespace UdonSharp.Compiler
                             foreach (CompilationModule module in modules)
                             {
                                 module.programAsset.ApplyProgram();
+                                UdonSharpEditorCache.Instance.UpdateSourceHash(module.programAsset);
                             }
 
                             EditorUtility.DisplayProgressBar("UdonSharp Compile", "Post Build Scene Fixup", 1f);

@@ -1,8 +1,11 @@
 ﻿
 using Microsoft.CodeAnalysis;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace UdonSharp
 {
@@ -573,6 +576,14 @@ namespace UdonSharp
             }
 
             return fileText;
+        }
+
+        internal static string HashString(string stringToHash)
+        {
+            using (SHA1Managed sha256 = new SHA1Managed())
+            {
+                return BitConverter.ToString(sha256.ComputeHash(Encoding.UTF8.GetBytes(stringToHash))).Replace("-", "");
+            }
         }
     }
 }

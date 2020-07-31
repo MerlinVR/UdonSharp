@@ -112,7 +112,7 @@ namespace UdonSharpEditor
 
                 if (GUILayout.Button("Compile All UdonSharp Programs"))
                 {
-                    UdonSharpProgramAsset.CompileAllCsPrograms();
+                    UdonSharpProgramAsset.CompileAllCsPrograms(true);
                 }
             }
 
@@ -123,7 +123,7 @@ namespace UdonSharpEditor
                 {
                     if (GUILayout.Button("Compile All UdonSharp Programs"))
                     {
-                        UdonSharpProgramAsset.CompileAllCsPrograms();
+                        UdonSharpProgramAsset.CompileAllCsPrograms(true);
                     }
 
                     EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);

@@ -22,6 +22,7 @@ namespace UdonSharpEditor
         static UdonSharpEditorManager()
         {
             EditorSceneManager.sceneOpened += EditorSceneManager_sceneOpened;
+            EditorApplication.update += OnEditorUpdate;
         }
 
         private static void EditorSceneManager_sceneOpened(Scene scene, OpenSceneMode mode)
@@ -29,10 +30,25 @@ namespace UdonSharpEditor
             UpdatePublicVariables(GetAllUdonBehaviours(scene));
         }
 
-        public static void RunPostBuildSceneFixup()
+        internal static void RunPostBuildSceneFixup()
         {
             UpdatePublicVariables(GetAllUdonBehaviours());
             UdonEditorManager.Instance.RefreshQueuedProgramSources();
+        }
+
+        static bool _requiresCompile = false;
+        internal static void QueueScriptCompile()
+        {
+            _requiresCompile = true;
+        }
+
+        private static void OnEditorUpdate()
+        {
+            if (_requiresCompile)
+            {
+                UdonSharpProgramAsset.CompileAllCsPrograms();
+                _requiresCompile = false;
+            }
         }
 
         static List<UdonBehaviour> GetAllUdonBehaviours()

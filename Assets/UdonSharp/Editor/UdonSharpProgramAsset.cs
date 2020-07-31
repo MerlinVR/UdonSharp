@@ -178,10 +178,33 @@ namespace UdonSharp
             }
         }
 
+        /// <summary>
+        /// Compiles all U# programs in the project. If forceCompile is true, will skip checking for file changes to skip compile tasks
+        /// </summary>
+        /// <param name="forceCompile"></param>
         [PublicAPI]
-        public static void CompileAllCsPrograms()
+        public static void CompileAllCsPrograms(bool forceCompile = false)
         {
-            UdonSharpCompiler compiler = new UdonSharpCompiler(GetAllUdonSharpPrograms());
+            UdonSharpProgramAsset[] programs = GetAllUdonSharpPrograms();
+
+            if (!forceCompile)
+            {
+                UdonSharpEditorCache cache = UdonSharpEditorCache.Instance;
+                bool needsCompile = false;
+                foreach (UdonSharpProgramAsset programAsset in programs)
+                {
+                    if (cache.IsSourceFileDirty(programAsset))
+                    {
+                        needsCompile = true;
+                        break;
+                    }
+                }
+
+                if (!needsCompile)
+                    return;
+            }
+
+            UdonSharpCompiler compiler = new UdonSharpCompiler(programs);
             compiler.Compile();
         }
 
