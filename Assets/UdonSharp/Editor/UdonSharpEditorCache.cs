@@ -11,10 +11,7 @@ namespace UdonSharp
         #region Instance and serialization management
         private const string CACHE_PATH = "Library/UdonSharpCache/UdonSharpEditorCache.asset";
 
-        public static UdonSharpEditorCache Instance
-        {
-            get { return GetInstance(); }
-        }
+        public static UdonSharpEditorCache Instance => GetInstance();
 
         static UdonSharpEditorCache _currentCache;
         private static UdonSharpEditorCache GetInstance()
@@ -24,7 +21,7 @@ namespace UdonSharp
 
             if (File.Exists(CACHE_PATH))
             {
-                _currentCache = SerializationUtility.DeserializeValue<UdonSharpEditorCache>(File.ReadAllBytes(CACHE_PATH), DataFormat.JSON);
+                _currentCache = SerializationUtility.DeserializeValue<UdonSharpEditorCache>(File.ReadAllBytes(CACHE_PATH), DataFormat.Binary);
                 return _currentCache;
             }
 
@@ -44,7 +41,7 @@ namespace UdonSharp
                 UdonSharpEditorCache cache = UdonSharpEditorCache.Instance;
                 if (cache._dirty)
                 {
-                    File.WriteAllBytes(CACHE_PATH, SerializationUtility.SerializeValue<UdonSharpEditorCache>(_currentCache, DataFormat.JSON));
+                    File.WriteAllBytes(CACHE_PATH, SerializationUtility.SerializeValue<UdonSharpEditorCache>(_currentCache, DataFormat.Binary));
                     cache._dirty = false;
                 }
 
@@ -62,14 +59,12 @@ namespace UdonSharp
         {
             if (programAsset?.sourceCsScript == null)
                 return false;
-
-            string programAssetGuid;
-            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out programAssetGuid, out long _))
+            
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string programAssetGuid, out long _))
                 return false;
-
-            string sourceFileHash;
+            
             // We haven't seen the source file before, so it needs to be compiled
-            if (!sourceFileHashLookup.TryGetValue(programAssetGuid, out sourceFileHash))
+            if (!sourceFileHashLookup.TryGetValue(programAssetGuid, out string sourceFileHash))
                 return true;
 
             string currentHash = HashSourceFile(programAsset.sourceCsScript);
@@ -85,8 +80,7 @@ namespace UdonSharp
             if (programAsset?.sourceCsScript == null)
                 return;
             
-            string programAssetGuid;
-            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out programAssetGuid, out long _))
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string programAssetGuid, out long _))
                 return;
 
             string newHash = HashSourceFile(programAsset.sourceCsScript);

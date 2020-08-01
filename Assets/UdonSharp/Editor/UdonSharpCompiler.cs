@@ -259,7 +259,8 @@ namespace UdonSharp.Compiler
             }
             else
             {
-                program.Heap.SetHeapVariable<T>(program.SymbolTable.GetAddressFromSymbol(symbolName), value);
+                //program.Heap.SetHeapVariable<T>(program.SymbolTable.GetAddressFromSymbol(symbolName), value);
+                throw new System.NotImplementedException(); // This should not get hit currently
             }
         }
 
