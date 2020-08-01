@@ -27,12 +27,16 @@ namespace UdonSharpEditor
 
         private static void EditorSceneManager_sceneOpened(Scene scene, OpenSceneMode mode)
         {
-            UpdatePublicVariables(GetAllUdonBehaviours(scene));
+            List<UdonBehaviour> allBehaviours = GetAllUdonBehaviours();
+            UpdatePublicVariables(allBehaviours);
+            UpdateSerializedProgramAssets(allBehaviours);
         }
 
         internal static void RunPostBuildSceneFixup()
         {
-            UpdatePublicVariables(GetAllUdonBehaviours());
+            List<UdonBehaviour> allBehaviours = GetAllUdonBehaviours();
+            UpdateSerializedProgramAssets(allBehaviours);
+            UpdatePublicVariables(allBehaviours);
             UdonEditorManager.Instance.RefreshQueuedProgramSources();
         }
 
@@ -93,6 +97,35 @@ namespace UdonSharpEditor
             return behaviourList;
         }
 
+        static FieldInfo _serializedAssetField;
+        static void UpdateSerializedProgramAssets(List<UdonBehaviour> udonBehaviours)
+        {
+            if (_serializedAssetField == null)
+                _serializedAssetField = typeof(UdonBehaviour).GetField("serializedProgramAsset", BindingFlags.NonPublic | BindingFlags.Instance);
+            
+            foreach (UdonBehaviour behaviour in udonBehaviours)
+            {
+                UdonSharpProgramAsset programAsset = behaviour.programSource as UdonSharpProgramAsset;
+                if (programAsset == null)
+                    continue;
+                
+                if (_serializedAssetField.GetValue(behaviour) == null)
+                {
+                    SerializedObject serializedBehaviour = new SerializedObject(behaviour);
+                    SerializedProperty serializedProgramProperty = serializedBehaviour.FindProperty("serializedProgramAsset");
+                    serializedProgramProperty.objectReferenceValue = programAsset.SerializedProgramAsset;
+                    serializedBehaviour.ApplyModifiedPropertiesWithoutUndo();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates the public variable types on behavours.
+        /// If public variable type does not match from a prior version of the script on the behaviour, 
+        ///   this will attempt to convert the type using System.Convert, then if that fails, by using an explicit/implicit cast if found.
+        /// If no conversion works, this will set the public variable to the default value for the type.
+        /// </summary>
+        /// <param name="udonBehaviours"></param>
         static void UpdatePublicVariables(List<UdonBehaviour> udonBehaviours)
         {
             int updatedBehaviourVariables = 0;
@@ -113,16 +146,14 @@ namespace UdonSharpEditor
                     try
                     {
                         // Remove variables that have been removed from the program asset
-                        FieldDefinition fieldDefinition;
-                        if (!fieldDefinitions.TryGetValue(variableSymbol, out fieldDefinition))
+                        if (!fieldDefinitions.TryGetValue(variableSymbol, out FieldDefinition fieldDefinition))
                         {
                             updatedBehaviourVariables++;
                             publicVariables.RemoveVariable(variableSymbol);
                             continue;
                         }
-
-                        System.Type publicFieldType;
-                        if (!publicVariables.TryGetVariableType(variableSymbol, out publicFieldType))
+                        
+                        if (!publicVariables.TryGetVariableType(variableSymbol, out System.Type publicFieldType))
                             continue;
 
                         System.Type programSymbolType = fieldDefinition.fieldSymbol.symbolCsType;
@@ -132,8 +163,7 @@ namespace UdonSharpEditor
 
                             if (publicFieldType.IsExplicitlyAssignableFrom(programSymbolType))
                             {
-                                object symbolValue;
-                                publicVariables.TryGetVariableValue(variableSymbol, out symbolValue);
+                                publicVariables.TryGetVariableValue(variableSymbol, out object symbolValue);
 
                                 object convertedValue;
                                 try
