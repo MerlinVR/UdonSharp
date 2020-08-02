@@ -9,6 +9,9 @@ using VRC.Udon.Serialization.OdinSerializer.Utilities;
 
 namespace UdonSharp
 {
+    /// <summary>
+    /// Handles cache data for U# that gets saved to the Library. All data this uses is intermediate generated data that is not required and can be regenerated from the source files.
+    /// </summary>
     [InitializeOnLoad]
     internal class UdonSharpEditorCache
     {
@@ -49,6 +52,7 @@ namespace UdonSharp
         static UdonSharpEditorCache()
         {
             EditorApplication.playModeStateChanged += SaveOnPlayExit;
+            AssemblyReloadEvents.beforeAssemblyReload += AssemblyReloadSave;
         }
 
         // Saves cache on play mode exit/enter and once we've entered the target mode reload the state from disk to persist the changes across play/edit mode
@@ -76,23 +80,29 @@ namespace UdonSharp
             }
         }
 
+        static void AssemblyReloadSave()
+        {
+            Instance.SaveAllCacheData();
+        }
+
         void SaveAllCacheData()
         {
             if (!Directory.Exists(CACHE_DIR_PATH))
                 Directory.CreateDirectory(CACHE_DIR_PATH);
             
-            if (_dirty)
+            if (_sourceDirty)
             {
                 File.WriteAllBytes(CACHE_FILE_PATH, SerializationUtility.SerializeValue<SourceHashLookupStorage>(new SourceHashLookupStorage() { sourceFileHashLookup = _instance.sourceFileHashLookup }, DataFormat.Binary));
-                _dirty = false;
+                _sourceDirty = false;
             }
 
             FlushDirtyDebugInfos();
+            FlushUasmCache();
         }
         #endregion
 
-        bool _dirty = false;
-        
+        #region Source file modification cache
+        bool _sourceDirty = false;
         Dictionary<string, string> sourceFileHashLookup = new Dictionary<string, string>();
          
         public bool IsSourceFileDirty(UdonSharpProgramAsset programAsset)
@@ -128,14 +138,14 @@ namespace UdonSharp
             if (sourceFileHashLookup.ContainsKey(programAssetGuid))
             {
                 if (sourceFileHashLookup[programAssetGuid] != newHash)
-                    _dirty = true;
+                    _sourceDirty = true;
 
                 sourceFileHashLookup[programAssetGuid] = newHash;
             }
             else
             {
                 sourceFileHashLookup.Add(programAssetGuid, newHash);
-                _dirty = true;
+                _sourceDirty = true;
             }
         }
 
@@ -146,7 +156,9 @@ namespace UdonSharp
 
             return UdonSharpUtils.HashString(scriptText);
         }
+        #endregion
 
+        #region Debug info cache
         public enum DebugInfoType
         {
             Editor,
@@ -272,5 +284,61 @@ namespace UdonSharp
 
             dirtyDebugInfos.Clear();
         }
+        #endregion
+
+        #region UASM cache
+        const string UASM_DIR_PATH = "Library/UdonSharpCache/UASM/";
+
+        // UdonSharpProgramAsset GUID to uasm lookup
+        Dictionary<string, string> _uasmCache = new Dictionary<string, string>();
+
+        void FlushUasmCache()
+        {
+            if (!Directory.Exists(UASM_DIR_PATH))
+                Directory.CreateDirectory(UASM_DIR_PATH);
+
+            foreach (var uasmCacheEntry in _uasmCache)
+            {
+                string filePath = $"{UASM_DIR_PATH}{uasmCacheEntry.Key}.uasm";
+
+                File.WriteAllText(filePath, uasmCacheEntry.Value);
+            }
+        }
+
+        public string GetUASMStr(UdonSharpProgramAsset programAsset)
+        {
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string guid, out long _))
+                return "";
+
+            if (_uasmCache.TryGetValue(guid, out string uasm))
+                return uasm;
+
+            string filePath = $"{UASM_DIR_PATH}{guid}.uasm";
+            if (File.Exists(filePath))
+            {
+                uasm = UdonSharpUtils.ReadFileTextSync(filePath);
+
+                _uasmCache.Add(guid, uasm);
+                return uasm;
+            }
+
+            return "";
+        }
+
+        static object uasmSetLock = new object();
+        public void SetUASMStr(UdonSharpProgramAsset programAsset, string uasm)
+        {
+            lock (uasmSetLock)
+            {
+                if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string guid, out long _))
+                    return;
+
+                if (_uasmCache.ContainsKey(guid))
+                    _uasmCache[guid] = uasm;
+                else
+                    _uasmCache.Add(guid, uasm);
+            }
+        }
+        #endregion
     }
 }

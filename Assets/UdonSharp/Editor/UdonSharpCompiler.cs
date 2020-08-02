@@ -106,6 +106,8 @@ namespace UdonSharp.Compiler
                         {
                             compileResult.programAsset.SetUdonAssembly(compileResult.compiledAssembly);
                             compileResult.programAsset.AssembleCsProgram(compileResult.symbolCount);
+                            compileResult.programAsset.SetUdonAssembly("");
+                            UdonSharpEditorCache.Instance.SetUASMStr(compileResult.programAsset, compileResult.compiledAssembly);
                         }
                         else
                         {

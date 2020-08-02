@@ -47,8 +47,17 @@ namespace UdonSharp
 
         internal void DrawAssemblyText()
         {
-            bool dirtyDummy = false;
-            DrawAssemblyTextArea(false, ref dirtyDummy);
+            string uasmText = UdonSharpEditorCache.Instance.GetUASMStr(this);
+
+            EditorGUILayout.LabelField("Assembly Code", EditorStyles.boldLabel);
+            if (GUILayout.Button("Copy Assembly To Clipboard"))
+            {
+                EditorGUIUtility.systemCopyBuffer = uasmText;
+            }
+
+            EditorGUI.BeginDisabledGroup(true);
+            EditorGUILayout.TextArea(uasmText);
+            EditorGUI.EndDisabledGroup();
         }
 
         new internal void DrawProgramDisassembly()
