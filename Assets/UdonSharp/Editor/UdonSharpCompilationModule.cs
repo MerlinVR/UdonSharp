@@ -161,7 +161,7 @@ namespace UdonSharp.Compiler
                 if (debugInfo != null)
                     debugInfo.FinalizeDebugInfo(sourceDefines);
 
-                UdonSharpDebugInfoManager.Instance.SetDebugInfo(programAsset, UdonSharpDebugInfoManager.DebugInfoType.Editor, debugInfo);
+                UdonSharpEditorCache.Instance.SetDebugInfo(programAsset, UdonSharpEditorCache.DebugInfoType.Editor, debugInfo);
                 //programAsset.debugInfo = debugInfo;
             }
 

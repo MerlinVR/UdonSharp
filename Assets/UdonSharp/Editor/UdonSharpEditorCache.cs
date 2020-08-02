@@ -1,58 +1,98 @@
 ﻿
 using System.Collections.Generic;
 using System.IO;
+using UdonSharp.Compiler;
 using UnityEditor;
+using UnityEngine;
 using VRC.Udon.Serialization.OdinSerializer;
+using VRC.Udon.Serialization.OdinSerializer.Utilities;
 
 namespace UdonSharp
 {
+    [InitializeOnLoad]
     internal class UdonSharpEditorCache
     {
         #region Instance and serialization management
-        private const string CACHE_PATH = "Library/UdonSharpCache/UdonSharpEditorCache.asset";
+        [System.Serializable]
+        struct SourceHashLookupStorage
+        {
+            [OdinSerialize, System.NonSerialized]
+            public Dictionary<string, string> sourceFileHashLookup;
+        }
+
+        private const string CACHE_DIR_PATH = "Library/UdonSharpCache/";
+        private const string CACHE_FILE_PATH = "Library/UdonSharpCache/UdonSharpEditorCache.asset";
 
         public static UdonSharpEditorCache Instance => GetInstance();
 
-        static UdonSharpEditorCache _currentCache;
+        static UdonSharpEditorCache _instance;
+        static object instanceLock = new object();
+
         private static UdonSharpEditorCache GetInstance()
         {
-            if (_currentCache != null)
-                return _currentCache;
-
-            if (File.Exists(CACHE_PATH))
+            lock (instanceLock)
             {
-                _currentCache = SerializationUtility.DeserializeValue<UdonSharpEditorCache>(File.ReadAllBytes(CACHE_PATH), DataFormat.Binary);
-                return _currentCache;
+                if (_instance != null)
+                    return _instance;
+
+                _instance = new UdonSharpEditorCache();
+
+                if (File.Exists(CACHE_FILE_PATH))
+                {
+                    _instance.sourceFileHashLookup = SerializationUtility.DeserializeValue<SourceHashLookupStorage>(File.ReadAllBytes(CACHE_FILE_PATH), DataFormat.Binary).sourceFileHashLookup;
+                }
+
+                return _instance;
             }
+        }
 
-            string dirName = Path.GetDirectoryName(CACHE_PATH);
-            if (!Directory.Exists(dirName))
-                Directory.CreateDirectory(dirName);
+        static UdonSharpEditorCache()
+        {
+            EditorApplication.playModeStateChanged += SaveOnPlayExit;
+        }
 
-            _currentCache = new UdonSharpEditorCache();
-
-            return _currentCache;
+        // Saves cache on play mode exit/enter and once we've entered the target mode reload the state from disk to persist the changes across play/edit mode
+        static void SaveOnPlayExit(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingPlayMode ||
+                state == PlayModeStateChange.ExitingEditMode)
+            {
+                Instance.SaveAllCacheData();
+            }
+            else if (state == PlayModeStateChange.EnteredPlayMode ||
+                     state == PlayModeStateChange.EnteredEditMode)
+            {
+                _instance = null;
+            }
         }
 
         class UdonSharpEditorCacheWriter : UnityEditor.AssetModificationProcessor
         {
             public static string[] OnWillSaveAssets(string[] paths)
             {
-                UdonSharpEditorCache cache = UdonSharpEditorCache.Instance;
-                if (cache._dirty)
-                {
-                    File.WriteAllBytes(CACHE_PATH, SerializationUtility.SerializeValue<UdonSharpEditorCache>(_currentCache, DataFormat.Binary));
-                    cache._dirty = false;
-                }
+                Instance.SaveAllCacheData();
 
                 return paths;
             }
         }
+
+        void SaveAllCacheData()
+        {
+            if (!Directory.Exists(CACHE_DIR_PATH))
+                Directory.CreateDirectory(CACHE_DIR_PATH);
+            
+            if (_dirty)
+            {
+                File.WriteAllBytes(CACHE_FILE_PATH, SerializationUtility.SerializeValue<SourceHashLookupStorage>(new SourceHashLookupStorage() { sourceFileHashLookup = _instance.sourceFileHashLookup }, DataFormat.Binary));
+                _dirty = false;
+            }
+
+            FlushDirtyDebugInfos();
+        }
         #endregion
 
         bool _dirty = false;
-
-        [OdinSerialize]
+        
         Dictionary<string, string> sourceFileHashLookup = new Dictionary<string, string>();
          
         public bool IsSourceFileDirty(UdonSharpProgramAsset programAsset)
@@ -105,6 +145,132 @@ namespace UdonSharp
             string scriptText = UdonSharpUtils.ReadFileTextSync(scriptPath);
 
             return UdonSharpUtils.HashString(scriptText);
+        }
+
+        public enum DebugInfoType
+        {
+            Editor,
+            Game,
+        }
+
+        private const string DEBUG_INFO_PATH = "Library/UdonSharpCache/DebugInfo/";
+
+        ClassDebugInfo LoadDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType)
+        {
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(sourceProgram, out string guid, out long _))
+            {
+                return null;
+            }
+
+            string debugInfoPath = $"{DEBUG_INFO_PATH}{guid}_{debugInfoType}.asset";
+
+            if (!File.Exists(debugInfoPath))
+                return null;
+
+            ClassDebugInfo classDebugInfo = null;
+
+            try
+            {
+                classDebugInfo = SerializationUtility.DeserializeValue<ClassDebugInfo>(File.ReadAllBytes(debugInfoPath), DataFormat.Binary);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError(e);
+                return null;
+            }
+
+            return classDebugInfo;
+        }
+
+        void SaveDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType, ClassDebugInfo debugInfo)
+        {
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(sourceProgram, out string guid, out long _))
+            {
+                return;
+            }
+
+            string debugInfoPath = $"{DEBUG_INFO_PATH}{guid}_{debugInfoType}.asset";
+
+            if (!Directory.Exists(DEBUG_INFO_PATH))
+                Directory.CreateDirectory(DEBUG_INFO_PATH);
+
+            File.WriteAllBytes(debugInfoPath, SerializationUtility.SerializeValue<ClassDebugInfo>(debugInfo, DataFormat.Binary));
+        }
+
+        Dictionary<UdonSharpProgramAsset, Dictionary<DebugInfoType, ClassDebugInfo>> _classDebugInfoLookup = new Dictionary<UdonSharpProgramAsset, Dictionary<DebugInfoType, ClassDebugInfo>>();
+
+        public ClassDebugInfo GetDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType)
+        {
+            if (!_classDebugInfoLookup.TryGetValue(sourceProgram, out var debugInfo))
+            {
+                debugInfo = new Dictionary<DebugInfoType, ClassDebugInfo>();
+                _classDebugInfoLookup.Add(sourceProgram, debugInfo);
+            }
+
+            if (debugInfo.TryGetValue(debugInfoType, out ClassDebugInfo info))
+            {
+                return info;
+            }
+
+            ClassDebugInfo loadedInfo = LoadDebugInfo(sourceProgram, debugInfoType);
+            if (loadedInfo != null)
+            {
+                debugInfo.Add(debugInfoType, loadedInfo);
+                return loadedInfo;
+            }
+
+            if (debugInfoType == DebugInfoType.Game)
+            {
+                if (debugInfo.TryGetValue(DebugInfoType.Editor, out info))
+                    return info;
+
+                loadedInfo = LoadDebugInfo(sourceProgram, DebugInfoType.Editor);
+                if (loadedInfo != null)
+                {
+                    debugInfo.Add(DebugInfoType.Editor, loadedInfo);
+                    return loadedInfo;
+                }
+            }
+
+            return null;
+        }
+
+        HashSet<ClassDebugInfo> dirtyDebugInfos = new HashSet<ClassDebugInfo>(new ReferenceEqualityComparer<ClassDebugInfo>());
+        object setDebugInfoLock = new object();
+
+        public void SetDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType, ClassDebugInfo debugInfo)
+        {
+            lock (setDebugInfoLock)
+            {
+                dirtyDebugInfos.Add(debugInfo);
+
+                if (!_classDebugInfoLookup.TryGetValue(sourceProgram, out var debugInfos))
+                {
+                    debugInfos = new Dictionary<DebugInfoType, ClassDebugInfo>();
+                    _classDebugInfoLookup.Add(sourceProgram, debugInfos);
+                }
+
+                if (!debugInfos.ContainsKey(debugInfoType))
+                    debugInfos.Add(debugInfoType, debugInfo);
+                else
+                    debugInfos[debugInfoType] = debugInfo;
+            }
+        }
+
+        void FlushDirtyDebugInfos()
+        {
+            foreach (var sourceProgramInfos in _classDebugInfoLookup)
+            {
+                foreach (var debugInfo in sourceProgramInfos.Value)
+                {
+                    if (dirtyDebugInfos.Contains(debugInfo.Value))
+                    {
+                        SaveDebugInfo(sourceProgramInfos.Key, debugInfo.Key, debugInfo.Value);
+                    }
+                }
+            }
+
+            dirtyDebugInfos.Clear();
         }
     }
 }
