@@ -69,3 +69,4 @@ crashlytics-build.properties
 Assets/VRCSDK.meta
 Assets/UdonSharp/Scripts/Editor.meta
 .idea/*
+Assets/Udon.meta
