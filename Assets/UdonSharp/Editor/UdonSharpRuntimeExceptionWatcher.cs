@@ -67,6 +67,8 @@ namespace UdonSharp
             scriptLookup = new Dictionary<long, (string, ClassDebugInfo)>();
             string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
 
+            UdonSharpDebugInfoManager debugInfoManager = UdonSharpDebugInfoManager.Instance;
+
             foreach (string dataGuid in udonSharpDataAssets)
             {
                 UdonSharpProgramAsset programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid));
@@ -89,7 +91,7 @@ namespace UdonSharp
                 if (scriptLookup.ContainsKey(programID))
                     continue;
 
-                scriptLookup.Add(programID, (AssetDatabase.GetAssetPath(programAsset.sourceCsScript), programAsset.debugInfo));
+                scriptLookup.Add(programID, (AssetDatabase.GetAssetPath(programAsset.sourceCsScript), debugInfoManager.GetDebugInfo(programAsset, UdonSharpDebugInfoManager.DebugInfoType.Editor)));
             }
 
             return true;

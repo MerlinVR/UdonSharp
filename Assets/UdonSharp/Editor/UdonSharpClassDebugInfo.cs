@@ -21,7 +21,7 @@ namespace UdonSharp.Compiler
             public int line = 0;
             public int lineChar = 0;
 
-            public string spanCodeSection = "";
+            //public string spanCodeSection = "";
         }
 
         [UnityEngine.SerializeField]
@@ -61,7 +61,7 @@ namespace UdonSharp.Compiler
 
             lastLineSpan.endInstruction = assemblyBuilder.programCounter - 1;
             lastLineSpan.endSourceChar = node.SpanStart;
-            lastLineSpan.spanCodeSection = sourceText.Substring(lastLineSpan.startSourceChar, lastLineSpan.endSourceChar - lastLineSpan.startSourceChar);
+            //lastLineSpan.spanCodeSection = sourceText.Substring(lastLineSpan.startSourceChar, lastLineSpan.endSourceChar - lastLineSpan.startSourceChar);
 
             DebugLineSpan nextLineSpan = new DebugLineSpan();
             nextLineSpan.startInstruction = assemblyBuilder.programCounter;
@@ -102,8 +102,15 @@ namespace UdonSharp.Compiler
             }
         }
 
-        public void FinalizeDebugInfo()
+        public void FinalizeDebugInfo(string classDefines)
         {
+            int defineCount = 0;
+            foreach (char c in classDefines)
+            {
+                if (c == '\n')
+                    defineCount++;
+            }
+
             serializedDebugSpans = new DebugLineSpan[debugSpans.Count];
 
             int lastStart = 0;
@@ -135,7 +142,7 @@ namespace UdonSharp.Compiler
                 lastLineCount = lineCount;
                 lastStart = span.startSourceChar;
 
-                serializedDebugSpans[i].line = lineCount;
+                serializedDebugSpans[i].line = lineCount - defineCount;
                 serializedDebugSpans[i].lineChar = lineChar;
             }
         }

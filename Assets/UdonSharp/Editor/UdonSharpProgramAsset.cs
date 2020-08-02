@@ -32,9 +32,6 @@ namespace UdonSharp
         public List<string> compileErrors = new List<string>();
 
         [HideInInspector]
-        public ClassDebugInfo debugInfo = null;
-        
-        [HideInInspector]
         public bool hasInteractEvent = false;
 
         [SerializeField, HideInInspector]

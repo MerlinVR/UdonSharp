@@ -63,7 +63,10 @@ namespace UdonSharp.Compiler
 
             try
             {
-                List<ClassDefinition> classDefinitions = BuildClassDefinitions();
+                EditorUtility.DisplayProgressBar("UdonSharp Compile", "Building class definitions...", 0f);
+
+                string defineString = UdonSharpUtils.GetProjectDefineString(true);
+                List<ClassDefinition> classDefinitions = BuildClassDefinitions(defineString);
                 if (classDefinitions == null)
                     totalErrorCount++;
 
@@ -74,14 +77,14 @@ namespace UdonSharp.Compiler
 
                     foreach (CompilationModule module in modules)
                     {
-                        compileTasks.Add(module.Compile(classDefinitions));
+                        compileTasks.Add(module.Compile(classDefinitions, defineString));
                     }
 #else
                     List<Task<CompileTaskResult>> compileTasks = new List<Task<CompileTaskResult>>();
 
                     foreach (CompilationModule module in modules)
                     {
-                        compileTasks.Add(Task.Factory.StartNew(() => module.Compile(classDefinitions)));
+                        compileTasks.Add(Task.Factory.StartNew(() => module.Compile(classDefinitions, defineString)));
                     }
 #endif
 
@@ -453,7 +456,7 @@ namespace UdonSharp.Compiler
             return initializerErrorCount;
         }
 
-        private List<ClassDefinition> BuildClassDefinitions()
+        private List<ClassDefinition> BuildClassDefinitions(string defineString)
         {
             UdonSharpProgramAsset[] udonSharpPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
 
@@ -465,7 +468,7 @@ namespace UdonSharp.Compiler
                     continue;
 
                 string sourcePath = AssetDatabase.GetAssetPath(udonSharpProgram.sourceCsScript);
-                string programSource = UdonSharpUtils.ReadFileTextSync(sourcePath);
+                string programSource = defineString + UdonSharpUtils.ReadFileTextSync(sourcePath);
 
                 ResolverContext resolver = new ResolverContext();
                 SymbolTable classSymbols = new SymbolTable(resolver, null);

@@ -563,8 +563,7 @@ namespace UdonSharp
                     break;
                 else
                     System.Threading.Thread.Sleep(20);
-
-                // 2 second timeout
+                
                 System.TimeSpan timeFromStart = System.DateTime.Now - startTime;
 
                 if (timeFromStart.TotalSeconds > timeoutSeconds)
@@ -584,6 +583,24 @@ namespace UdonSharp
             {
                 return BitConverter.ToString(sha256.ComputeHash(Encoding.UTF8.GetBytes(stringToHash))).Replace("-", "");
             }
+        }
+
+        internal static string GetProjectDefineString(bool editorBuild)
+        {
+            StringBuilder defineBuilder = new StringBuilder();
+
+            foreach (string define in UnityEditor.EditorUserBuildSettings.activeScriptCompilationDefines)
+            {
+                if (!editorBuild)
+                    if (define.StartsWith("UNITY_EDITOR"))
+                        continue;
+
+                defineBuilder.AppendFormat("#define {0}\r\n", define); 
+            }
+
+            defineBuilder.AppendLine("#define COMPILER_UDONSHARP");
+
+            return defineBuilder.ToString();
         }
     }
 }

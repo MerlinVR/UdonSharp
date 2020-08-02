@@ -47,11 +47,12 @@ namespace UdonSharp.Compiler
             settings = UdonSharpSettings.GetSettings();
         }
 
-        public CompileTaskResult Compile(List<ClassDefinition> classDefinitions)
+        public CompileTaskResult Compile(List<ClassDefinition> classDefinitions, string sourceDefines)
         {
             programAsset.compileErrors.Clear();
-            
-            Microsoft.CodeAnalysis.SyntaxTree tree = CSharpSyntaxTree.ParseText(sourceCode);
+
+            string sourceWithDefines = sourceDefines + sourceCode;
+            Microsoft.CodeAnalysis.SyntaxTree tree = CSharpSyntaxTree.ParseText(sourceWithDefines);
 
             CompileTaskResult result = new CompileTaskResult();
             result.programAsset = programAsset;
@@ -93,7 +94,7 @@ namespace UdonSharp.Compiler
 
             if (settings == null || settings.buildDebugInfo)
             {
-                debugInfo = new ClassDebugInfo(sourceCode, settings == null || settings.includeInlineCode);
+                debugInfo = new ClassDebugInfo(sourceWithDefines, settings == null || settings.includeInlineCode);
             }
 
             ASTVisitor visitor = new ASTVisitor(resolver, moduleSymbols, moduleLabels, methodVisitor.definedMethods, classDefinitions, debugInfo);
@@ -158,9 +159,10 @@ namespace UdonSharp.Compiler
                 programAsset.fieldDefinitions = visitor.visitorContext.localFieldDefinitions;
 
                 if (debugInfo != null)
-                    debugInfo.FinalizeDebugInfo();
+                    debugInfo.FinalizeDebugInfo(sourceDefines);
 
-                programAsset.debugInfo = debugInfo;
+                UdonSharpDebugInfoManager.Instance.SetDebugInfo(programAsset, UdonSharpDebugInfoManager.DebugInfoType.Editor, debugInfo);
+                //programAsset.debugInfo = debugInfo;
             }
 
             return result;
