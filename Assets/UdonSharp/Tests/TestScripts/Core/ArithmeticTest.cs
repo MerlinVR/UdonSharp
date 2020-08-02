@@ -22,6 +22,7 @@ namespace UdonSharp.Tests
             IntAssignment();
             LongAssignment();
             ByteIncrement();
+            ByteAssignment();
             LongIncrement();
             ShortIncrement();
             UShortIncrement();
@@ -176,7 +177,7 @@ namespace UdonSharp.Tests
         void ByteAssignment()
         {
             sbyte testVal = 5;
-
+            
             tester.TestAssertion("sByte Add Assign", (testVal += 4) == 9);
             tester.TestAssertion("sByte Subtract Assign", (testVal -= 20) == -11);
             tester.TestAssertion("sByte Multiply Assign", (testVal *= 8) == -88);

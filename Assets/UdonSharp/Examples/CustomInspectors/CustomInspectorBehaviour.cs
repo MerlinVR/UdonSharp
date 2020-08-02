@@ -9,16 +9,37 @@ namespace UdonSharp.Examples.Inspectors
     /// <summary>
     /// Example behaviour that has a custom inspector
     /// </summary>
+    /// 
     public class CustomInspectorBehaviour : UdonSharpBehaviour 
     {
         public GameObject[] gameObjects;
 
-        private void Update()
+        public GameObject refGameObject;
+
+        public Vector3 behaviourPos;
+         
+        //public float randomFloat;
+
+        private void Update() 
         {
-            string gameObjectNames = "Names: " + string.Join(", ", (object[])gameObjects);
+            string gameObjectNames2 = "Names: " + string.Join(", ", (object[])gameObjects);
+            //string gameObjectNames = "Names: ";
+            //foreach (GameObject obj in gameObjects)
+            //{
+            //    if (obj)
+            //        gameObjectNames += obj.ToString() + ", ";
+            //    else
+            //        gameObjectNames += "null, ";
+            //}
 
+            //Debug.Log(gameObjectNames);
+            //Debug.Log(gameObjectNames2);
+            //Debug.Log(gameObjects);
+            //Debug.Log(refGameObject);
 
-            Debug.Log(gameObjectNames);
+            transform.position = behaviourPos; 
+
+            //randomFloat = Random.Range(0f, 100f);
         }
     }
 }

@@ -33,17 +33,18 @@ public class ClassSerializer : MonoBehaviour
     }
 
     [ContextMenu("C#->Udon")]
-    private void CopyToUdon()
+    private void CopyToUdon(ClassSerializer serializedClass)
     {
         Init();
 
-        Serializer.CreatePooled<SerializedClassTest>().Write(componentStorage, in cComponent);
+        Serializer.CreatePooled<SerializedClassTest>().Write(componentStorage, serializedClass.cComponent);
     }
 
     private void Update()
     {
-        CopyToCSharp();
-        CopyToUdon();
+        //CopyToCSharp();
+        //ClassSerializer self = this;
+        //CopyToUdon(self);
     }
 }
 

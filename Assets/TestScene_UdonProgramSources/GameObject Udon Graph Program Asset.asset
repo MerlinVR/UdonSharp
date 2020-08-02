@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f11136daadff0b44ac2278a314682ab, type: 3}
   m_Name: GameObject Udon Graph Program Asset
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 85aa436936d071242a695eb11f9ce4b0,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 291c69506f7776c43b33a750033132c9,
     type: 2}
   udonAssembly: ".data_start\r\n\r\n    \r\n    Vector3_0: %UnityEngineVector3, null\r\n
     \   Single_0: %SystemSingle, null\r\n    Single_1: %SystemSingle, null\r\n    Vector3_1:
@@ -20,8 +20,9 @@ MonoBehaviour:
     %UnityEngineObject, null\r\n    Object_1: %UnityEngineObject, null\r\n    instance_0:
     %UnityEngineGameObject, this\r\n    type_0: %SystemType, null\r\n    Type_0: %SystemType,
     null\r\n    var_0: %SystemObject, null\r\n    message_1: %SystemObject, null\r\n
-    \   instance_1: %UnityEngineRenderer, null\r\n    vec3Var: %UnityEngineVector3,
-    null\r\n    newRendererVariable: %UnityEngineRenderer, null\r\n\r\n.data_end\r\n\r\n.code_start\r\n\r\n
+    \   instance_1: %UnityEngineRenderer, null\r\n    message_2: %SystemObject, null\r\n
+    \   Single_2: %SystemSingle, null\r\n    vec3Var: %UnityEngineVector3, null\r\n
+    \   newRendererVariable: %UnityEngineRenderer, null\r\n\r\n.data_end\r\n\r\n.code_start\r\n\r\n
     \   .export _start\r\n    \r\n    _start:\r\n    \r\n        PUSH, vec3Var\r\n
     \       PUSH, Single_1\r\n        EXTERN, \"UnityEngineVector3.__get_y__SystemSingle\"\r\n
     \       PUSH, Single_1\r\n        PUSH, Single_0\r\n        EXTERN, \"SystemSingle.__op_UnaryMinus__SystemSingle__SystemSingle\"\r\n
@@ -37,6 +38,8 @@ MonoBehaviour:
     newRendererVariable\r\n        PUSH, instance_1\r\n        COPY\r\n        PUSH,
     instance_1\r\n        PUSH, message_1\r\n        EXTERN, \"UnityEngineRenderer.__GetType__SystemType\"\r\n
     \       PUSH, message_1\r\n        EXTERN, \"UnityEngineDebug.__Log__SystemObject__SystemVoid\"\r\n
+    \       PUSH, Single_2\r\n        PUSH, message_2\r\n        EXTERN, \"SystemDecimal.__op_Explicit__SystemSingle__SystemDecimal\"\r\n
+    \       PUSH, message_2\r\n        EXTERN, \"UnityEngineDebug.__Log__SystemObject__SystemVoid\"\r\n
     \       JUMP, 0xFFFFFFFC\r\n    \r\n\r\n.code_end\r\n"
   assemblyError: 
   graphData:
@@ -161,9 +164,12 @@ MonoBehaviour:
     - fullName: Const_Null
       uid: 4adaa710-278d-4ca5-a7c1-a30fd59853fb
       position: {x: 324, y: 372}
-      nodeUIDs: []
+      nodeUIDs:
+      - 
       flowUIDs: []
-      nodeValues: []
+      nodeValues:
+      - unityObjectValue: {fileID: 0}
+        stringValue: 
     - fullName: UnityEngineComponent.__op_Equality__UnityEngineObject_UnityEngineObject__SystemBoolean
       uid: 91ce811c-b08d-4ba0-9c6d-24df918855b2
       position: {x: 624, y: 252}
@@ -216,13 +222,13 @@ MonoBehaviour:
       nodeUIDs:
       - 4e6d4031-8b78-491c-a8cf-38d518468cef|0
       flowUIDs:
-      - 
+      - 0b51f6f1-fa37-4131-9065-3bd11d6557e7
       nodeValues:
       - unityObjectValue: {fileID: 0}
         stringValue: 
     - fullName: Get_Variable
       uid: 86f1fcfd-4ad8-4e2f-8e45-c4b7bd537bd9
-      position: {x: 984, y: 192}
+      position: {x: 921.90015, y: 169}
       nodeUIDs:
       - 
       flowUIDs: []
@@ -231,11 +237,40 @@ MonoBehaviour:
         stringValue: System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|59107829-90e2-488c-bef4-87b333f17c57
     - fullName: UnityEngineRenderer.__GetType__SystemType
       uid: 4e6d4031-8b78-491c-a8cf-38d518468cef
-      position: {x: 1284, y: 180}
+      position: {x: 1250.6503, y: 183.45001}
       nodeUIDs:
       - 86f1fcfd-4ad8-4e2f-8e45-c4b7bd537bd9|0
       flowUIDs: []
       nodeValues:
       - unityObjectValue: {fileID: 0}
         stringValue: 
+    - fullName: SystemDecimal.__op_Explicit__SystemSingle__SystemDecimal
+      uid: 895c9ce5-3768-4ddf-8367-55088e13e2f7
+      position: {x: 1247.0839, y: 364.90808}
+      nodeUIDs:
+      - 
+      flowUIDs: []
+      nodeValues:
+      - unityObjectValue: {fileID: 0}
+        stringValue: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|0
+    - fullName: UnityEngineDebug.__Log__SystemObject__SystemVoid
+      uid: 0b51f6f1-fa37-4131-9065-3bd11d6557e7
+      position: {x: 1800.2338, y: 38.691284}
+      nodeUIDs:
+      - 895c9ce5-3768-4ddf-8367-55088e13e2f7|0
+      flowUIDs: []
+      nodeValues:
+      - unityObjectValue: {fileID: 0}
+        stringValue: 
+  graphElementData:
+  - type: 5
+    uid: e14dc5b5-7d9e-4b0e-aaea-8dc552866035
+    jsonData: '{"visible":true,"layout":{"serializedVersion":"2","x":10.0,"y":130.0,"width":200.0,"height":150.0}}'
+  - type: 4
+    uid: 7513ee67-b2ed-4b14-b42b-e79a9fe6f906
+    jsonData: '{"visible":true,"layout":{"serializedVersion":"2","x":10.0,"y":20.0,"width":0.0,"height":0.0}}'
+  viewTransform:
+    position: {x: -249.4069, y: 233.68872}
+    scale: 0.8695652
+  version: 1.0.0
   showAssembly: 1

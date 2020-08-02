@@ -14,705 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   serializedUdonProgramAsset: {fileID: 11400000, guid: 2ceeb50cded450943b64d27ba578167e,
     type: 2}
-  udonAssembly: ".data_start\n\n    .export followerToAssign\n\n    __refl_const_intnl_udonTypeID:
-    %SystemInt64, null\n    __refl_const_intnl_udonTypeName: %SystemString, null\n
-    \   followerToAssign: %VRCUdonUdonBehaviour, null\n    onStationEnteredPlayer:
-    %VRCSDKBaseVRCPlayerApi, null\n    onStationExitedPlayer: %VRCSDKBaseVRCPlayerApi,
-    null\n    __0_player_VRCPlayerApi: %VRCSDKBaseVRCPlayerApi, null\n    __1_player_VRCPlayerApi:
-    %VRCSDKBaseVRCPlayerApi, null\n    __0_const_intnl_SystemString: %SystemString,
-    null\n    __1_const_intnl_SystemString: %SystemString, null\n    __2_const_intnl_SystemString:
-    %SystemString, null\n    __0_const_intnl_SystemUInt32: %SystemUInt32, null\n    __0_intnl_SystemBoolean:
-    %SystemBoolean, null\n    __0_intnl_UnityEngineGameObject: %UnityEngineGameObject,
-    null\n    __0_intnl_SystemInt32: %SystemInt32, null\n    __1_intnl_SystemInt32:
-    %SystemInt32, null\n    __0_intnl_SystemString: %SystemString, null\n    __1_intnl_SystemString:
-    %SystemString, null\n    __2_intnl_SystemString: %SystemString, null\n    __3_intnl_SystemString:
-    %SystemString, null\n    __4_intnl_SystemString: %SystemString, null\n    __5_intnl_SystemString:
-    %SystemString, null\n    __6_intnl_SystemString: %SystemString, null\n    __7_intnl_SystemString:
-    %SystemString, null\n    __8_intnl_SystemString: %SystemString, null\n    __9_intnl_SystemString:
-    %SystemString, null\n    __0_intnl_returnTarget_UInt32: %SystemUInt32, null\n
-    \   __0_intnl_VRCSDKBaseVRCPlayerApi: %VRCSDKBaseVRCPlayerApi, null\n\n.data_end\n\n
-    \       \n         # using UdonSharp;\n        \n         # using UnityEngine;\n
-    \       \n         # using VRC.SDKBase;\n        \n         # using VRC.Udon;\n
-    \       \n         # namespace UdonSharp.Tests\n        \n         # [AddComponentMenu(\"Udon
-    Sharp/Tests/StationEventTest\")]\n        \n         # public class StationEventTest
-    : UdonSharpBehaviour\n.code_start\n        \n         # public FollowPlayerStationTest
-    followerToAssign;\n        \n         # public override void Interact()\n    .export
-    _interact\n        \n    _interact:\n        \n        PUSH, __0_const_intnl_SystemUInt32\n
-    \       \n         # {\n        \n         # Networking.LocalPlayer.UseAttachedStation();\n
-    \       PUSH, __0_intnl_VRCSDKBaseVRCPlayerApi\n        EXTERN, \"VRCSDKBaseNetworking.__get_LocalPlayer__VRCSDKBaseVRCPlayerApi\"\n
-    \       PUSH, __0_intnl_VRCSDKBaseVRCPlayerApi\n        EXTERN, \"VRCSDKBaseVRCPlayerApi.__UseAttachedStation__SystemVoid\"\n
-    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\n        COPY\n
-    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\n        \n        \n         #
-    public override void OnStationEntered(VRCPlayerApi player)\n    .export _onStationEntered\n
-    \       \n    _onStationEntered:\n        \n        PUSH, __0_const_intnl_SystemUInt32\n
-    \       PUSH, onStationEnteredPlayer\n        PUSH, __0_player_VRCPlayerApi\n
-    \       COPY\n        \n         # {\n        \n         # Debug.Log(player.displayName
-    + player.displayName.Length + \" entered station\");\n        PUSH, __0_player_VRCPlayerApi\n
-    \       PUSH, __0_intnl_SystemString\n        EXTERN, \"VRCSDKBaseVRCPlayerApi.__get_displayName__SystemString\"\n
-    \       PUSH, __0_player_VRCPlayerApi\n        PUSH, __1_intnl_SystemString\n
-    \       EXTERN, \"VRCSDKBaseVRCPlayerApi.__get_displayName__SystemString\"\n        PUSH,
-    __1_intnl_SystemString\n        PUSH, __0_intnl_SystemInt32\n        EXTERN, \"SystemString.__get_Length__SystemInt32\"\n
-    \       PUSH, __0_intnl_SystemInt32\n        PUSH, __2_intnl_SystemString\n        EXTERN,
-    \"SystemInt32.__ToString__SystemString\"\n        PUSH, __0_intnl_SystemString\n
-    \       PUSH, __2_intnl_SystemString\n        PUSH, __3_intnl_SystemString\n        EXTERN,
-    \"SystemString.__op_Addition__SystemString_SystemString__SystemString\"\n        PUSH,
-    __3_intnl_SystemString\n        PUSH, __0_const_intnl_SystemString\n        PUSH,
-    __4_intnl_SystemString\n        EXTERN, \"SystemString.__op_Addition__SystemString_SystemString__SystemString\"\n
-    \       PUSH, __4_intnl_SystemString\n        EXTERN, \"UnityEngineDebug.__Log__SystemObject__SystemVoid\"\n
-    \       \n         # followerToAssign.followedPlayerApi = player;\n        PUSH,
-    followerToAssign\n        PUSH, __1_const_intnl_SystemString\n        PUSH, __0_player_VRCPlayerApi\n
-    \       EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__SetProgramVariable__SystemString_SystemObject__SystemVoid\"\n
-    \       \n         # if (player.isLocal)\n        PUSH, __0_player_VRCPlayerApi\n
-    \       PUSH, __0_intnl_SystemBoolean\n        EXTERN, \"VRCSDKBaseVRCPlayerApi.__get_isLocal__SystemBoolean\"\n
-    \       PUSH, __0_intnl_SystemBoolean\n        JUMP_IF_FALSE, 0x00000180\n        \n
-    \        # Networking.SetOwner(player, followerToAssign.gameObject);\n        PUSH,
-    followerToAssign\n        PUSH, __0_intnl_UnityEngineGameObject\n        EXTERN,
-    \"UnityEngineComponent.__get_gameObject__UnityEngineGameObject\"\n        PUSH,
-    __0_player_VRCPlayerApi\n        PUSH, __0_intnl_UnityEngineGameObject\n        EXTERN,
-    \"VRCSDKBaseNetworking.__SetOwner__VRCSDKBaseVRCPlayerApi_UnityEngineGameObject__SystemVoid\"\n
-    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\n        COPY\n
-    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\n        \n        \n         #
-    public override void OnStationExited(VRCPlayerApi player)\n    .export _onStationExited\n
-    \       \n    _onStationExited:\n        \n        PUSH, __0_const_intnl_SystemUInt32\n
-    \       PUSH, onStationExitedPlayer\n        PUSH, __1_player_VRCPlayerApi\n        COPY\n
-    \       \n         # {\n        \n         # Debug.Log(player.displayName + player.displayName.Length
-    + \" exited station\");\n        PUSH, __1_player_VRCPlayerApi\n        PUSH,
-    __5_intnl_SystemString\n        EXTERN, \"VRCSDKBaseVRCPlayerApi.__get_displayName__SystemString\"\n
-    \       PUSH, __1_player_VRCPlayerApi\n        PUSH, __6_intnl_SystemString\n
-    \       EXTERN, \"VRCSDKBaseVRCPlayerApi.__get_displayName__SystemString\"\n        PUSH,
-    __6_intnl_SystemString\n        PUSH, __1_intnl_SystemInt32\n        EXTERN, \"SystemString.__get_Length__SystemInt32\"\n
-    \       PUSH, __1_intnl_SystemInt32\n        PUSH, __7_intnl_SystemString\n        EXTERN,
-    \"SystemInt32.__ToString__SystemString\"\n        PUSH, __5_intnl_SystemString\n
-    \       PUSH, __7_intnl_SystemString\n        PUSH, __8_intnl_SystemString\n        EXTERN,
-    \"SystemString.__op_Addition__SystemString_SystemString__SystemString\"\n        PUSH,
-    __8_intnl_SystemString\n        PUSH, __2_const_intnl_SystemString\n        PUSH,
-    __9_intnl_SystemString\n        EXTERN, \"SystemString.__op_Addition__SystemString_SystemString__SystemString\"\n
-    \       PUSH, __9_intnl_SystemString\n        EXTERN, \"UnityEngineDebug.__Log__SystemObject__SystemVoid\"\n
-    \       PUSH, __0_intnl_returnTarget_UInt32 #Function epilogue\n        COPY\n
-    \       JUMP_INDIRECT, __0_intnl_returnTarget_UInt32\n        \n.code_end\n"
+  udonAssembly: 
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: 84365fdb8e14dbf4695efe884dee088b, type: 3}
   behaviourIDHeapVarName: __refl_const_intnl_udonTypeID
   compileErrors: []
-  debugInfo:
-    serializedDebugSpans:
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 0
-      endSourceChar: 2
-      line: 0
-      lineChar: 0
-      spanCodeSection: "\r\n"
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 2
-      endSourceChar: 2
-      line: 1
-      lineChar: 0
-      spanCodeSection: 
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 2
-      endSourceChar: 8
-      line: 1
-      lineChar: 0
-      spanCodeSection: 'using '
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 8
-      endSourceChar: 20
-      line: 1
-      lineChar: 6
-      spanCodeSection: "UdonSharp;\r\n"
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 20
-      endSourceChar: 26
-      line: 2
-      lineChar: 0
-      spanCodeSection: 'using '
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 26
-      endSourceChar: 40
-      line: 2
-      lineChar: 6
-      spanCodeSection: "UnityEngine;\r\n"
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 40
-      endSourceChar: 46
-      line: 3
-      lineChar: 0
-      spanCodeSection: 'using '
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 46
-      endSourceChar: 46
-      line: 3
-      lineChar: 6
-      spanCodeSection: 
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 46
-      endSourceChar: 50
-      line: 3
-      lineChar: 6
-      spanCodeSection: VRC.
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 50
-      endSourceChar: 60
-      line: 3
-      lineChar: 10
-      spanCodeSection: "SDKBase;\r\n"
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 60
-      endSourceChar: 66
-      line: 4
-      lineChar: 0
-      spanCodeSection: 'using '
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 66
-      endSourceChar: 66
-      line: 4
-      lineChar: 6
-      spanCodeSection: 
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 66
-      endSourceChar: 70
-      line: 4
-      lineChar: 6
-      spanCodeSection: VRC.
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 70
-      endSourceChar: 79
-      line: 4
-      lineChar: 10
-      spanCodeSection: "Udon;\r\n\r\n"
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 79
-      endSourceChar: 113
-      line: 6
-      lineChar: 0
-      spanCodeSection: "namespace UdonSharp.Tests\r\n{\r\n    "
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 113
-      endSourceChar: 204
-      line: 8
-      lineChar: 4
-      spanCodeSection: "[AddComponentMenu(\"Udon Sharp/Tests/StationEventTest\")]\r\n
-        \   public class StationEventTest "
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 204
-      endSourceChar: 206
-      line: 9
-      lineChar: 34
-      spanCodeSection: ': '
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 206
-      endSourceChar: 206
-      line: 9
-      lineChar: 36
-      spanCodeSection: 
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 206
-      endSourceChar: 241
-      line: 9
-      lineChar: 36
-      spanCodeSection: "UdonSharpBehaviour\r\n    {\r\n        "
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 241
-      endSourceChar: 248
-      line: 11
-      lineChar: 8
-      spanCodeSection: 'public '
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 248
-      endSourceChar: 248
-      line: 11
-      lineChar: 15
-      spanCodeSection: 
-    - startInstruction: 0
-      endInstruction: -1
-      startSourceChar: 248
-      endSourceChar: 301
-      line: 11
-      lineChar: 15
-      spanCodeSection: "FollowPlayerStationTest followerToAssign;\r\n\r\n        "
-    - startInstruction: 0
-      endInstruction: 7
-      startSourceChar: 301
-      endSourceChar: 342
-      line: 13
-      lineChar: 8
-      spanCodeSection: "public override void Interact()\r\n        "
-    - startInstruction: 8
-      endInstruction: 7
-      startSourceChar: 342
-      endSourceChar: 357
-      line: 14
-      lineChar: 8
-      spanCodeSection: "{\r\n            "
-    - startInstruction: 8
-      endInstruction: 7
-      startSourceChar: 357
-      endSourceChar: 357
-      line: 15
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 8
-      endInstruction: 7
-      startSourceChar: 357
-      endSourceChar: 357
-      line: 15
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 8
-      endInstruction: 7
-      startSourceChar: 357
-      endSourceChar: 357
-      line: 15
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 8
-      endInstruction: 7
-      startSourceChar: 357
-      endSourceChar: 357
-      line: 15
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 8
-      endInstruction: 7
-      startSourceChar: 357
-      endSourceChar: 368
-      line: 15
-      lineChar: 12
-      spanCodeSection: Networking.
-    - startInstruction: 8
-      endInstruction: 7
-      startSourceChar: 368
-      endSourceChar: 380
-      line: 15
-      lineChar: 23
-      spanCodeSection: LocalPlayer.
-    - startInstruction: 8
-      endInstruction: 59
-      startSourceChar: 380
-      endSourceChar: 424
-      line: 15
-      lineChar: 35
-      spanCodeSection: "UseAttachedStation();\r\n        }\r\n\r\n        "
-    - startInstruction: 60
-      endInstruction: 59
-      startSourceChar: 424
-      endSourceChar: 462
-      line: 18
-      lineChar: 8
-      spanCodeSection: public override void OnStationEntered(
-    - startInstruction: 60
-      endInstruction: 87
-      startSourceChar: 462
-      endSourceChar: 492
-      line: 18
-      lineChar: 46
-      spanCodeSection: "VRCPlayerApi player)\r\n        "
-    - startInstruction: 88
-      endInstruction: 87
-      startSourceChar: 492
-      endSourceChar: 507
-      line: 19
-      lineChar: 8
-      spanCodeSection: "{\r\n            "
-    - startInstruction: 88
-      endInstruction: 87
-      startSourceChar: 507
-      endSourceChar: 507
-      line: 20
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 88
-      endInstruction: 87
-      startSourceChar: 507
-      endSourceChar: 507
-      line: 20
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 88
-      endInstruction: 87
-      startSourceChar: 507
-      endSourceChar: 507
-      line: 20
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 88
-      endInstruction: 87
-      startSourceChar: 507
-      endSourceChar: 513
-      line: 20
-      lineChar: 12
-      spanCodeSection: Debug.
-    - startInstruction: 88
-      endInstruction: 87
-      startSourceChar: 513
-      endSourceChar: 517
-      line: 20
-      lineChar: 18
-      spanCodeSection: Log(
-    - startInstruction: 88
-      endInstruction: 87
-      startSourceChar: 517
-      endSourceChar: 517
-      line: 20
-      lineChar: 22
-      spanCodeSection: 
-    - startInstruction: 88
-      endInstruction: 87
-      startSourceChar: 517
-      endSourceChar: 517
-      line: 20
-      lineChar: 22
-      spanCodeSection: 
-    - startInstruction: 88
-      endInstruction: 87
-      startSourceChar: 517
-      endSourceChar: 517
-      line: 20
-      lineChar: 22
-      spanCodeSection: 
-    - startInstruction: 88
-      endInstruction: 87
-      startSourceChar: 517
-      endSourceChar: 524
-      line: 20
-      lineChar: 22
-      spanCodeSection: player.
-    - startInstruction: 88
-      endInstruction: 111
-      startSourceChar: 524
-      endSourceChar: 538
-      line: 20
-      lineChar: 29
-      spanCodeSection: 'displayName + '
-    - startInstruction: 112
-      endInstruction: 111
-      startSourceChar: 538
-      endSourceChar: 538
-      line: 20
-      lineChar: 43
-      spanCodeSection: 
-    - startInstruction: 112
-      endInstruction: 111
-      startSourceChar: 538
-      endSourceChar: 538
-      line: 20
-      lineChar: 43
-      spanCodeSection: 
-    - startInstruction: 112
-      endInstruction: 111
-      startSourceChar: 538
-      endSourceChar: 545
-      line: 20
-      lineChar: 43
-      spanCodeSection: player.
-    - startInstruction: 112
-      endInstruction: 111
-      startSourceChar: 545
-      endSourceChar: 557
-      line: 20
-      lineChar: 50
-      spanCodeSection: displayName.
-    - startInstruction: 112
-      endInstruction: 215
-      startSourceChar: 557
-      endSourceChar: 566
-      line: 20
-      lineChar: 62
-      spanCodeSection: 'Length + '
-    - startInstruction: 216
-      endInstruction: 263
-      startSourceChar: 566
-      endSourceChar: 602
-      line: 20
-      lineChar: 71
-      spanCodeSection: "\" entered station\");\r\n\r\n            "
-    - startInstruction: 264
-      endInstruction: 263
-      startSourceChar: 602
-      endSourceChar: 602
-      line: 22
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 264
-      endInstruction: 263
-      startSourceChar: 602
-      endSourceChar: 602
-      line: 22
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 264
-      endInstruction: 263
-      startSourceChar: 602
-      endSourceChar: 602
-      line: 22
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 264
-      endInstruction: 263
-      startSourceChar: 602
-      endSourceChar: 619
-      line: 22
-      lineChar: 12
-      spanCodeSection: followerToAssign.
-    - startInstruction: 264
-      endInstruction: 263
-      startSourceChar: 619
-      endSourceChar: 639
-      line: 22
-      lineChar: 29
-      spanCodeSection: 'followedPlayerApi = '
-    - startInstruction: 264
-      endInstruction: 295
-      startSourceChar: 639
-      endSourceChar: 662
-      line: 22
-      lineChar: 49
-      spanCodeSection: "player;\r\n\r\n            "
-    - startInstruction: 296
-      endInstruction: 295
-      startSourceChar: 662
-      endSourceChar: 666
-      line: 24
-      lineChar: 12
-      spanCodeSection: if (
-    - startInstruction: 296
-      endInstruction: 295
-      startSourceChar: 666
-      endSourceChar: 666
-      line: 24
-      lineChar: 16
-      spanCodeSection: 
-    - startInstruction: 296
-      endInstruction: 295
-      startSourceChar: 666
-      endSourceChar: 673
-      line: 24
-      lineChar: 16
-      spanCodeSection: player.
-    - startInstruction: 296
-      endInstruction: 335
-      startSourceChar: 673
-      endSourceChar: 699
-      line: 24
-      lineChar: 23
-      spanCodeSection: "isLocal)\r\n                "
-    - startInstruction: 336
-      endInstruction: 335
-      startSourceChar: 699
-      endSourceChar: 699
-      line: 25
-      lineChar: 16
-      spanCodeSection: 
-    - startInstruction: 336
-      endInstruction: 335
-      startSourceChar: 699
-      endSourceChar: 699
-      line: 25
-      lineChar: 16
-      spanCodeSection: 
-    - startInstruction: 336
-      endInstruction: 335
-      startSourceChar: 699
-      endSourceChar: 699
-      line: 25
-      lineChar: 16
-      spanCodeSection: 
-    - startInstruction: 336
-      endInstruction: 335
-      startSourceChar: 699
-      endSourceChar: 710
-      line: 25
-      lineChar: 16
-      spanCodeSection: Networking.
-    - startInstruction: 336
-      endInstruction: 335
-      startSourceChar: 710
-      endSourceChar: 719
-      line: 25
-      lineChar: 27
-      spanCodeSection: SetOwner(
-    - startInstruction: 336
-      endInstruction: 335
-      startSourceChar: 719
-      endSourceChar: 727
-      line: 25
-      lineChar: 36
-      spanCodeSection: 'player, '
-    - startInstruction: 336
-      endInstruction: 335
-      startSourceChar: 727
-      endSourceChar: 727
-      line: 25
-      lineChar: 44
-      spanCodeSection: 
-    - startInstruction: 336
-      endInstruction: 335
-      startSourceChar: 727
-      endSourceChar: 744
-      line: 25
-      lineChar: 44
-      spanCodeSection: followerToAssign.
-    - startInstruction: 336
-      endInstruction: 403
-      startSourceChar: 744
-      endSourceChar: 779
-      line: 25
-      lineChar: 61
-      spanCodeSection: "gameObject);\r\n        }\r\n\r\n        "
-    - startInstruction: 404
-      endInstruction: 403
-      startSourceChar: 779
-      endSourceChar: 816
-      line: 28
-      lineChar: 8
-      spanCodeSection: public override void OnStationExited(
-    - startInstruction: 404
-      endInstruction: 431
-      startSourceChar: 816
-      endSourceChar: 846
-      line: 28
-      lineChar: 45
-      spanCodeSection: "VRCPlayerApi player)\r\n        "
-    - startInstruction: 432
-      endInstruction: 431
-      startSourceChar: 846
-      endSourceChar: 861
-      line: 29
-      lineChar: 8
-      spanCodeSection: "{\r\n            "
-    - startInstruction: 432
-      endInstruction: 431
-      startSourceChar: 861
-      endSourceChar: 861
-      line: 30
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 432
-      endInstruction: 431
-      startSourceChar: 861
-      endSourceChar: 861
-      line: 30
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 432
-      endInstruction: 431
-      startSourceChar: 861
-      endSourceChar: 861
-      line: 30
-      lineChar: 12
-      spanCodeSection: 
-    - startInstruction: 432
-      endInstruction: 431
-      startSourceChar: 861
-      endSourceChar: 867
-      line: 30
-      lineChar: 12
-      spanCodeSection: Debug.
-    - startInstruction: 432
-      endInstruction: 431
-      startSourceChar: 867
-      endSourceChar: 871
-      line: 30
-      lineChar: 18
-      spanCodeSection: Log(
-    - startInstruction: 432
-      endInstruction: 431
-      startSourceChar: 871
-      endSourceChar: 871
-      line: 30
-      lineChar: 22
-      spanCodeSection: 
-    - startInstruction: 432
-      endInstruction: 431
-      startSourceChar: 871
-      endSourceChar: 871
-      line: 30
-      lineChar: 22
-      spanCodeSection: 
-    - startInstruction: 432
-      endInstruction: 431
-      startSourceChar: 871
-      endSourceChar: 871
-      line: 30
-      lineChar: 22
-      spanCodeSection: 
-    - startInstruction: 432
-      endInstruction: 431
-      startSourceChar: 871
-      endSourceChar: 878
-      line: 30
-      lineChar: 22
-      spanCodeSection: player.
-    - startInstruction: 432
-      endInstruction: 455
-      startSourceChar: 878
-      endSourceChar: 892
-      line: 30
-      lineChar: 29
-      spanCodeSection: 'displayName + '
-    - startInstruction: 456
-      endInstruction: 455
-      startSourceChar: 892
-      endSourceChar: 892
-      line: 30
-      lineChar: 43
-      spanCodeSection: 
-    - startInstruction: 456
-      endInstruction: 455
-      startSourceChar: 892
-      endSourceChar: 892
-      line: 30
-      lineChar: 43
-      spanCodeSection: 
-    - startInstruction: 456
-      endInstruction: 455
-      startSourceChar: 892
-      endSourceChar: 899
-      line: 30
-      lineChar: 43
-      spanCodeSection: player.
-    - startInstruction: 456
-      endInstruction: 455
-      startSourceChar: 899
-      endSourceChar: 911
-      line: 30
-      lineChar: 50
-      spanCodeSection: displayName.
-    - startInstruction: 456
-      endInstruction: 559
-      startSourceChar: 911
-      endSourceChar: 920
-      line: 30
-      lineChar: 62
-      spanCodeSection: 'Length + '
-    - startInstruction: 560
-      endInstruction: 560
-      startSourceChar: 920
-      endSourceChar: 920
-      line: 30
-      lineChar: 71
-      spanCodeSection: 
   hasInteractEvent: 1
   serializationData:
     SerializedFormat: 2
@@ -726,7 +32,7 @@ MonoBehaviour:
     SerializationNodes:
     - Name: fieldDefinitions
       Entry: 7
-      Data: 0|System.Collections.Generic.Dictionary`2[[System.String, mscorlib],[UdonSharp.FieldDefinition,
+      Data: 0|System.Collections.Generic.Dictionary`2[[System.String, mscorlib],[UdonSharp.Compiler.FieldDefinition,
         UdonSharp.Editor]], mscorlib
     - Name: comparer
       Entry: 7
@@ -737,7 +43,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 12
-      Data: 1
+      Data: 3
     - Name: 
       Entry: 7
       Data: 
@@ -746,10 +52,10 @@ MonoBehaviour:
       Data: followerToAssign
     - Name: $v
       Entry: 7
-      Data: 2|UdonSharp.FieldDefinition, UdonSharp.Editor
+      Data: 2|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: fieldSymbol
       Entry: 7
-      Data: 3|UdonSharp.SymbolDefinition, UdonSharp.Editor
+      Data: 3|UdonSharp.Compiler.SymbolDefinition, UdonSharp.Editor
     - Name: internalType
       Entry: 7
       Data: 4|System.RuntimeType, mscorlib
@@ -795,6 +101,132 @@ MonoBehaviour:
     - Name: userBehaviourSource
       Entry: 10
       Data: 0
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: station
+    - Name: $v
+      Entry: 7
+      Data: 6|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 7|UdonSharp.Compiler.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 7
+      Data: 8|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: VRC.SDKBase.VRCStation, VRCSDKBase
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: declarationType
+      Entry: 3
+      Data: 2
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: VRCSDK3ComponentsVRCStation
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: station
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: station
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 9|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: isSitting
+    - Name: $v
+      Entry: 7
+      Data: 10|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 11|UdonSharp.Compiler.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 7
+      Data: 12|System.RuntimeType, mscorlib
+    - Name: 
+      Entry: 1
+      Data: System.Boolean, mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: declarationType
+      Entry: 3
+      Data: 2
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemBoolean
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: isSitting
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: isSitting
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 13|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
     - Name: 
       Entry: 8
       Data: 
