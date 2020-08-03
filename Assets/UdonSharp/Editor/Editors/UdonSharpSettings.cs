@@ -45,6 +45,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
         public bool autoCompileOnModify = true;
         public bool compileAllScripts = true;
         public bool waitForFocus = false;
+        public bool disableUploadCompile = false;
         public TextAsset newScriptTemplateOverride = null;
 
         public string[] scanningDirectoryBlacklist = new string[0];
@@ -123,6 +124,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
         private static readonly GUIContent autoCompileLabel = new GUIContent("Auto compile on modify", "Trigger a compile whenever a U# source file is modified.");
         private static readonly GUIContent compileAllLabel = new GUIContent("Compile all scripts", "Compile all scripts when a script is modified. This prevents some potential for weird issues where classes don't match");
         private static readonly GUIContent waitForFocusLabel = new GUIContent("Compile on focus", "Waits for application focus to compile any changed U# scripts");
+        private static readonly GUIContent disableUploadCompileLabel = new GUIContent("Disable compile on upload", "Disables U# compile step on upload. This is not recommended unless you absolutely cannot deal with the compile on upload step.");
         private static readonly GUIContent templateOverrideLabel = new GUIContent("Script template override", "A custom override file to use as a template for newly created U# files. Put \"<TemplateClassName>\" in place of a class name for it to automatically populate with the file name.");
         private static readonly GUIContent includeDebugInfoLabel = new GUIContent("Debug build", "Include debug info in build");
         private static readonly GUIContent includeInlineCodeLabel = new GUIContent("Inline code", "Include C# inline in generated assembly");
@@ -153,6 +155,14 @@ public class <TemplateClassName> : UdonSharpBehaviour
                     }
 
                     EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.waitForFocus)), waitForFocusLabel);
+
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.disableUploadCompile)), disableUploadCompileLabel);
+
+                    if (settings.disableUploadCompile)
+                    {
+                        EditorGUILayout.HelpBox(@"Do not disable this setting unless it is not viable to wait for the compile on upload process. 
+Disabling this setting will make the UNITY_EDITOR define not work as expected and will break prefabs that depend on the define being accurate between game and editor builds.", MessageType.Warning);
+                    }
 
                     EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.newScriptTemplateOverride)), templateOverrideLabel);
 

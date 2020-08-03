@@ -80,7 +80,7 @@ namespace UdonSharp.Compiler
 
                     foreach (CompilationModule module in modules)
                     {
-                        compileTasks.Add(module.Compile(classDefinitions, defineString));
+                        compileTasks.Add(module.Compile(classDefinitions, defineString, isEditorBuild));
                     }
 #else
                     List<Task<CompileTaskResult>> compileTasks = new List<Task<CompileTaskResult>>();
@@ -149,6 +149,7 @@ namespace UdonSharp.Compiler
                             }
 
                             EditorUtility.DisplayProgressBar("UdonSharp Compile", "Post Build Scene Fixup", 1f);
+                            UdonSharpEditorCache.Instance.LastBuildType = isEditorBuild ? UdonSharpEditorCache.DebugInfoType.Editor : UdonSharpEditorCache.DebugInfoType.Client;
                             UdonSharpEditorManager.RunPostBuildSceneFixup();
                         }
                     }
@@ -157,11 +158,10 @@ namespace UdonSharp.Compiler
             finally
             {
                 EditorUtility.ClearProgressBar();
+                Profiler.EndSample();
             }
 
             compileTimer.Stop();
-
-            EditorUtility.ClearProgressBar();
 
             if (totalErrorCount == 0)
             {
@@ -174,8 +174,6 @@ namespace UdonSharp.Compiler
                     Debug.Log($"[UdonSharp] Compile of script{(modules.Length > 1 ? "s" : "")} {string.Join(", ", modules.Select(e => Path.GetFileName(AssetDatabase.GetAssetPath(e.programAsset.sourceCsScript))))} finished in {compileTimer.Elapsed.ToString("mm\\:ss\\.fff")}");
                 }
             }
-
-            Profiler.EndSample();
         }
 
         public int AssignHeapConstants()

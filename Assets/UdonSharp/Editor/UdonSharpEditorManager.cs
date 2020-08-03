@@ -23,7 +23,7 @@ namespace UdonSharpEditor
         {
             EditorSceneManager.sceneOpened += EditorSceneManager_sceneOpened;
             EditorApplication.update += OnEditorUpdate;
-            EditorApplication.playModeStateChanged += PlayModeErrorCheck;
+            EditorApplication.playModeStateChanged += OnChangePlayMode;
         }
 
         private static void EditorSceneManager_sceneOpened(Scene scene, OpenSceneMode mode)
@@ -41,7 +41,7 @@ namespace UdonSharpEditor
             UdonEditorManager.Instance.RefreshQueuedProgramSources();
         }
 
-        static void PlayModeErrorCheck(PlayModeStateChange state)
+        static void OnChangePlayMode(PlayModeStateChange state)
         {
             // Prevent people from entering play mode when there are compile errors, like normal Unity C#
             // READ ME
@@ -57,6 +57,15 @@ namespace UdonSharpEditor
                     EditorApplication.isPlaying = false;
 
                     UdonSharpUtils.ShowEditorNotification("All U# compile errors have to be fixed before you can enter playmode!");
+                }
+            }
+
+            if (state == PlayModeStateChange.EnteredEditMode)
+            {
+                UdonSharpEditorCache.ResetInstance();
+                if (UdonSharpEditorCache.Instance.LastBuildType == UdonSharpEditorCache.DebugInfoType.Client)
+                {
+                    UdonSharpProgramAsset.CompileAllCsPrograms(true);
                 }
             }
         }

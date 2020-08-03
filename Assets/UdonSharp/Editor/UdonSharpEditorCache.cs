@@ -21,6 +21,8 @@ namespace UdonSharp
         {
             [OdinSerialize, System.NonSerialized]
             public Dictionary<string, string> sourceFileHashLookup;
+            
+            public DebugInfoType lastScriptBuildType;
         }
 
         private const string CACHE_DIR_PATH = "Library/UdonSharpCache/";
@@ -42,7 +44,9 @@ namespace UdonSharp
 
                 if (File.Exists(CACHE_FILE_PATH))
                 {
-                    _instance.sourceFileHashLookup = SerializationUtility.DeserializeValue<SourceHashLookupStorage>(File.ReadAllBytes(CACHE_FILE_PATH), DataFormat.Binary).sourceFileHashLookup;
+                    SourceHashLookupStorage storage = SerializationUtility.DeserializeValue<SourceHashLookupStorage>(File.ReadAllBytes(CACHE_FILE_PATH), DataFormat.JSON);
+                    _instance.sourceFileHashLookup = storage.sourceFileHashLookup;
+                    _instance.LastBuildType = storage.lastScriptBuildType;
                 }
 
                 return _instance;
@@ -63,11 +67,11 @@ namespace UdonSharp
             {
                 Instance.SaveAllCacheData();
             }
-            else if (state == PlayModeStateChange.EnteredPlayMode ||
-                     state == PlayModeStateChange.EnteredEditMode)
-            {
-                _instance = null;
-            }
+        }
+
+        internal static void ResetInstance()
+        {
+            _instance = null;
         }
 
         class UdonSharpEditorCacheWriter : UnityEditor.AssetModificationProcessor
@@ -92,7 +96,11 @@ namespace UdonSharp
             
             if (_sourceDirty)
             {
-                File.WriteAllBytes(CACHE_FILE_PATH, SerializationUtility.SerializeValue<SourceHashLookupStorage>(new SourceHashLookupStorage() { sourceFileHashLookup = _instance.sourceFileHashLookup }, DataFormat.Binary));
+                SourceHashLookupStorage storage = new SourceHashLookupStorage() {
+                    sourceFileHashLookup = _instance.sourceFileHashLookup,
+                    lastScriptBuildType = LastBuildType,
+                };
+                File.WriteAllBytes(CACHE_FILE_PATH, SerializationUtility.SerializeValue<SourceHashLookupStorage>(storage, DataFormat.JSON));
                 _sourceDirty = false;
             }
 
@@ -156,6 +164,20 @@ namespace UdonSharp
 
             return UdonSharpUtils.HashString(scriptText);
         }
+
+        DebugInfoType _lastBuildType = DebugInfoType.Editor;
+        public DebugInfoType LastBuildType
+        {
+            get => _lastBuildType;
+            set
+            {
+                if (_lastBuildType != value)
+                    _sourceDirty = true;
+
+                _lastBuildType = value;
+            }
+        }
+
         #endregion
 
         #region Debug info cache
