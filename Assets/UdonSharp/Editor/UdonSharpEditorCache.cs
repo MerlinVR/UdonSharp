@@ -44,7 +44,7 @@ namespace UdonSharp
 
                 if (File.Exists(CACHE_FILE_PATH))
                 {
-                    SourceHashLookupStorage storage = SerializationUtility.DeserializeValue<SourceHashLookupStorage>(File.ReadAllBytes(CACHE_FILE_PATH), DataFormat.JSON);
+                    SourceHashLookupStorage storage = SerializationUtility.DeserializeValue<SourceHashLookupStorage>(File.ReadAllBytes(CACHE_FILE_PATH), DataFormat.Binary);
                     _instance.sourceFileHashLookup = storage.sourceFileHashLookup;
                     _instance.LastBuildType = storage.lastScriptBuildType;
                 }
@@ -100,7 +100,7 @@ namespace UdonSharp
                     sourceFileHashLookup = _instance.sourceFileHashLookup,
                     lastScriptBuildType = LastBuildType,
                 };
-                File.WriteAllBytes(CACHE_FILE_PATH, SerializationUtility.SerializeValue<SourceHashLookupStorage>(storage, DataFormat.JSON));
+                File.WriteAllBytes(CACHE_FILE_PATH, SerializationUtility.SerializeValue<SourceHashLookupStorage>(storage, DataFormat.Binary));
                 _sourceDirty = false;
             }
 
