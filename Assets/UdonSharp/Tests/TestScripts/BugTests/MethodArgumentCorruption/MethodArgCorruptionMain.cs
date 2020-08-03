@@ -17,8 +17,10 @@ namespace UdonSharp.Tests
             Method();
         }
 
+#pragma warning disable CS0649
         [SerializeField]
         ArgCorruption2 udon;
+#pragma warning restore CS0649
 
         // https://github.com/Merlin-san/UdonSharp/issues/41
         public void Method()
