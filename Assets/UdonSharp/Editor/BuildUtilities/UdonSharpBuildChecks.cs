@@ -33,9 +33,8 @@ namespace UdonSharp
 
                 if (EditorApplication.isCompiling)
                 {
-                    //EditorUtility.DisplayDialog("Udon# build error", "Scripts are in the process of compiling, please retry build after scripts have compiled.", "OK");
                     Debug.LogError("[UdonSharp] Scripts are in the process of compiling, please retry build after scripts have compiled.");
-                    typeof(SceneView).GetMethod("ShowNotification", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { "Scripts are in the process of compiling, please retry build after scripts have compiled." });
+                    UdonSharpUtils.ShowEditorNotification("Scripts are in the process of compiling, please retry build after scripts have compiled.");
                     return false;
                 }
             }

@@ -602,5 +602,10 @@ namespace UdonSharp
 
             return defineBuilder.ToString();
         }
+
+        internal static void ShowEditorNotification(string notificationString)
+        {
+            typeof(UnityEditor.SceneView).GetMethod("ShowNotification", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { notificationString });
+        }
     }
 }

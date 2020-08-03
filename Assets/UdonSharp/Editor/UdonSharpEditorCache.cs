@@ -162,7 +162,7 @@ namespace UdonSharp
         public enum DebugInfoType
         {
             Editor,
-            Game,
+            Client,
         }
 
         private const string DEBUG_INFO_PATH = "Library/UdonSharpCache/DebugInfo/";
@@ -231,7 +231,7 @@ namespace UdonSharp
                 return loadedInfo;
             }
 
-            if (debugInfoType == DebugInfoType.Game)
+            if (debugInfoType == DebugInfoType.Client)
             {
                 if (debugInfo.TryGetValue(DebugInfoType.Editor, out info))
                     return info;

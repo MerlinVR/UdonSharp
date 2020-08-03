@@ -39,17 +39,20 @@ namespace UdonSharp.Compiler
         }
 
         private CompilationModule[] modules;
+        private bool isEditorBuild = true;
 
         private static int initAssemblyCounter = 0;
 
-        public UdonSharpCompiler(UdonSharpProgramAsset programAsset)
+        public UdonSharpCompiler(UdonSharpProgramAsset programAsset, bool editorBuild = true)
         {
             modules = new CompilationModule[] { new CompilationModule(programAsset) };
+            isEditorBuild = editorBuild;
         }
 
-        public UdonSharpCompiler(UdonSharpProgramAsset[] programAssets)
+        public UdonSharpCompiler(UdonSharpProgramAsset[] programAssets, bool editorBuild = true)
         {
             modules = programAssets.Where(e => e.sourceCsScript != null).Select(e => new CompilationModule(e)).ToArray();
+            isEditorBuild = editorBuild;
         }
 
         public void Compile()
@@ -65,7 +68,7 @@ namespace UdonSharp.Compiler
             {
                 EditorUtility.DisplayProgressBar("UdonSharp Compile", "Building class definitions...", 0f);
 
-                string defineString = UdonSharpUtils.GetProjectDefineString(true);
+                string defineString = UdonSharpUtils.GetProjectDefineString(isEditorBuild);
                 List<ClassDefinition> classDefinitions = BuildClassDefinitions(defineString);
                 if (classDefinitions == null)
                     totalErrorCount++;
@@ -84,7 +87,7 @@ namespace UdonSharp.Compiler
 
                     foreach (CompilationModule module in modules)
                     {
-                        compileTasks.Add(Task.Factory.StartNew(() => module.Compile(classDefinitions, defineString)));
+                        compileTasks.Add(Task.Factory.StartNew(() => module.Compile(classDefinitions, defineString, isEditorBuild)));
                     }
 #endif
 

@@ -15,7 +15,7 @@ namespace UdonSharp
     public static class RuntimeExceptionWatcher
     {
         static Queue<string> debugOutputQueue = new Queue<string>();
-        static Dictionary<long, (string, ClassDebugInfo)> scriptLookup;
+        static Dictionary<long, (string, UdonSharpProgramAsset)> scriptLookup;
         
         // Log watcher vars
         static FileSystemWatcher logDirectoryWatcher;
@@ -64,7 +64,7 @@ namespace UdonSharp
                 }
             }
 
-            scriptLookup = new Dictionary<long, (string, ClassDebugInfo)>();
+            scriptLookup = new Dictionary<long, (string, UdonSharpProgramAsset)>();
             string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
 
             UdonSharpEditorCache editorCache = UdonSharpEditorCache.Instance;
@@ -91,7 +91,7 @@ namespace UdonSharp
                 if (scriptLookup.ContainsKey(programID))
                     continue;
 
-                scriptLookup.Add(programID, (AssetDatabase.GetAssetPath(programAsset.sourceCsScript), editorCache.GetDebugInfo(programAsset, UdonSharpEditorCache.DebugInfoType.Editor)));
+                scriptLookup.Add(programID, (AssetDatabase.GetAssetPath(programAsset.sourceCsScript), programAsset));
             }
 
             return true;
@@ -226,9 +226,19 @@ namespace UdonSharp
 
         static void HandleLogError(string errorStr, string logPrefix)
         {
-            if (!errorStr.StartsWith("[<color=yellow>UdonBehaviour</color>] An exception occurred during Udon execution, this UdonBehaviour will be halted.") && // Editor
-                !errorStr.StartsWith("[UdonBehaviour] An exception occurred during Udon execution, this UdonBehaviour will be halted.")) // Client
+            UdonSharpEditorCache.DebugInfoType debugType;
+            if (errorStr.StartsWith("[<color=yellow>UdonBehaviour</color>] An exception occurred during Udon execution, this UdonBehaviour will be halted.")) // Editor
+            {
+                debugType = UdonSharpEditorCache.DebugInfoType.Editor;
+            }
+            else if (errorStr.StartsWith("[UdonBehaviour] An exception occurred during Udon execution, this UdonBehaviour will be halted.")) // Client
+            {
+                debugType = UdonSharpEditorCache.DebugInfoType.Client;
+            }
+            else
+            {
                 return;
+            }
 
             const string exceptionMessageStr = "Exception Message:";
             const string seperatorStr = "----------------------";
@@ -262,22 +272,27 @@ namespace UdonSharp
                 return;
             }
 
-            (string, ClassDebugInfo) assetInfo;
+            (string, UdonSharpProgramAsset) assetInfo;
 
             if (!scriptLookup.TryGetValue(programID, out assetInfo))
                 return;
 
-            // No debug info was built
             if (assetInfo.Item2 == null)
                 return;
 
-            int debugSpanIdx = System.Array.BinarySearch(assetInfo.Item2.DebugLineSpans.Select(e => e.endInstruction).ToArray(), programCounter);
+            ClassDebugInfo debugInfo = UdonSharpEditorCache.Instance.GetDebugInfo(assetInfo.Item2, debugType);
+
+            // No debug info was built
+            if (debugInfo == null)
+                return;
+
+            int debugSpanIdx = System.Array.BinarySearch(debugInfo.DebugLineSpans.Select(e => e.endInstruction).ToArray(), programCounter);
             if (debugSpanIdx < 0)
                 debugSpanIdx = ~debugSpanIdx;
 
-            debugSpanIdx = Mathf.Clamp(debugSpanIdx, 0, assetInfo.Item2.DebugLineSpans.Length - 1);
+            debugSpanIdx = Mathf.Clamp(debugSpanIdx, 0, debugInfo.DebugLineSpans.Length - 1);
 
-            ClassDebugInfo.DebugLineSpan debugLineSpan = assetInfo.Item2.DebugLineSpans[debugSpanIdx];
+            ClassDebugInfo.DebugLineSpan debugLineSpan = debugInfo.DebugLineSpans[debugSpanIdx];
 
             UdonSharpUtils.LogBuildError($"{logPrefix}\n{errorMessage}", assetInfo.Item1, debugLineSpan.line, debugLineSpan.lineChar);
         }

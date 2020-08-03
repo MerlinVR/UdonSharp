@@ -47,7 +47,7 @@ namespace UdonSharp.Compiler
             settings = UdonSharpSettings.GetSettings();
         }
 
-        public CompileTaskResult Compile(List<ClassDefinition> classDefinitions, string sourceDefines)
+        public CompileTaskResult Compile(List<ClassDefinition> classDefinitions, string sourceDefines, bool isEditorBuild)
         {
             programAsset.compileErrors.Clear();
 
@@ -161,7 +161,7 @@ namespace UdonSharp.Compiler
                 if (debugInfo != null)
                     debugInfo.FinalizeDebugInfo(sourceDefines);
 
-                UdonSharpEditorCache.Instance.SetDebugInfo(programAsset, UdonSharpEditorCache.DebugInfoType.Editor, debugInfo);
+                UdonSharpEditorCache.Instance.SetDebugInfo(programAsset, isEditorBuild ? UdonSharpEditorCache.DebugInfoType.Editor : UdonSharpEditorCache.DebugInfoType.Client, debugInfo);
                 //programAsset.debugInfo = debugInfo;
             }
 

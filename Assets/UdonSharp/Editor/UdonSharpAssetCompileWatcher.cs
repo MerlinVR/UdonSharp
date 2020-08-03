@@ -32,7 +32,6 @@ namespace UdonSharp
         static UdonSharpAssetCompileWatcher()
         {
             EditorApplication.update += OnEditorUpdate;
-            EditorApplication.playModeStateChanged += PlayModeErrorCheck;
         }
 
         static void SetupWatchers() 
@@ -181,37 +180,6 @@ namespace UdonSharp
             }
 
             HandleScriptModifications();
-        }
-
-        static void PlayModeErrorCheck(PlayModeStateChange state)
-        {
-            // Prevent people from entering play mode when there are compile errors, like normal Unity C#
-            // READ ME
-            // --------
-            // If you think you know better and are about to edit this out, be aware that you gain nothing by doing so. 
-            // If a script hits a compile error, it will not update until the compile errors are resolved.
-            // You will just be left wondering "why aren't my scripts changing when I edit them?" since the old copy of the script will be used until the compile errors are resolved.
-            // --------
-            if (state == PlayModeStateChange.EnteredPlayMode || state == PlayModeStateChange.ExitingEditMode)
-            {
-                bool foundCompileErrors = false;
-
-                foreach (UdonSharpProgramAsset programAsset in UdonSharpProgramAsset.GetAllUdonSharpPrograms())
-                {
-                    if (programAsset.sourceCsScript != null && programAsset.compileErrors.Count > 0)
-                    {
-                        foundCompileErrors = true;
-                        break;
-                    }
-                }
-
-                if (foundCompileErrors)
-                {
-                    EditorApplication.isPlaying = false;
-
-                    typeof(SceneView).GetMethod("ShowNotification", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { "All U# compile errors have to be fixed before you can enter playmode!" });
-                }
-            }
         }
 
         static void OnSourceFileChanged(object source, FileSystemEventArgs args)

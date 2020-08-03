@@ -189,7 +189,7 @@ namespace UdonSharp
         /// </summary>
         /// <param name="forceCompile"></param>
         [PublicAPI]
-        public static void CompileAllCsPrograms(bool forceCompile = false)
+        public static void CompileAllCsPrograms(bool forceCompile = false, bool editorBuild = true)
         {
             UdonSharpProgramAsset[] programs = GetAllUdonSharpPrograms();
 
@@ -210,7 +210,7 @@ namespace UdonSharp
                     return;
             }
 
-            UdonSharpCompiler compiler = new UdonSharpCompiler(programs);
+            UdonSharpCompiler compiler = new UdonSharpCompiler(programs, editorBuild);
             compiler.Compile();
         }
 
@@ -227,6 +227,20 @@ namespace UdonSharp
             }
 
             return udonSharpPrograms;
+        }
+
+        [PublicAPI]
+        public static bool AnyUdonSharpScriptHasError()
+        {
+            foreach (UdonSharpProgramAsset programAsset in GetAllUdonSharpPrograms())
+            {
+                if (programAsset.sourceCsScript != null && programAsset.compileErrors.Count > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         static UdonEditorInterface editorInterfaceInstance;
