@@ -6,95 +6,13 @@ using System.Linq;
 
 namespace UdonSharp.Compiler
 {
-    public class MethodVisitor : CSharpSyntaxWalker
+    public class MethodVisitor : UdonSharpSyntaxWalker
     {
         public List<MethodDefinition> definedMethods = new List<MethodDefinition>();
-        private ASTVisitorContext visitorContext;
-        
-        private Stack<string> namespaceStack = new Stack<string>();
 
         public MethodVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable)
-            : base(SyntaxWalkerDepth.Node)
+            : base(resolver, rootTable, labelTable)
         {
-            visitorContext = new ASTVisitorContext(resolver, rootTable, labelTable);
-        }
-
-        public override void VisitUsingDirective(UsingDirectiveSyntax node)
-        {
-            using (ExpressionCaptureScope namespaceCapture = new ExpressionCaptureScope(visitorContext, null))
-            {
-                Visit(node.Name);
-
-                if (!namespaceCapture.IsNamespace())
-                    throw new System.Exception("Did not capture a valid namespace");
-
-                visitorContext.resolverContext.AddNamespace(namespaceCapture.captureNamespace);
-            }
-        }
-
-        public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
-        {
-            string[] namespaces = node.Name.ToFullString().TrimEnd('\r', '\n', ' ').Split('.');
-
-            foreach (string currentNamespace in namespaces)
-                namespaceStack.Push(currentNamespace);
-
-            base.VisitNamespaceDeclaration(node);
-
-            for (int i = 0; i < namespaces.Length; ++i)
-                namespaceStack.Pop();
-        }
-
-        public override void VisitClassDeclaration(ClassDeclarationSyntax node)
-        {
-            using (ExpressionCaptureScope classTypeCapture = new ExpressionCaptureScope(visitorContext, null))
-            {
-                foreach (string namespaceToken in namespaceStack.Reverse())
-                {
-                    classTypeCapture.ResolveAccessToken(namespaceToken);
-
-                    if (classTypeCapture.IsNamespace())
-                        visitorContext.resolverContext.AddNamespace(classTypeCapture.captureNamespace);
-                }
-
-                visitorContext.resolverContext.AddNamespace(classTypeCapture.captureNamespace);
-
-                classTypeCapture.ResolveAccessToken(node.Identifier.ValueText);
-
-                if (!classTypeCapture.IsType())
-                    throw new System.Exception($"User type {node.Identifier.ValueText} could not be found");
-            }
-
-            base.VisitClassDeclaration(node);
-        }
-
-        public override void VisitIdentifierName(IdentifierNameSyntax node)
-        {
-            if (visitorContext.topCaptureScope != null)
-                visitorContext.topCaptureScope.ResolveAccessToken(node.Identifier.ValueText);
-        }
-
-        public override void VisitPredefinedType(PredefinedTypeSyntax node)
-        {
-            if (visitorContext.topCaptureScope != null)
-                visitorContext.topCaptureScope.ResolveAccessToken(node.Keyword.ValueText);
-        }
-
-        public override void VisitArrayType(ArrayTypeSyntax node)
-        {
-            using (ExpressionCaptureScope arrayTypeCaptureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
-            {
-                Visit(node.ElementType);
-
-                for (int i = 0; i < node.RankSpecifiers.Count; ++i)
-                    arrayTypeCaptureScope.MakeArrayType();
-            }
-        }
-
-        public override void VisitArrayRankSpecifier(ArrayRankSpecifierSyntax node)
-        {
-            foreach (ExpressionSyntax size in node.Sizes)
-                Visit(size);
         }
 
         public override void VisitMethodDeclaration(MethodDeclarationSyntax node)

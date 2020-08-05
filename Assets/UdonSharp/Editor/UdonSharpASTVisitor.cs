@@ -105,15 +105,11 @@ namespace UdonSharp.Compiler
     /// <summary>
     /// This is where most of the work is done to convert a C# AST into intermediate UAsm
     /// </summary>
-    public class ASTVisitor : CSharpSyntaxWalker
+    public class ASTVisitor : UdonSharpSyntaxWalker
     {
-        public ASTVisitorContext visitorContext { get; private set; }
-        private Stack<string> namespaceStack = new Stack<string>();
-
         public ASTVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable, List<MethodDefinition> methodDefinitions, List<ClassDefinition> externUserClassDefinitions, ClassDebugInfo debugInfo)
-            : base(SyntaxWalkerDepth.Node)
+            : base(resolver, rootTable, labelTable)
         {
-            visitorContext = new ASTVisitorContext(resolver, rootTable, labelTable, debugInfo);
             visitorContext.returnJumpTarget = rootTable.CreateNamedSymbol("returnTarget", typeof(uint), SymbolDeclTypeFlags.Internal);
             visitorContext.definedMethods = methodDefinitions;
             visitorContext.externClassDefinitions = externUserClassDefinitions;
@@ -147,14 +143,6 @@ namespace UdonSharp.Compiler
         public int GetExternStrCount()
         {
             return visitorContext.uasmBuilder.GetExternStrCount();
-        }
-
-        private void UpdateSyntaxNode(SyntaxNode node)
-        {
-            visitorContext.currentNode = node;
-
-            if (visitorContext.debugInfo != null)
-                visitorContext.debugInfo.UpdateSyntaxNode(node);
         }
 
         public override void DefaultVisit(SyntaxNode node)
@@ -197,26 +185,6 @@ namespace UdonSharp.Compiler
             {
                 Visit(member);
             }
-        }
-
-        // We don't care about namespaces at the moment. This may change in the future if we allow users to call custom behaviours.
-        public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            string[] namespaces = node.Name.ToFullString().TrimEnd('\r', '\n', ' ').Split('.');
-
-            foreach (string currentNamespace in namespaces)
-                namespaceStack.Push(currentNamespace);
-
-            foreach (UsingDirectiveSyntax usingDirective in node.Usings)
-                Visit(usingDirective);
-
-            foreach (MemberDeclarationSyntax memberDeclaration in node.Members)
-                Visit(memberDeclaration);
-
-            for (int i = 0; i < namespaces.Length; ++i)
-                namespaceStack.Pop();
         }
 
         public override void VisitSimpleBaseType(SimpleBaseTypeSyntax node)
@@ -289,22 +257,6 @@ namespace UdonSharp.Compiler
             }
 
             visitorContext.uasmBuilder.AppendLine(".code_end", 0);
-        }
-
-        public override void VisitUsingDirective(UsingDirectiveSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            using (ExpressionCaptureScope captureScope = new ExpressionCaptureScope(visitorContext, null))
-            {
-                Visit(node.Name);
-
-                if (!captureScope.IsNamespace())
-                    throw new System.Exception("Captured scope is not a namespace!");
-
-                //Debug.Log($"Added namespace: {captureScope.captureNamespace}");
-                visitorContext.resolverContext.AddNamespace(captureScope.captureNamespace);
-            }
         }
 
         public override void VisitEmptyStatement(EmptyStatementSyntax node)
@@ -402,27 +354,6 @@ namespace UdonSharp.Compiler
             UpdateSyntaxNode(node);
 
             Visit(node.Declaration);
-        }
-
-        public override void VisitArrayType(ArrayTypeSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            using (ExpressionCaptureScope arrayTypeCaptureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
-            {
-                Visit(node.ElementType);
-
-                for (int i = 0; i < node.RankSpecifiers.Count; ++i)
-                    arrayTypeCaptureScope.MakeArrayType();
-            }
-        }
-
-        public override void VisitArrayRankSpecifier(ArrayRankSpecifierSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            foreach (ExpressionSyntax size in node.Sizes)
-                Visit(size);
         }
 
         public override void VisitArrayCreationExpression(ArrayCreationExpressionSyntax node)
@@ -910,22 +841,6 @@ namespace UdonSharp.Compiler
                 throw new System.NotSupportedException($"Udon does not support variables of type '{variableType.Name}' yet");
 
             return newSymbols;
-        }
-
-        public override void VisitIdentifierName(IdentifierNameSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            if (visitorContext.topCaptureScope != null)
-                visitorContext.topCaptureScope.ResolveAccessToken(node.Identifier.ValueText);
-        }
-
-        public override void VisitPredefinedType(PredefinedTypeSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            if (visitorContext.topCaptureScope != null)
-                visitorContext.topCaptureScope.ResolveAccessToken(node.Keyword.ValueText);
         }
 
         // Not really strictly needed since the compiler for the normal C# will yell at people for us if they attempt to access something not valid for `this`
