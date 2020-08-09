@@ -11,7 +11,7 @@ namespace UdonSharp.Compiler
         public List<MethodDefinition> definedMethods = new List<MethodDefinition>();
 
         public MethodVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable)
-            : base(resolver, rootTable, labelTable)
+            : base(UdonSharpSyntaxWalkerDepth.ClassDefinitions, resolver, rootTable, labelTable)
         {
         }
 
@@ -35,8 +35,10 @@ namespace UdonSharp.Compiler
 
                 if (returnTypeCapture.captureType != typeof(void))
                 {
-                    //methodDefinition.returnType = returnTypeCapture.captureType;
                     methodDefinition.returnSymbol = visitorContext.topTable.CreateNamedSymbol("returnValSymbol", returnTypeCapture.captureType, SymbolDeclTypeFlags.Internal);
+
+                    if (!visitorContext.resolverContext.IsValidUdonType(returnTypeCapture.captureType))
+                        throw new System.NotSupportedException($"Udon does not support return values of type '{returnTypeCapture.captureType.Name}' yet");
                 }
             }
 
@@ -51,6 +53,13 @@ namespace UdonSharp.Compiler
                 using (ExpressionCaptureScope paramTypeCapture = new ExpressionCaptureScope(visitorContext, null))
                 {
                     Visit(parameter.Type);
+
+                    if (!paramTypeCapture.IsType())
+                        throw new System.TypeLoadException($"Could not find type from {parameter.Type.ToFullString()}");
+
+                    if (!visitorContext.resolverContext.IsValidUdonType(paramTypeCapture.captureType))
+                        throw new System.NotSupportedException($"Udon does not support method parameters of type '{paramTypeCapture.captureType.Name}' yet");
+
                     paramDef.type = paramTypeCapture.captureType;
                     paramDef.symbolName = parameter.Identifier.ValueText;
                     paramDef.paramSymbol = visitorContext.topTable.CreateNamedSymbol(parameter.Identifier.ValueText, paramDef.type, SymbolDeclTypeFlags.Local);

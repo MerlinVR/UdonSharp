@@ -243,10 +243,31 @@ namespace UdonSharp
             return false;
         }
 
+        [PublicAPI]
+        public static UdonSharpProgramAsset GetProgramAssetForClass(System.Type classType)
+        {
+            if (classType == null)
+                throw new System.ArgumentNullException();
+
+            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
+
+            foreach (string programAssetId in udonSharpDataAssets)
+            {
+                UdonSharpProgramAsset programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(programAssetId));
+
+                if (programAsset &&
+                    programAsset.sourceCsScript &&
+                    programAsset.sourceCsScript.GetClass() == classType)
+                    return programAsset;
+            }
+
+            return null;
+        }
+
         static UdonEditorInterface editorInterfaceInstance;
         static UdonSharp.HeapFactory heapFactoryInstance;
 
-        internal void AssembleCsProgram(uint heapSize)
+        internal bool AssembleCsProgram(uint heapSize)
         {
             if (editorInterfaceInstance == null || heapFactoryInstance == null)
             {
@@ -281,7 +302,11 @@ namespace UdonSharp
                 program = null;
                 assemblyError.SetValue(this, e.Message);
                 Debug.LogException(e);
+
+                return false;
             }
+
+            return true;
         }
 
         public void ApplyProgram()

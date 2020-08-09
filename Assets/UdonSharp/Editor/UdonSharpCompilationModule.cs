@@ -47,6 +47,41 @@ namespace UdonSharp.Compiler
             settings = UdonSharpSettings.GetSettings();
         }
 
+        void LogException(CompileTaskResult result, System.Exception e, SyntaxNode node, string defineString, out string logMessage)
+        {
+            int defineCount = 0;
+            foreach (char c in defineString)
+            {
+                if (c == '\n')
+                    defineCount++;
+            }
+
+            logMessage = "";
+
+            if (node != null)
+            {
+                FileLinePositionSpan lineSpan = node.GetLocation().GetLineSpan();
+
+                CompileError error = new CompileError();
+                error.script = programAsset.sourceCsScript;
+                error.errorStr = $"{e.GetType()}: {e.Message}";
+                error.lineIdx = lineSpan.StartLinePosition.Line - defineCount;
+                error.charIdx = lineSpan.StartLinePosition.Character;
+
+                result.compileErrors.Add(error);
+            }
+            else
+            {
+                logMessage = e.ToString();
+                Debug.LogException(e);
+            }
+#if UDONSHARP_DEBUG
+            Debug.LogException(e);
+            Debug.LogError(e.StackTrace);
+#endif
+
+        }
+
         public CompileTaskResult Compile(List<ClassDefinition> classDefinitions, string sourceDefines, bool isEditorBuild)
         {
             programAsset.compileErrors.Clear();
@@ -88,7 +123,22 @@ namespace UdonSharp.Compiler
             fieldVisitor.Visit(tree.GetRoot());
 
             MethodVisitor methodVisitor = new MethodVisitor(resolver, moduleSymbols, moduleLabels);
-            methodVisitor.Visit(tree.GetRoot());
+
+            try
+            {
+                methodVisitor.Visit(tree.GetRoot());
+            }
+            catch (System.Exception e)
+            {
+                LogException(result, e, methodVisitor.visitorContext.currentNode, sourceDefines, out string logMessage);
+
+                programAsset.compileErrors.Add(logMessage);
+
+                errorCount++;
+            }
+
+            if (ErrorCount > 0)
+                return result;
 
             ClassDebugInfo debugInfo = null;
 
@@ -106,32 +156,8 @@ namespace UdonSharp.Compiler
             }
             catch (System.Exception e)
             {
-                SyntaxNode currentNode = visitor.visitorContext.currentNode;
-
-                string logMessage = "";
-
-                if (currentNode != null)
-                {
-                    FileLinePositionSpan lineSpan = currentNode.GetLocation().GetLineSpan();
-
-                    CompileError error = new CompileError();
-                    error.script = programAsset.sourceCsScript;
-                    error.errorStr = $"{e.GetType()}: {e.Message}";
-                    error.lineIdx = lineSpan.StartLinePosition.Line;
-                    error.charIdx = lineSpan.StartLinePosition.Character;
-
-                    result.compileErrors.Add(error);
-                }
-                else
-                {
-                    logMessage = e.ToString();
-                    Debug.LogException(e);
-                }
-#if UDONSHARP_DEBUG
-                Debug.LogException(e);
-                Debug.LogError(e.StackTrace);
-#endif
-
+                LogException(result, e, visitor.visitorContext.currentNode, sourceDefines, out string logMessage);
+                
                 programAsset.compileErrors.Add(logMessage);
 
                 errorCount++;

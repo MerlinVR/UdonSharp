@@ -943,5 +943,20 @@ namespace UdonSharp
 
             return nodeDefinitionLookup.Contains(typeName);
         }
+
+        public bool IsValidUdonType(System.Type type)
+        {
+            string udonTypeName = GetUdonTypeName(type);
+
+            bool isUserDefinedType = UdonSharpUtils.IsUserDefinedType(type);
+
+            if (!ValidateUdonTypeName(udonTypeName, UdonReferenceType.Variable) &&
+                !ValidateUdonTypeName(udonTypeName, UdonReferenceType.Type) &&
+                //VRC.Udon.Editor.UdonEditorManager.Instance.GetTypeFromTypeString(udonTypeName) != null && // I'd assume that this should work instead of the ValidateUdonTypeName calls, but it doesn't pick up a bunch of types
+                !isUserDefinedType)
+                return false;
+
+            return true;
+        }
     }
 }

@@ -15,7 +15,7 @@ namespace UdonSharp.Compiler
         private int classCount = 0;
 
         public ClassVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable)
-            : base(resolver, rootTable, labelTable)
+            : base(UdonSharpSyntaxWalkerDepth.ClassDefinitions, resolver, rootTable, labelTable)
         {
             methodVisitor = new MethodVisitor(resolver, rootTable, labelTable);
 
@@ -26,14 +26,26 @@ namespace UdonSharp.Compiler
         {
             base.VisitCompilationUnit(node);
 
-            methodVisitor.Visit(node);
+            try
+            {
+                methodVisitor.Visit(node);
+            }
+            catch (System.Exception e)
+            {
+                visitorContext.currentNode = methodVisitor.visitorContext.currentNode;
+
+                throw e;
+            }
 
             classDefinition.methodDefinitions = methodVisitor.definedMethods;
         }
 
         public override void VisitClassDeclaration(ClassDeclarationSyntax node)
         {
-            base.VisitClassDeclaration(node);
+            UpdateSyntaxNode(node);
+
+            if (++classCount > 1)
+                throw new System.NotSupportedException("Only one class declaration per file is currently supported by UdonSharp");
 
             using (ExpressionCaptureScope classTypeCapture = new ExpressionCaptureScope(visitorContext, null))
             {
@@ -41,7 +53,6 @@ namespace UdonSharp.Compiler
                 {
                     classTypeCapture.ResolveAccessToken(namespaceToken);
                 }
-
                 classTypeCapture.ResolveAccessToken(node.Identifier.ValueText);
 
                 if (!classTypeCapture.IsType())
@@ -49,16 +60,21 @@ namespace UdonSharp.Compiler
 
                 classDefinition.userClassType = classTypeCapture.captureType;
             }
+
+            base.VisitClassDeclaration(node);
         }
 
         public override void VisitFieldDeclaration(FieldDeclarationSyntax node)
         {
+            UpdateSyntaxNode(node);
+
             bool isPublic = node.Modifiers.HasModifier("public");
 
             System.Type fieldType = null;
 
             using (ExpressionCaptureScope fieldTypeCapture = new ExpressionCaptureScope(visitorContext, null))
             {
+                UpdateSyntaxNode(node.Declaration.Type);
                 Visit(node.Declaration.Type);
 
                 fieldType = fieldTypeCapture.captureType;

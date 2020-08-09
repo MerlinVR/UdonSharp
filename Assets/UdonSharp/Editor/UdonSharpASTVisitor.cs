@@ -830,14 +830,7 @@ namespace UdonSharp.Compiler
                 newSymbols.Add(newSymbol);
             }
 
-            string udonTypeName = visitorContext.resolverContext.GetUdonTypeName(variableType);
-
-            bool isUserDefinedType = UdonSharpUtils.IsUserDefinedType(variableType);
-
-            if (!visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Variable) &&
-                !visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Type) &&
-                //VRC.Udon.Editor.UdonEditorManager.Instance.GetTypeFromTypeString(udonTypeName) != null && // I'd assume that this should work instead of the ValidateUdonTypeName calls, but it doesn't pick up a bunch of types
-                !isUserDefinedType)
+            if (!visitorContext.resolverContext.IsValidUdonType(variableType))
                 throw new System.NotSupportedException($"Udon does not support variables of type '{variableType.Name}' yet");
 
             return newSymbols;

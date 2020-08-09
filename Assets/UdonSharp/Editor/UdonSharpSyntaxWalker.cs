@@ -9,13 +9,30 @@ namespace UdonSharp.Compiler
 {
     public class UdonSharpSyntaxWalker : CSharpSyntaxWalker
     {
+        public enum UdonSharpSyntaxWalkerDepth
+        {
+            Class,
+            ClassDefinitions,
+            ClassMemberBodies,
+        }
+
         public ASTVisitorContext visitorContext;
 
         protected Stack<string> namespaceStack = new Stack<string>();
 
+        UdonSharpSyntaxWalkerDepth syntaxWalkerDepth;
+
         public UdonSharpSyntaxWalker(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable, ClassDebugInfo classDebugInfo = null)
             : base(SyntaxWalkerDepth.Node)
         {
+            syntaxWalkerDepth = UdonSharpSyntaxWalkerDepth.ClassMemberBodies;
+            visitorContext = new ASTVisitorContext(resolver, rootTable, labelTable, classDebugInfo);
+        }
+
+        public UdonSharpSyntaxWalker(UdonSharpSyntaxWalkerDepth depth, ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable, ClassDebugInfo classDebugInfo = null)
+            : base(SyntaxWalkerDepth.Node)
+        {
+            syntaxWalkerDepth = depth;
             visitorContext = new ASTVisitorContext(resolver, rootTable, labelTable, classDebugInfo);
         }
 
@@ -70,7 +87,27 @@ namespace UdonSharp.Compiler
                     throw new System.Exception($"User type {node.Identifier.ValueText} could not be found");
             }
 
-            base.VisitClassDeclaration(node);
+            if (syntaxWalkerDepth == UdonSharpSyntaxWalkerDepth.ClassDefinitions || 
+                syntaxWalkerDepth == UdonSharpSyntaxWalkerDepth.ClassMemberBodies)
+                base.VisitClassDeclaration(node);
+        }
+
+        public override void VisitVariableDeclaration(VariableDeclarationSyntax node)
+        {
+            if (syntaxWalkerDepth == UdonSharpSyntaxWalkerDepth.ClassMemberBodies)
+                base.VisitVariableDeclaration(node);
+        }
+
+        public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
+        {
+            if (syntaxWalkerDepth == UdonSharpSyntaxWalkerDepth.ClassMemberBodies)
+                base.VisitMethodDeclaration(node);
+        }
+
+        public override void VisitPropertyDeclaration(PropertyDeclarationSyntax node)
+        {
+            if (syntaxWalkerDepth == UdonSharpSyntaxWalkerDepth.ClassMemberBodies)
+                base.VisitPropertyDeclaration(node);
         }
 
         public override void VisitArrayType(ArrayTypeSyntax node)

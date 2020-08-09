@@ -108,9 +108,22 @@ namespace UdonSharp.Compiler
                         if (compileResult.compileErrors.Count == 0)
                         {
                             compileResult.programAsset.SetUdonAssembly(compileResult.compiledAssembly);
-                            compileResult.programAsset.AssembleCsProgram(compileResult.symbolCount);
+                            bool assembled = compileResult.programAsset.AssembleCsProgram(compileResult.symbolCount);
                             compileResult.programAsset.SetUdonAssembly("");
                             UdonSharpEditorCache.Instance.SetUASMStr(compileResult.programAsset, compileResult.compiledAssembly);
+
+                            if (!assembled)
+                            {
+                                FieldInfo assemblyError = typeof(VRC.Udon.Editor.ProgramSources.UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance);
+                                string error = (string)assemblyError.GetValue(compileResult.programAsset);
+
+                                totalErrorCount++;
+
+                                if (!string.IsNullOrEmpty(error))
+                                    UdonSharpUtils.LogBuildError(error, AssetDatabase.GetAssetPath(compileResult.programAsset.sourceCsScript), 0, 0);
+                                else
+                                    UdonSharpUtils.LogBuildError("Failed to assemble program", AssetDatabase.GetAssetPath(compileResult.programAsset.sourceCsScript), 0, 0);
+                            }
                         }
                         else
                         {
@@ -490,8 +503,30 @@ namespace UdonSharp.Compiler
                 }
                 catch (System.Exception e)
                 {
-                    UdonSharpUtils.LogBuildError($"{e.GetType()}: {e.Message}", sourcePath.Replace("/", "\\"), 0, 0);
+                    int defineCount = 0;
+                    foreach (char c in defineString)
+                    {
+                        if (c == '\n')
+                            defineCount++;
+                    }
 
+                    SyntaxNode node = classVisitor.visitorContext.currentNode;
+
+                    if (node != null)
+                    {
+                        FileLinePositionSpan lineSpan = node.GetLocation().GetLineSpan();
+                        
+                        UdonSharpUtils.LogBuildError($"{e.GetType()}: {e.Message}", sourcePath.Replace("/", "\\"), lineSpan.StartLinePosition.Line - defineCount, lineSpan.StartLinePosition.Character);
+                    }
+                    else
+                    {
+                        UdonSharpUtils.LogBuildError($"{e.GetType()}: {e.Message}", sourcePath.Replace("/", "\\"), 0, 0);
+                    }
+#if UDONSHARP_DEBUG
+            Debug.LogException(e);
+            Debug.LogError(e.StackTrace);
+#endif
+                    
                     return null;
                 }
 
