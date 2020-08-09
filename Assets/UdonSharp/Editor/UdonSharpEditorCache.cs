@@ -157,6 +157,32 @@ namespace UdonSharp
             }
         }
 
+        /// <summary>
+        /// Clears the source hash, this is used when a script hits a compile error in order to allow an undo to compile the scripts.
+        /// </summary>
+        /// <param name="programAsset"></param>
+        public void ClearSourceHash(UdonSharpProgramAsset programAsset)
+        {
+            if (programAsset?.sourceCsScript == null)
+                return;
+
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string programAssetGuid, out long _))
+                return;
+
+            if (sourceFileHashLookup.ContainsKey(programAssetGuid))
+            {
+                if (sourceFileHashLookup[programAssetGuid] != "")
+                    _sourceDirty = true;
+
+                sourceFileHashLookup[programAssetGuid] = "";
+            }
+            else
+            {
+                sourceFileHashLookup.Add(programAssetGuid, "");
+                _sourceDirty = true;
+            }
+        }
+
         private static string HashSourceFile(MonoScript script)
         {
             string scriptPath = AssetDatabase.GetAssetPath(script);

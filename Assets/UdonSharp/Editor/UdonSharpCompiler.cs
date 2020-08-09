@@ -152,18 +152,25 @@ namespace UdonSharp.Compiler
                         EditorUtility.DisplayProgressBar("UdonSharp Compile", "Assigning constants...", 1f);
                         int initializerErrorCount = AssignHeapConstants();
                         totalErrorCount += initializerErrorCount;
+                    }
 
-                        if (initializerErrorCount == 0)
+                    if (totalErrorCount == 0)
+                    {
+                        foreach (CompilationModule module in modules)
                         {
-                            foreach (CompilationModule module in modules)
-                            {
-                                module.programAsset.ApplyProgram();
-                                UdonSharpEditorCache.Instance.UpdateSourceHash(module.programAsset);
-                            }
+                            module.programAsset.ApplyProgram();
+                            UdonSharpEditorCache.Instance.UpdateSourceHash(module.programAsset);
+                        }
 
-                            EditorUtility.DisplayProgressBar("UdonSharp Compile", "Post Build Scene Fixup", 1f);
-                            UdonSharpEditorCache.Instance.LastBuildType = isEditorBuild ? UdonSharpEditorCache.DebugInfoType.Editor : UdonSharpEditorCache.DebugInfoType.Client;
-                            UdonSharpEditorManager.RunPostBuildSceneFixup();
+                        EditorUtility.DisplayProgressBar("UdonSharp Compile", "Post Build Scene Fixup", 1f);
+                        UdonSharpEditorCache.Instance.LastBuildType = isEditorBuild ? UdonSharpEditorCache.DebugInfoType.Editor : UdonSharpEditorCache.DebugInfoType.Client;
+                        UdonSharpEditorManager.RunPostBuildSceneFixup();
+                    }
+                    else
+                    {
+                        foreach (CompilationModule module in modules)
+                        {
+                            UdonSharpEditorCache.Instance.ClearSourceHash(module.programAsset);
                         }
                     }
                 }
