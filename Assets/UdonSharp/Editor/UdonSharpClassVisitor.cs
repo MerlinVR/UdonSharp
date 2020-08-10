@@ -80,6 +80,9 @@ namespace UdonSharp.Compiler
                 fieldType = fieldTypeCapture.captureType;
             }
 
+            if (fieldType == null)
+                throw new System.Exception($"The type or namespace name '{node.Declaration.Type}' could not be found (are you missing a using directive?)");
+
             foreach (VariableDeclaratorSyntax variableDeclarator in node.Declaration.Variables)
             {
                 SymbolDefinition newSymbol = visitorContext.topTable.CreateNamedSymbol(variableDeclarator.Identifier.ValueText, fieldType, isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private);

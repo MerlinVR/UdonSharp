@@ -1,11 +1,9 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using UnityEngine;
 
 namespace UdonSharp.Compiler
@@ -307,6 +305,13 @@ namespace UdonSharp.Compiler
             throw new System.NotSupportedException("Default expressions are not yet supported by UdonSharp");
         }
 
+        public override void VisitEnumDeclaration(EnumDeclarationSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            throw new System.NotSupportedException("UdonSharp does not yet support user defined enums");
+        }
+        
         public override void VisitTryStatement(TryStatementSyntax node)
         {
             UpdateSyntaxNode(node);

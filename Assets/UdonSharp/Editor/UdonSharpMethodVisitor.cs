@@ -55,7 +55,7 @@ namespace UdonSharp.Compiler
                     Visit(parameter.Type);
 
                     if (!paramTypeCapture.IsType())
-                        throw new System.TypeLoadException($"Could not find type from {parameter.Type.ToFullString()}");
+                        throw new System.TypeLoadException($"The type or namespace name '{parameter.Type}' could not be found (are you missing a using directive?)");
 
                     if (!visitorContext.resolverContext.IsValidUdonType(paramTypeCapture.captureType))
                         throw new System.NotSupportedException($"Udon does not support method parameters of type '{paramTypeCapture.captureType.Name}' yet");
