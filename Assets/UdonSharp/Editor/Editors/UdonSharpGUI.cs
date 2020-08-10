@@ -45,7 +45,12 @@ namespace UdonSharpEditor
 
         private static void SetupGUI()
         {
-            if (undoLabelStyle == null)
+            if (undoLabelStyle == null ||
+                undoArrowLight == null ||
+                undoArrowDark == null ||
+                clearColorLight == null ||
+                clearColorDark == null ||
+                clearColorStyle == null)
             {
                 undoLabelStyle = new GUIStyle(EditorStyles.label);
                 undoLabelStyle.alignment = TextAnchor.MiddleCenter;
