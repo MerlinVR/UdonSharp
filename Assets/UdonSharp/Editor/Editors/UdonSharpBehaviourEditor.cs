@@ -90,28 +90,6 @@ namespace UdonSharpEditor
             OverrideUdonBehaviourDrawer();
         }
 
-        // https://stackoverflow.com/questions/12898282/type-gettype-not-working 
-        static System.Type FindTypeInAllAssemblies(string qualifiedTypeName)
-        {
-            System.Type t = System.Type.GetType(qualifiedTypeName);
-
-            if (t != null)
-            {
-                return t;
-            }
-            else
-            {
-                foreach (System.Reflection.Assembly asm in System.AppDomain.CurrentDomain.GetAssemblies())
-                {
-                    t = asm.GetType(qualifiedTypeName);
-                    if (t != null)
-                        return t;
-                }
-
-                return null;
-            }
-        }
-
         static FieldInfo customEditorField;
         static MethodInfo removeTypeMethod;
         static MethodInfo addTypeMethod;
@@ -138,7 +116,9 @@ namespace UdonSharpEditor
         {
             if (customEditorField == null)
             {
-                System.Type editorAttributesClass = FindTypeInAllAssemblies("UnityEditor.CustomEditorAttributes");
+                Assembly editorAssembly = AppDomain.CurrentDomain.GetAssemblies().First(e => e.GetName().Name == "UnityEditor");
+
+                System.Type editorAttributesClass = editorAssembly.GetType("UnityEditor.CustomEditorAttributes");
                 customEditorField = editorAttributesClass.GetField("kSCustomEditors", BindingFlags.NonPublic | BindingFlags.Static);
 
                 System.Type fieldType = customEditorField.FieldType;
@@ -202,7 +182,7 @@ namespace UdonSharpEditor
             _typeInspectorMap = new Dictionary<Type, Type>();
             FieldInfo inspectedTypeField = typeof(CustomEditor).GetField("m_InspectedType", BindingFlags.NonPublic | BindingFlags.Instance);
 
-            foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (Assembly asm in UdonSharpUtils.GetLoadedEditorAssemblies())
             {
                 foreach (Type editorType in asm.GetTypes())
                 {

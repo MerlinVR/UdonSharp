@@ -607,5 +607,25 @@ namespace UdonSharp
         {
             typeof(UnityEditor.SceneView).GetMethod("ShowNotification", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { notificationString });
         }
+
+        static PropertyInfo getLoadedAssembliesProp;
+        static object getLoadedAssembliesLock = new object();
+
+        internal static Assembly[] GetLoadedEditorAssemblies()
+        {
+            lock (getLoadedAssembliesLock)
+            {
+                if (getLoadedAssembliesProp == null)
+                {
+                    Assembly editorAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(e => e.GetName().Name == "UnityEditor");
+
+                    System.Type editorAssembliesType = editorAssembly.GetType("UnityEditor.EditorAssemblies");
+
+                    getLoadedAssembliesProp = editorAssembliesType.GetProperty("loadedAssemblies", BindingFlags.Static | BindingFlags.NonPublic);
+                }
+            }
+
+            return (Assembly[])getLoadedAssembliesProp.GetValue(null);
+        }
     }
 }
