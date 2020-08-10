@@ -14,13 +14,19 @@ namespace UdonSharp
     [InitializeOnLoad]
     public static class RuntimeExceptionWatcher
     {
+        class LogFileState
+        {
+            public string playerName;
+            public long lineOffset = -1;
+        }
+
         static Queue<string> debugOutputQueue = new Queue<string>();
         static Dictionary<long, (string, UdonSharpProgramAsset)> scriptLookup;
         
         // Log watcher vars
         static FileSystemWatcher logDirectoryWatcher;
         static object logModifiedLock = new object();
-        static Dictionary<string, long> lastLogOffsets = new Dictionary<string, long>();
+        static Dictionary<string, LogFileState> logFileStates = new Dictionary<string, LogFileState>();
         static HashSet<string> modifiedLogPaths = new HashSet<string>();
 
         static RuntimeExceptionWatcher()
@@ -135,7 +141,7 @@ namespace UdonSharp
 
             while (debugOutputQueue.Count > 0)
             {
-                HandleLogError(debugOutputQueue.Dequeue(), "Udon runtime exception detected!");
+                HandleLogError(debugOutputQueue.Dequeue(), "Udon runtime exception detected!", "");
             }
 
             UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
@@ -157,11 +163,10 @@ namespace UdonSharp
 
                         foreach (string logPath in modifiedLogPaths)
                         {
-                            long lastFileOffset;
-                            if (!lastLogOffsets.TryGetValue(logPath, out lastFileOffset))
-                                lastLogOffsets.Add(logPath, -1);
+                            if (!logFileStates.TryGetValue(logPath, out LogFileState logState))
+                                logFileStates.Add(logPath, new LogFileState());
 
-                            lastFileOffset = lastLogOffsets[logPath];
+                            logState = logFileStates[logPath];
 
                             string newLogContent = "";
 
@@ -175,18 +180,38 @@ namespace UdonSharp
                                 {
                                     using (StreamReader reader = new StreamReader(stream))
                                     {
-                                        if (lastFileOffset == -1)
+                                        if (logState.playerName == null)
+                                        {
+                                            string fullFileContents = reader.ReadToEnd();
+
+                                            const string searchStr = "[VRCFlowManagerVRC] User Authenticated: ";
+                                            int userIdx = fullFileContents.IndexOf(searchStr);
+                                            if (userIdx != -1)
+                                            {
+                                                userIdx += searchStr.Length;
+
+                                                int endIdx = userIdx;
+
+                                                while (fullFileContents[endIdx] != '\r' && fullFileContents[endIdx] != '\n') endIdx++;
+
+                                                string username = fullFileContents.Substring(userIdx, endIdx - userIdx);
+
+                                                logState.playerName = username;
+                                            }
+                                        }
+
+                                        if (logState.lineOffset == -1)
                                         {
                                             reader.BaseStream.Seek(0, SeekOrigin.End);
                                         }
                                         else
                                         {
-                                            reader.BaseStream.Seek(lastFileOffset, SeekOrigin.Begin);
+                                            reader.BaseStream.Seek(logState.lineOffset, SeekOrigin.Begin);
                                         }
 
                                         newLogContent = reader.ReadToEnd();
 
-                                        lastLogOffsets[logPath] = reader.BaseStream.Position;
+                                        logFileStates[logPath].lineOffset = reader.BaseStream.Position;
                                         reader.Close();
                                     }
 
@@ -215,7 +240,8 @@ namespace UdonSharp
                         int currentErrorIndex = modifiedFile.Item2.IndexOf(errorMatchStr);
                         while (currentErrorIndex != -1)
                         {
-                            HandleLogError(modifiedFile.Item2.Substring(currentErrorIndex, modifiedFile.Item2.Length - currentErrorIndex), $"VRChat client runtime Udon exception detected! Source log file: {Path.GetFileName(modifiedFile.Item1)}");
+                            LogFileState state = logFileStates[modifiedFile.Item1];
+                            HandleLogError(modifiedFile.Item2.Substring(currentErrorIndex, modifiedFile.Item2.Length - currentErrorIndex), $"VRChat client runtime Udon exception detected!", $"{ state.playerName ?? "Unknown"}");
 
                             currentErrorIndex = modifiedFile.Item2.IndexOf(errorMatchStr, currentErrorIndex + errorMatchStr.Length);
                         }
@@ -224,7 +250,7 @@ namespace UdonSharp
             }
         }
 
-        static void HandleLogError(string errorStr, string logPrefix)
+        static void HandleLogError(string errorStr, string logPrefix, string prePrefix)
         {
             UdonSharpEditorCache.DebugInfoType debugType;
             if (errorStr.StartsWith("[<color=yellow>UdonBehaviour</color>] An exception occurred during Udon execution, this UdonBehaviour will be halted.")) // Editor
@@ -294,7 +320,7 @@ namespace UdonSharp
 
             ClassDebugInfo.DebugLineSpan debugLineSpan = debugInfo.DebugLineSpans[debugSpanIdx];
 
-            UdonSharpUtils.LogBuildError($"{logPrefix}\n{errorMessage}", assetInfo.Item1, debugLineSpan.line, debugLineSpan.lineChar);
+            UdonSharpUtils.LogRuntimeError($"{logPrefix}\n{errorMessage}", $"[<color=#575ff2>{prePrefix}</color>]", assetInfo.Item1, debugLineSpan.line, debugLineSpan.lineChar);
         }
     }
 }

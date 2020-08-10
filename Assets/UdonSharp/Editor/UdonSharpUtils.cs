@@ -537,6 +537,21 @@ namespace UdonSharp
             return errorMessage;
         }
 
+        public static string LogRuntimeError(string message, string prefix, string filePath, int line, int character)
+        {
+            MethodInfo buildErrorLogMethod = typeof(UnityEngine.Debug).GetMethod("LogPlayerBuildError", BindingFlags.NonPublic | BindingFlags.Static);
+
+            string errorMessage = $"[<color=#FF00FF>UdonSharp</color>]{prefix} {filePath}({line + 1},{character}): {message}";
+
+            buildErrorLogMethod.Invoke(null, new object[] {
+                        errorMessage,
+                        filePath,
+                        line + 1,
+                        character });
+
+            return errorMessage;
+        }
+
         public static string ReadFileTextSync(string filePath, float timeoutSeconds = 2f)
         {
             bool sourceLoaded = false;
