@@ -1,6 +1,7 @@
 ﻿using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using UdonSharp.Compiler;
 using UdonSharpEditor;
@@ -11,6 +12,7 @@ using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Editor.ProgramSources;
 using VRC.Udon.Editor.ProgramSources.Attributes;
 using VRC.Udon.EditorBindings;
+using VRC.Udon.ProgramSources;
 using VRC.Udon.Serialization.OdinSerializer;
 
 [assembly: UdonProgramSourceNewMenu(typeof(UdonSharp.UdonSharpProgramAsset), "Udon C# Program Asset")]
@@ -155,7 +157,7 @@ namespace UdonSharp
                 !hasAssemblyError &&
                 compileErrors.Count == 0)
             {
-                CompileCsProgram();
+                CompileAllCsPrograms(true);
             }
         }
         
@@ -309,9 +311,40 @@ namespace UdonSharp
             return true;
         }
 
+        AbstractSerializedUdonProgramAsset GetSerializedProgramAssetWithoutRefresh()
+        {
+            AssetDatabase.TryGetGUIDAndLocalFileIdentifier(this, out string guid, out long _);
+
+            if (serializedUdonProgramAsset != null)
+            {
+                if (serializedUdonProgramAsset.name == guid)
+                    return serializedUdonProgramAsset;
+
+                string oldSerializedProgramAssetPath = Path.Combine("Assets", "SerializedUdonPrograms", $"{serializedUdonProgramAsset.name}.asset");
+                AssetDatabase.DeleteAsset(oldSerializedProgramAssetPath);
+            }
+
+            string serializedUdonProgramAssetPath = Path.Combine("Assets", "SerializedUdonPrograms", $"{guid}.asset");
+
+            serializedUdonProgramAsset = AssetDatabase.LoadAssetAtPath<SerializedUdonProgramAsset>(serializedUdonProgramAssetPath);
+
+            if (serializedUdonProgramAsset)
+                return serializedUdonProgramAsset;
+
+            serializedUdonProgramAsset = CreateInstance<SerializedUdonProgramAsset>();
+            if (!AssetDatabase.IsValidFolder(Path.GetDirectoryName(serializedUdonProgramAssetPath)))
+            {
+                AssetDatabase.CreateFolder("Assets", "SerializedUdonPrograms");
+            }
+
+            AssetDatabase.CreateAsset(serializedUdonProgramAsset, serializedUdonProgramAssetPath);
+
+            return serializedUdonProgramAsset;
+        }
+
         public void ApplyProgram()
         {
-            SerializedProgramAsset.StoreProgram(program);
+            GetSerializedProgramAssetWithoutRefresh().StoreProgram(program);
             EditorUtility.SetDirty(this);
         }
 
