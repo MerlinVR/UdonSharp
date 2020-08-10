@@ -106,7 +106,7 @@ namespace UdonSharp.Compiler
     public class ASTVisitor : UdonSharpSyntaxWalker
     {
         public ASTVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable, List<MethodDefinition> methodDefinitions, List<ClassDefinition> externUserClassDefinitions, ClassDebugInfo debugInfo)
-            : base(resolver, rootTable, labelTable)
+            : base(resolver, rootTable, labelTable, debugInfo)
         {
             visitorContext.returnJumpTarget = rootTable.CreateNamedSymbol("returnTarget", typeof(uint), SymbolDeclTypeFlags.Internal);
             visitorContext.definedMethods = methodDefinitions;
