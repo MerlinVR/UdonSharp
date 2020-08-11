@@ -18,6 +18,7 @@ namespace UdonSharp
         {
             public string playerName;
             public long lineOffset = -1;
+            public string nameColor = "0000ff";
         }
 
         static Queue<string> debugOutputQueue = new Queue<string>();
@@ -35,6 +36,19 @@ namespace UdonSharp
             Application.logMessageReceived += OnLog;
         }
 
+        static bool ShouldListenForVRC()
+        {
+            UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
+
+            if (udonSharpSettings == null)
+                return false;
+
+            if (udonSharpSettings.listenForVRCExceptions || udonSharpSettings.watcherMode != UdonSharpSettings.LogWatcherMode.Disabled)
+                return true;
+
+            return false;
+        }
+
         static bool InitializeScriptLookup()
         {
             if (scriptLookup != null)
@@ -43,9 +57,7 @@ namespace UdonSharp
             if (EditorApplication.isCompiling || EditorApplication.isUpdating)
                 return false;
 
-            UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
-
-            if (udonSharpSettings == null || !udonSharpSettings.listenForVRCExceptions)
+            if (!ShouldListenForVRC())
                 return false;
 
             AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
@@ -134,6 +146,9 @@ namespace UdonSharp
             }
         }
 
+        const string MATCH_STR = "\\n\\n\\r\\n\\d{4}.\\d{2}.\\d{2} \\d{2}:\\d{2}:\\d{2} ";
+        static Regex lineMatch;
+
         static void OnEditorUpdate()
         {
             if (!InitializeScriptLookup())
@@ -145,13 +160,16 @@ namespace UdonSharp
             }
 
             UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
-            bool shouldListenForVRC = udonSharpSettings != null && udonSharpSettings.buildDebugInfo && udonSharpSettings.listenForVRCExceptions;
+            bool shouldListenForVRC = udonSharpSettings != null && ShouldListenForVRC();
 
             if (logDirectoryWatcher != null)
                 logDirectoryWatcher.EnableRaisingEvents = shouldListenForVRC;
 
             if (shouldListenForVRC)
             {
+                if (lineMatch == null)
+                    lineMatch = new Regex(MATCH_STR, RegexOptions.Compiled);
+
                 List<(string, string)> modifiedFilesAndContents = null;
 
                 lock (logModifiedLock)
@@ -180,23 +198,31 @@ namespace UdonSharp
                                 {
                                     using (StreamReader reader = new StreamReader(stream))
                                     {
-                                        if (logState.playerName == null)
+                                        if (logState.playerName == null) // Search for the player name that this log belongs to
                                         {
                                             string fullFileContents = reader.ReadToEnd();
 
-                                            const string searchStr = "[VRCFlowManagerVRC] User Authenticated: ";
-                                            int userIdx = fullFileContents.IndexOf(searchStr);
+                                            const string SEARCH_STR = "[VRCFlowManagerVRC] User Authenticated: ";
+                                            int userIdx = fullFileContents.IndexOf(SEARCH_STR);
                                             if (userIdx != -1)
                                             {
-                                                userIdx += searchStr.Length;
+                                                userIdx += SEARCH_STR.Length;
 
                                                 int endIdx = userIdx;
 
-                                                while (fullFileContents[endIdx] != '\r' && fullFileContents[endIdx] != '\n') endIdx++;
+                                                while (fullFileContents[endIdx] != '\r' && fullFileContents[endIdx] != '\n') endIdx++; // Seek to end of name
 
                                                 string username = fullFileContents.Substring(userIdx, endIdx - userIdx);
 
                                                 logState.playerName = username;
+
+                                                // Use the log path as well since Build & Test can have multiple of the same display named users
+                                                System.Random random = new System.Random((username + logPath).GetHashCode());
+
+                                                Color randomUserColor = Color.HSVToRGB((float)random.NextDouble(), 1.00f, EditorGUIUtility.isProSkin ? 0.9f : 0.6f);
+                                                string colorStr = ColorUtility.ToHtmlStringRGB(randomUserColor);
+
+                                                logState.nameColor = colorStr;
                                             }
                                         }
 
@@ -206,7 +232,7 @@ namespace UdonSharp
                                         }
                                         else
                                         {
-                                            reader.BaseStream.Seek(logState.lineOffset, SeekOrigin.Begin);
+                                            reader.BaseStream.Seek(logState.lineOffset - 4 < 0 ? 0 : logState.lineOffset - 4, SeekOrigin.Begin); // Subtract 4 characters to pick up the newlines from the prior line for the log forwarding
                                         }
 
                                         newLogContent = reader.ReadToEnd();
@@ -235,19 +261,105 @@ namespace UdonSharp
                 {
                     foreach (var modifiedFile in modifiedFilesAndContents)
                     {
-                        const string errorMatchStr = "[UdonBehaviour] An exception occurred during Udon execution, this UdonBehaviour will be halted.";
+                        LogFileState state = logFileStates[modifiedFile.Item1];
 
-                        int currentErrorIndex = modifiedFile.Item2.IndexOf(errorMatchStr);
-                        while (currentErrorIndex != -1)
+                        // Log forwarding
+                        if (udonSharpSettings.watcherMode != UdonSharpSettings.LogWatcherMode.Disabled)
                         {
-                            LogFileState state = logFileStates[modifiedFile.Item1];
-                            HandleLogError(modifiedFile.Item2.Substring(currentErrorIndex, modifiedFile.Item2.Length - currentErrorIndex), $"VRChat client runtime Udon exception detected!", $"{ state.playerName ?? "Unknown"}");
+                            int currentIdx = 0;
+                            Match match = null;
 
-                            currentErrorIndex = modifiedFile.Item2.IndexOf(errorMatchStr, currentErrorIndex + errorMatchStr.Length);
+                            do
+                            {
+                                currentIdx = (match?.Index ?? -1);
+
+                                match = lineMatch.Match(modifiedFile.Item2, currentIdx + 1);
+
+                                string logStr = null;
+
+                                if (currentIdx == -1)
+                                {
+                                    if (match.Success)
+                                    {
+                                        Match nextMatch = lineMatch.Match(modifiedFile.Item2, match.Index + 1);
+
+                                        if (nextMatch.Success)
+                                            logStr = modifiedFile.Item2.Substring(0, nextMatch.Index);
+                                        else
+                                            logStr = modifiedFile.Item2;
+
+                                        match = nextMatch;
+                                    }
+                                }
+                                else if (match.Success)
+                                {
+                                    logStr = modifiedFile.Item2.Substring(currentIdx < 0 ? 0 : currentIdx, match.Index - currentIdx);
+                                }
+                                else if (currentIdx != -1)
+                                {
+                                    logStr = modifiedFile.Item2.Substring(currentIdx < 0 ? 0 : currentIdx, modifiedFile.Item2.Length - currentIdx);
+                                }
+
+                                if (logStr != null)
+                                {
+                                    logStr = logStr.Trim('\n', '\r');
+
+                                    HandleForwardedLog(logStr, state, udonSharpSettings);
+                                }
+                            } while (match.Success);
+                        }
+
+                        if (udonSharpSettings.listenForVRCExceptions)
+                        {
+                            // Exception handling
+                            const string errorMatchStr = "[UdonBehaviour] An exception occurred during Udon execution, this UdonBehaviour will be halted.";
+
+                            int currentErrorIndex = modifiedFile.Item2.IndexOf(errorMatchStr);
+                            while (currentErrorIndex != -1)
+                            {
+                                HandleLogError(modifiedFile.Item2.Substring(currentErrorIndex, modifiedFile.Item2.Length - currentErrorIndex), $"VRChat client runtime Udon exception detected!", $"{ state.playerName ?? "Unknown"}");
+
+                                currentErrorIndex = modifiedFile.Item2.IndexOf(errorMatchStr, currentErrorIndex + errorMatchStr.Length);
+                            }
                         }
                     }
                 }
             }
+        }
+
+        static void HandleForwardedLog(string logMessage, LogFileState state, UdonSharpSettings settings)
+        {
+            const string FMT_STR = "0000.00.00 00:00:00 ";
+
+            string trimmedStr = logMessage.Substring(FMT_STR.Length);
+
+            string message = trimmedStr.Substring(trimmedStr.IndexOf('-') + 2);
+
+            if (settings.watcherMode == UdonSharpSettings.LogWatcherMode.Prefix)
+            {
+                string prefixStr = message.TrimStart(' ', '\t');
+                bool prefixFound = false;
+                foreach (string prefix in settings.logWatcherMatchStrings)
+                {
+                    if (!string.IsNullOrEmpty(prefix) && prefixStr.StartsWith(prefix))
+                    {
+                        prefixFound = true;
+                        break;
+                    }
+                }
+
+                if (!prefixFound)
+                    return;
+            }
+
+            string playername = state.playerName ?? "Unknown";
+
+            if (trimmedStr.StartsWith("Log"))
+                Debug.Log($"[<color=#{state.nameColor}>{playername}</color>]{message}");
+            else if (trimmedStr.StartsWith("Warning"))
+                Debug.LogWarning($"[<color=#{state.nameColor}>{playername}</color>]{message}");
+            else if (trimmedStr.StartsWith("Error"))
+                Debug.LogError($"[<color=#{state.nameColor}>{playername}</color>]{message}");
         }
 
         static void HandleLogError(string errorStr, string logPrefix, string prePrefix)

@@ -8,6 +8,13 @@ namespace UdonSharp
 {
     public class UdonSharpSettings : ScriptableObject
     {
+        public enum LogWatcherMode
+        {
+            Disabled,
+            AllLogs,
+            Prefix,
+        }
+
         private const string SettingsSavePath = "Assets/UdonSharp/UdonSharpSettings.asset";
 
         private const string DefaultProgramTemplate = @"
@@ -55,6 +62,10 @@ public class <TemplateClassName> : UdonSharpBehaviour
         public bool listenForVRCExceptions = false;
 
         public bool shouldForceCompile = false;
+
+        // Log watcher
+        public LogWatcherMode watcherMode = LogWatcherMode.Disabled;
+        public string[] logWatcherMatchStrings = new string[0];
 
         public static UdonSharpSettings GetSettings()
         {
@@ -131,6 +142,8 @@ public class <TemplateClassName> : UdonSharpBehaviour
         private static readonly GUIContent listenForVRCExceptionsLabel = new GUIContent("Listen for client exceptions", "Listens for exceptions from Udon and tries to match them to scripts in the project");
         private static readonly GUIContent scanningBlackListLabel = new GUIContent("Scanning blacklist", "Directories to not watch for source code changes and not include in class lookups");
         private static readonly GUIContent forceCompileLabel = new GUIContent("Force compile on upload", "Forces Unity to synchronously compile scripts when a world build is started. Unity will complain and throw errors, but it seems to work. This is a less intrusive way to prevent Unity from corrupting assemblies on upload.");
+        private static readonly GUIContent outputLogWatcherModeLabel = new GUIContent("Output log watch mode", "The log watcher will read log messages from the VRC log and forward them to the editor's console. Prefix mode will only show messages with a given prefix string.");
+        private static readonly GUIContent prefixArrayLabel = new GUIContent("Prefixes");
 
         [SettingsProvider]
         public static SettingsProvider CreateSettingsProvider()
@@ -177,6 +190,15 @@ Disabling this setting will make the UNITY_EDITOR define not work as expected an
                     {
                         EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.includeInlineCode)), includeInlineCodeLabel);
                         EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.listenForVRCExceptions)), listenForVRCExceptionsLabel);
+                    }
+
+                    EditorGUILayout.Space();
+                    SerializedProperty watcherModeProperty = settingsObject.FindProperty(nameof(UdonSharpSettings.watcherMode));
+                    EditorGUILayout.PropertyField(watcherModeProperty, outputLogWatcherModeLabel);
+                    
+                    if (watcherModeProperty.enumValueIndex == (int)UdonSharpSettings.LogWatcherMode.Prefix)
+                    {
+                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.logWatcherMatchStrings)), prefixArrayLabel, true);
                     }
 
                     EditorGUILayout.Space();
