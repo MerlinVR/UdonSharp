@@ -156,7 +156,7 @@ namespace UdonSharp
 
             while (debugOutputQueue.Count > 0)
             {
-                HandleLogError(debugOutputQueue.Dequeue(), "Udon runtime exception detected!", "");
+                HandleLogError(debugOutputQueue.Dequeue(), "Udon runtime exception detected!", null);
             }
 
             UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
@@ -432,7 +432,7 @@ namespace UdonSharp
 
             ClassDebugInfo.DebugLineSpan debugLineSpan = debugInfo.DebugLineSpans[debugSpanIdx];
 
-            UdonSharpUtils.LogRuntimeError($"{logPrefix}\n{errorMessage}", $"[<color=#575ff2>{prePrefix}</color>]", assetInfo.Item1, debugLineSpan.line, debugLineSpan.lineChar);
+            UdonSharpUtils.LogRuntimeError($"{logPrefix}\n{errorMessage}", prePrefix != null ? $"[<color=#575ff2>{prePrefix}</color>]" : "", assetInfo.Item1, debugLineSpan.line, debugLineSpan.lineChar);
         }
     }
 }
