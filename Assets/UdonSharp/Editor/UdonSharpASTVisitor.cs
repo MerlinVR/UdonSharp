@@ -1422,10 +1422,21 @@ namespace UdonSharp
 
                     if (visitorContext.returnSymbol != null)
                     {
+                        SymbolDefinition returnValue = expressionBodyCapture.ExecuteGet();
+
                         using (ExpressionCaptureScope returnSetterScope = new ExpressionCaptureScope(visitorContext, null))
                         {
                             returnSetterScope.SetToLocalSymbol(visitorContext.returnSymbol);
-                            returnSetterScope.ExecuteSetDirect(expressionBodyCapture);
+                            returnSetterScope.ExecuteSet(returnValue);
+                        }
+
+                        if (visitorContext.requresVRCReturn)
+                        {
+                            using (ExpressionCaptureScope returnValueSetMethod = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                returnValueSetMethod.ResolveAccessToken(nameof(VRC.Udon.UdonBehaviour.WriteReturnValue));
+                                returnValueSetMethod.Invoke(new SymbolDefinition[] { returnValue });
+                            }
                         }
                     }
                 }
