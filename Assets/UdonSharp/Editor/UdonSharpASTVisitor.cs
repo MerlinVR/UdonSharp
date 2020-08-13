@@ -780,12 +780,12 @@ namespace UdonSharp
             if (syncMode == UdonSyncMode.NotSynced)
                 return;
 
-            if (!UdonSharpUtils.IsUdonSyncedType(typeToSync))
+            if (!VRC.Udon.UdonNetworkTypes.CanSync(typeToSync))
                 throw new System.NotSupportedException($"Udon does not currently support syncing of the type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
-            else if (syncMode == UdonSyncMode.Linear && !UdonSharpUtils.IsUdonLinearSyncType(typeToSync))
-                throw new System.NotSupportedException($"Udon does not support linear tweening of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
-            else if (syncMode == UdonSyncMode.Smooth && !UdonSharpUtils.IsUdonSmoothSyncType(typeToSync))
-                throw new System.NotSupportedException($"Udon does not support smooth tweening of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+            else if (syncMode == UdonSyncMode.Linear && !VRC.Udon.UdonNetworkTypes.CanSyncLinear(typeToSync))
+                throw new System.NotSupportedException($"Udon does not support linear interpolation of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+            else if (syncMode == UdonSyncMode.Smooth && !VRC.Udon.UdonNetworkTypes.CanSyncSmooth(typeToSync))
+                throw new System.NotSupportedException($"Udon does not support smooth interpolation of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
         }
 
         public override void VisitFieldDeclaration(FieldDeclarationSyntax node)
