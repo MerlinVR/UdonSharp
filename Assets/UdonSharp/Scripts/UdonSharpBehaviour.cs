@@ -62,6 +62,8 @@ namespace UdonSharp
             return Instantiate(original);
         }
 
+        public void RequestSerialization() { }
+
         // Stubs for builtin UdonSharp methods to get type info
         private static long GetUdonTypeID(System.Type type)
         {
@@ -115,6 +117,7 @@ namespace UdonSharp
         public virtual void OnVideoStart() { }
         public virtual void OnPreSerialization() { }
         public virtual void OnDeserialization() { }
+        public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi player) => true;
 
         [Obsolete("The OnStationEntered() event is deprecated use the OnStationEntered(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
         public virtual void OnStationEntered() { }

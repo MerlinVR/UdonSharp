@@ -28,6 +28,7 @@ namespace UdonSharp
         public JumpLabel returnLabel = null;
         public SymbolDefinition returnJumpTarget = null;
         public SymbolDefinition returnSymbol = null;
+        public bool requresVRCReturn = false;
         public Stack<JumpLabel> continueLabelStack = new Stack<JumpLabel>();
         public Stack<JumpLabel> breakLabelStack = new Stack<JumpLabel>();
 
@@ -781,9 +782,10 @@ namespace UdonSharp
 
             if (!UdonSharpUtils.IsUdonSyncedType(typeToSync))
                 throw new System.NotSupportedException($"Udon does not currently support syncing of the type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
-
-            if (syncMode != UdonSyncMode.None && (typeToSync == typeof(string) || typeToSync == typeof(char)))
-                throw new System.NotSupportedException($"Udon does not support tweening the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+            else if (syncMode == UdonSyncMode.Linear && !UdonSharpUtils.IsUdonLinearSyncType(typeToSync))
+                throw new System.NotSupportedException($"Udon does not support linear tweening of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+            else if (syncMode == UdonSyncMode.Smooth && !UdonSharpUtils.IsUdonSmoothSyncType(typeToSync))
+                throw new System.NotSupportedException($"Udon does not support smooth tweening of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
         }
 
         public override void VisitFieldDeclaration(FieldDeclarationSyntax node)
@@ -1357,6 +1359,7 @@ namespace UdonSharp
             JumpLabel returnLabel = visitorContext.labelTable.GetNewJumpLabel("return");
             visitorContext.returnLabel = returnLabel;
             visitorContext.returnSymbol = definition.returnSymbol;
+            visitorContext.requresVRCReturn = functionName == "_onOwnershipRequest" ? true : false;
 
             visitorContext.uasmBuilder.AddJumpLabel(definition.methodUdonEntryPoint);
             
@@ -1932,10 +1935,22 @@ namespace UdonSharp
                 {
                     Visit(node.Expression);
 
+                    SymbolDefinition returnSymbol = returnCaptureScope.ExecuteGet();
+
                     using (ExpressionCaptureScope returnOutSetter = new ExpressionCaptureScope(visitorContext, null))
                     {
                         returnOutSetter.SetToLocalSymbol(visitorContext.returnSymbol);
-                        returnOutSetter.ExecuteSet(returnCaptureScope.ExecuteGet());
+                        returnOutSetter.ExecuteSet(returnSymbol);
+                    }
+
+                    // Special methods like OnOwnershipRequest
+                    if (visitorContext.requresVRCReturn)
+                    {
+                        using (ExpressionCaptureScope returnValueSetMethod = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            returnValueSetMethod.ResolveAccessToken(nameof(VRC.Udon.UdonBehaviour.WriteReturnValue));
+                            returnValueSetMethod.Invoke(new SymbolDefinition[] { returnSymbol });
+                        }
                     }
                 }
             }

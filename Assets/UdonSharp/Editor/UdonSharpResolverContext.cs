@@ -146,6 +146,7 @@ namespace UdonSharp
             { "_onPlayerLeft", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerLeftPlayer") } },
             { "_onStationEntered", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onStationEnteredPlayer") } },
             { "_onStationExited", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onStationExitedPlayer") } },
+            { "_onOwnershipRequest", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onOwnershipRequestPlayer") } }
         };
 
         public System.Tuple<System.Type, string>[] GetMethodCustomArgs(string methodName)
