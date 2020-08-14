@@ -2454,9 +2454,11 @@ namespace UdonSharp.Compiler
             using (ExpressionCaptureScope methodCaptureScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 Visit(node.Expression);
-                
-                if (!methodCaptureScope.IsMethod())
+
+                if (!methodCaptureScope.IsMethod() && !methodCaptureScope.IsUnknownArchetype())
                     throw new System.Exception("Invocation requires method expression!");
+                else if (methodCaptureScope.IsUnknownArchetype())
+                    throw new System.Exception($"Unrecognized identifier '{methodCaptureScope.unresolvedAccessChain}'");
                 
                 List<SymbolDefinition.COWValue> invocationArgs = new List<SymbolDefinition.COWValue>();
 
