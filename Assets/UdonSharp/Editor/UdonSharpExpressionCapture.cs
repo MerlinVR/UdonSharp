@@ -1804,6 +1804,8 @@ namespace UdonSharp.Compiler
 
             if (localUdonMethodName == "VRCInstantiate")
                 methods.AddRange(GetTypeMethods(typeof(UdonSharpBehaviour), BindingFlags.Static | BindingFlags.Public));
+            else if (localUdonMethodName == "SetProgramVariable" || localUdonMethodName == "GetProgramVariable")
+                methods.Add(typeof(UdonSharpBehaviour).GetMethod(localUdonMethodName, BindingFlags.Instance | BindingFlags.Public));
 
             IEnumerable<MethodInfo> foundMethods = methods.Where(e => e.Name == localUdonMethodName).Distinct();
 
