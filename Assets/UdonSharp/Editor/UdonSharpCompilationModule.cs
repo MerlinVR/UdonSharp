@@ -101,11 +101,16 @@ namespace UdonSharp.Compiler
                     errorCount++;
 
                     LinePosition linePosition = diagnostic.Location.GetLineSpan().StartLinePosition;
+                    
+                    int defineCount = 0;
+                    foreach (char c in sourceDefines)
+                        if (c == '\n')
+                            defineCount++;
 
                     CompileError error = new CompileError();
                     error.script = programAsset.sourceCsScript;
                     error.errorStr = $"error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}";
-                    error.lineIdx = linePosition.Line;
+                    error.lineIdx = linePosition.Line - defineCount;
                     error.charIdx = linePosition.Character;
 
                     result.compileErrors.Add(error);
