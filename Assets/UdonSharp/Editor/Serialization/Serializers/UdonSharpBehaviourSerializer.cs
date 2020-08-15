@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using UdonSharpEditor;
 using VRC.Udon;
 
 namespace UdonSharp.Serialization
@@ -28,34 +29,6 @@ namespace UdonSharp.Serialization
             return typeMetadata.cSharpType == typeof(UdonSharpBehaviour) || typeMetadata.cSharpType.IsSubclassOf(typeof(UdonSharpBehaviour));
         }
 
-        T CreateProxyBehaviour(UdonBehaviour sourceBehaviour)
-        {
-            FieldInfo backingBehaviourField = typeof(UdonSharpBehaviour).GetField("_backingUdonBehaviour", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (backingBehaviourField == null)
-                throw new System.Exception("Could not find backing behaviour field");
-
-            
-            UdonSharpBehaviour[] existingBehaviours = sourceBehaviour.GetComponents<UdonSharpBehaviour>();
-
-            foreach (UdonSharpBehaviour behaviour in existingBehaviours)
-            {
-                UdonBehaviour backingBehaviour = (UdonBehaviour)backingBehaviourField.GetValue(behaviour);
-
-                if (backingBehaviour == sourceBehaviour)
-                    return (T)behaviour;
-            }
-
-            T newBackingBehaviour = sourceBehaviour.gameObject.AddComponent<T>();
-            backingBehaviourField.SetValue(newBackingBehaviour, sourceBehaviour);
-            newBackingBehaviour.hideFlags = UnityEngine.HideFlags.DontSaveInBuild |
-#if !UDONSHARP_DEBUG
-                                            UnityEngine.HideFlags.HideInInspector |
-#endif
-                                            UnityEngine.HideFlags.DontSaveInEditor;
-
-            return newBackingBehaviour;
-        }
-
         public override void Read(ref T targetObject, IValueStorage sourceObject)
         {
             if (sourceObject.Value == null)
@@ -65,7 +38,7 @@ namespace UdonSharp.Serialization
             }
 
             if (targetObject == null)
-                targetObject = CreateProxyBehaviour((UdonBehaviour)sourceObject.Value);
+                targetObject = (T)UdonSharpEditorUtility.GetProxyBehaviour((UdonBehaviour)sourceObject.Value, false);
 
             targetObject.enabled = false;
 
@@ -82,8 +55,6 @@ namespace UdonSharp.Serialization
             {
                 UdonSharpBehaviourSerializationTracker.serializedBehaviourSet.Remove(targetObject);
             }
-
-            UdonSharpBehaviourSerializationTracker.serializedBehaviourSet.Remove(targetObject);
         }
 
         public override void Write(IValueStorage targetObject, in T sourceObject)
@@ -107,6 +78,8 @@ namespace UdonSharp.Serialization
             {
                 UdonSharpBehaviourSerializationTracker.serializedBehaviourSet.Remove(sourceObject);
             }
+
+            targetObject.Value = UdonSharpEditorUtility.GetBackingUdonBehaviour(sourceObject);
         }
 
         protected override Serializer MakeSerializer(TypeSerializationMetadata typeMetadata)

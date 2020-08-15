@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using UdonSharpEditor;
 using UnityEditor;
 using UnityEngine;
 using VRC.Udon;
@@ -113,7 +114,9 @@ namespace UdonSharp.Serialization
 
             public override void Write(IValueStorage targetObject, T sourceObject)
             {
-                writeDelegate(UdonSharpBehaviourFormatterManager.GetHeapData((UdonBehaviour)targetObject.Value).heapFieldValues, ref sourceObject, EditorApplication.isPlaying);
+                IValueStorage[] heapFieldValues = UdonSharpBehaviourFormatterManager.GetHeapData(UdonSharpEditorUtility.GetBackingUdonBehaviour(sourceObject)).heapFieldValues;
+
+                writeDelegate(heapFieldValues, ref sourceObject, EditorApplication.isPlaying);
             }
         }
 
@@ -308,8 +311,6 @@ namespace UdonSharp.Serialization
                                    FieldInfo[] privateFields, 
                                    Dictionary<System.Type, FieldBuilder> serializerFields)
         {
-            Label skipNonSerializedLabel = generator.DefineLabel();
-
             for (int i = 0; i < publicFields.Length; ++i)
             {
                 FieldInfo currentField = publicFields[i];
@@ -327,8 +328,9 @@ namespace UdonSharp.Serialization
                 generator.Emit(OpCodes.Callvirt, serializerField.FieldType.GetMethod("Read")); // Call the serializer's Read method
             }
 
+            Label skipNonSerializedLabel = generator.DefineLabel();
             generator.Emit(OpCodes.Ldarg_2); // load includeNonSerialized bool arg
-            generator.Emit(OpCodes.Brfalse_S, skipNonSerializedLabel); // Jump to exit if includeNonSerialized is false
+            generator.Emit(OpCodes.Brfalse, skipNonSerializedLabel); // Jump to exit if includeNonSerialized is false
 
             for (int i = 0; i < privateFields.Length; ++i)
             {
@@ -346,7 +348,7 @@ namespace UdonSharp.Serialization
 
                 generator.Emit(OpCodes.Callvirt, serializerField.FieldType.GetMethod("Read")); // Call the serializer's Read method
             }
-
+            
             generator.MarkLabel(skipNonSerializedLabel);
 
             generator.Emit(OpCodes.Ret);
@@ -358,8 +360,6 @@ namespace UdonSharp.Serialization
                                     FieldInfo[] privateFields,
                                     Dictionary<System.Type, FieldBuilder> serializerFields)
         {
-            Label skipNonSerializedLabel = generator.DefineLabel();
-
             for (int i = 0; i < publicFields.Length; ++i)
             {
                 FieldInfo currentField = publicFields[i];
@@ -377,8 +377,9 @@ namespace UdonSharp.Serialization
                 generator.Emit(OpCodes.Callvirt, serializerField.FieldType.GetMethod("Write")); // Call the serializer's Write method
             }
 
+            Label skipNonSerializedLabel = generator.DefineLabel();
             generator.Emit(OpCodes.Ldarg_2); // load includeNonSerialized bool arg
-            generator.Emit(OpCodes.Brfalse_S, skipNonSerializedLabel); // Jump to exit if includeNonSerialized is false
+            generator.Emit(OpCodes.Brfalse, skipNonSerializedLabel); // Jump to exit if includeNonSerialized is false
 
             for (int i = 0; i < privateFields.Length; ++i)
             {
@@ -396,8 +397,9 @@ namespace UdonSharp.Serialization
 
                 generator.Emit(OpCodes.Callvirt, serializerField.FieldType.GetMethod("Write")); // Call the serializer's Write method
             }
-
+            
             generator.MarkLabel(skipNonSerializedLabel);
+
             generator.Emit(OpCodes.Ret);
         }
     }

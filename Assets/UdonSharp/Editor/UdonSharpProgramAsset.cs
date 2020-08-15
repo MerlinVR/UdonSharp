@@ -265,6 +265,26 @@ namespace UdonSharp
 
             return null;
         }
+        
+        [PublicAPI]
+        public static System.Type GetBehaviourClass(UdonBehaviour behaviour)
+        {
+            if (behaviour == null)
+                throw new NullReferenceException();
+
+            if (behaviour.programSource is UdonSharpProgramAsset programAsset)
+            {
+                return programAsset.GetClass();
+            }
+
+            return null;
+        }
+
+        [PublicAPI]
+        public System.Type GetClass()
+        {
+            return sourceCsScript?.GetClass();
+        }
 
         static UdonEditorInterface editorInterfaceInstance;
         static UdonSharp.HeapFactory heapFactoryInstance;
