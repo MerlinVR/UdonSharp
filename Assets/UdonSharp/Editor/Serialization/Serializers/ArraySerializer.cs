@@ -108,13 +108,7 @@ namespace UdonSharp.Serialization
 
         public override Type GetUdonStorageType()
         {
-            System.Type eType = typeof(T);
-
-            if (eType == typeof(VRC.Udon.UdonBehaviour) ||
-                eType == typeof(UdonSharpBehaviour))
-                return typeof(Component[]);
-
-            return typeof(T[]);
+            return UdonSharpUtils.UserTypeToUdonType(typeof(T[]));
         }
     }
 }
