@@ -118,6 +118,13 @@ namespace UdonSharp
         public virtual void OnPreSerialization() { }
         public virtual void OnDeserialization() { }
         public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi player) => true;
+        public virtual void OnPlayerTriggerEnter(VRC.SDKBase.VRCPlayerApi player) { }
+        public virtual void OnPlayerTriggerExit(VRC.SDKBase.VRCPlayerApi player) { }
+        public virtual void OnPlayerTriggerStay(VRC.SDKBase.VRCPlayerApi player) { }
+        public virtual void OnPlayerCollisionEnter(VRC.SDKBase.VRCPlayerApi player) { }
+        public virtual void OnPlayerCollisionExit(VRC.SDKBase.VRCPlayerApi player) { }
+        public virtual void OnPlayerCollisionStay(VRC.SDKBase.VRCPlayerApi player) { }
+        public virtual void OnPlayerParticleCollision(VRC.SDKBase.VRCPlayerApi player) { }
 
         [Obsolete("The OnStationEntered() event is deprecated use the OnStationEntered(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
         public virtual void OnStationEntered() { }
