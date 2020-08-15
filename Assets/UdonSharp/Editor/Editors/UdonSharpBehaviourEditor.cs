@@ -194,6 +194,12 @@ namespace UdonSharpEditor
 
                         if (inspectedType.IsSubclassOf(typeof(UdonSharpBehaviour)))
                         {
+                            if (_typeInspectorMap.ContainsKey(inspectedType))
+                            {
+                                Debug.LogError($"Cannot register inspector '{editorType.Name}' for type '{inspectedType.Name}' since inspector '{_typeInspectorMap[inspectedType].Name}' is already registered");
+                                continue;
+                            }
+
                             _typeInspectorMap.Add(inspectedType, editorType);
                         }
                     }
