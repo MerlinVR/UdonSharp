@@ -149,6 +149,100 @@ namespace UdonSharpEditor
             }
         }
 
+        static bool UdonSharpBehaviourTypeMatches(object symbolValue, System.Type expectedType)
+        {
+            if (!(expectedType == typeof(UdonBehaviour) ||
+                  expectedType == typeof(UdonSharpBehaviour) ||
+                  expectedType.IsSubclassOf(typeof(UdonSharpBehaviour))))
+                return true;
+
+            if (symbolValue == null)
+                return true;
+
+            if (symbolValue.GetType() != typeof(UdonBehaviour))
+                return false;
+            
+            UdonBehaviour otherBehaviour = (UdonBehaviour)symbolValue;
+
+            AbstractUdonProgramSource behaviourProgramAsset = otherBehaviour.programSource;
+            
+            if (behaviourProgramAsset == null)
+                return true;
+            
+            if (behaviourProgramAsset is UdonSharpProgramAsset behaviourUSharpAsset)
+            {
+                System.Type symbolUSharpType = behaviourUSharpAsset.sourceCsScript?.GetClass();
+
+                if (symbolUSharpType != null &&
+                    symbolUSharpType != expectedType &&
+                    !symbolUSharpType.IsSubclassOf(expectedType))
+                {
+                    return false;
+                }
+            }
+            else if (expectedType != typeof(UdonSharpBehaviour) &&
+                     expectedType != typeof(UdonBehaviour))
+            {
+                // Don't allow graph assets and such to exist in references to specific U# types
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Handles arrays and jagged arrays, validates jagged arrays have the valid array types and verifies that UdonSharpBehaviour references in arrays/jagged arrays are valid
+        /// </summary>
+        /// <param name="rootArray"></param>
+        /// <param name="rootArrayType"></param>
+        /// <param name="jaggedArrayDimensionCount"></param>
+        /// <param name="currentDepth"></param>
+        /// <returns></returns>
+        static bool VerifyArrayValidity(object rootArray, System.Type rootArrayType, int arrayDimensionCount, int currentDepth = 1)
+        {
+            if (rootArray == null)
+                return true;
+
+            if (arrayDimensionCount == currentDepth)
+            {
+                System.Type elementType = rootArrayType.GetElementType();
+                
+                if (rootArrayType == typeof(UdonBehaviour[]) ||
+                    rootArrayType == typeof(UdonSharpBehaviour[]) ||
+                    elementType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+                {
+                    if (rootArray.GetType() != typeof(Component[]) &&
+                        rootArray.GetType() != typeof(UdonBehaviour[]))
+                        return false;
+
+                    Array array = (Array)rootArray;
+                    for (int i = 0; i < array.Length; ++i)
+                    {
+                        UdonBehaviour behaviour = (UdonBehaviour)array.GetValue(i);
+
+                        if (!UdonSharpBehaviourTypeMatches(behaviour, elementType))
+                            array.SetValue(null, i);
+                    }
+                }
+                else if (rootArray.GetType() != rootArrayType)
+                    return false;
+            }
+            else
+            {
+                Array array = rootArray as Array;
+                if (array == null)
+                    return false;
+
+                foreach (object element in array)
+                {
+                    if (!VerifyArrayValidity(element, rootArrayType, arrayDimensionCount, currentDepth + 1))
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Updates the public variable types on behavours.
         /// If public variable type does not match from a prior version of the script on the behaviour, 
@@ -186,6 +280,8 @@ namespace UdonSharpEditor
                         if (!publicVariables.TryGetVariableType(variableSymbol, out System.Type publicFieldType))
                             continue;
 
+                        publicVariables.TryGetVariableValue(variableSymbol, out object symbolValue);
+
                         System.Type programSymbolType = fieldDefinition.fieldSymbol.symbolCsType;
                         if (!publicFieldType.IsAssignableFrom(programSymbolType))
                         {
@@ -193,8 +289,6 @@ namespace UdonSharpEditor
 
                             if (publicFieldType.IsExplicitlyAssignableFrom(programSymbolType))
                             {
-                                publicVariables.TryGetVariableValue(variableSymbol, out object symbolValue);
-
                                 object convertedValue;
                                 try
                                 {
@@ -215,6 +309,31 @@ namespace UdonSharpEditor
                                 publicVariables.TryAddVariable(newVariable);
                             }
                             else
+                            {
+                                publicVariables.RemoveVariable(variableSymbol);
+                                object defaultValue = programAsset.GetPublicVariableDefaultValue(variableSymbol);
+                                IUdonVariable newVariable = (IUdonVariable)Activator.CreateInstance(typeof(UdonVariable<>).MakeGenericType(programSymbolType), new object[] { variableSymbol, defaultValue });
+                                publicVariables.TryAddVariable(newVariable);
+                            }
+                        }
+
+                        // Clean up UdonSharpBehaviour types that are no longer compatible
+                        System.Type userType = fieldDefinition.fieldSymbol.userCsType;
+                        if (!UdonSharpBehaviourTypeMatches(symbolValue, userType))
+                            publicVariables.RemoveVariable(variableSymbol);
+
+                        if (userType.IsArray)
+                        {
+                            int arrayDepth = 0;
+                            System.Type currentType = userType;
+
+                            while (currentType.IsArray)
+                            {
+                                arrayDepth++;
+                                currentType = currentType.GetElementType();
+                            }
+
+                            if (!VerifyArrayValidity(symbolValue, currentType.MakeArrayType(), arrayDepth, 1))
                             {
                                 publicVariables.RemoveVariable(variableSymbol);
                                 object defaultValue = programAsset.GetPublicVariableDefaultValue(variableSymbol);
