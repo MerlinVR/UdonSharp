@@ -232,7 +232,7 @@ namespace UdonSharpEditor
 
         void OnUndoRedo()
         {
-            UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.GetProxyBehaviour(target as UdonBehaviour, false);
+            UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.FindProxyBehaviour(target as UdonBehaviour, false);
 
             if (inspectorTarget)
             {

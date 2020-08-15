@@ -244,27 +244,14 @@ namespace UdonSharpEditor
         static Dictionary<UdonBehaviour, UdonSharpBehaviour> _proxyBehaviourLookup = new Dictionary<UdonBehaviour, UdonSharpBehaviour>();
 
         /// <summary>
-        /// Gets the C# version of an UdonSharpBehaviour that proxies an UdonBehaviour with the program asset for the matching UdonSharpBehaviour type
+        /// Finds an existing proxy behaviour, if none exists returns null
         /// </summary>
         /// <param name="udonBehaviour"></param>
+        /// <param name="copyBackerToProxy"></param>
         /// <returns></returns>
-        /// 
-        [PublicAPI]
-        public static UdonSharpBehaviour GetProxyBehaviour(UdonBehaviour udonBehaviour, bool copyBackerToProxy = true)
+        public static UdonSharpBehaviour FindProxyBehaviour(UdonBehaviour udonBehaviour, bool copyBackerToProxy = true)
         {
-            if (udonBehaviour == null)
-                throw new System.ArgumentNullException("Source Udon Behaviour cannot be null");
-
-            if (udonBehaviour.programSource == null)
-                throw new System.ArgumentNullException("Program source on UdonBehaviour cannot be null");
-
-            UdonSharpProgramAsset udonSharpProgram = udonBehaviour.programSource as UdonSharpProgramAsset;
-
-            if (udonSharpProgram == null)
-                throw new System.ArgumentException("UdonBehaviour must be using an UdonSharp program");
-
-            UdonSharpBehaviour proxyBehaviour;
-            if (_proxyBehaviourLookup.TryGetValue(udonBehaviour, out proxyBehaviour))
+            if (_proxyBehaviourLookup.TryGetValue(udonBehaviour, out UdonSharpBehaviour proxyBehaviour))
             {
                 if (proxyBehaviour != null)
                 {
@@ -294,6 +281,34 @@ namespace UdonSharpEditor
                     return udonSharpBehaviour;
                 }
             }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the C# version of an UdonSharpBehaviour that proxies an UdonBehaviour with the program asset for the matching UdonSharpBehaviour type
+        /// </summary>
+        /// <param name="udonBehaviour"></param>
+        /// <returns></returns>
+        /// 
+        [PublicAPI]
+        public static UdonSharpBehaviour GetProxyBehaviour(UdonBehaviour udonBehaviour, bool copyBackerToProxy = true)
+        {
+            if (udonBehaviour == null)
+                throw new System.ArgumentNullException("Source Udon Behaviour cannot be null");
+
+            if (udonBehaviour.programSource == null)
+                throw new System.ArgumentNullException("Program source on UdonBehaviour cannot be null");
+
+            UdonSharpProgramAsset udonSharpProgram = udonBehaviour.programSource as UdonSharpProgramAsset;
+
+            if (udonSharpProgram == null)
+                throw new System.ArgumentException("UdonBehaviour must be using an UdonSharp program");
+
+            UdonSharpBehaviour proxyBehaviour = FindProxyBehaviour(udonBehaviour, copyBackerToProxy);
+
+            if (proxyBehaviour)
+                return proxyBehaviour;
 
             // We've failed to find an existing proxy behaviour so we need to create one
             System.Type scriptType = udonSharpProgram.sourceCsScript.GetClass();
