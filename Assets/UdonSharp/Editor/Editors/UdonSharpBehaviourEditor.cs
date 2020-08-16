@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using UdonSharp;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using VRC.Udon;
 using VRC.Udon.Editor;
@@ -164,12 +165,19 @@ namespace UdonSharpEditor
     }
     #endregion
 
+    #region Editor Manager
     [InitializeOnLoad]
     static class UdonSharpCustomEditorManager
     {
         static Dictionary<System.Type, System.Type> _typeInspectorMap;
 
         static UdonSharpCustomEditorManager()
+        {
+            InitInspectorMap();
+            Undo.postprocessModifications += OnPostprocessUndoModifications;
+        }
+
+        static void InitInspectorMap()
         {
             _typeInspectorMap = new Dictionary<Type, Type>();
             FieldInfo inspectedTypeField = typeof(CustomEditor).GetField("m_InspectedType", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -199,6 +207,32 @@ namespace UdonSharpEditor
             }
         }
 
+        /// <summary>
+        /// Dirties the underlying UdonBehaviour when a proxy UdonSharpBehaviour is modified since Unity does not mark the scene dirty when a modified object is marked 'HideFlags.DontSaveInEditor'
+        /// Has the downside that the scene will not be "undirtied" when a change that dirtied it is undone.
+        /// </summary>
+        /// <param name="propertyModifications"></param>
+        /// <returns></returns>
+        static UndoPropertyModification[] OnPostprocessUndoModifications(UndoPropertyModification[] propertyModifications)
+        {
+            foreach (UndoPropertyModification propertyModification in propertyModifications)
+            {
+                UnityEngine.Object target = propertyModification.currentValue.target;
+
+                if (target is UdonSharpBehaviour udonSharpBehaviour)
+                {
+                    UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(udonSharpBehaviour);
+
+                    if (backingBehaviour)
+                    {
+                        EditorSceneManager.MarkSceneDirty(backingBehaviour.gameObject.scene);
+                    }
+                }
+            }
+
+            return propertyModifications;
+        }
+
         public static System.Type GetInspectorEditorType(System.Type udonSharpBehaviourType)
         {
             System.Type editorType;
@@ -207,6 +241,7 @@ namespace UdonSharpEditor
             return editorType;
         }
     }
+    #endregion
 
     /// <summary>
     /// Custom U# editor for UdonBehaviours that can have custom behavior for drawing stuff like sync position and the program asset info
@@ -298,7 +333,7 @@ namespace UdonSharpEditor
 
             UdonSharpGUI.DrawUtilities(behaviour, udonSharpProgramAsset);
 
-            UdonSharpGUI.DrawUILine(Color.gray, 2, 4);
+            UdonSharpGUI.DrawUILine();
 
             udonSharpProgramAsset.DrawErrorTextAreas();
 

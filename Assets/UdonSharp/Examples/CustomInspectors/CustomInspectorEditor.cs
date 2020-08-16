@@ -12,13 +12,9 @@ namespace UdonSharp.Examples.Inspectors
     {
         public override void OnInspectorGUI()
         {
-            if (UdonSharpGUI.DrawConvertToUdonBehaviourButton(target as UdonSharpBehaviour))
+            if (UdonSharpGUI.DrawConvertToUdonBehaviourButton(target) ||
+                UdonSharpGUI.DrawProgramSource(target, false))
                 return;
-
-            UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(target as UdonSharpBehaviour);
-
-            if (backingBehaviour)
-                UdonSharpGUI.DrawProgramSource(backingBehaviour, false);
 
             base.OnInspectorGUI();
         }
