@@ -8,6 +8,7 @@ using UdonSharp;
 using UdonSharp.Serialization;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Profiling;
 using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Editor.ProgramSources;
@@ -203,12 +204,14 @@ namespace UdonSharpEditor
                 else
                     Object.DestroyImmediate(targetObject);
 
-                UdonBehaviour udonBehaviour = targetGameObject.AddComponent<UdonBehaviour>();
-
-                udonBehaviour.programSource = programAsset;
+                UdonBehaviour udonBehaviour = null;
 
                 if (shouldUndo)
-                    Undo.RegisterCreatedObjectUndo(udonBehaviour, "Convert to UdonBehaviour");
+                    udonBehaviour = Undo.AddComponent<UdonBehaviour>(targetGameObject);
+                else
+                    udonBehaviour = targetGameObject.AddComponent<UdonBehaviour>();
+
+                udonBehaviour.programSource = programAsset;
 
                 createdComponents.Add(udonBehaviour);
             }
@@ -330,17 +333,21 @@ namespace UdonSharpEditor
         [PublicAPI]
         public static void CopyProxyToBacker(UdonSharpBehaviour proxy)
         {
+            Profiler.BeginSample("CopyProxyToBacker");
             SimpleValueStorage<UdonBehaviour> udonBehaviourStorage = new SimpleValueStorage<UdonBehaviour>(GetBackingUdonBehaviour(proxy));
             Serializer.CreatePooled(proxy.GetType()).WriteWeak(udonBehaviourStorage, proxy);
+            Profiler.EndSample();
         }
 
         [PublicAPI]
         public static void CopyBackerToProxy(UdonSharpBehaviour proxy)
         {
+            Profiler.BeginSample("CopyBackerToProxy");
             SimpleValueStorage<UdonBehaviour> udonBehaviourStorage = new SimpleValueStorage<UdonBehaviour>(GetBackingUdonBehaviour(proxy));
 
             object proxyObj = proxy;
             Serializer.CreatePooled(proxy.GetType()).ReadWeak(ref proxyObj, udonBehaviourStorage);
+            Profiler.EndSample();
         }
 
         [PublicAPI]
