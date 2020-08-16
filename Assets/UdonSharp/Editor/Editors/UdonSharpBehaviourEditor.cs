@@ -293,7 +293,14 @@ namespace UdonSharpEditor
                 return;
             }
 
-            System.Type customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(((UdonSharpProgramAsset)behaviour.programSource).sourceCsScript.GetClass());
+            MonoScript sourceScript = ((UdonSharpProgramAsset)behaviour.programSource).sourceCsScript;
+
+            System.Type customEditorType;
+            if (sourceScript)
+                customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(sourceScript.GetClass());
+            else
+                customEditorType = null;
+
             if (customEditorType != null)
             {
                 if (baseEditor != null && baseEditor.GetType() != customEditorType)
