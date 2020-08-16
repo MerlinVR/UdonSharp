@@ -1,6 +1,7 @@
 ﻿
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEngine;
 using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 
@@ -49,6 +50,8 @@ namespace UdonSharp.Serialization
         IUdonSymbolTable symbolTable;
         List<IValueStorage> heapValueRefs = new List<IValueStorage>();
 
+        public bool IsValid { get; } = false;
+
         static FieldInfo programField;
 
         public UdonHeapStorageInterface(UdonBehaviour udonBehaviour)
@@ -60,8 +63,16 @@ namespace UdonSharp.Serialization
 
             IUdonProgram sourceProgram = (IUdonProgram)programField.GetValue(udonBehaviour);
 
-            heap = sourceProgram.Heap;
-            symbolTable = sourceProgram.SymbolTable;
+            if (sourceProgram != null)
+            {
+                heap = sourceProgram.Heap;
+                symbolTable = sourceProgram.SymbolTable;
+                IsValid = true;
+            }
+            else
+            {
+                IsValid = false;
+            }
         }
 
         void IHeapStorage.SetElementValue<T>(string elementKey, T value)
@@ -133,7 +144,15 @@ namespace UdonSharp.Serialization
 
         public IValueStorage GetElementStorage(string elementKey)
         {
-            IValueStorage udonHeapValue = (IValueStorage)System.Activator.CreateInstance(typeof(UdonHeapValueStorage<>).MakeGenericType(heap.GetHeapVariableType(symbolTable.GetAddressFromSymbol(elementKey))), heap, symbolTable, elementKey);
+            UdonSharpProgramAsset programAsset = (UdonSharpProgramAsset)behaviour.programSource;
+
+            if (!programAsset.fieldDefinitions.TryGetValue(elementKey, out Compiler.FieldDefinition fieldDefinition))
+            {
+                Debug.LogError($"Could not find definition for field {elementKey}");
+                return null;
+            }
+
+            IValueStorage udonHeapValue = (IValueStorage)System.Activator.CreateInstance(typeof(UdonHeapValueStorage<>).MakeGenericType(fieldDefinition.fieldSymbol.symbolCsType), heap, symbolTable, elementKey);
 
             heapValueRefs.Add(udonHeapValue);
 
