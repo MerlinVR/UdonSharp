@@ -66,16 +66,8 @@ namespace UdonSharpEditor
 
         public override void OnInspectorGUI()
         {
-            EditorGUILayout.HelpBox("Udon Sharp Behaviours need to be converted to Udon Behaviours to work in game. Click the convert button below to automatically convert the script.", MessageType.Warning);
-
-            if (GUILayout.Button("Convert to UdonBehaviour", GUILayout.Height(25)))
-            {
-                UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(Array.ConvertAll(targets, e => e as UdonSharpBehaviour), true, true);
-
+            if (UdonSharpGUI.DrawConvertToUdonBehaviourButton(targets))
                 return;
-            }
-
-            EditorGUILayout.Space();
 
             base.OnInspectorGUI();
         }
@@ -270,21 +262,26 @@ namespace UdonSharpEditor
             if (customEditorType != null)
             {
                 if (baseEditor != null && baseEditor.GetType() != customEditorType)
+                {
                     DestroyImmediate(baseEditor);
+                    baseEditor = null;
+                }
 
                 UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.GetProxyBehaviour(behaviour);
                 inspectorTarget.enabled = false;
 
                 Editor.CreateCachedEditorWithContext(inspectorTarget, this, customEditorType, ref baseEditor);
 
+                baseEditor.serializedObject.Update();
+
                 baseEditor.OnInspectorGUI();
-                if (GUI.changed)
-                    UdonSharpEditorUtility.CopyProxyToBacker(inspectorTarget);
 
-                return;
+                UdonSharpEditorUtility.CopyProxyToBacker(inspectorTarget);
             }
-
-            DrawDefaultUdonSharpInspector();
+            else
+            {
+                DrawDefaultUdonSharpInspector();
+            }
         }
 
         void DrawDefaultUdonSharpInspector()

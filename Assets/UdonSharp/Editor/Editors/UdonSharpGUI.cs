@@ -948,7 +948,8 @@ namespace UdonSharpEditor
         }
 
         // https://forum.unity.com/threads/horizontal-line-in-editor-window.520812/#post-3534861
-        public static void DrawUILine(Color color, int thickness = 2, int padding = 10)
+        [PublicAPI]
+        public static void DrawUILine(Color color, int thickness = 2, int padding = 4)
         {
             Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(padding + thickness));
             r.height = thickness;
@@ -958,16 +959,15 @@ namespace UdonSharpEditor
             EditorGUI.DrawRect(r, color);
         }
 
-        static FieldInfo serializedAssetField;
-        /// <summary>
-        /// Draws the program asset field, and program source field optionally. Also handles drawing the create script button when the script on the program asset is null.
-        /// Returns true if the rest of the inspector drawing should early out due to an empty program script
-        /// </summary>
-        /// <param name="behaviour"></param>
-        /// <param name="drawScript"></param>
-        /// <returns></returns>
         [PublicAPI]
-        public static bool DrawProgramSource(UdonBehaviour behaviour, bool drawScript = true)
+        public static void DrawUILine()
+        {
+            DrawUILine(Color.gray);
+        }
+
+        static FieldInfo serializedAssetField;
+        
+        internal static bool DrawProgramSource(UdonBehaviour behaviour, bool drawScript = true)
         {
             if (serializedAssetField == null)
                 serializedAssetField = typeof(UdonBehaviour).GetField("serializedProgramAsset", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -1004,10 +1004,37 @@ namespace UdonSharpEditor
             return false;
         }
 
+        /// <summary>
+        /// Draws the program asset field, and program source field optionally. Also handles drawing the create script button when the script on the program asset is null.
+        /// Returns true if the rest of the inspector drawing should early out due to an empty program script
+        /// </summary>
+        /// <param name="behaviour"></param>
+        /// <param name="drawScript"></param>
+        /// <returns></returns>
+        [PublicAPI]
+        public static bool DrawProgramSource(UnityEngine.Object target, bool drawScript = true)
+        {
+            UdonSharpBehaviour targetBehaviour = (UdonSharpBehaviour)target;
+
+            UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(targetBehaviour);
+
+            if (backingBehaviour == null)
+            {
+                EditorGUI.BeginDisabledGroup(true);
+
+                EditorGUILayout.ObjectField("Script", MonoScript.FromMonoBehaviour(targetBehaviour), typeof(MonoScript), false);
+
+                EditorGUI.EndDisabledGroup();
+                return false;
+            }
+
+            return DrawProgramSource(backingBehaviour, drawScript);
+        }
+
         static readonly GUIContent ownershipTransferOnCollisionContent = new GUIContent("Allow Ownership Transfer on Collision",
                                                                                         "Transfer ownership on collision, requires a Collision component on the same game object");
-        [PublicAPI]
-        public static void DrawSyncSettings(UdonBehaviour behaviour)
+        
+        internal static void DrawSyncSettings(UdonBehaviour behaviour)
         {
             EditorGUI.BeginChangeCheck();
 
@@ -1029,6 +1056,15 @@ namespace UdonSharpEditor
                 if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
                     PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
             }
+        }
+
+        [PublicAPI]
+        public static void DrawSyncSettings(UnityEngine.Object target)
+        {
+            UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour((UdonSharpBehaviour)target);
+
+            if (backingBehaviour)
+                DrawSyncSettings(backingBehaviour);
         }
         
         [PublicAPI]
@@ -1059,19 +1095,98 @@ namespace UdonSharpEditor
         }
 
         [PublicAPI]
-        public static bool DrawConvertToUdonBehaviourButton(UdonSharpBehaviour target)
+        public static void DrawInteractSettings(UnityEngine.Object target)
         {
-            if (!UdonSharpEditorUtility.IsProxyBehaviour(target))
+            UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour((UdonSharpBehaviour)target);
+
+            if (backingBehaviour)
+                DrawInteractSettings(backingBehaviour);
+        }
+
+        const string CONVERT_WARN_TEXT = "Udon Sharp Behaviours need to be converted to Udon Behaviours to work in game. Click the convert button below to automatically convert the script.";
+
+        /// <summary>
+        /// Draws the button to convert UdonSharpBehaviours to UdonBehaviours
+        /// 
+        /// Should be used as such in OnInspectorGUI to avoid errors:
+        /// if (DrawConvertToUdonBehaviourButton(target)) return;
+        /// </summary>
+        /// <param name="targets"></param>
+        /// <returns></returns>
+        [PublicAPI]
+        public static bool DrawConvertToUdonBehaviourButton(UnityEngine.Object target)
+        {
+            if (!(target is UdonSharpBehaviour behaviour))
+                return false;
+
+            if (!UdonSharpEditorUtility.IsProxyBehaviour(behaviour))
             {
-                EditorGUILayout.HelpBox("Udon Sharp Behaviours need to be converted to Udon Behaviours to work in game. Click the convert button below to automatically convert the script.", MessageType.Warning);
+                EditorGUILayout.HelpBox(CONVERT_WARN_TEXT, MessageType.Warning);
 
                 if (GUILayout.Button("Convert to UdonBehaviour", GUILayout.Height(25)))
                 {
-                    UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(new[] { target }, true, true);
+                    UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(new[] { behaviour }, true, true);
 
                     return true;
                 }
             }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Draws the button to convert UdonSharpBehaviours to UdonBehaviours
+        /// 
+        /// Should be used as such in OnInspectorGUI to avoid errors:
+        /// if (DrawConvertToUdonBehaviourButton(targets)) return;
+        /// </summary>
+        /// <param name="targets"></param>
+        /// <returns></returns>
+        [PublicAPI]
+        public static bool DrawConvertToUdonBehaviourButton(UnityEngine.Object[] targets)
+        {
+            bool anyNotProxy = false;
+
+            foreach (UnityEngine.Object target in targets)
+            {
+                UdonSharpBehaviour targetBehaviour = target as UdonSharpBehaviour;
+
+                if (targetBehaviour == null)
+                    continue;
+
+                if (!UdonSharpEditorUtility.IsProxyBehaviour(targetBehaviour))
+                {
+                    anyNotProxy = true;
+                    break;
+                }
+            }
+
+            if (anyNotProxy)
+            {
+                EditorGUILayout.HelpBox(CONVERT_WARN_TEXT, MessageType.Warning);
+
+                if (GUILayout.Button("Convert to UdonBehaviour", GUILayout.Height(25)))
+                {
+                    UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(Array.ConvertAll(targets, e => e as UdonSharpBehaviour).Where(e => e != null && !UdonSharpEditorUtility.IsProxyBehaviour(e)).ToArray(), true, true);
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        [PublicAPI]
+        public static bool DrawDefaultUdonSharpBehaviourHeader(UnityEngine.Object target, bool skipLine = false)
+        {
+            if (DrawConvertToUdonBehaviourButton(target)) return true;
+            if (DrawProgramSource(target)) return true;
+
+            DrawSyncSettings(target);
+            DrawInteractSettings(target);
+
+            if (!skipLine)
+                DrawUILine();
 
             return false;
         }
