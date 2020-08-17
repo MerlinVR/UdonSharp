@@ -102,9 +102,8 @@ namespace UdonSharpEditor
 
             return editorState;
         }
-
-        [PublicAPI]
-        public static void DrawUtilities(UdonBehaviour udonBehaviour, UdonSharpProgramAsset programAsset)
+        
+        internal static void DrawUtilities(UdonBehaviour udonBehaviour, UdonSharpProgramAsset programAsset)
         {
             USharpEditorState editorState = GetEditorState(programAsset);
 
@@ -178,6 +177,18 @@ namespace UdonSharpEditor
             }
         }
 
+        [PublicAPI]
+        public static void DrawUtilities(UnityEngine.Object target)
+        {
+            UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour((UdonSharpBehaviour)target);
+
+            if (backingBehaviour && backingBehaviour.programSource)
+            {
+                DrawUtilities(backingBehaviour, (UdonSharpProgramAsset)backingBehaviour.programSource);
+            }
+        }
+
+        [PublicAPI]
         public static bool DrawCreateScriptButton(UdonSharpProgramAsset programAsset)
         {
             if (GUILayout.Button("Create Script"))
@@ -1184,6 +1195,7 @@ namespace UdonSharpEditor
 
             DrawSyncSettings(target);
             DrawInteractSettings(target);
+            DrawUtilities(target);
 
             if (!skipLine)
                 DrawUILine();

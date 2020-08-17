@@ -2,30 +2,13 @@
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
-using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Serialization.OdinSerializer;
 
 namespace UdonSharp
 {
-#if false
-    public class UdonSharpBehaviourMetadata
-    {
-        public int ScriptVersion { get; } = 0;
-        public System.DateTime ScriptCompileDate { get; } = System.DateTime.Now;
-        public string CompilerVersion { get; } = "v0.0.0+0";
-        public string CompilerName { get; } = "Roslyn C# compiler"; // Just assume people are on the correct runtime version for Udon, since other runtimes won't compile anyways
-        public int CompilerMajorVersion { get; } = 0;
-        public int CompilerMinorVersion { get; } = 0;
-        public int CompilerPatchVersion { get; } = 0;
-        public int CompilerBuild { get; } = 0;
-    }
-#endif
-
     public abstract class UdonSharpBehaviour : MonoBehaviour, ISerializationCallbackReceiver
     {
-        //protected UdonSharpBehaviourMetadata UdonMetadata { get; } = new UdonSharpBehaviourMetadata();
-
         // Stubs for the UdonBehaviour functions that emulate Udon behavior
         public object GetProgramVariable(string name)
         {
