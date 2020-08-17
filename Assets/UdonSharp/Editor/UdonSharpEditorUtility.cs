@@ -199,11 +199,6 @@ namespace UdonSharpEditor
 
                 GameObject targetGameObject = targetObject.gameObject;
 
-                if (shouldUndo)
-                    Undo.DestroyObjectImmediate(targetObject);
-                else
-                    Object.DestroyImmediate(targetObject);
-
                 UdonBehaviour udonBehaviour = null;
 
                 if (shouldUndo)
@@ -212,6 +207,25 @@ namespace UdonSharpEditor
                     udonBehaviour = targetGameObject.AddComponent<UdonBehaviour>();
 
                 udonBehaviour.programSource = programAsset;
+
+                //if (shouldUndo)
+                //    Undo.DestroyObjectImmediate(targetObject);
+                //else
+                //    Object.DestroyImmediate(targetObject);
+
+                if (shouldUndo)
+                    Undo.RegisterCompleteObjectUndo(targetObject, "Convert C# to U# behaviour");
+                
+                UdonSharpEditorUtility.SetBackingUdonBehaviour(targetObject, udonBehaviour);
+                UdonSharpEditorUtility.CopyProxyToBacker(targetObject);
+
+                targetObject.hideFlags = HideFlags.DontSaveInBuild |
+#if !UDONSHARP_DEBUG
+                                         HideFlags.HideInInspector |
+#endif
+                                         HideFlags.DontSaveInEditor;
+
+                targetObject.enabled = false;
 
                 createdComponents.Add(udonBehaviour);
             }
@@ -279,7 +293,7 @@ namespace UdonSharpEditor
                     _proxyBehaviourLookup.Add(udonBehaviour, udonSharpBehaviour);
 
                     if (copyBackerToProxy)
-                        CopyBackerToProxy(proxyBehaviour);
+                        CopyBackerToProxy(udonSharpBehaviour);
 
                     return udonSharpBehaviour;
                 }
@@ -317,7 +331,11 @@ namespace UdonSharpEditor
             System.Type scriptType = udonSharpProgram.sourceCsScript.GetClass();
 
             proxyBehaviour = (UdonSharpBehaviour)udonBehaviour.gameObject.AddComponent(scriptType);
-            proxyBehaviour.hideFlags = HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor | HideFlags.HideInInspector;
+            proxyBehaviour.hideFlags = HideFlags.DontSaveInBuild |
+#if !UDONSHARP_DEBUG
+                                       HideFlags.HideInInspector |
+#endif
+                                       HideFlags.DontSaveInEditor;
             proxyBehaviour.enabled = false;
 
             SetBackingUdonBehaviour(proxyBehaviour, udonBehaviour);

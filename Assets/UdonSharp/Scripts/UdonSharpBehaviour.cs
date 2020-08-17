@@ -4,6 +4,7 @@ using System.Reflection;
 using UnityEngine;
 using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
+using VRC.Udon.Serialization.OdinSerializer;
 
 namespace UdonSharp
 {
@@ -21,7 +22,7 @@ namespace UdonSharp
     }
 #endif
 
-    public abstract class UdonSharpBehaviour : MonoBehaviour
+    public abstract class UdonSharpBehaviour : MonoBehaviour, ISerializationCallbackReceiver
     {
         //protected UdonSharpBehaviourMetadata UdonMetadata { get; } = new UdonSharpBehaviourMetadata();
 
@@ -125,6 +126,21 @@ namespace UdonSharp
 
         // Used for tracking serialization data in editor
 #if UNITY_EDITOR
+        // Odin serialization is needed to keep track of the _backingUdonBehaviour reference for undo/redo operations
+        [SerializeField, HideInInspector]
+        SerializationData serializationData;
+
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+            UnitySerializationUtility.SerializeUnityObject(this, ref serializationData);
+        }
+
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+            UnitySerializationUtility.DeserializeUnityObject(this, ref serializationData);
+        }
+
+        [OdinSerialize]
         private IUdonBehaviour _backingUdonBehaviour;
 #endif
     }
