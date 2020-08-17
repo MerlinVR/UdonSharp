@@ -215,17 +215,20 @@ namespace UdonSharpEditor
         /// <returns></returns>
         static UndoPropertyModification[] OnPostprocessUndoModifications(UndoPropertyModification[] propertyModifications)
         {
-            foreach (UndoPropertyModification propertyModification in propertyModifications)
+            if (!EditorApplication.isPlaying)
             {
-                UnityEngine.Object target = propertyModification.currentValue.target;
-
-                if (target is UdonSharpBehaviour udonSharpBehaviour)
+                foreach (UndoPropertyModification propertyModification in propertyModifications)
                 {
-                    UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(udonSharpBehaviour);
+                    UnityEngine.Object target = propertyModification.currentValue.target;
 
-                    if (backingBehaviour)
+                    if (target is UdonSharpBehaviour udonSharpBehaviour)
                     {
-                        EditorSceneManager.MarkSceneDirty(backingBehaviour.gameObject.scene);
+                        UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(udonSharpBehaviour);
+
+                        if (backingBehaviour)
+                        {
+                            EditorSceneManager.MarkSceneDirty(backingBehaviour.gameObject.scene);
+                        }
                     }
                 }
             }
