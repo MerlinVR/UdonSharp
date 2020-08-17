@@ -59,13 +59,52 @@ namespace UdonSharp.Tests
 
         private void OnEnable()
         {
-            //if (target == null) // Hack I need to figure out why this is breaking further down
-            //    return;
-
             testList = new ReorderableList(serializedObject, serializedObject.FindProperty("integrationTests"), true, true, true, true);
             testList.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
             {
-                EditorGUI.PropertyField(new Rect(rect.x, rect.y + 2, rect.width, EditorGUIUtility.singleLineHeight), testList.serializedProperty.GetArrayElementAtIndex(index), label: new GUIContent());
+                SerializedProperty testSuiteProperty = testList.serializedProperty.GetArrayElementAtIndex(index);
+
+                Rect testFieldRect = new Rect(rect.x, rect.y + 2, rect.width, EditorGUIUtility.singleLineHeight);
+                EditorGUI.PropertyField(testFieldRect, testSuiteProperty, label: new GUIContent());
+
+                EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
+
+                //Color oldContentColor = GUI.color;
+                //GUI.color = Color.green;
+
+                Rect progressBarRect = new Rect(testFieldRect.x, testFieldRect.y + testFieldRect.height + 2, testFieldRect.width, 23f);
+
+                if (EditorApplication.isPlaying)
+                {
+                    IntegrationTestSuite testSuite = (IntegrationTestSuite)testSuiteProperty.objectReferenceValue;
+
+                    if (testSuite != null)
+                    {
+                        if (testSuite.runSuiteTests)
+                        {
+                            int totalTestCount = testSuite.GetTotalTestCount();
+                            int passedTestCount = testSuite.GetSucceededTestCount();
+
+                            float percentPassed = totalTestCount > 0 ? (passedTestCount / (float)totalTestCount) : 0f;
+
+                            EditorGUI.ProgressBar(progressBarRect, percentPassed, $"{passedTestCount}/{totalTestCount}");
+                        }
+                        else
+                            EditorGUI.ProgressBar(progressBarRect, 0f, "Tests disabled");
+                    }
+                    else
+                        EditorGUI.ProgressBar(progressBarRect, 0f, "0/0");
+                }
+                else
+                    EditorGUI.ProgressBar(progressBarRect, 0f, "0/0");
+
+                //GUI.color = oldContentColor;
+
+                EditorGUI.EndDisabledGroup();
+            };
+            testList.elementHeightCallback = (int index) =>
+            {
+                return 45f;
             };
             testList.drawHeaderCallback = (Rect rect) => { EditorGUI.LabelField(rect, "Integration Tests"); };
         }
