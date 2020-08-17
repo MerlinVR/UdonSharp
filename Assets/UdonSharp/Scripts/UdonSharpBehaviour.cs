@@ -7,7 +7,10 @@ using VRC.Udon.Serialization.OdinSerializer;
 
 namespace UdonSharp
 {
-    public abstract class UdonSharpBehaviour : MonoBehaviour, ISerializationCallbackReceiver
+    public abstract class UdonSharpBehaviour : MonoBehaviour
+#if UNITY_EDITOR
+        , ISerializationCallbackReceiver
+#endif
     {
         // Stubs for the UdonBehaviour functions that emulate Udon behavior
         public object GetProgramVariable(string name)

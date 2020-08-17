@@ -32,7 +32,12 @@ namespace UdonSharp.Serialization
         {
             if (EditorApplication.isPlaying)
             {
-                return new UdonHeapStorageInterface(behaviour);
+                UdonHeapStorageInterface heapStorageInterface = new UdonHeapStorageInterface(behaviour);
+
+                if (heapStorageInterface.IsValid)
+                    return heapStorageInterface;
+                else
+                    return null;
             }
             else
             {
@@ -82,6 +87,8 @@ namespace UdonSharp.Serialization
                         throw new System.NullReferenceException($"Formatter manager {typeof(UdonSharpBehaviourFormatterManager).FullName} has not been initialized.");
 
                     IHeapStorage heapStorage = CreateHeapStorage(udonBehaviour);
+                    if (heapStorage == null)
+                        return null;
 
                     IValueStorage[] heapFieldValues = new IValueStorage[fieldLayout.Length];
 
@@ -109,14 +116,18 @@ namespace UdonSharp.Serialization
 
             public override void Read(ref T targetObject, IValueStorage sourceObject)
             {
-                readDelegate(UdonSharpBehaviourFormatterManager.GetHeapData((UdonBehaviour)sourceObject.Value).heapFieldValues, ref targetObject, EditorApplication.isPlaying);
+                UdonBehaviourHeapData heapStorage = UdonSharpBehaviourFormatterManager.GetHeapData((UdonBehaviour)sourceObject.Value);
+
+                if (heapStorage != null)
+                    readDelegate(heapStorage.heapFieldValues, ref targetObject, EditorApplication.isPlaying);
             }
 
             public override void Write(IValueStorage targetObject, T sourceObject)
             {
-                IValueStorage[] heapFieldValues = UdonSharpBehaviourFormatterManager.GetHeapData(UdonSharpEditorUtility.GetBackingUdonBehaviour(sourceObject)).heapFieldValues;
+                UdonBehaviourHeapData heapStorage = UdonSharpBehaviourFormatterManager.GetHeapData(UdonSharpEditorUtility.GetBackingUdonBehaviour(sourceObject));
 
-                writeDelegate(heapFieldValues, ref sourceObject, EditorApplication.isPlaying);
+                if (heapStorage != null)
+                    writeDelegate(heapStorage.heapFieldValues, ref sourceObject, EditorApplication.isPlaying);
             }
         }
 
