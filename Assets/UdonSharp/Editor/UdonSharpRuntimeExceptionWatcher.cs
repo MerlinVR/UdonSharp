@@ -57,31 +57,6 @@ namespace UdonSharp
             if (EditorApplication.isCompiling || EditorApplication.isUpdating)
                 return false;
 
-            if (!ShouldListenForVRC())
-                return false;
-
-            AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
-
-            if (logDirectoryWatcher == null)
-            {
-                // Now setup the filesystem watcher
-                string[] splitPath = Application.persistentDataPath.Split('/', '\\');
-                string VRCDataPath = string.Join("\\", splitPath.Take(splitPath.Length - 2)) + "\\VRChat\\VRChat";
-                
-                if (Directory.Exists(VRCDataPath))
-                {
-                    logDirectoryWatcher = new FileSystemWatcher(VRCDataPath, "output_log_*.txt");
-                    logDirectoryWatcher.IncludeSubdirectories = false;
-                    logDirectoryWatcher.NotifyFilter = NotifyFilters.LastWrite;
-                    logDirectoryWatcher.Changed += OnLogFileChanged;
-                    logDirectoryWatcher.EnableRaisingEvents = false;
-                }
-                else
-                {
-                    Debug.LogError("[UdonSharp] Could not locate VRChat data directory for exception watcher");
-                }
-            }
-
             scriptLookup = new Dictionary<long, (string, UdonSharpProgramAsset)>();
             string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
 
@@ -110,6 +85,31 @@ namespace UdonSharp
                     continue;
 
                 scriptLookup.Add(programID, (AssetDatabase.GetAssetPath(programAsset.sourceCsScript), programAsset));
+            }
+
+            if (!ShouldListenForVRC())
+                return true;
+            
+            if (logDirectoryWatcher == null)
+            {
+                AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
+
+                // Now setup the filesystem watcher
+                string[] splitPath = Application.persistentDataPath.Split('/', '\\');
+                string VRCDataPath = string.Join("\\", splitPath.Take(splitPath.Length - 2)) + "\\VRChat\\VRChat";
+                
+                if (Directory.Exists(VRCDataPath))
+                {
+                    logDirectoryWatcher = new FileSystemWatcher(VRCDataPath, "output_log_*.txt");
+                    logDirectoryWatcher.IncludeSubdirectories = false;
+                    logDirectoryWatcher.NotifyFilter = NotifyFilters.LastWrite;
+                    logDirectoryWatcher.Changed += OnLogFileChanged;
+                    logDirectoryWatcher.EnableRaisingEvents = false;
+                }
+                else
+                {
+                    Debug.LogError("[UdonSharp] Could not locate VRChat data directory for exception watcher");
+                }
             }
 
             return true;
