@@ -169,7 +169,8 @@ namespace UdonSharpEditor
             if (behaviourProgramAsset == null)
                 return true;
             
-            if (behaviourProgramAsset is UdonSharpProgramAsset behaviourUSharpAsset)
+            if (behaviourProgramAsset is UdonSharpProgramAsset behaviourUSharpAsset && 
+                expectedType != typeof(UdonBehaviour)) // Leave references to UdonBehaviours intact to prevent breaks on old behaviours, this may be removed in 1.0 to enforce the correct division in types in C# land
             {
                 System.Type symbolUSharpType = behaviourUSharpAsset.sourceCsScript?.GetClass();
 
