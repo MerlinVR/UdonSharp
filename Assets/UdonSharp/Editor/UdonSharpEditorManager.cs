@@ -277,6 +277,14 @@ namespace UdonSharpEditor
                             publicVariables.RemoveVariable(variableSymbol);
                             continue;
                         }
+
+                        // Field was exported at one point, but is no longer. So we need to remove it from the behaviour
+                        if (!fieldDefinition.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public))
+                        {
+                            updatedBehaviourVariables++;
+                            publicVariables.RemoveVariable(variableSymbol);
+                            continue;
+                        }
                         
                         if (!publicVariables.TryGetVariableType(variableSymbol, out System.Type publicFieldType))
                             continue;
@@ -321,7 +329,11 @@ namespace UdonSharpEditor
                         // Clean up UdonSharpBehaviour types that are no longer compatible
                         System.Type userType = fieldDefinition.fieldSymbol.userCsType;
                         if (!UdonSharpBehaviourTypeMatches(symbolValue, userType))
+                        {
+                            updatedBehaviourVariables++;
                             publicVariables.RemoveVariable(variableSymbol);
+                            continue;
+                        }
 
                         if (userType.IsArray)
                         {
@@ -340,6 +352,7 @@ namespace UdonSharpEditor
                                 object defaultValue = programAsset.GetPublicVariableDefaultValue(variableSymbol);
                                 IUdonVariable newVariable = (IUdonVariable)Activator.CreateInstance(typeof(UdonVariable<>).MakeGenericType(programSymbolType), new object[] { variableSymbol, defaultValue });
                                 publicVariables.TryAddVariable(newVariable);
+                                updatedBehaviourVariables++;
                             }
                         }
                     }
