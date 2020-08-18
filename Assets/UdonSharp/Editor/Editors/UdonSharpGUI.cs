@@ -916,11 +916,6 @@ namespace UdonSharpEditor
 
             string[] exportedSymbolNames = symbolTable.GetExportedSymbols();
 
-            if (exportedSymbolNames.Length == 0)
-            {
-                return;
-            }
-
             foreach (string exportedSymbol in exportedSymbolNames)
             {
                 System.Type symbolType = symbolTable.GetSymbolType(exportedSymbol);
@@ -929,8 +924,7 @@ namespace UdonSharpEditor
                     DrawPublicVariableField(behaviour, programAsset, exportedSymbol, programAsset.GetPublicVariableDefaultValue(exportedSymbol), symbolType, ref dirty, false);
                     continue;
                 }
-
-                // This can also be removed
+                
                 if (!publicVariables.TryGetVariableValue(exportedSymbol, out object variableValue))
                 {
                     variableValue = programAsset.GetPublicVariableDefaultValue(exportedSymbol);
@@ -950,8 +944,6 @@ namespace UdonSharpEditor
                         Debug.LogError($"Failed to set public variable '{exportedSymbol}' value.");
                     }
                 }
-
-                EditorSceneManager.MarkSceneDirty(behaviour.gameObject.scene);
 
                 if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
                     PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
