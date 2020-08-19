@@ -1126,12 +1126,15 @@ namespace UdonSharpEditor
             {
                 EditorGUILayout.HelpBox(CONVERT_WARN_TEXT, MessageType.Warning);
 
+                EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
                 if (GUILayout.Button("Convert to UdonBehaviour", GUILayout.Height(25)))
                 {
                     UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(new[] { behaviour }, true, true);
+                    EditorGUI.EndDisabledGroup();
 
                     return true;
                 }
+                EditorGUI.EndDisabledGroup();
             }
 
             return false;
@@ -1168,12 +1171,15 @@ namespace UdonSharpEditor
             {
                 EditorGUILayout.HelpBox(CONVERT_WARN_TEXT, MessageType.Warning);
 
+                EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
                 if (GUILayout.Button("Convert to UdonBehaviour", GUILayout.Height(25)))
                 {
                     UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(Array.ConvertAll(targets, e => e as UdonSharpBehaviour).Where(e => e != null && !UdonSharpEditorUtility.IsProxyBehaviour(e)).ToArray(), true, true);
+                    EditorGUI.EndDisabledGroup();
 
                     return true;
                 }
+                EditorGUI.EndDisabledGroup();
             }
 
             return false;
