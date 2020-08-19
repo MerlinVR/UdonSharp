@@ -20,7 +20,7 @@ namespace UdonSharp.Serialization
             new UdonSharpBaseBehaviourSerializer(null),
             new UdonSharpBehaviourSerializer<UdonSharpBehaviour>(null),
             new UnityObjectSerializer<UnityEngine.Object>(null),
-            new SystemObjectSerializer(null),
+            //new SystemObjectSerializer(null),
             new DefaultSerializer<object>(null),
         };
 

@@ -48,7 +48,6 @@ namespace UdonSharp.Serialization
             Stack<IValueStorage> varStorageStack;
             if (!objectValueStorageStack.TryGetValue(valueStorageType, out varStorageStack))
             {
-                //PropertyInfo valueProperty = typeof(ValueStorage<>).MakeGenericType(valueStorageType).GetProperty("Value", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
                 varStorageStack = new Stack<IValueStorage>();
                 objectValueStorageStack.Add(valueStorageType, varStorageStack);
             }
@@ -95,9 +94,12 @@ namespace UdonSharp.Serialization
 
             IValueStorage valueStorage;
             if (varStorageStack.Count > 0)
+            {
                 valueStorage = varStorageStack.Pop();
+                valueStorage.Reset();
+            }
             else
-                valueStorage = (IValueStorage)Activator.CreateInstance(typeof(SimpleValueStorage<>).MakeGenericType(valueStorageType));
+                valueStorage = (IValueStorage)Activator.CreateInstance(typeof(SimpleValueStorage<>).MakeGenericType(valueStorageType), targetObject.Value);
 
             serializer.WriteWeak(valueStorage, sourceObject);
 

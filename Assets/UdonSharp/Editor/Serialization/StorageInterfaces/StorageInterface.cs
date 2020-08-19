@@ -28,6 +28,7 @@ namespace UdonSharp.Serialization
     public interface IValueStorage
     {
         object Value { get; set; }
+        void Reset();
     }
 
     public abstract class ValueStorage<T> : IValueStorage
@@ -37,6 +38,8 @@ namespace UdonSharp.Serialization
         object IValueStorage.Value { get { return Value; } set => Value = (T)value; }
 
         public System.Type ValueType { get { return typeof(T); } }
+
+        public void Reset() { Value = default; }
     }
 
     /// <summary>
