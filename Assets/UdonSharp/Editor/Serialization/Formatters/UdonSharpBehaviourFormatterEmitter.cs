@@ -311,7 +311,11 @@ namespace UdonSharp.Serialization
                     gen.Emit(OpCodes.Ldc_I4_8);
                     break;
                 default:
-                    gen.Emit(OpCodes.Ldc_I4_S, value);
+                    if (value < 128)
+                        gen.Emit(OpCodes.Ldc_I4_S, value);
+                    else
+                        gen.Emit(OpCodes.Ldc_I4, value);
+
                     break;
             }
         }
