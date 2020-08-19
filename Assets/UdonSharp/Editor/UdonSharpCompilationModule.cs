@@ -49,13 +49,6 @@ namespace UdonSharp.Compiler
 
         void LogException(CompileTaskResult result, System.Exception e, SyntaxNode node, string defineString, out string logMessage)
         {
-            int defineCount = 0;
-            foreach (char c in defineString)
-            {
-                if (c == '\n')
-                    defineCount++;
-            }
-
             logMessage = "";
 
             if (node != null)
@@ -65,7 +58,7 @@ namespace UdonSharp.Compiler
                 CompileError error = new CompileError();
                 error.script = programAsset.sourceCsScript;
                 error.errorStr = $"{e.GetType()}: {e.Message}";
-                error.lineIdx = lineSpan.StartLinePosition.Line - defineCount;
+                error.lineIdx = lineSpan.StartLinePosition.Line - defineString.Count(c => c == '\n');
                 error.charIdx = lineSpan.StartLinePosition.Character;
 
                 result.compileErrors.Add(error);
@@ -102,15 +95,10 @@ namespace UdonSharp.Compiler
 
                     LinePosition linePosition = diagnostic.Location.GetLineSpan().StartLinePosition;
                     
-                    int defineCount = 0;
-                    foreach (char c in sourceDefines)
-                        if (c == '\n')
-                            defineCount++;
-
                     CompileError error = new CompileError();
                     error.script = programAsset.sourceCsScript;
                     error.errorStr = $"error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}";
-                    error.lineIdx = linePosition.Line - defineCount;
+                    error.lineIdx = linePosition.Line - sourceDefines.Count(c => c == '\n');
                     error.charIdx = linePosition.Character;
 
                     result.compileErrors.Add(error);

@@ -104,12 +104,7 @@ namespace UdonSharp.Compiler
 
         public void FinalizeDebugInfo(string classDefines)
         {
-            int defineCount = 0;
-            foreach (char c in classDefines)
-            {
-                if (c == '\n')
-                    defineCount++;
-            }
+            int defineCount = classDefines.Count(c => c == '\n');
 
             serializedDebugSpans = new DebugLineSpan[debugSpans.Count];
 

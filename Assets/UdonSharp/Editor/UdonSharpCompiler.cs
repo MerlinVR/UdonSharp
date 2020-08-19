@@ -510,20 +510,13 @@ namespace UdonSharp.Compiler
                 }
                 catch (System.Exception e)
                 {
-                    int defineCount = 0;
-                    foreach (char c in defineString)
-                    {
-                        if (c == '\n')
-                            defineCount++;
-                    }
-
                     SyntaxNode node = classVisitor.visitorContext.currentNode;
 
                     if (node != null)
                     {
                         FileLinePositionSpan lineSpan = node.GetLocation().GetLineSpan();
                         
-                        UdonSharpUtils.LogBuildError($"{e.GetType()}: {e.Message}", sourcePath.Replace("/", "\\"), lineSpan.StartLinePosition.Line - defineCount, lineSpan.StartLinePosition.Character);
+                        UdonSharpUtils.LogBuildError($"{e.GetType()}: {e.Message}", sourcePath.Replace("/", "\\"), lineSpan.StartLinePosition.Line - defineString.Count(c => c == '\n'), lineSpan.StartLinePosition.Character);
                     }
                     else
                     {
