@@ -155,9 +155,59 @@ namespace UdonSharpEditor
             return GetUdonSharpProgramAsset(MonoScript.FromMonoBehaviour(udonSharpBehaviour));
         }
 
-        internal static UdonBehaviour[] ConvertToUdonBehavioursInternal(UdonSharpBehaviour[] components, bool shouldUndo, bool createScriptPrompt)
+        internal static UdonBehaviour[] ConvertToUdonBehavioursInternal(UdonSharpBehaviour[] components, bool shouldUndo, bool showPrompts)
         {
             components = components.Distinct().ToArray();
+
+            bool convertChildren = true;
+
+            if (showPrompts)
+            {
+                HashSet<UdonSharpBehaviour> allReferencedBehaviours = new HashSet<UdonSharpBehaviour>();
+
+                // Check if any of these need child component conversion
+                foreach (UdonSharpBehaviour targetObject in components)
+                {
+                    HashSet<UdonSharpBehaviour> referencedBehaviours = new HashSet<UdonSharpBehaviour>();
+
+                    CollectSharpUdonBehaviourReferencesInternal(targetObject, referencedBehaviours);
+
+                    if (referencedBehaviours.Count > 1)
+                    {
+                        foreach (UdonSharpBehaviour referencedBehaviour in referencedBehaviours)
+                        {
+                            if (referencedBehaviour != targetObject)
+                                allReferencedBehaviours.Add(referencedBehaviour);
+                        }
+                    }
+                }
+
+                if (allReferencedBehaviours.Count > 0)
+                {
+                    // This is an absolute mess, it should probably just be simplified to counting the number of affected behaviours
+                    string referencedBehaviourStr;
+                    if (allReferencedBehaviours.Count <= 2)
+                        referencedBehaviourStr = string.Join(", ", allReferencedBehaviours.Select(e => $"'{e.ToString()}'"));
+                    else
+                        referencedBehaviourStr = $"{allReferencedBehaviours.Count} behaviours";
+
+                    string rootBehaviourStr;
+
+                    if (components.Length <= 2)
+                        rootBehaviourStr = $"{string.Join(", ", components.Select(e => $"'{e.ToString()}'"))} reference{(components.Length == 1 ? "s" : "")} ";
+                    else
+                        rootBehaviourStr = $"{components.Length} behaviours to convert reference ";
+
+                    string messageStr = $"{rootBehaviourStr}{referencedBehaviourStr}. Do you want to convert all referenced behaviours as well? If no, references to these behaviours will be set to null.";
+
+                    int result = EditorUtility.DisplayDialogComplex("Dependent behaviours found", messageStr, "Yes", "Cancel", "No");
+
+                    if (result == 2) // No
+                        convertChildren = false;
+                    else if (result == 1) // Cancel
+                        return null;
+                }
+            }
 
             if (shouldUndo)
                 Undo.RegisterCompleteObjectUndo(components, "Convert to UdonBehaviour");
@@ -170,7 +220,7 @@ namespace UdonSharpEditor
 
                 if (programAsset == null)
                 {
-                    if (createScriptPrompt)
+                    if (showPrompts)
                     {
                         string scriptPath = AssetDatabase.GetAssetPath(behaviourScript);
                         string scriptDirectory = Path.GetDirectoryName(scriptPath);
@@ -215,9 +265,14 @@ namespace UdonSharpEditor
 
                 if (shouldUndo)
                     Undo.RegisterCompleteObjectUndo(targetObject, "Convert C# to U# behaviour");
-                
+
                 UdonSharpEditorUtility.SetBackingUdonBehaviour(targetObject, udonBehaviour);
-                UdonSharpEditorUtility.CopyProxyToBacker(targetObject);
+                
+                if (convertChildren)
+                    UdonSharpEditorUtility.CopyProxyToBacker(targetObject, shouldUndo ? ProxySerializationPolicy.AllWithUndo : ProxySerializationPolicy.Default);
+                else
+                    UdonSharpEditorUtility.CopyProxyToBacker(targetObject, ProxySerializationPolicy.RootOnly);
+
 
                 targetObject.hideFlags = HideFlags.DontSaveInBuild |
 #if !UDONSHARP_DEBUG
@@ -275,6 +330,8 @@ namespace UdonSharpEditor
                     if (copyBackerToProxy)
                         CopyBackerToProxy(proxyBehaviour);
 
+                    proxyBehaviour.enabled = false;
+
                     return proxyBehaviour;
                 }
                 else
@@ -294,6 +351,8 @@ namespace UdonSharpEditor
 
                     if (copyBackerToProxy)
                         CopyBackerToProxy(udonSharpBehaviour);
+
+                    udonSharpBehaviour.enabled = false;
 
                     return udonSharpBehaviour;
                 }
@@ -347,24 +406,51 @@ namespace UdonSharpEditor
 
             return proxyBehaviour;
         }
-
+        
         [PublicAPI]
         public static void CopyProxyToBacker(UdonSharpBehaviour proxy)
         {
-            Profiler.BeginSample("CopyProxyToBacker");
-            SimpleValueStorage<UdonBehaviour> udonBehaviourStorage = new SimpleValueStorage<UdonBehaviour>(GetBackingUdonBehaviour(proxy));
-            Serializer.CreatePooled(proxy.GetType()).WriteWeak(udonBehaviourStorage, proxy);
-            Profiler.EndSample();
+            CopyProxyToBacker(proxy, ProxySerializationPolicy.Default);
         }
 
         [PublicAPI]
         public static void CopyBackerToProxy(UdonSharpBehaviour proxy)
         {
-            Profiler.BeginSample("CopyBackerToProxy");
+            CopyBackerToProxy(proxy, ProxySerializationPolicy.Default);
+        }
+
+        [PublicAPI]
+        public static void CopyProxyToBacker(UdonSharpBehaviour proxy, ProxySerializationPolicy serializationPolicy)
+        {
+            Profiler.BeginSample("CopyProxyToBacker");
+
             SimpleValueStorage<UdonBehaviour> udonBehaviourStorage = new SimpleValueStorage<UdonBehaviour>(GetBackingUdonBehaviour(proxy));
+
+            ProxySerializationPolicy lastPolicy = USBSerializationContext.currentPolicy;
+            USBSerializationContext.currentPolicy = serializationPolicy;
+
+            Serializer.CreatePooled(proxy.GetType()).WriteWeak(udonBehaviourStorage, proxy);
+
+            USBSerializationContext.currentPolicy = lastPolicy;
+
+            Profiler.EndSample();
+        }
+
+        [PublicAPI]
+        public static void CopyBackerToProxy(UdonSharpBehaviour proxy, ProxySerializationPolicy serializationPolicy)
+        {
+            Profiler.BeginSample("CopyBackerToProxy");
+
+            SimpleValueStorage<UdonBehaviour> udonBehaviourStorage = new SimpleValueStorage<UdonBehaviour>(GetBackingUdonBehaviour(proxy));
+
+            ProxySerializationPolicy lastPolicy = USBSerializationContext.currentPolicy;
+            USBSerializationContext.currentPolicy = serializationPolicy;
 
             object proxyObj = proxy;
             Serializer.CreatePooled(proxy.GetType()).ReadWeak(ref proxyObj, udonBehaviourStorage);
+
+            USBSerializationContext.currentPolicy = lastPolicy;
+
             Profiler.EndSample();
         }
 
@@ -382,6 +468,64 @@ namespace UdonSharpEditor
             CopyProxyToBacker(udonSharpBehaviour);
 
             return backingBehaviour;
+        }
+
+
+
+        internal static void CollectSharpUdonBehaviourReferencesInternal(object rootObject, HashSet<UdonSharpBehaviour> gatheredSet, HashSet<object> visitedSet = null)
+        {
+            if (gatheredSet == null)
+                gatheredSet = new HashSet<UdonSharpBehaviour>();
+
+            if (visitedSet == null)
+                visitedSet = new HashSet<object>(new VRC.Udon.Serialization.OdinSerializer.Utilities.ReferenceEqualityComparer<object>());
+
+            if (rootObject == null)
+                return;
+
+            if (visitedSet.Contains(rootObject))
+                return;
+            
+            System.Type objectType = rootObject.GetType();
+
+            if (VRC.Udon.Serialization.OdinSerializer.FormatterUtilities.IsPrimitiveType(objectType))
+                return;
+
+            visitedSet.Add(rootObject);
+
+            if (objectType == typeof(UdonSharpBehaviour) ||
+                objectType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+            {
+                gatheredSet.Add((UdonSharpBehaviour)rootObject);
+            }
+
+            if (objectType.IsArray)
+            {
+                foreach (object arrayElement in (System.Array)rootObject)
+                {
+                    CollectSharpUdonBehaviourReferencesInternal(arrayElement, gatheredSet, visitedSet);
+                }
+            }
+            else
+            {
+                FieldInfo[] objectFields = objectType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+                foreach (FieldInfo fieldInfo in objectFields)
+                {
+                    object fieldValue = fieldInfo.GetValue(rootObject);
+
+                        CollectSharpUdonBehaviourReferencesInternal(fieldValue, gatheredSet, visitedSet);
+                }
+
+                PropertyInfo[] objectProperties = objectType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+                foreach (PropertyInfo propertyInfo in objectProperties)
+                {
+                    object propertyValue = propertyInfo.GetValue(rootObject);
+
+                    CollectSharpUdonBehaviourReferencesInternal(propertyValue, gatheredSet, visitedSet);
+                }
+            }
         }
     }
 }
