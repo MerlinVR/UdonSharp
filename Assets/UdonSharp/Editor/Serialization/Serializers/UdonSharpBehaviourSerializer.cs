@@ -45,8 +45,13 @@ namespace UdonSharp.Serialization
             if (USBSerializationContext.currentPolicy == null)
                 throw new NullReferenceException("Serialization policy cannot be null");
             
+            if (USBSerializationContext.currentDepth >= USBSerializationContext.currentPolicy.MaxSerializationDepth)
+            {
+                return;
+            }
+
             if (targetObject == null)
-                targetObject = (T)UdonSharpEditorUtility.GetProxyBehaviour((UdonBehaviour)sourceObject.Value, false);
+                targetObject = (T)UdonSharpEditorUtility.GetProxyBehaviour((UdonBehaviour)sourceObject.Value, ProxySerializationPolicy.NoSerialization);
 
             if (USBSerializationContext.serializedBehaviourSet.Contains(targetObject))
                 return;

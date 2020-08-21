@@ -319,16 +319,27 @@ namespace UdonSharpEditor
         /// Finds an existing proxy behaviour, if none exists returns null
         /// </summary>
         /// <param name="udonBehaviour"></param>
-        /// <param name="copyBackerToProxy"></param>
         /// <returns></returns>
-        public static UdonSharpBehaviour FindProxyBehaviour(UdonBehaviour udonBehaviour, bool copyBackerToProxy = true)
+        [PublicAPI]
+        public static UdonSharpBehaviour FindProxyBehaviour(UdonBehaviour udonBehaviour)
+        {
+            return FindProxyBehaviour(udonBehaviour, ProxySerializationPolicy.Default);
+        }
+
+        /// <summary>
+        /// Finds an existing proxy behaviour, if none exists returns null
+        /// </summary>
+        /// <param name="udonBehaviour"></param>
+        /// <param name="proxySerializationPolicy"></param>
+        /// <returns></returns>
+        [PublicAPI]
+        public static UdonSharpBehaviour FindProxyBehaviour(UdonBehaviour udonBehaviour, ProxySerializationPolicy proxySerializationPolicy)
         {
             if (_proxyBehaviourLookup.TryGetValue(udonBehaviour, out UdonSharpBehaviour proxyBehaviour))
             {
                 if (proxyBehaviour != null)
                 {
-                    if (copyBackerToProxy)
-                        CopyBackerToProxy(proxyBehaviour);
+                    CopyBackerToProxy(proxyBehaviour, proxySerializationPolicy);
 
                     proxyBehaviour.enabled = false;
 
@@ -349,8 +360,7 @@ namespace UdonSharpEditor
                 {
                     _proxyBehaviourLookup.Add(udonBehaviour, udonSharpBehaviour);
 
-                    if (copyBackerToProxy)
-                        CopyBackerToProxy(udonSharpBehaviour);
+                    CopyBackerToProxy(udonSharpBehaviour, proxySerializationPolicy);
 
                     udonSharpBehaviour.enabled = false;
 
@@ -366,9 +376,20 @@ namespace UdonSharpEditor
         /// </summary>
         /// <param name="udonBehaviour"></param>
         /// <returns></returns>
-        /// 
         [PublicAPI]
-        public static UdonSharpBehaviour GetProxyBehaviour(UdonBehaviour udonBehaviour, bool copyBackerToProxy = true)
+        public static UdonSharpBehaviour GetProxyBehaviour(UdonBehaviour udonBehaviour)
+        {
+            return GetProxyBehaviour(udonBehaviour, ProxySerializationPolicy.Default);
+        }
+
+        /// <summary>
+        /// Gets the C# version of an UdonSharpBehaviour that proxies an UdonBehaviour with the program asset for the matching UdonSharpBehaviour type
+        /// </summary>
+        /// <param name="udonBehaviour"></param>
+        /// <param name="proxySerializationPolicy"></param>
+        /// <returns></returns>
+        [PublicAPI]
+        public static UdonSharpBehaviour GetProxyBehaviour(UdonBehaviour udonBehaviour, ProxySerializationPolicy proxySerializationPolicy)
         {
             if (udonBehaviour == null)
                 throw new System.ArgumentNullException("Source Udon Behaviour cannot be null");
@@ -381,7 +402,7 @@ namespace UdonSharpEditor
             if (udonSharpProgram == null)
                 throw new System.ArgumentException("UdonBehaviour must be using an UdonSharp program");
 
-            UdonSharpBehaviour proxyBehaviour = FindProxyBehaviour(udonBehaviour, copyBackerToProxy);
+            UdonSharpBehaviour proxyBehaviour = FindProxyBehaviour(udonBehaviour, proxySerializationPolicy);
 
             if (proxyBehaviour)
                 return proxyBehaviour;
@@ -400,9 +421,8 @@ namespace UdonSharpEditor
             SetBackingUdonBehaviour(proxyBehaviour, udonBehaviour);
 
             _proxyBehaviourLookup.Add(udonBehaviour, proxyBehaviour);
-
-            if (copyBackerToProxy)
-                CopyBackerToProxy(proxyBehaviour);
+            
+            CopyBackerToProxy(proxyBehaviour, proxySerializationPolicy);
 
             return proxyBehaviour;
         }
@@ -422,6 +442,9 @@ namespace UdonSharpEditor
         [PublicAPI]
         public static void CopyProxyToBacker(UdonSharpBehaviour proxy, ProxySerializationPolicy serializationPolicy)
         {
+            if (serializationPolicy.MaxSerializationDepth == 0)
+                return;
+
             Profiler.BeginSample("CopyProxyToBacker");
 
             SimpleValueStorage<UdonBehaviour> udonBehaviourStorage = new SimpleValueStorage<UdonBehaviour>(GetBackingUdonBehaviour(proxy));
@@ -439,6 +462,9 @@ namespace UdonSharpEditor
         [PublicAPI]
         public static void CopyBackerToProxy(UdonSharpBehaviour proxy, ProxySerializationPolicy serializationPolicy)
         {
+            if (serializationPolicy.MaxSerializationDepth == 0)
+                return;
+
             Profiler.BeginSample("CopyBackerToProxy");
 
             SimpleValueStorage<UdonBehaviour> udonBehaviourStorage = new SimpleValueStorage<UdonBehaviour>(GetBackingUdonBehaviour(proxy));

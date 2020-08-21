@@ -268,7 +268,7 @@ namespace UdonSharpEditor
 
         void OnUndoRedo()
         {
-            UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.FindProxyBehaviour(target as UdonBehaviour, false);
+            UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.FindProxyBehaviour(target as UdonBehaviour, ProxySerializationPolicy.NoSerialization);
 
             if (inspectorTarget)
             {

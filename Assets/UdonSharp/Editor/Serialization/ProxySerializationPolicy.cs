@@ -24,6 +24,9 @@ namespace UdonSharpEditor
         [PublicAPI]
         public static readonly ProxySerializationPolicy RootOnly = new ProxySerializationPolicy() { ChildProxyMode = ChildProxyCreateMode.Null, MaxSerializationDepth = 1 };
 
+        [PublicAPI]
+        public static readonly ProxySerializationPolicy NoSerialization = new ProxySerializationPolicy() { ChildProxyMode = ChildProxyCreateMode.Null, MaxSerializationDepth = 0 };
+
         private ProxySerializationPolicy()
         { }
     }

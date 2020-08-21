@@ -110,8 +110,8 @@ namespace UdonSharp
         [Obsolete("The OnStationExited() event is deprecated use the OnStationExited(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
         public virtual void OnStationExited() { }
 
-        // Used for tracking serialization data in editor
 #if UNITY_EDITOR
+        // Used for tracking serialization data in editor
         // Odin serialization is needed to keep track of the _backingUdonBehaviour reference for undo/redo operations
         [SerializeField, HideInInspector]
         SerializationData serializationData;
