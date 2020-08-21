@@ -146,7 +146,7 @@ namespace UdonSharp
             { "_onPlayerLeft", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerLeftPlayer") } },
             { "_onStationEntered", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onStationEnteredPlayer") } },
             { "_onStationExited", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onStationExitedPlayer") } },
-            { "_onOwnershipRequest", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onOwnershipRequestPlayer") } },
+            { "_onOwnershipRequest", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onOwnershipRequestRequester"), new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onOwnershipRequestNewOwner") } },
             { "_onPlayerTriggerEnter", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerTriggerEnterPlayer") } },
             { "_onPlayerTriggerExit", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerTriggerExitPlayer") } },
             { "_onPlayerTriggerStay", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerTriggerStayPlayer") } },
