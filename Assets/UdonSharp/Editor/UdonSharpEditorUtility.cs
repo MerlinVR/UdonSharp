@@ -155,139 +155,6 @@ namespace UdonSharpEditor
             return GetUdonSharpProgramAsset(MonoScript.FromMonoBehaviour(udonSharpBehaviour));
         }
 
-        internal static UdonBehaviour[] ConvertToUdonBehavioursInternal(UdonSharpBehaviour[] components, bool shouldUndo, bool showPrompts)
-        {
-            components = components.Distinct().ToArray();
-
-            bool convertChildren = true;
-
-            if (showPrompts)
-            {
-                HashSet<UdonSharpBehaviour> allReferencedBehaviours = new HashSet<UdonSharpBehaviour>();
-
-                // Check if any of these need child component conversion
-                foreach (UdonSharpBehaviour targetObject in components)
-                {
-                    HashSet<UdonSharpBehaviour> referencedBehaviours = new HashSet<UdonSharpBehaviour>();
-
-                    CollectSharpUdonBehaviourReferencesInternal(targetObject, referencedBehaviours);
-
-                    if (referencedBehaviours.Count > 1)
-                    {
-                        foreach (UdonSharpBehaviour referencedBehaviour in referencedBehaviours)
-                        {
-                            if (referencedBehaviour != targetObject)
-                                allReferencedBehaviours.Add(referencedBehaviour);
-                        }
-                    }
-                }
-
-                if (allReferencedBehaviours.Count > 0)
-                {
-                    // This is an absolute mess, it should probably just be simplified to counting the number of affected behaviours
-                    string referencedBehaviourStr;
-                    if (allReferencedBehaviours.Count <= 2)
-                        referencedBehaviourStr = string.Join(", ", allReferencedBehaviours.Select(e => $"'{e.ToString()}'"));
-                    else
-                        referencedBehaviourStr = $"{allReferencedBehaviours.Count} behaviours";
-
-                    string rootBehaviourStr;
-
-                    if (components.Length <= 2)
-                        rootBehaviourStr = $"{string.Join(", ", components.Select(e => $"'{e.ToString()}'"))} reference{(components.Length == 1 ? "s" : "")} ";
-                    else
-                        rootBehaviourStr = $"{components.Length} behaviours to convert reference ";
-
-                    string messageStr = $"{rootBehaviourStr}{referencedBehaviourStr}. Do you want to convert all referenced behaviours as well? If no, references to these behaviours will be set to null.";
-
-                    int result = EditorUtility.DisplayDialogComplex("Dependent behaviours found", messageStr, "Yes", "Cancel", "No");
-
-                    if (result == 2) // No
-                        convertChildren = false;
-                    else if (result == 1) // Cancel
-                        return null;
-                }
-            }
-
-            if (shouldUndo)
-                Undo.RegisterCompleteObjectUndo(components, "Convert to UdonBehaviour");
-
-            List<UdonBehaviour> createdComponents = new List<UdonBehaviour>();
-            foreach (UdonSharpBehaviour targetObject in components)
-            {
-                MonoScript behaviourScript = MonoScript.FromMonoBehaviour(targetObject);
-                UdonSharpProgramAsset programAsset = GetUdonSharpProgramAsset(behaviourScript);
-
-                if (programAsset == null)
-                {
-                    if (showPrompts)
-                    {
-                        string scriptPath = AssetDatabase.GetAssetPath(behaviourScript);
-                        string scriptDirectory = Path.GetDirectoryName(scriptPath);
-                        string scriptFileName = Path.GetFileNameWithoutExtension(scriptPath);
-
-                        string assetPath = Path.Combine(scriptDirectory, $"{scriptFileName}.asset").Replace('\\', '/');
-
-                        if (AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(assetPath) != null)
-                        {
-                            if (!EditorUtility.DisplayDialog("Existing file found", $"Asset file {assetPath} already exists, do you want to overwrite it?", "Ok", "Cancel"))
-                                continue;
-                        }
-
-                        programAsset = ScriptableObject.CreateInstance<UdonSharpProgramAsset>();
-                        programAsset.sourceCsScript = behaviourScript;
-                        programAsset.CompileCsProgram();
-
-                        AssetDatabase.CreateAsset(programAsset, assetPath);
-                        AssetDatabase.SaveAssets();
-
-                        AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-                    }
-                    else
-                        continue;
-                }
-
-                GameObject targetGameObject = targetObject.gameObject;
-
-                UdonBehaviour udonBehaviour = null;
-
-                if (shouldUndo)
-                    udonBehaviour = Undo.AddComponent<UdonBehaviour>(targetGameObject);
-                else
-                    udonBehaviour = targetGameObject.AddComponent<UdonBehaviour>();
-
-                udonBehaviour.programSource = programAsset;
-
-                //if (shouldUndo)
-                //    Undo.DestroyObjectImmediate(targetObject);
-                //else
-                //    Object.DestroyImmediate(targetObject);
-
-                if (shouldUndo)
-                    Undo.RegisterCompleteObjectUndo(targetObject, "Convert C# to U# behaviour");
-
-                UdonSharpEditorUtility.SetBackingUdonBehaviour(targetObject, udonBehaviour);
-                
-                if (convertChildren)
-                    UdonSharpEditorUtility.CopyProxyToBacker(targetObject, shouldUndo ? ProxySerializationPolicy.AllWithUndo : ProxySerializationPolicy.Default);
-                else
-                    UdonSharpEditorUtility.CopyProxyToBacker(targetObject, ProxySerializationPolicy.RootOnly);
-
-
-                targetObject.hideFlags = HideFlags.DontSaveInBuild |
-#if !UDONSHARP_DEBUG
-                                         HideFlags.HideInInspector |
-#endif
-                                         HideFlags.DontSaveInEditor;
-
-                targetObject.enabled = false;
-
-                createdComponents.Add(udonBehaviour);
-            }
-
-            return createdComponents.ToArray();
-        }
-
         private static readonly FieldInfo _backingBehaviourField = typeof(UdonSharpBehaviour).GetField("_backingUdonBehaviour", BindingFlags.NonPublic | BindingFlags.Instance);
         [PublicAPI]
         public static UdonBehaviour GetBackingUdonBehaviour(UdonSharpBehaviour behaviour)
@@ -496,8 +363,21 @@ namespace UdonSharpEditor
             return backingBehaviour;
         }
 
+        [PublicAPI]
+        public static void DestroyImmediate(UdonSharpBehaviour behaviour)
+        {
+            UdonBehaviour backingBehaviour = GetBackingUdonBehaviour(behaviour);
+            
+            Object.DestroyImmediate(behaviour);
 
+            if (backingBehaviour)
+            {
+                _proxyBehaviourLookup.Remove(backingBehaviour);
+                Object.DestroyImmediate(backingBehaviour);
+            }
+        }
 
+        #region Internal utilities
         internal static void CollectSharpUdonBehaviourReferencesInternal(object rootObject, HashSet<UdonSharpBehaviour> gatheredSet, HashSet<object> visitedSet = null)
         {
             if (gatheredSet == null)
@@ -511,7 +391,7 @@ namespace UdonSharpEditor
 
             if (visitedSet.Contains(rootObject))
                 return;
-            
+
             System.Type objectType = rootObject.GetType();
 
             if (VRC.Udon.Serialization.OdinSerializer.FormatterUtilities.IsPrimitiveType(objectType))
@@ -540,7 +420,7 @@ namespace UdonSharpEditor
                 {
                     object fieldValue = fieldInfo.GetValue(rootObject);
 
-                        CollectSharpUdonBehaviourReferencesInternal(fieldValue, gatheredSet, visitedSet);
+                    CollectSharpUdonBehaviourReferencesInternal(fieldValue, gatheredSet, visitedSet);
                 }
 
                 PropertyInfo[] objectProperties = objectType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
@@ -553,5 +433,139 @@ namespace UdonSharpEditor
                 }
             }
         }
+
+        internal static UdonBehaviour[] ConvertToUdonBehavioursInternal(UdonSharpBehaviour[] components, bool shouldUndo, bool showPrompts)
+        {
+            components = components.Distinct().ToArray();
+
+            bool convertChildren = true;
+
+            if (showPrompts)
+            {
+                HashSet<UdonSharpBehaviour> allReferencedBehaviours = new HashSet<UdonSharpBehaviour>();
+
+                // Check if any of these need child component conversion
+                foreach (UdonSharpBehaviour targetObject in components)
+                {
+                    HashSet<UdonSharpBehaviour> referencedBehaviours = new HashSet<UdonSharpBehaviour>();
+
+                    CollectSharpUdonBehaviourReferencesInternal(targetObject, referencedBehaviours);
+
+                    if (referencedBehaviours.Count > 1)
+                    {
+                        foreach (UdonSharpBehaviour referencedBehaviour in referencedBehaviours)
+                        {
+                            if (referencedBehaviour != targetObject)
+                                allReferencedBehaviours.Add(referencedBehaviour);
+                        }
+                    }
+                }
+
+                if (allReferencedBehaviours.Count > 0)
+                {
+                    // This is an absolute mess, it should probably just be simplified to counting the number of affected behaviours
+                    string referencedBehaviourStr;
+                    if (allReferencedBehaviours.Count <= 2)
+                        referencedBehaviourStr = string.Join(", ", allReferencedBehaviours.Select(e => $"'{e.ToString()}'"));
+                    else
+                        referencedBehaviourStr = $"{allReferencedBehaviours.Count} behaviours";
+
+                    string rootBehaviourStr;
+
+                    if (components.Length <= 2)
+                        rootBehaviourStr = $"{string.Join(", ", components.Select(e => $"'{e.ToString()}'"))} reference{(components.Length == 1 ? "s" : "")} ";
+                    else
+                        rootBehaviourStr = $"{components.Length} behaviours to convert reference ";
+
+                    string messageStr = $"{rootBehaviourStr}{referencedBehaviourStr}. Do you want to convert all referenced behaviours as well? If no, references to these behaviours will be set to null.";
+
+                    int result = EditorUtility.DisplayDialogComplex("Dependent behaviours found", messageStr, "Yes", "Cancel", "No");
+
+                    if (result == 2) // No
+                        convertChildren = false;
+                    else if (result == 1) // Cancel
+                        return null;
+                }
+            }
+
+            if (shouldUndo)
+                Undo.RegisterCompleteObjectUndo(components, "Convert to UdonBehaviour");
+
+            List<UdonBehaviour> createdComponents = new List<UdonBehaviour>();
+            foreach (UdonSharpBehaviour targetObject in components)
+            {
+                MonoScript behaviourScript = MonoScript.FromMonoBehaviour(targetObject);
+                UdonSharpProgramAsset programAsset = GetUdonSharpProgramAsset(behaviourScript);
+
+                if (programAsset == null)
+                {
+                    if (showPrompts)
+                    {
+                        string scriptPath = AssetDatabase.GetAssetPath(behaviourScript);
+                        string scriptDirectory = Path.GetDirectoryName(scriptPath);
+                        string scriptFileName = Path.GetFileNameWithoutExtension(scriptPath);
+
+                        string assetPath = Path.Combine(scriptDirectory, $"{scriptFileName}.asset").Replace('\\', '/');
+
+                        if (AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(assetPath) != null)
+                        {
+                            if (!EditorUtility.DisplayDialog("Existing file found", $"Asset file {assetPath} already exists, do you want to overwrite it?", "Ok", "Cancel"))
+                                continue;
+                        }
+
+                        programAsset = ScriptableObject.CreateInstance<UdonSharpProgramAsset>();
+                        programAsset.sourceCsScript = behaviourScript;
+                        programAsset.CompileCsProgram();
+
+                        AssetDatabase.CreateAsset(programAsset, assetPath);
+                        AssetDatabase.SaveAssets();
+
+                        AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                    }
+                    else
+                        continue;
+                }
+
+                GameObject targetGameObject = targetObject.gameObject;
+
+                UdonBehaviour udonBehaviour = null;
+
+                if (shouldUndo)
+                    udonBehaviour = Undo.AddComponent<UdonBehaviour>(targetGameObject);
+                else
+                    udonBehaviour = targetGameObject.AddComponent<UdonBehaviour>();
+
+                udonBehaviour.programSource = programAsset;
+
+                //if (shouldUndo)
+                //    Undo.DestroyObjectImmediate(targetObject);
+                //else
+                //    Object.DestroyImmediate(targetObject);
+
+                if (shouldUndo)
+                    Undo.RegisterCompleteObjectUndo(targetObject, "Convert C# to U# behaviour");
+
+                UdonSharpEditorUtility.SetBackingUdonBehaviour(targetObject, udonBehaviour);
+
+                if (convertChildren)
+                    UdonSharpEditorUtility.CopyProxyToBacker(targetObject, shouldUndo ? ProxySerializationPolicy.AllWithUndo : ProxySerializationPolicy.Default);
+                else
+                    UdonSharpEditorUtility.CopyProxyToBacker(targetObject, ProxySerializationPolicy.RootOnly);
+
+
+                targetObject.hideFlags = HideFlags.DontSaveInBuild |
+#if !UDONSHARP_DEBUG
+                                         HideFlags.HideInInspector |
+#endif
+                                         HideFlags.DontSaveInEditor;
+
+                targetObject.enabled = false;
+
+                createdComponents.Add(udonBehaviour);
+            }
+
+            return createdComponents.ToArray();
+        }
+        #endregion
     }
 }
