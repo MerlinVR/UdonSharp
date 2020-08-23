@@ -21,6 +21,7 @@ namespace UdonSharp.Tests
             TestPrivateStr();
             TestDefaultByte();
             TestJaggedArrays();
+            TestObjectInt();
         }
 
         [HideInInspector]
@@ -114,6 +115,16 @@ namespace UdonSharp.Tests
                                                         jaggedArrayInitialVal[1][0] == 3 &&
                                                         jaggedArrayInitialVal[1][1] == 4 &&
                                                         jaggedArrayInitialVal[2] == null);
+        }
+        
+        public object objectIntVal = 5;
+        // Should by synced by the custom inspector to the same value as objectIntVal
+        [HideInInspector]
+        public object syncedObjectIntVal = 5;
+
+        void TestObjectInt()
+        {
+            tester.TestAssertion("Object int is valid", (int)objectIntVal == (int)syncedObjectIntVal);
         }
     }
 }
