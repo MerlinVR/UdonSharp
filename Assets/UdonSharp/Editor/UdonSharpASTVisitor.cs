@@ -29,6 +29,7 @@ namespace UdonSharp.Compiler
         public JumpLabel returnLabel = null;
         public SymbolDefinition returnJumpTarget = null;
         public SymbolDefinition returnSymbol = null;
+        public bool requresVRCReturn = false;
         public Stack<JumpLabel> continueLabelStack = new Stack<JumpLabel>();
         public Stack<JumpLabel> breakLabelStack = new Stack<JumpLabel>();
 
@@ -760,11 +761,12 @@ namespace UdonSharp.Compiler
             if (syncMode == UdonSyncMode.NotSynced)
                 return;
 
-            if (!UdonSharpUtils.IsUdonSyncedType(typeToSync))
+            if (!VRC.Udon.UdonNetworkTypes.CanSync(typeToSync))
                 throw new System.NotSupportedException($"Udon does not currently support syncing of the type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
-
-            if (syncMode != UdonSyncMode.None && (typeToSync == typeof(string) || typeToSync == typeof(char)))
-                throw new System.NotSupportedException($"Udon does not support tweening the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+            else if (syncMode == UdonSyncMode.Linear && !VRC.Udon.UdonNetworkTypes.CanSyncLinear(typeToSync))
+                throw new System.NotSupportedException($"Udon does not support linear interpolation of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+            else if (syncMode == UdonSyncMode.Smooth && !VRC.Udon.UdonNetworkTypes.CanSyncSmooth(typeToSync))
+                throw new System.NotSupportedException($"Udon does not support smooth interpolation of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
         }
 
         public override void VisitFieldDeclaration(FieldDeclarationSyntax node)
@@ -1315,6 +1317,7 @@ namespace UdonSharp.Compiler
             JumpLabel returnLabel = visitorContext.labelTable.GetNewJumpLabel("return");
             visitorContext.returnLabel = returnLabel;
             visitorContext.returnSymbol = definition.returnSymbol;
+            visitorContext.requresVRCReturn = functionName == "_onOwnershipRequest" ? true : false;
 
             visitorContext.uasmBuilder.AddJumpLabel(definition.methodUdonEntryPoint);
             
@@ -1377,10 +1380,21 @@ namespace UdonSharp.Compiler
 
                     if (visitorContext.returnSymbol != null)
                     {
+                        SymbolDefinition returnValue = expressionBodyCapture.ExecuteGet();
+
                         using (ExpressionCaptureScope returnSetterScope = new ExpressionCaptureScope(visitorContext, null))
                         {
                             returnSetterScope.SetToLocalSymbol(visitorContext.returnSymbol);
-                            returnSetterScope.ExecuteSetDirect(expressionBodyCapture);
+                            returnSetterScope.ExecuteSet(returnValue);
+                        }
+
+                        if (visitorContext.requresVRCReturn)
+                        {
+                            using (ExpressionCaptureScope returnValueSetMethod = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                returnValueSetMethod.ResolveAccessToken(nameof(VRC.Udon.UdonBehaviour.WriteReturnValue));
+                                returnValueSetMethod.Invoke(new SymbolDefinition[] { returnValue });
+                            }
                         }
                     }
                 }
@@ -1890,10 +1904,22 @@ namespace UdonSharp.Compiler
                 {
                     Visit(node.Expression);
 
+                    SymbolDefinition returnSymbol = returnCaptureScope.ExecuteGet();
+
                     using (ExpressionCaptureScope returnOutSetter = new ExpressionCaptureScope(visitorContext, null))
                     {
                         returnOutSetter.SetToLocalSymbol(visitorContext.returnSymbol);
-                        returnOutSetter.ExecuteSet(returnCaptureScope.ExecuteGet());
+                        returnOutSetter.ExecuteSet(returnSymbol);
+                    }
+
+                    // Special methods like OnOwnershipRequest
+                    if (visitorContext.requresVRCReturn)
+                    {
+                        using (ExpressionCaptureScope returnValueSetMethod = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            returnValueSetMethod.ResolveAccessToken(nameof(VRC.Udon.UdonBehaviour.WriteReturnValue));
+                            returnValueSetMethod.Invoke(new SymbolDefinition[] { returnSymbol });
+                        }
                     }
                 }
             }

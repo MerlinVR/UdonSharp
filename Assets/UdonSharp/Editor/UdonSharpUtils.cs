@@ -348,26 +348,6 @@ namespace UdonSharp
             return first == second;
         }
 
-        private static readonly HashSet<System.Type> udonSyncTypes = new HashSet<System.Type>()
-        {
-            typeof(bool),
-            typeof(char),
-            typeof(byte), typeof(sbyte),
-            typeof(int), typeof(uint),
-            typeof(long), typeof(ulong),
-            typeof(float), typeof(double),
-            typeof(short), typeof(ushort),
-            typeof(string),
-            typeof(UnityEngine.Vector2), typeof(UnityEngine.Vector3), typeof(UnityEngine.Vector4),
-            typeof(UnityEngine.Quaternion),
-            typeof(UnityEngine.Color32), typeof(UnityEngine.Color),
-        };
-
-        public static bool IsUdonSyncedType(System.Type type)
-        {
-            return udonSyncTypes.Contains(type);
-        }
-
         private static readonly HashSet<System.Type> builtinTypes = new HashSet<System.Type>
         {
             typeof(string),
