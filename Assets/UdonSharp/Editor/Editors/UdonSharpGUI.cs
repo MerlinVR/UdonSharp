@@ -1257,6 +1257,12 @@ namespace UdonSharpEditor
         internal static void DrawSyncSettings(UdonBehaviour behaviour)
         {
 #if UDON_BETA_SDK
+            UdonSharpProgramAsset programAsset = (UdonSharpProgramAsset)behaviour.programSource;
+
+            bool allowsSyncConfig = programAsset.behaviourSyncMode == BehaviourSyncMode.Any;
+
+            EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying || !allowsSyncConfig);
+
             Rect syncMethodRect = EditorGUILayout.GetControlRect();
             int id = GUIUtility.GetControlID("DropdownButton".GetHashCode(), FocusType.Keyboard, syncMethodRect);
             Rect dropdownRect = EditorGUI.PrefixLabel(syncMethodRect, id, new GUIContent("Synchronization Method"));
@@ -1270,6 +1276,8 @@ namespace UdonSharpEditor
 
                 GUIUtility.ExitGUI();
             }
+
+            EditorGUI.EndDisabledGroup();
 #else
             EditorGUI.BeginChangeCheck();
 

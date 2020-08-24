@@ -176,6 +176,9 @@ namespace UdonSharp.Compiler
                 programAsset.behaviourIDHeapVarName = visitor.GetIDHeapVarName();
 
                 programAsset.fieldDefinitions = visitor.visitorContext.localFieldDefinitions;
+#if UDON_BETA_SDK
+                programAsset.behaviourSyncMode = visitor.visitorContext.behaviourSyncMode;
+#endif
 
                 if (debugInfo != null)
                     debugInfo.FinalizeDebugInfo(sourceDefines);

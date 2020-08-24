@@ -17,6 +17,9 @@ namespace UdonSharp.Compiler
         public System.Type behaviourUserType;
         public List<ClassDefinition> externClassDefinitions;
         public Dictionary<string, FieldDefinition> localFieldDefinitions;
+#if UDON_BETA_SDK
+        public BehaviourSyncMode behaviourSyncMode = BehaviourSyncMode.Any;
+#endif
 
         public Stack<ExpressionCaptureScope> expressionCaptureStack = new Stack<ExpressionCaptureScope>();
         
@@ -241,6 +244,47 @@ namespace UdonSharp.Compiler
 
                 visitorContext.behaviourUserType = selfTypeCaptureScope.captureType;
             }
+
+#if UDON_BETA_SDK
+            // Behaviour sync mode attribute handling
+            if (node.AttributeLists != null)
+            {
+                foreach (AttributeListSyntax attributeList in node.AttributeLists)
+                {
+                    foreach (AttributeSyntax attribute in attributeList.Attributes)
+                    {
+                        System.Type captureType = null;
+
+                        using (ExpressionCaptureScope attributeTypeScope = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            attributeTypeScope.isAttributeCaptureScope = true;
+
+                            Visit(attribute.Name);
+
+                            captureType = attributeTypeScope.captureType;
+                        }
+
+                        if (captureType != null && captureType == typeof(UdonBehaviourSyncModeAttribute))
+                        {
+                            if (attribute.ArgumentList != null && 
+                                attribute.ArgumentList.Arguments != null && 
+                                attribute.ArgumentList.Arguments.Count == 1)
+                            {
+                                using (ExpressionCaptureScope attributeCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+                                {
+                                    Visit(attribute.ArgumentList.Arguments[0].Expression);
+
+                                    if (!attributeCaptureScope.IsEnum())
+                                        throw new System.Exception("Invalid attribute argument provided for behaviour sync");
+
+                                    visitorContext.behaviourSyncMode = (BehaviourSyncMode)attributeCaptureScope.GetEnumValue();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+#endif
 
             Visit(node.BaseList);
 

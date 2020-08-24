@@ -31,6 +31,9 @@ namespace UdonSharpEditor
             List<UdonBehaviour> allBehaviours = GetAllUdonBehaviours();
             UpdatePublicVariables(allBehaviours);
             UpdateSerializedProgramAssets(allBehaviours);
+#if UDON_BETA_SDK
+            UpdateSyncModes(allBehaviours);
+#endif
         }
 
         internal static void RunPostBuildSceneFixup()
@@ -38,6 +41,9 @@ namespace UdonSharpEditor
             List<UdonBehaviour> allBehaviours = GetAllUdonBehaviours();
             UpdateSerializedProgramAssets(allBehaviours);
             UpdatePublicVariables(allBehaviours);
+#if UDON_BETA_SDK
+            UpdateSyncModes(allBehaviours);
+#endif
             UdonEditorManager.Instance.RefreshQueuedProgramSources();
         }
 
@@ -149,7 +155,36 @@ namespace UdonSharpEditor
             }
         }
 
-        static bool UdonSharpBehaviourTypeMatches(object symbolValue, System.Type expectedType)
+#if UDON_BETA_SDK
+        static void UpdateSyncModes(List<UdonBehaviour> udonBehaviours)
+        {
+            int modificationCount = 0;
+
+            foreach (UdonBehaviour behaviour in udonBehaviours)
+            {
+                if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset programAsset))
+                    continue;
+
+                if (behaviour.Reliable == true &&
+                    programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous)
+                {
+                    behaviour.Reliable = false;
+                    modificationCount++;
+                }
+                else if (behaviour.Reliable == false &&
+                         programAsset.behaviourSyncMode == BehaviourSyncMode.Manual)
+                {
+                    behaviour.Reliable = true;
+                    modificationCount++;
+                }
+            }
+
+            if (modificationCount > 0)
+                EditorSceneManager.MarkAllScenesDirty();
+        }
+#endif
+
+            static bool UdonSharpBehaviourTypeMatches(object symbolValue, System.Type expectedType)
         {
             if (!(expectedType == typeof(UdonBehaviour) ||
                   expectedType == typeof(UdonSharpBehaviour) ||

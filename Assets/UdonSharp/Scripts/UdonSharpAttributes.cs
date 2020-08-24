@@ -22,5 +22,25 @@ namespace UdonSharp
             networkSyncType = networkSyncTypeIn;
         }
     }
+
+#if UDON_BETA_SDK
+    public enum BehaviourSyncMode
+    {
+        Any, // Nothing is enforced and the behaviours can be set to either sync type by the user. This is the default when no BehaviourSyncTypeAttribute is specified
+        Continuous,
+        Manual,
+    }
+
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public class UdonBehaviourSyncModeAttribute : Attribute
+    {
+        private BehaviourSyncMode behaviourSyncMode = BehaviourSyncMode.Any;
+
+        public UdonBehaviourSyncModeAttribute(BehaviourSyncMode behaviourSyncMode)
+        {
+            this.behaviourSyncMode = behaviourSyncMode;
+        }
+    }
+#endif
 }
 

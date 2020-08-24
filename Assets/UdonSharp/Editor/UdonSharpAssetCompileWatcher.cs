@@ -157,8 +157,6 @@ namespace UdonSharp
             {
                 modifiedScripts.Clear();
             }
-
-            modifiedScripts.Clear();
         }
 
         static void OnEditorUpdate()
