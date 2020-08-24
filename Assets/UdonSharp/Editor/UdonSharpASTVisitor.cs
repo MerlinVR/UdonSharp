@@ -770,6 +770,9 @@ namespace UdonSharp.Compiler
                 throw new System.NotSupportedException($"Udon does not support linear interpolation of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
             else if (syncMode == UdonSyncMode.Smooth && !VRC.Udon.UdonNetworkTypes.CanSyncSmooth(typeToSync))
                 throw new System.NotSupportedException($"Udon does not support smooth interpolation of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+
+            if (visitorContext.behaviourSyncMode == BehaviourSyncMode.Manual && syncMode != UdonSyncMode.None)
+                throw new System.NotSupportedException($"Udon does not support variable tweening when the behaviour is in Manual sync mode");
 #else
             if (!UdonSharpUtils.IsUdonSyncedType(typeToSync))
                 throw new System.NotSupportedException($"Udon does not currently support syncing of the type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
@@ -883,7 +886,6 @@ namespace UdonSharp.Compiler
                             symbolCreationScope.ExecuteSet(initializerCapture.ExecuteGet());
                         }
                     }
-
                     
                     newSymbol.syncMode = syncMode;
                 }
