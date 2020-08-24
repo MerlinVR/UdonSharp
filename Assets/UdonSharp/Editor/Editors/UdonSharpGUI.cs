@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿
+using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,7 +8,6 @@ using System.Reflection;
 using UdonSharp;
 using UdonSharp.Compiler;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using VRC.Udon;
 using VRC.Udon.Common;
@@ -15,6 +15,219 @@ using VRC.Udon.Common.Interfaces;
 
 namespace UdonSharpEditor
 {
+#if UDON_BETA_SDK
+    internal class SyncModeMenu : EditorWindow
+    {
+        static SyncModeMenu menu;
+
+        UdonBehaviour udonBehaviour;
+        int selectedIdx = -1;
+
+        private static GUIStyle selectionStyle;
+        private static GUIStyle descriptionStyle;
+
+        private static readonly List<(GUIContent, GUIContent)> Labels = new List<(GUIContent, GUIContent)>(new[] {
+            (new GUIContent("Continuous"), new GUIContent("Continuous replication is intended for frequently-updated variables of small size, and will be tweened.")),
+            (new GUIContent("Manual"), new GUIContent("Manual replication is intended for infrequently-updated variables of small or large size, and will not be tweened.")),
+        });
+        
+        static Rect GetAreaRect(Rect rect)
+        {
+            const float borderWidth = 1f;
+
+            Rect areaRect = new Rect(0, 0, rect.width, rect.height);
+
+            areaRect.x += borderWidth;
+            areaRect.y += borderWidth;
+            areaRect.width -= borderWidth * 2f;
+            areaRect.height -= borderWidth * 2f;
+            return areaRect;
+        }
+
+        private void OnGUI()
+        {
+            Rect areaRect = GetAreaRect(position);
+
+            GUILayout.BeginArea(areaRect, EditorStyles.textArea);
+
+            for (int i = 0; i < Labels.Count; ++i)
+            {
+                DrawSelectionOption(Labels[i].Item1, Labels[i].Item2, i);
+            }
+
+            GUILayout.EndArea();
+        }
+
+        void DrawSelectionOption(GUIContent title, GUIContent descriptor, int index)
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            GUIStyle checkboxStyle = new GUIStyle();
+            checkboxStyle.padding.top = 5;
+            checkboxStyle.padding.right = 0;
+            checkboxStyle.margin.right = 0;
+
+            if (udonBehaviour.Reliable == (index == 1))
+                EditorGUILayout.LabelField("✔", checkboxStyle, GUILayout.Width(10f));
+            else
+                EditorGUILayout.LabelField("", checkboxStyle, GUILayout.Width(10f));
+            
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField(descriptor, descriptionStyle);
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.EndHorizontal();
+
+            // Selection handling
+            Rect selectionRect = GUILayoutUtility.GetLastRect();
+
+            if (index == selectedIdx)
+                DrawSelectionOutline(selectionRect);
+
+            if (Event.current.type == EventType.MouseMove || Event.current.type == EventType.MouseDrag)
+            {
+                if (selectedIdx != index && selectionRect.Contains(Event.current.mousePosition))
+                {
+                    selectedIdx = index;
+                    Event.current.Use();
+                }
+            }
+
+            if (Event.current.type == EventType.MouseUp && selectionRect.Contains(Event.current.mousePosition))
+            {
+                Event.current.Use();
+                SelectIndex(index);
+            }
+        }
+
+        void SelectIndex(int idx)
+        {
+            selectedIdx = idx;
+
+            if (udonBehaviour.Reliable != (selectedIdx == 1))
+            {
+                Undo.RecordObject(udonBehaviour, "Change sync mode");
+                udonBehaviour.Reliable = selectedIdx == 1;
+            }
+
+            Close();
+            GUIUtility.ExitGUI();
+        }
+
+        static GUIStyle outlineStyle;
+
+        void DrawSelectionOutline(Rect rect)
+        {
+            if (outlineStyle == null)
+            {
+                Texture2D clearColorDarkTex = new Texture2D(1, 1);
+                clearColorDarkTex.SetPixel(0, 0, new Color32(64, 128, 223, 255));
+                clearColorDarkTex.Apply();
+
+                outlineStyle = new GUIStyle();
+                outlineStyle.normal.background = clearColorDarkTex;
+            }
+
+            const float outlineWidth = 2f;
+
+            GUI.Box(new Rect(rect.x, rect.y, rect.width, outlineWidth), GUIContent.none, outlineStyle);
+            GUI.Box(new Rect(rect.x - outlineWidth, rect.y, outlineWidth, rect.height + outlineWidth + 1f), GUIContent.none, outlineStyle);
+            GUI.Box(new Rect(rect.x + rect.width, rect.y, outlineWidth, rect.height + outlineWidth + 1f), GUIContent.none, outlineStyle);
+            GUI.Box(new Rect(rect.x - outlineWidth, rect.y + rect.height + outlineWidth + 1f, rect.width + outlineWidth * 2f, outlineWidth), GUIContent.none, outlineStyle);
+        }
+
+        internal static Rect GUIToScreenRect(Rect rect)
+        {
+            Vector2 point = GUIUtility.GUIToScreenPoint(new Vector2(rect.x, rect.y));
+            rect.x = point.x;
+            rect.y = point.y;
+            return rect;
+        }
+
+        public static void Show(Rect controlRect, UdonBehaviour[] behaviours)
+        {
+            if (selectionStyle == null || descriptionStyle == null)
+            {
+                selectionStyle = new GUIStyle(EditorStyles.helpBox);
+                selectionStyle.font = EditorStyles.label.font;
+                selectionStyle.fontSize = EditorStyles.label.fontSize;
+
+                descriptionStyle = new GUIStyle(EditorStyles.label);
+                descriptionStyle.wordWrap = true;
+            }
+
+            UnityEngine.Object[] windows = Resources.FindObjectsOfTypeAll(typeof(SyncModeMenu));
+
+            foreach (UnityEngine.Object window in windows)
+            {
+                try
+                {
+                    if (window is EditorWindow editorWindow)
+                        editorWindow.Close();
+                }
+                catch
+                {
+                    DestroyImmediate(window);
+                }
+            }
+
+            Event.current.Use();
+
+            controlRect = GUIToScreenRect(controlRect);
+
+            Vector2 dropdownSize = CalculateDropdownSize(controlRect);
+
+            menu = CreateInstance<SyncModeMenu>();
+            menu.udonBehaviour = behaviours[0];
+            menu.wantsMouseMove = true;
+            //menu.ShowAsDropDown(controlRect, dropdownSize);
+
+            menu.ShowDropDown(controlRect, dropdownSize);
+        }
+
+        static Vector2 CalculateDropdownSize(Rect controlRect)
+        {
+            Rect areaRect = GetAreaRect(controlRect);
+            areaRect.width -= 30f; // Checkbox width
+
+            float totalHeight = 0f;
+
+            for (int i = 0; i < Labels.Count; ++i)
+            {
+                totalHeight += EditorStyles.boldLabel.CalcHeight(Labels[i].Item1, areaRect.width);
+                totalHeight += 6f; // Space()
+                totalHeight += descriptionStyle.CalcHeight(Labels[i].Item2, areaRect.width);
+                totalHeight += selectionStyle.margin.vertical;
+                totalHeight += selectionStyle.padding.vertical;
+            }
+            
+            totalHeight += EditorStyles.textArea.margin.vertical;
+
+            return new Vector2(controlRect.width, totalHeight);
+        }
+
+        static Array popupLocationArray;
+
+        void ShowDropDown(Rect controlRect, Vector2 size)
+        {
+            if (popupLocationArray == null)
+            {
+                System.Type popupLocationType = AppDomain.CurrentDomain.GetAssemblies().First(e => e.GetName().Name == "UnityEditor").GetType("UnityEditor.PopupLocation");
+
+                popupLocationArray = (Array)Activator.CreateInstance(popupLocationType.MakeArrayType(), 2);
+                popupLocationArray.SetValue(0, 0); // PopupLocation.Below
+                popupLocationArray.SetValue(4, 1); // PopupLocation.Overlay
+            }
+
+            MethodInfo showAsDropDownMethod = typeof(EditorWindow).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).First(e => e.GetParameters().Length == 3);
+
+            showAsDropDownMethod.Invoke(this, new object[] { controlRect, size, popupLocationArray });
+        }
+    }
+#endif
+
     public static class UdonSharpGUI
     {
         private static GUIStyle errorTextStyle;
@@ -1036,9 +1249,28 @@ namespace UdonSharpEditor
 
         static readonly GUIContent ownershipTransferOnCollisionContent = new GUIContent("Allow Ownership Transfer on Collision",
                                                                                         "Transfer ownership on collision, requires a Collision component on the same game object");
-        
+
+#if UDON_BETA_SDK
+        static MethodInfo dropdownButtonMethod;
+#endif
+
         internal static void DrawSyncSettings(UdonBehaviour behaviour)
         {
+#if UDON_BETA_SDK
+            Rect syncMethodRect = EditorGUILayout.GetControlRect();
+            int id = GUIUtility.GetControlID("DropdownButton".GetHashCode(), FocusType.Keyboard, syncMethodRect);
+            Rect dropdownRect = EditorGUI.PrefixLabel(syncMethodRect, id, new GUIContent("Synchronization Method"));
+
+            if (dropdownButtonMethod == null)
+                dropdownButtonMethod = typeof(EditorGUI).GetMethod("DropdownButton", BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(int), typeof(Rect), typeof(GUIContent), typeof(GUIStyle) }, null);
+
+            if ((bool)dropdownButtonMethod.Invoke(null, new object[] { id, dropdownRect, new GUIContent(behaviour.Reliable ? "Manual" : "Continuous"), EditorStyles.miniPullDown }))
+            {
+                SyncModeMenu.Show(syncMethodRect, new UdonBehaviour[] { behaviour });
+
+                GUIUtility.ExitGUI();
+            }
+#else
             EditorGUI.BeginChangeCheck();
 
             EditorGUI.BeginDisabledGroup(Application.isPlaying);
@@ -1059,6 +1291,7 @@ namespace UdonSharpEditor
                 if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
                     PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
             }
+#endif
         }
 
         [PublicAPI]
