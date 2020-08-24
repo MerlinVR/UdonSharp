@@ -554,7 +554,7 @@ namespace UdonSharpEditor
             {
                 UdonBehaviour targetBehaviour = objectFieldValue as UdonBehaviour;
                 UdonSharpProgramAsset targetProgramAsset = targetBehaviour?.programSource as UdonSharpProgramAsset;
-                if (targetProgramAsset && targetProgramAsset.sourceCsScript)
+                if (targetProgramAsset?.sourceCsScript?.GetClass() != null)
                     variableType = targetProgramAsset.sourceCsScript.GetClass();
 
                 labelText = $"{objectFieldValue.name} ({variableType.Name})";
