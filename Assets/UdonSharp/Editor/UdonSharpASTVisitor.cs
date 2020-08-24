@@ -29,7 +29,9 @@ namespace UdonSharp.Compiler
         public JumpLabel returnLabel = null;
         public SymbolDefinition returnJumpTarget = null;
         public SymbolDefinition returnSymbol = null;
-        public bool requresVRCReturn = false;
+#if UDON_BETA_SDK
+        public bool requiresVRCReturn = false;
+#endif
         public Stack<JumpLabel> continueLabelStack = new Stack<JumpLabel>();
         public Stack<JumpLabel> breakLabelStack = new Stack<JumpLabel>();
 
@@ -761,12 +763,20 @@ namespace UdonSharp.Compiler
             if (syncMode == UdonSyncMode.NotSynced)
                 return;
 
+#if UDON_BETA_SDK
             if (!VRC.Udon.UdonNetworkTypes.CanSync(typeToSync))
                 throw new System.NotSupportedException($"Udon does not currently support syncing of the type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
             else if (syncMode == UdonSyncMode.Linear && !VRC.Udon.UdonNetworkTypes.CanSyncLinear(typeToSync))
                 throw new System.NotSupportedException($"Udon does not support linear interpolation of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
             else if (syncMode == UdonSyncMode.Smooth && !VRC.Udon.UdonNetworkTypes.CanSyncSmooth(typeToSync))
                 throw new System.NotSupportedException($"Udon does not support smooth interpolation of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+#else
+            if (!UdonSharpUtils.IsUdonSyncedType(typeToSync))
+                throw new System.NotSupportedException($"Udon does not currently support syncing of the type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+            
+            if (syncMode != UdonSyncMode.None && (typeToSync == typeof(string) || typeToSync == typeof(char)))
+                throw new System.NotSupportedException($"Udon does not support tweening the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+#endif
         }
 
         public override void VisitFieldDeclaration(FieldDeclarationSyntax node)
@@ -1317,7 +1327,9 @@ namespace UdonSharp.Compiler
             JumpLabel returnLabel = visitorContext.labelTable.GetNewJumpLabel("return");
             visitorContext.returnLabel = returnLabel;
             visitorContext.returnSymbol = definition.returnSymbol;
-            visitorContext.requresVRCReturn = functionName == "_onOwnershipRequest" ? true : false;
+#if UDON_BETA_SDK
+            visitorContext.requiresVRCReturn = functionName == "_onOwnershipRequest" ? true : false;
+#endif
 
             visitorContext.uasmBuilder.AddJumpLabel(definition.methodUdonEntryPoint);
             
@@ -1388,7 +1400,8 @@ namespace UdonSharp.Compiler
                             returnSetterScope.ExecuteSet(returnValue);
                         }
 
-                        if (visitorContext.requresVRCReturn)
+#if UDON_BETA_SDK
+                        if (visitorContext.requiresVRCReturn)
                         {
                             using (ExpressionCaptureScope returnValueSetMethod = new ExpressionCaptureScope(visitorContext, null))
                             {
@@ -1396,6 +1409,7 @@ namespace UdonSharp.Compiler
                                 returnValueSetMethod.Invoke(new SymbolDefinition[] { returnValue });
                             }
                         }
+#endif
                     }
                 }
             }
@@ -1912,8 +1926,9 @@ namespace UdonSharp.Compiler
                         returnOutSetter.ExecuteSet(returnSymbol);
                     }
 
+#if UDON_BETA_SDK
                     // Special methods like OnOwnershipRequest
-                    if (visitorContext.requresVRCReturn)
+                    if (visitorContext.requiresVRCReturn)
                     {
                         using (ExpressionCaptureScope returnValueSetMethod = new ExpressionCaptureScope(visitorContext, null))
                         {
@@ -1921,6 +1936,7 @@ namespace UdonSharp.Compiler
                             returnValueSetMethod.Invoke(new SymbolDefinition[] { returnSymbol });
                         }
                     }
+#endif
                 }
             }
 
