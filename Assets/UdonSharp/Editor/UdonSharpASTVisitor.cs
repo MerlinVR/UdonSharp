@@ -2309,7 +2309,6 @@ namespace UdonSharp.Compiler
 
                     if (switchLabel is DefaultSwitchLabelSyntax)
                     {
-                        UpdateSyntaxNode(switchLabel);
                         defaultJump = sectionJump;
                         continue;
                     }
