@@ -186,7 +186,17 @@ namespace UdonSharp
         private static string HashSourceFile(MonoScript script)
         {
             string scriptPath = AssetDatabase.GetAssetPath(script);
-            string scriptText = UdonSharpUtils.ReadFileTextSync(scriptPath);
+            string scriptText = "";
+
+            try
+            {
+                scriptText = UdonSharpUtils.ReadFileTextSync(scriptPath);
+            }
+            catch (System.Exception e)
+            {
+                scriptText = Random.value.ToString();
+                Debug.Log(e);
+            }
 
             return UdonSharpUtils.HashString(scriptText);
         }
