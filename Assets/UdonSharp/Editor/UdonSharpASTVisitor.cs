@@ -39,6 +39,7 @@ namespace UdonSharp.Compiler
         // Debugging info
         public SyntaxNode currentNode = null;
         public ClassDebugInfo debugInfo = null;
+        public bool pauseDebugInfoWrite = false;
 
         public ASTVisitorContext(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTableIn, ClassDebugInfo debugInfoIn = null)
         {
@@ -2295,6 +2296,8 @@ namespace UdonSharp.Compiler
 
             JumpLabel nextLabelJump = visitorContext.labelTable.GetNewJumpLabel("nextSwitchLabelJump");
 
+            visitorContext.pauseDebugInfoWrite = true;
+
             // Iterate all the sections and build the condition jumps first
             for (int i = 0; i < node.Sections.Count; ++i)
             {
@@ -2366,7 +2369,9 @@ namespace UdonSharp.Compiler
             if (defaultJump != null)
                 visitorContext.uasmBuilder.AddJump(defaultJump);
             else
-                visitorContext.uasmBuilder.AddJump(switchExitLabel); 
+                visitorContext.uasmBuilder.AddJump(switchExitLabel);
+
+            visitorContext.pauseDebugInfoWrite = false;
 
             // Now fill out the code sections for each condition and resolve the jump labels for each section
             for (int i = 0; i < node.Sections.Count; ++i)

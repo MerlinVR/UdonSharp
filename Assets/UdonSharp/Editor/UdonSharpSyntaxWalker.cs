@@ -40,7 +40,7 @@ namespace UdonSharp.Compiler
         {
             visitorContext.currentNode = node;
 
-            if (visitorContext.debugInfo != null)
+            if (visitorContext.debugInfo != null && !visitorContext.pauseDebugInfoWrite)
                 visitorContext.debugInfo.UpdateSyntaxNode(node);
         }
 
