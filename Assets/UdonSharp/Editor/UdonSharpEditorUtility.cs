@@ -547,10 +547,17 @@ namespace UdonSharpEditor
 
                 UdonSharpEditorUtility.SetBackingUdonBehaviour(targetObject, udonBehaviour);
 
-                if (convertChildren)
-                    UdonSharpEditorUtility.CopyProxyToBacker(targetObject, shouldUndo ? ProxySerializationPolicy.AllWithUndo : ProxySerializationPolicy.Default);
-                else
-                    UdonSharpEditorUtility.CopyProxyToBacker(targetObject, ProxySerializationPolicy.RootOnly);
+                try
+                {
+                    if (convertChildren)
+                        UdonSharpEditorUtility.CopyProxyToBacker(targetObject, shouldUndo ? ProxySerializationPolicy.AllWithUndo : ProxySerializationPolicy.Default);
+                    else
+                        UdonSharpEditorUtility.CopyProxyToBacker(targetObject, ProxySerializationPolicy.RootOnly);
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError(e);
+                }
 
 
                 targetObject.hideFlags = HideFlags.DontSaveInBuild |
