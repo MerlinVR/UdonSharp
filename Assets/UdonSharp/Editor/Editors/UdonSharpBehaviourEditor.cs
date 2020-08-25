@@ -298,11 +298,13 @@ namespace UdonSharpEditor
 
             MonoScript sourceScript = ((UdonSharpProgramAsset)behaviour.programSource).sourceCsScript;
 
-            System.Type customEditorType;
+            System.Type customEditorType = null;
             if (sourceScript)
-                customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(sourceScript.GetClass());
-            else
-                customEditorType = null;
+            {
+                System.Type inspectedType = sourceScript.GetClass();
+                if (inspectedType != null)
+                    customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(inspectedType);
+            }
 
             if (customEditorType != null)
             {
