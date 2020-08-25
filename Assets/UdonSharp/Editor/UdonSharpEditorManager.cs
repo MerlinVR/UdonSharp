@@ -38,6 +38,9 @@ namespace UdonSharpEditor
 
         internal static void RunPostBuildSceneFixup()
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+
             List<UdonBehaviour> allBehaviours = GetAllUdonBehaviours();
             UpdateSerializedProgramAssets(allBehaviours);
             UpdatePublicVariables(allBehaviours);
@@ -73,6 +76,13 @@ namespace UdonSharpEditor
                 {
                     UdonSharpProgramAsset.CompileAllCsPrograms(true);
                 }
+                
+                List<UdonBehaviour> allBehaviours = GetAllUdonBehaviours();
+                UpdateSerializedProgramAssets(allBehaviours);
+                UpdatePublicVariables(allBehaviours);
+#if UDON_BETA_SDK
+                UpdateSyncModes(allBehaviours);
+#endif
             }
         }
 
