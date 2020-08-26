@@ -29,6 +29,12 @@ namespace UdonSharp.Serialization
         public override void Read(ref object targetObject, IValueStorage sourceObject)
         {
             VerifySerializationSanity();
+            if (sourceObject == null)
+            {
+                Debug.LogError($"Field for {typeof(object)} does not exist");
+                return;
+            }
+
             ValueStorage<object> storage = sourceObject as ValueStorage<object>;
             if (storage == null)
             {
@@ -69,6 +75,12 @@ namespace UdonSharp.Serialization
         public override void Write(IValueStorage targetObject, in object sourceObject)
         {
             VerifySerializationSanity();
+            if (targetObject == null)
+            {
+                Debug.LogError($"Field for {typeof(object)} does not exist");
+                return;
+            }
+
             ValueStorage<object> storage = targetObject as ValueStorage<object>;
             if (storage == null)
             {
