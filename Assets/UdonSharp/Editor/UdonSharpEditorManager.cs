@@ -28,12 +28,7 @@ namespace UdonSharpEditor
 
         private static void EditorSceneManager_sceneOpened(Scene scene, OpenSceneMode mode)
         {
-            List<UdonBehaviour> allBehaviours = GetAllUdonBehaviours();
-            UpdatePublicVariables(allBehaviours);
-            UpdateSerializedProgramAssets(allBehaviours);
-#if UDON_BETA_SDK
-            UpdateSyncModes(allBehaviours);
-#endif
+            RunAllUpdates();
         }
 
         internal static void RunPostBuildSceneFixup()
@@ -41,12 +36,8 @@ namespace UdonSharpEditor
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 return;
 
-            List<UdonBehaviour> allBehaviours = GetAllUdonBehaviours();
-            UpdateSerializedProgramAssets(allBehaviours);
-            UpdatePublicVariables(allBehaviours);
-#if UDON_BETA_SDK
-            UpdateSyncModes(allBehaviours);
-#endif
+            RunAllUpdates();
+
             UdonEditorManager.Instance.RefreshQueuedProgramSources();
         }
 
@@ -76,14 +67,19 @@ namespace UdonSharpEditor
                 {
                     UdonSharpProgramAsset.CompileAllCsPrograms(true);
                 }
-                
-                List<UdonBehaviour> allBehaviours = GetAllUdonBehaviours();
-                UpdateSerializedProgramAssets(allBehaviours);
-                UpdatePublicVariables(allBehaviours);
-#if UDON_BETA_SDK
-                UpdateSyncModes(allBehaviours);
-#endif
+
+                RunAllUpdates();
             }
+        }
+
+        static void RunAllUpdates()
+        {
+            List<UdonBehaviour> allBehaviours = GetAllUdonBehaviours();
+            UpdateSerializedProgramAssets(allBehaviours);
+            UpdatePublicVariables(allBehaviours);
+#if UDON_BETA_SDK
+            UpdateSyncModes(allBehaviours);
+#endif
         }
 
         static bool _requiresCompile = false;
@@ -230,6 +226,12 @@ namespace UdonSharpEditor
                      expectedType != typeof(UdonBehaviour))
             {
                 // Don't allow graph assets and such to exist in references to specific U# types
+                return false;
+            }
+
+            if (expectedType == typeof(UdonSharpBehaviour) && !(behaviourProgramAsset is UdonSharpProgramAsset))
+            {
+                // Don't allow graph asset references in non specific U# types either
                 return false;
             }
 
