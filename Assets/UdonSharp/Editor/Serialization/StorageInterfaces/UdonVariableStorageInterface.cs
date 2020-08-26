@@ -14,28 +14,28 @@ namespace UdonSharp.Serialization
         class VariableValueStorage<T> : ValueStorage<T>
         {
             public string elementKey;
-            public IUdonVariableTable table;
+            public UdonBehaviour behaviour;
 
-            public VariableValueStorage(string elementKey, IUdonVariableTable table)
+            public VariableValueStorage(string elementKey, UdonBehaviour behaviour)
             {
                 this.elementKey = elementKey;
-                this.table = table;
+                this.behaviour = behaviour;
             }
 
             public override T Value
             {
                 get
                 {
-                    return GetVariable<T>(table, elementKey); 
+                    return GetVariable<T>(behaviour, elementKey); 
                 }
                 set
                 {
-                    SetVariable<T>(table, elementKey, value);
+                    SetVariable<T>(behaviour, elementKey, value);
                 }
             }
         }
 
-        private static void SetVariable<T>(IUdonVariableTable table, string variableKey, T value)
+        private static void SetVariable<T>(UdonBehaviour behaviour, string variableKey, T value)
         {
             System.Type type = typeof(T);
 
@@ -43,20 +43,34 @@ namespace UdonSharp.Serialization
             if ((value is UnityEngine.Object unityEngineObject && unityEngineObject == null) || value == null)
                 isNull = true;
 
-            bool isRemoveType = (type == typeof(GameObject) ||
-                type == typeof(Transform) ||
-                type == typeof(UdonBehaviour));
-
-            if (isNull && isRemoveType)
+            if (isNull)
             {
-                table.RemoveVariable(variableKey);
+                bool isRemoveType = (type == typeof(GameObject) ||
+                                     type == typeof(Transform) ||
+                                     type == typeof(UdonBehaviour));
+
+                if (isRemoveType)
+                {
+                    behaviour.publicVariables.RemoveVariable(variableKey);
+                }
+                else
+                {
+                    if (!behaviour.publicVariables.TrySetVariableValue<T>(variableKey, value))
+                    {
+                        UdonVariable<T> varVal = new UdonVariable<T>(variableKey, value);
+                        if (!behaviour.publicVariables.TryAddVariable(varVal))
+                        {
+                            Debug.LogError($"Could not write variable '{variableKey}' to public variables on UdonBehaviour");
+                        }
+                    }
+                }
             }
             else
             {
-                if (!table.TrySetVariableValue<T>(variableKey, value))
+                if (!behaviour.publicVariables.TrySetVariableValue<T>(variableKey, value))
                 {
                     UdonVariable<T> varVal = new UdonVariable<T>(variableKey, value);
-                    if (!table.TryAddVariable(varVal))
+                    if (!behaviour.publicVariables.TryAddVariable(varVal))
                     {
                         Debug.LogError($"Could not write variable '{variableKey}' to public variables on UdonBehaviour");
                     }
@@ -64,11 +78,26 @@ namespace UdonSharp.Serialization
             }
         }
 
-        private static T GetVariable<T>(IUdonVariableTable table, string variableKey)
+        private static T GetVariable<T>(UdonBehaviour behaviour, string variableKey)
         {
             T output;
-            if (table.TryGetVariableValue<T>(variableKey, out output))
+            if (behaviour.publicVariables.TryGetVariableValue<T>(variableKey, out output))
                 return output;
+
+            // Try to get the default value if there's no custom value specified
+            if (behaviour.programSource != null && behaviour.programSource is UdonSharpProgramAsset udonSharpProgramAsset)
+            {
+                udonSharpProgramAsset.UpdateProgram();
+
+                IUdonProgram program = udonSharpProgramAsset.GetRealProgram();
+
+                uint varAddress;
+                if (program.SymbolTable.TryGetAddressFromSymbol(variableKey, out varAddress))
+                {
+                    if (program.Heap.TryGetHeapVariable<T>(varAddress, out output))
+                        return output;
+                }
+            }
 
             return default;
         }
@@ -109,7 +138,7 @@ namespace UdonSharp.Serialization
             if (elementType == null)
                 return null;
 
-            return (IValueStorage)System.Activator.CreateInstance(typeof(VariableValueStorage<>).MakeGenericType(elementType), elementKey, udonBehaviour.publicVariables);
+            return (IValueStorage)System.Activator.CreateInstance(typeof(VariableValueStorage<>).MakeGenericType(elementType), elementKey, udonBehaviour);
         }
 
         public object GetElementValueWeak(string elementKey)
