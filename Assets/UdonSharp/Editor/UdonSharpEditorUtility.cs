@@ -394,6 +394,9 @@ namespace UdonSharpEditor
 
             System.Type objectType = rootObject.GetType();
 
+            if (objectType.IsValueType)
+                return;
+
             if (VRC.Udon.Serialization.OdinSerializer.FormatterUtilities.IsPrimitiveType(objectType))
                 return;
 
@@ -421,15 +424,6 @@ namespace UdonSharpEditor
                     object fieldValue = fieldInfo.GetValue(rootObject);
 
                     CollectSharpUdonBehaviourReferencesInternal(fieldValue, gatheredSet, visitedSet);
-                }
-
-                PropertyInfo[] objectProperties = objectType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-
-                foreach (PropertyInfo propertyInfo in objectProperties)
-                {
-                    object propertyValue = propertyInfo.GetValue(rootObject);
-
-                    CollectSharpUdonBehaviourReferencesInternal(propertyValue, gatheredSet, visitedSet);
                 }
             }
         }
