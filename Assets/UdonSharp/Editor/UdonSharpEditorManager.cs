@@ -190,7 +190,7 @@ namespace UdonSharpEditor
         }
 #endif
 
-            static bool UdonSharpBehaviourTypeMatches(object symbolValue, System.Type expectedType)
+        static bool UdonSharpBehaviourTypeMatches(object symbolValue, System.Type expectedType)
         {
             if (!(expectedType == typeof(UdonBehaviour) ||
                   expectedType == typeof(UdonSharpBehaviour) ||

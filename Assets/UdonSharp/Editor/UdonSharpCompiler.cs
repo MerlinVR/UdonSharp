@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.Text;
 using Microsoft.CSharp;
 using UdonSharp.Serialization;
 using UdonSharpEditor;
@@ -69,10 +70,14 @@ namespace UdonSharp.Compiler
                 EditorUtility.DisplayProgressBar("UdonSharp Compile", "Building class definitions...", 0f);
 
                 string defineString = UdonSharpUtils.GetProjectDefineString(isEditorBuild);
-                List<ClassDefinition> classDefinitions = BuildClassDefinitions(defineString);
+
+                // Bind stage
+                List<ClassDefinition> classDefinitions = BindPrograms(defineString);
+
                 if (classDefinitions == null)
                     totalErrorCount++;
 
+                // Compile stage
                 if (totalErrorCount == 0)
                 {
 #if UDONSHARP_DEBUG // Single threaded compile
@@ -166,12 +171,13 @@ namespace UdonSharp.Compiler
                         UdonSharpEditorCache.Instance.LastBuildType = isEditorBuild ? UdonSharpEditorCache.DebugInfoType.Editor : UdonSharpEditorCache.DebugInfoType.Client;
                         UdonSharpEditorManager.RunPostBuildSceneFixup();
                     }
-                    else
+                }
+
+                if (totalErrorCount > 0)
+                {
+                    foreach (CompilationModule module in modules)
                     {
-                        foreach (CompilationModule module in modules)
-                        {
-                            UdonSharpEditorCache.Instance.ClearSourceHash(module.programAsset);
-                        }
+                        UdonSharpEditorCache.Instance.ClearSourceHash(module.programAsset);
                     }
                 }
             }
@@ -194,6 +200,74 @@ namespace UdonSharp.Compiler
                     Debug.Log($"[<color=#0c824c>UdonSharp</color>] Compile of script{(modules.Length > 1 ? "s" : "")} {string.Join(", ", modules.Select(e => Path.GetFileName(AssetDatabase.GetAssetPath(e.programAsset.sourceCsScript))))} finished in {compileTimer.Elapsed.ToString("mm\\:ss\\.fff")}");
                 }
             }
+        }
+
+        List<ClassDefinition> BindPrograms(string defineStr)
+        {
+            List<BindTaskResult> bindTaskResults = new List<BindTaskResult>();
+
+            UdonSharpProgramAsset[] allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
+
+            List<ClassDefinitionBinder> classBinders = new List<ClassDefinitionBinder>();
+
+            foreach (UdonSharpProgramAsset programAsset in allPrograms)
+            {
+                if (programAsset == null || programAsset.sourceCsScript == null)
+                    continue;
+
+                classBinders.Add(new ClassDefinitionBinder(programAsset));
+            }
+
+#if UDONSHARP_DEBUG // Single threaded bind
+            List<BindTaskResult> bindTasks = new List<BindTaskResult>();
+
+            foreach (ClassDefinitionBinder binder in classBinders)
+            {
+                bindTasks.Add(binder.BuildClassDefinition(defineStr));
+            }
+#else
+            List<Task<BindTaskResult>> bindTasks = new List<Task<BindTaskResult>>();
+
+            foreach (ClassDefinitionBinder binder in classBinders)
+            {
+                bindTasks.Add(Task.Factory.StartNew(() => binder.BuildClassDefinition(defineStr)));
+            }
+#endif
+
+            int errorCount = 0;
+            List<ClassDefinition> classDefinitions = new List<ClassDefinition>();
+
+            while (bindTasks.Count > 0)
+            {
+#if UDONSHARP_DEBUG
+                BindTaskResult bindResult = bindTasks.Last();
+                bindTasks.RemoveAt(bindTasks.Count - 1);
+#else
+                Task<BindTaskResult> bindResultTask = Task.WhenAny(bindTasks).Result;
+                bindTasks.Remove(bindResultTask);
+
+                BindTaskResult bindResult = bindResultTask.Result;
+#endif
+
+                if (bindResult.compileErrors.Count == 0)
+                {
+                    classDefinitions.Add(bindResult.classDefinition);
+                }
+                else
+                {
+                    errorCount++;
+
+                    foreach (CompileError bindError in bindResult.compileErrors)
+                    {
+                        UdonSharpUtils.LogBuildError(bindError.errorStr, AssetDatabase.GetAssetPath(bindResult.classDefinition.classScript), bindError.lineIdx, bindError.charIdx);
+                    }
+                }
+            }
+
+            if (errorCount == 0)
+                return classDefinitions;
+
+            return null;
         }
 
         public int AssignHeapConstants()
@@ -479,19 +553,26 @@ namespace UdonSharp.Compiler
             return initializerErrorCount;
         }
 
-        private List<ClassDefinition> BuildClassDefinitions(string defineString)
+        class BindTaskResult
         {
-            UdonSharpProgramAsset[] udonSharpPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
+            public ClassDefinition classDefinition;
+            public List<CompileError> compileErrors = new List<CompileError>();
+        }
 
-            List<ClassDefinition> classDefinitions = new List<ClassDefinition>();
+        class ClassDefinitionBinder
+        {
+            UdonSharpProgramAsset programAsset;
+            string sourceFilePath;
 
-            foreach (UdonSharpProgramAsset udonSharpProgram in udonSharpPrograms)
+            public ClassDefinitionBinder(UdonSharpProgramAsset programAsset)
             {
-                if (udonSharpProgram.sourceCsScript == null)
-                    continue;
+                this.programAsset = programAsset;
+                sourceFilePath = AssetDatabase.GetAssetPath(programAsset.sourceCsScript);
+            }
 
-                string sourcePath = AssetDatabase.GetAssetPath(udonSharpProgram.sourceCsScript);
-                string programSource = defineString + UdonSharpUtils.ReadFileTextSync(sourcePath);
+            public BindTaskResult BuildClassDefinition(string defineString)
+            {
+                string programSource = defineString + UdonSharpUtils.ReadFileTextSync(sourceFilePath);
 
                 ResolverContext resolver = new ResolverContext();
                 SymbolTable classSymbols = new SymbolTable(resolver, null);
@@ -512,31 +593,74 @@ namespace UdonSharp.Compiler
                 {
                     SyntaxNode node = classVisitor.visitorContext.currentNode;
 
+                    string errorString;
+                    int charIndex;
+                    int lineIndex;
+
                     if (node != null)
                     {
                         FileLinePositionSpan lineSpan = node.GetLocation().GetLineSpan();
                         
-                        UdonSharpUtils.LogBuildError($"{e.GetType()}: {e.Message}", sourcePath.Replace("/", "\\"), lineSpan.StartLinePosition.Line - defineString.Count(c => c == '\n'), lineSpan.StartLinePosition.Character);
+                        charIndex = lineSpan.StartLinePosition.Character;
+                        lineIndex = lineSpan.StartLinePosition.Line - defineString.Count(c => c == '\n');
                     }
                     else
                     {
-                        UdonSharpUtils.LogBuildError($"{e.GetType()}: {e.Message}", sourcePath.Replace("/", "\\"), 0, 0);
+                        charIndex = 0;
+                        lineIndex = 0;
                     }
+
+                    errorString = $"{e.GetType()}: {e.Message}";
+
 #if UDONSHARP_DEBUG
-            Debug.LogException(e);
-            Debug.LogError(e.StackTrace);
+                    Debug.LogException(e);
+                    Debug.LogError(e.StackTrace);
 #endif
-                    
-                    return null;
+
+                    BindTaskResult errorTask = new BindTaskResult();
+                    errorTask.compileErrors.Add(new CompileError() { script = programAsset.sourceCsScript, errorStr = errorString, charIdx = charIndex, lineIdx = lineIndex });
+
+                    classSymbols.CloseSymbolTable();
+
+                    return errorTask;
                 }
 
                 classSymbols.CloseSymbolTable();
 
-                classVisitor.classDefinition.classScript = udonSharpProgram.sourceCsScript;
-                classDefinitions.Add(classVisitor.classDefinition);
-            }
+                BindTaskResult bindTaskResult = new BindTaskResult();
 
-            return classDefinitions;
+                int errorCount = 0;
+
+                foreach (Diagnostic diagnostic in tree.GetDiagnostics())
+                {
+                    if (diagnostic.Severity == DiagnosticSeverity.Error)
+                    {
+                        errorCount++;
+
+                        LinePosition linePosition = diagnostic.Location.GetLineSpan().StartLinePosition;
+
+                        CompileError error = new CompileError();
+                        error.script = programAsset.sourceCsScript;
+                        error.errorStr = $"error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}";
+                        error.lineIdx = linePosition.Line - defineString.Count(c => c == '\n');
+                        error.charIdx = linePosition.Character;
+
+                        bindTaskResult.compileErrors.Add(error);
+                    }
+                }
+
+                if (errorCount > 0)
+                {
+                    bindTaskResult.classDefinition = new ClassDefinition() { classScript = programAsset.sourceCsScript };
+                    return bindTaskResult;
+                }
+
+                classVisitor.classDefinition.classScript = programAsset.sourceCsScript;
+
+                bindTaskResult.classDefinition = classVisitor.classDefinition;
+
+                return bindTaskResult;
+            }
         }
     }
 }
