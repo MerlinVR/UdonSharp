@@ -82,6 +82,30 @@ namespace UdonSharp
 
                 return paths;
             }
+
+            public static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions options)
+            {
+                UdonSharpProgramAsset programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(assetPath);
+
+                if (programAsset)
+                {
+                    Instance.ClearSourceHash(programAsset);
+                }
+                else if(AssetDatabase.IsValidFolder(assetPath))
+                {
+                    string[] assetGuids = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}", new string[] { assetPath });
+
+                    foreach (string guid in assetGuids)
+                    {
+                        programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(guid));
+
+                        if (programAsset)
+                            Instance.ClearSourceHash(programAsset);
+                    }
+                }
+
+                return AssetDeleteResult.DidNotDelete;
+            }
         }
 
         static void AssemblyReloadSave()
