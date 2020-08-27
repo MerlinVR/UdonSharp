@@ -714,43 +714,50 @@ namespace UdonSharp.Compiler
                             }
                             else if (captureType != null)
                             {
-                                object attributeObject = null;
+                                try
+                                {
+                                    object attributeObject = null;
 
-                                if (attribute.ArgumentList == null ||
-                                    attribute.ArgumentList.Arguments == null ||
-                                    attribute.ArgumentList.Arguments.Count == 0)
-                                {
-                                    attributeObject = System.Activator.CreateInstance(captureType);
-                                }
-                                else
-                                {
-                                    // todo: requires constant folding to support decently
-                                    object[] attributeArgs = new object[attribute.ArgumentList.Arguments.Count];
-                                    
-                                    for (int i = 0; i < attributeArgs.Length; ++i)
+                                    if (attribute.ArgumentList == null ||
+                                        attribute.ArgumentList.Arguments == null ||
+                                        attribute.ArgumentList.Arguments.Count == 0)
                                     {
-                                        AttributeArgumentSyntax attributeArg = attribute.ArgumentList.Arguments[i];
+                                        attributeObject = System.Activator.CreateInstance(captureType);
+                                    }
+                                    else
+                                    {
+                                        // todo: requires constant folding to support decently
+                                        object[] attributeArgs = new object[attribute.ArgumentList.Arguments.Count];
 
-                                        using (ExpressionCaptureScope attributeCapture = new ExpressionCaptureScope(visitorContext, null))
+                                        for (int i = 0; i < attributeArgs.Length; ++i)
                                         {
-                                            Visit(attributeArg);
+                                            AttributeArgumentSyntax attributeArg = attribute.ArgumentList.Arguments[i];
 
-                                            SymbolDefinition attrSymbol = attributeCapture.ExecuteGet();
-
-                                            if (!attrSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant))
+                                            using (ExpressionCaptureScope attributeCapture = new ExpressionCaptureScope(visitorContext, null))
                                             {
-                                                throw new System.ArgumentException("Attributes do not support non-constant expressions");
-                                            }
+                                                Visit(attributeArg);
 
-                                            attributeArgs[i] = attrSymbol.symbolDefaultValue;
+                                                SymbolDefinition attrSymbol = attributeCapture.ExecuteGet();
+
+                                                if (!attrSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant))
+                                                {
+                                                    throw new System.ArgumentException("Attributes do not support non-constant expressions");
+                                                }
+
+                                                attributeArgs[i] = attrSymbol.symbolDefaultValue;
+                                            }
                                         }
+
+                                        attributeObject = System.Activator.CreateInstance(captureType, attributeArgs);
                                     }
 
-                                    attributeObject = System.Activator.CreateInstance(captureType, attributeArgs);
+                                    if (attributeObject != null)
+                                        attributes.Add((System.Attribute)attributeObject);
                                 }
-
-                                if (attributeObject != null)
-                                    attributes.Add((System.Attribute)attributeObject);
+                                catch (System.Reflection.TargetInvocationException constructionException)
+                                {
+                                    throw constructionException.InnerException;
+                                }
                             }
                         }
                     }
