@@ -154,7 +154,9 @@ namespace UdonSharp
 
         protected override void RefreshProgramImpl()
         {
-            bool hasAssemblyError = typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this) != null;
+            string assemblyError = (string)typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
+
+            bool hasAssemblyError = !string.IsNullOrEmpty(assemblyError);
 
             if (sourceCsScript != null &&
                 !EditorApplication.isCompiling &&
