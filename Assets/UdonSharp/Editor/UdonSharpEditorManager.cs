@@ -29,7 +29,10 @@ namespace UdonSharpEditor
 
         private static void EditorSceneManager_sceneOpened(Scene scene, OpenSceneMode mode)
         {
-            RunAllUpdates();
+            List<UdonBehaviour> udonBehaviours = GetAllUdonBehaviours();
+
+            RunAllUpdates(udonBehaviours);
+            CreateProxyBehaviours(udonBehaviours);
         }
 
         internal static void RunPostBuildSceneFixup()
@@ -78,9 +81,11 @@ namespace UdonSharpEditor
             }
         }
 
-        static void RunAllUpdates()
+        static void RunAllUpdates(List<UdonBehaviour> allBehaviours = null)
         {
-            List<UdonBehaviour> allBehaviours = GetAllUdonBehaviours();
+            if (allBehaviours == null)
+                allBehaviours = GetAllUdonBehaviours();
+
             UpdateSerializedProgramAssets(allBehaviours);
             UpdatePublicVariables(allBehaviours);
 #if UDON_BETA_SDK
@@ -123,7 +128,7 @@ namespace UdonSharpEditor
 
                 for (int j = 0; j < rootCount; ++j)
                 {
-                    behaviourList.AddRange(rootObjects[j].GetComponentsInChildren<UdonBehaviour>());
+                    behaviourList.AddRange(rootObjects[j].GetComponentsInChildren<UdonBehaviour>(true));
                 }
             }
 
@@ -419,6 +424,18 @@ namespace UdonSharpEditor
             if (updatedBehaviourVariables > 0)
             {
                 EditorSceneManager.MarkAllScenesDirty();
+            }
+        }
+
+        /// <summary>
+        /// Creates proxy behaviours for all behaviours in the scene
+        /// </summary>
+        /// <param name="allBehaviours"></param>
+        static void CreateProxyBehaviours(List<UdonBehaviour> allBehaviours)
+        {
+            foreach (UdonBehaviour udonBehaviour in allBehaviours)
+            {
+                UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour, ProxySerializationPolicy.NoSerialization);
             }
         }
     }
