@@ -135,7 +135,9 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Basic string arg clear", targetVal == "");
         }
 
+#pragma warning disable CS0649
         int programVar;
+#pragma warning restore CS0649 
 
         void TestSetGetProgramVar()
         {

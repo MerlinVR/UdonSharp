@@ -69,9 +69,6 @@ namespace UdonSharp.Tests
 
                 EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
 
-                //Color oldContentColor = GUI.color;
-                //GUI.color = Color.green;
-
                 Rect progressBarRect = new Rect(testFieldRect.x, testFieldRect.y + testFieldRect.height + 2, testFieldRect.width, 23f);
 
                 if (EditorApplication.isPlaying)
@@ -97,8 +94,6 @@ namespace UdonSharp.Tests
                 }
                 else
                     EditorGUI.ProgressBar(progressBarRect, 0f, "0/0");
-
-                //GUI.color = oldContentColor;
 
                 EditorGUI.EndDisabledGroup();
             };
