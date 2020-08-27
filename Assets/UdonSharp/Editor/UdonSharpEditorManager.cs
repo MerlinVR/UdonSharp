@@ -24,6 +24,7 @@ namespace UdonSharpEditor
             EditorSceneManager.sceneOpened += EditorSceneManager_sceneOpened;
             EditorApplication.update += OnEditorUpdate;
             EditorApplication.playModeStateChanged += OnChangePlayMode;
+            AssemblyReloadEvents.afterAssemblyReload += RunPostAssemblyBuildRefresh;
         }
 
         private static void EditorSceneManager_sceneOpened(Scene scene, OpenSceneMode mode)
@@ -39,6 +40,11 @@ namespace UdonSharpEditor
             RunAllUpdates();
 
             UdonEditorManager.Instance.RefreshQueuedProgramSources();
+        }
+
+        static void RunPostAssemblyBuildRefresh()
+        {
+            UdonSharpProgramAsset.CompileAllCsPrograms();
         }
 
         static void OnChangePlayMode(PlayModeStateChange state)

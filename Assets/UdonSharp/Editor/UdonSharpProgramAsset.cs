@@ -338,7 +338,7 @@ namespace UdonSharp
             return true;
         }
 
-        AbstractSerializedUdonProgramAsset GetSerializedProgramAssetWithoutRefresh()
+        internal AbstractSerializedUdonProgramAsset GetSerializedProgramAssetWithoutRefresh()
         {
             AssetDatabase.TryGetGUIDAndLocalFileIdentifier(this, out string guid, out long _);
 

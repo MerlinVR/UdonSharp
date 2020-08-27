@@ -69,15 +69,18 @@ namespace UdonSharp
                 if (programAsset.sourceCsScript == null)
                     continue;
 
-                if (programAsset.SerializedProgramAsset == null)
+                if (programAsset.GetSerializedProgramAssetWithoutRefresh() == null)
                     continue;
 
-                IUdonProgram program = programAsset.SerializedProgramAsset.RetrieveProgram();
+                IUdonProgram program = programAsset.GetSerializedProgramAssetWithoutRefresh().RetrieveProgram();
 
                 if (program == null ||
                     program.Heap == null ||
                     program.SymbolTable == null)
+                {
+                    Debug.LogWarning($"Could not load program for '{programAsset}', exceptions for this script will not be handled until scripts have been reloaded");
                     continue;
+                }
 
                 long programID;
 
@@ -85,7 +88,7 @@ namespace UdonSharp
                     programID = program.Heap.GetHeapVariable<long>(address);
                 else
                 {
-                    Debug.LogWarning($"No symbol found for debug info on program asset {programAsset}, exceptions for this program will not be caught until scripts have been reloaded.");
+                    Debug.LogWarning($"No symbol found for debug info on program asset '{programAsset}', exceptions for this program will not be caught until scripts have been reloaded.");
                     continue;
                 }
 
