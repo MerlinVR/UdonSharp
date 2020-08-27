@@ -296,7 +296,10 @@ namespace UdonSharpEditor
                 return;
             }
 
-            MonoScript sourceScript = ((UdonSharpProgramAsset)behaviour.programSource).sourceCsScript;
+            UdonSharpProgramAsset programAsset = (UdonSharpProgramAsset)behaviour.programSource;
+            programAsset.UpdateProgram();
+
+            MonoScript sourceScript = programAsset.sourceCsScript;
 
             System.Type customEditorType = null;
             if (sourceScript)
