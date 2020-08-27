@@ -259,7 +259,7 @@ namespace UdonSharp.Compiler
 
                     foreach (CompileError bindError in bindResult.compileErrors)
                     {
-                        UdonSharpUtils.LogBuildError(bindError.errorStr, AssetDatabase.GetAssetPath(bindResult.classDefinition.classScript), bindError.lineIdx, bindError.charIdx);
+                        UdonSharpUtils.LogBuildError(bindError.errorStr, AssetDatabase.GetAssetPath(bindResult.sourceScript), bindError.lineIdx, bindError.charIdx);
                     }
                 }
             }
@@ -556,6 +556,7 @@ namespace UdonSharp.Compiler
         class BindTaskResult
         {
             public ClassDefinition classDefinition;
+            public MonoScript sourceScript;
             public List<CompileError> compileErrors = new List<CompileError>();
         }
 
@@ -584,6 +585,9 @@ namespace UdonSharp.Compiler
                 Microsoft.CodeAnalysis.SyntaxTree tree = CSharpSyntaxTree.ParseText(programSource);
 
                 ClassVisitor classVisitor = new ClassVisitor(resolver, classSymbols, classLabels);
+
+                BindTaskResult bindTaskResult = new BindTaskResult();
+                bindTaskResult.sourceScript = programAsset.sourceCsScript;
 
                 try
                 {
@@ -616,18 +620,15 @@ namespace UdonSharp.Compiler
                     Debug.LogException(e);
                     Debug.LogError(e.StackTrace);
 #endif
-
-                    BindTaskResult errorTask = new BindTaskResult();
-                    errorTask.compileErrors.Add(new CompileError() { script = programAsset.sourceCsScript, errorStr = errorString, charIdx = charIndex, lineIdx = lineIndex });
+                    
+                    bindTaskResult.compileErrors.Add(new CompileError() { script = programAsset.sourceCsScript, errorStr = errorString, charIdx = charIndex, lineIdx = lineIndex });
 
                     classSymbols.CloseSymbolTable();
 
-                    return errorTask;
+                    return bindTaskResult;
                 }
 
                 classSymbols.CloseSymbolTable();
-
-                BindTaskResult bindTaskResult = new BindTaskResult();
 
                 int errorCount = 0;
 
@@ -651,7 +652,6 @@ namespace UdonSharp.Compiler
 
                 if (errorCount > 0)
                 {
-                    bindTaskResult.classDefinition = new ClassDefinition() { classScript = programAsset.sourceCsScript };
                     return bindTaskResult;
                 }
 
