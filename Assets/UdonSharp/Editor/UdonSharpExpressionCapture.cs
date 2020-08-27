@@ -1780,17 +1780,14 @@ namespace UdonSharp.Compiler
 
             return true;
         }
-
-        // Cacheing removed for multi-threaded compile
-        //private static Dictionary<(System.Type, BindingFlags), MethodInfo[]> typeMethodCache = new Dictionary<(System.Type, BindingFlags), MethodInfo[]>();
-
-        private static MethodInfo[] GetTypeMethods(System.Type type, BindingFlags bindingFlags)
+        
+        private MethodInfo[] GetTypeMethods(System.Type type, BindingFlags bindingFlags)
         {
             MethodInfo[] methods;
-            //if (!typeMethodCache.TryGetValue((type, bindingFlags), out methods))
+            if (!visitorContext.typeMethodCache.TryGetValue((type, bindingFlags), out methods))
             {
                 methods = type.GetMethods(bindingFlags);
-                //typeMethodCache.Add((type, bindingFlags), methods);
+                visitorContext.typeMethodCache.Add((type, bindingFlags), methods);
             }
 
             return methods;

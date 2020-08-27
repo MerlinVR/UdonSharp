@@ -44,6 +44,8 @@ namespace UdonSharp.Compiler
         public ClassDebugInfo debugInfo = null;
         public bool pauseDebugInfoWrite = false;
 
+        internal Dictionary<(System.Type, BindingFlags), MethodInfo[]> typeMethodCache = new Dictionary<(System.Type, BindingFlags), MethodInfo[]>();
+
         public ASTVisitorContext(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTableIn, ClassDebugInfo debugInfoIn = null)
         {
             resolverContext = resolver;
