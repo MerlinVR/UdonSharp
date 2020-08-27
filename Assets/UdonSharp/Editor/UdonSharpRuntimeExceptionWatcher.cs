@@ -79,7 +79,15 @@ namespace UdonSharp
                     program.SymbolTable == null)
                     continue;
 
-                long programID = program.Heap.GetHeapVariable<long>(program.SymbolTable.GetAddressFromSymbol(programAsset.behaviourIDHeapVarName));
+                long programID;
+
+                if (program.SymbolTable.TryGetAddressFromSymbol(programAsset.behaviourIDHeapVarName, out uint address))
+                    programID = program.Heap.GetHeapVariable<long>(address);
+                else
+                {
+                    Debug.LogWarning($"No symbol found for debug info on program asset {programAsset}, exceptions for this program will not be caught until scripts have been reloaded.");
+                    continue;
+                }
 
                 if (scriptLookup.ContainsKey(programID))
                     continue;
