@@ -157,12 +157,12 @@ namespace UdonSharp
             string assemblyError = (string)typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
 
             bool hasAssemblyError = !string.IsNullOrEmpty(assemblyError);
-
+            
             if (sourceCsScript != null &&
                 !EditorApplication.isCompiling &&
                 !EditorApplication.isUpdating &&
                 !hasAssemblyError &&
-                compileErrors.Count == 0)
+                !UdonSharpProgramAsset.AnyUdonSharpScriptHasError())
             {
                 CompileAllCsPrograms(true);
             }
