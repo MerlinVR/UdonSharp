@@ -374,9 +374,7 @@ namespace UdonSharp
                 debugType = UdonSharpEditorCache.DebugInfoType.Client;
             }
             else
-            {
                 return;
-            }
 
             const string exceptionMessageStr = "Exception Message:";
             const string seperatorStr = "----------------------";
@@ -387,7 +385,19 @@ namespace UdonSharp
             int errorMessageEnd = errorStr.IndexOf(seperatorStr, errorMessageStart);
 
             if (errorMessageEnd == -1 || errorMessageEnd < errorMessageStart)
+            {
+                if (debugType == UdonSharpEditorCache.DebugInfoType.Client)
+                {
+                    errorMessageEnd = errorStr.IndexOf("\n\n\r\n");
+
+                    if (errorMessageEnd != -1)
+                        errorStr = errorStr.Substring(0, errorMessageEnd);
+
+                    Debug.LogError($"{(prePrefix != null ? $"[<color=#575ff2>{prePrefix}</color>]" : "")} Runtime error detected, but the client has not been launched with '--enable-udon-debug-logging' so the error cannot be traced. Add the argument to your client startup and try again. \n{errorStr}");
+                }
+
                 return;
+            }
 
             string errorMessage = errorStr.Substring(errorMessageStart, errorMessageEnd - errorMessageStart).TrimStart('\n', '\r');
             int programCounter;

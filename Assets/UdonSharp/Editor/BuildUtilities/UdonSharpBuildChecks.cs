@@ -33,7 +33,7 @@ namespace UdonSharp
 
                 if (EditorApplication.isCompiling)
                 {
-                    Debug.LogError("[UdonSharp] Scripts are in the process of compiling, please retry build after scripts have compiled.");
+                    Debug.LogError("[<color=#FF00FF>UdonSharp</color>] Scripts are in the process of compiling, please retry build after scripts have compiled.");
                     UdonSharpUtils.ShowEditorNotification("Scripts are in the process of compiling, please retry build after scripts have compiled.");
                     return false;
                 }
