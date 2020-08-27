@@ -14,7 +14,6 @@ using VRC.Udon.Editor;
 namespace UdonSharpEditor
 {
     [CustomEditor(typeof(UdonSharpBehaviour), true)]
-    [CanEditMultipleObjects]
     internal class UdonSharpBehaviourEditor : Editor
     {
         [MenuItem("Assets/Create/U# Script", false, 5)]
@@ -253,6 +252,7 @@ namespace UdonSharpEditor
     internal class UdonBehaviourOverrideEditor : Editor
     {
         Editor baseEditor;
+        UdonSharpBehaviour currentProxyBehaviour;
 
         private void OnEnable()
         {
@@ -280,6 +280,21 @@ namespace UdonSharpEditor
         {
             if (baseEditor)
                 DestroyImmediate(baseEditor);
+
+            CleanupProxy();
+        }
+
+        void CleanupProxy()
+        {
+            if (currentProxyBehaviour != null)
+            {
+                UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(currentProxyBehaviour);
+
+                if (backingBehaviour == null)
+                {
+                    UnityEngine.Object.DestroyImmediate(currentProxyBehaviour);
+                }
+            }
         }
 
         public override void OnInspectorGUI()
@@ -322,6 +337,8 @@ namespace UdonSharpEditor
 
                 Editor.CreateCachedEditorWithContext(inspectorTarget, this, customEditorType, ref baseEditor);
 
+                currentProxyBehaviour = inspectorTarget;
+
                 baseEditor.serializedObject.Update();
 
                 baseEditor.OnInspectorGUI();
@@ -330,6 +347,9 @@ namespace UdonSharpEditor
             }
             else
             {
+                // Create a proxy behaviour so that other things can find this object
+                currentProxyBehaviour = UdonSharpEditorUtility.GetProxyBehaviour(behaviour, ProxySerializationPolicy.NoSerialization);
+
                 DrawDefaultUdonSharpInspector();
             }
         }
