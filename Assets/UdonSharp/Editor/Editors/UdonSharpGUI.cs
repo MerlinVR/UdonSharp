@@ -416,7 +416,7 @@ namespace UdonSharpEditor
                 {
                     string fileContents = UdonSharpSettings.GetProgramTemplateString(Path.GetFileNameWithoutExtension(chosenFilePath));
 
-                    File.WriteAllText(chosenFilePath, fileContents);
+                    File.WriteAllText(chosenFilePath, fileContents, System.Text.Encoding.UTF8);
 
                     AssetDatabase.ImportAsset(chosenFilePath, ImportAssetOptions.ForceSynchronousImport);
                     AssetDatabase.Refresh();

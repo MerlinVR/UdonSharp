@@ -50,7 +50,7 @@ namespace UdonSharpEditor
 
                 string fileContents = UdonSharpSettings.GetProgramTemplateString(chosenFileName);
 
-                File.WriteAllText(chosenFilePath, fileContents);
+                File.WriteAllText(chosenFilePath, fileContents, System.Text.Encoding.UTF8);
 
                 AssetDatabase.ImportAsset(chosenFilePath, ImportAssetOptions.ForceSynchronousImport);
                 MonoScript newScript = AssetDatabase.LoadAssetAtPath<MonoScript>(chosenFilePath);
@@ -349,6 +349,7 @@ namespace UdonSharpEditor
             {
                 // Create a proxy behaviour so that other things can find this object
                 currentProxyBehaviour = UdonSharpEditorUtility.GetProxyBehaviour(behaviour, ProxySerializationPolicy.NoSerialization);
+                currentProxyBehaviour.enabled = false;
 
                 DrawDefaultUdonSharpInspector();
             }
