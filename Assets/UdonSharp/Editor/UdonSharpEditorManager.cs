@@ -435,7 +435,8 @@ namespace UdonSharpEditor
         {
             foreach (UdonBehaviour udonBehaviour in allBehaviours)
             {
-                UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour, ProxySerializationPolicy.NoSerialization);
+                if (udonBehaviour.programSource != null && udonBehaviour.programSource is UdonSharpProgramAsset)
+                    UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour, ProxySerializationPolicy.NoSerialization);
             }
         }
     }
