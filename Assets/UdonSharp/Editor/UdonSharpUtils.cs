@@ -602,9 +602,9 @@ namespace UdonSharp
             }
         }
 
-        internal static string GetProjectDefineString(bool editorBuild)
+        internal static string[] GetProjectDefines(bool editorBuild)
         {
-            StringBuilder defineBuilder = new StringBuilder();
+            List<string> defines = new List<string>();
 
             foreach (string define in UnityEditor.EditorUserBuildSettings.activeScriptCompilationDefines)
             {
@@ -612,12 +612,12 @@ namespace UdonSharp
                     if (define.StartsWith("UNITY_EDITOR"))
                         continue;
 
-                defineBuilder.AppendFormat("#define {0}\r\n", define); 
+                defines.Add(define);
             }
 
-            defineBuilder.AppendLine("#define COMPILER_UDONSHARP");
+            defines.Add("COMPILER_UDONSHARP");
 
-            return defineBuilder.ToString();
+            return defines.ToArray();
         }
 
         internal static void ShowEditorNotification(string notificationString)

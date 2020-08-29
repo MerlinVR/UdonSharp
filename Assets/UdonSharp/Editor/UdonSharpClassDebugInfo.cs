@@ -102,10 +102,8 @@ namespace UdonSharp.Compiler
             }
         }
 
-        public void FinalizeDebugInfo(string classDefines)
+        public void FinalizeDebugInfo()
         {
-            int defineCount = classDefines.Count(c => c == '\n');
-
             serializedDebugSpans = new DebugLineSpan[debugSpans.Count];
 
             int lastStart = 0;
@@ -137,7 +135,7 @@ namespace UdonSharp.Compiler
                 lastLineCount = lineCount;
                 lastStart = span.startSourceChar;
 
-                serializedDebugSpans[i].line = lineCount - defineCount;
+                serializedDebugSpans[i].line = lineCount;
                 serializedDebugSpans[i].lineChar = lineChar;
             }
         }

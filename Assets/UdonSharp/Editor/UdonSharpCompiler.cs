@@ -67,15 +67,65 @@ namespace UdonSharp.Compiler
 
             try
             {
-                EditorUtility.DisplayProgressBar("UdonSharp Compile", "Building class definitions...", 0f);
+                EditorUtility.DisplayProgressBar("UdonSharp Compile", "Parsing Syntax Trees...", 0f);
+                
+                UdonSharpProgramAsset[] allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
+                List<(UdonSharpProgramAsset, string)> programAssetsAndPaths = new List<(UdonSharpProgramAsset, string)>();
 
-                string defineString = UdonSharpUtils.GetProjectDefineString(isEditorBuild);
+                foreach (UdonSharpProgramAsset programAsset in allPrograms)
+                {
+                    if (programAsset == null || programAsset.sourceCsScript == null)
+                        continue;
+
+                    programAssetsAndPaths.Add((programAsset, AssetDatabase.GetAssetPath(programAsset.sourceCsScript)));
+                }
+
+                object syntaxTreeLock = new object();
+                List<(UdonSharpProgramAsset, Microsoft.CodeAnalysis.SyntaxTree)> programsAndSyntaxTrees = new List<(UdonSharpProgramAsset, Microsoft.CodeAnalysis.SyntaxTree)>();
+                Dictionary<UdonSharpProgramAsset, (string, Microsoft.CodeAnalysis.SyntaxTree)> syntaxTreeSourceLookup = new Dictionary<UdonSharpProgramAsset, (string, Microsoft.CodeAnalysis.SyntaxTree)>();
+
+                string[] defines = UdonSharpUtils.GetProjectDefines(isEditorBuild);
+
+                Parallel.ForEach(programAssetsAndPaths, (currentProgram) =>
+                {
+                    string programSource = UdonSharpUtils.ReadFileTextSync(currentProgram.Item2);
+
+                    Microsoft.CodeAnalysis.SyntaxTree programSyntaxTree = CSharpSyntaxTree.ParseText(programSource, CSharpParseOptions.Default.WithDocumentationMode(DocumentationMode.None).WithPreprocessorSymbols(defines));
+
+                    lock (syntaxTreeLock)
+                    {
+                        programsAndSyntaxTrees.Add((currentProgram.Item1, programSyntaxTree));
+                        syntaxTreeSourceLookup.Add(currentProgram.Item1, (programSource, programSyntaxTree));
+                    }
+                });
+
+                foreach (var syntaxTree in programsAndSyntaxTrees)
+                {
+                    foreach (Diagnostic diagnostic in syntaxTree.Item2.GetDiagnostics())
+                    {
+                        if (diagnostic.Severity == DiagnosticSeverity.Error)
+                        {
+                            totalErrorCount++;
+
+                            LinePosition linePosition = diagnostic.Location.GetLineSpan().StartLinePosition;
+
+                            UdonSharpUtils.LogBuildError($"error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}", AssetDatabase.GetAssetPath(syntaxTree.Item1.sourceCsScript), linePosition.Line, linePosition.Character);
+                        }
+                    }
+                }
+
+                List<ClassDefinition> classDefinitions = null;
 
                 // Bind stage
-                List<ClassDefinition> classDefinitions = BindPrograms(defineString);
+                if (totalErrorCount == 0)
+                {
+                    EditorUtility.DisplayProgressBar("UdonSharp Compile", "Building class definitions...", 0f);
 
-                if (classDefinitions == null)
-                    totalErrorCount++;
+                    classDefinitions = BindPrograms(programsAndSyntaxTrees);
+
+                    if (classDefinitions == null)
+                        totalErrorCount++;
+                }
 
                 // Compile stage
                 if (totalErrorCount == 0)
@@ -85,14 +135,18 @@ namespace UdonSharp.Compiler
 
                     foreach (CompilationModule module in modules)
                     {
-                        compileTasks.Add(module.Compile(classDefinitions, defineString, isEditorBuild));
+                        var sourceTree = syntaxTreeSourceLookup[module.programAsset];
+
+                        compileTasks.Add(module.Compile(classDefinitions, sourceTree.Item2, sourceTree.Item1, isEditorBuild));
                     }
 #else
                     List<Task<CompileTaskResult>> compileTasks = new List<Task<CompileTaskResult>>();
 
                     foreach (CompilationModule module in modules)
                     {
-                        compileTasks.Add(Task.Factory.StartNew(() => module.Compile(classDefinitions, defineString, isEditorBuild)));
+                        var sourceTree = syntaxTreeSourceLookup[module.programAsset];
+
+                        compileTasks.Add(Task.Factory.StartNew(() => module.Compile(classDefinitions, sourceTree.Item2, sourceTree.Item1, isEditorBuild)));
                     }
 #endif
 
@@ -202,20 +256,15 @@ namespace UdonSharp.Compiler
             }
         }
 
-        List<ClassDefinition> BindPrograms(string defineStr)
+        List<ClassDefinition> BindPrograms(List<(UdonSharpProgramAsset, Microsoft.CodeAnalysis.SyntaxTree)> allPrograms)
         {
             List<BindTaskResult> bindTaskResults = new List<BindTaskResult>();
 
-            UdonSharpProgramAsset[] allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
-
             List<ClassDefinitionBinder> classBinders = new List<ClassDefinitionBinder>();
 
-            foreach (UdonSharpProgramAsset programAsset in allPrograms)
+            foreach (var programAssetAndTree in allPrograms)
             {
-                if (programAsset == null || programAsset.sourceCsScript == null)
-                    continue;
-
-                classBinders.Add(new ClassDefinitionBinder(programAsset));
+                classBinders.Add(new ClassDefinitionBinder(programAssetAndTree.Item1, programAssetAndTree.Item2));
             }
 
 #if UDONSHARP_DEBUG // Single threaded bind
@@ -223,14 +272,14 @@ namespace UdonSharp.Compiler
 
             foreach (ClassDefinitionBinder binder in classBinders)
             {
-                bindTasks.Add(binder.BuildClassDefinition(defineStr));
+                bindTasks.Add(binder.BuildClassDefinition());
             }
 #else
             List<Task<BindTaskResult>> bindTasks = new List<Task<BindTaskResult>>();
 
             foreach (ClassDefinitionBinder binder in classBinders)
             {
-                bindTasks.Add(Task.Factory.StartNew(() => binder.BuildClassDefinition(defineStr)));
+                bindTasks.Add(Task.Factory.StartNew(() => binder.BuildClassDefinition()));
             }
 #endif
 
@@ -563,26 +612,22 @@ namespace UdonSharp.Compiler
         class ClassDefinitionBinder
         {
             UdonSharpProgramAsset programAsset;
-            string sourceFilePath;
+            Microsoft.CodeAnalysis.SyntaxTree syntaxTree;
 
-            public ClassDefinitionBinder(UdonSharpProgramAsset programAsset)
+            public ClassDefinitionBinder(UdonSharpProgramAsset programAsset, Microsoft.CodeAnalysis.SyntaxTree syntaxTree)
             {
                 this.programAsset = programAsset;
-                sourceFilePath = AssetDatabase.GetAssetPath(programAsset.sourceCsScript);
+                this.syntaxTree = syntaxTree;
             }
 
-            public BindTaskResult BuildClassDefinition(string defineString)
+            public BindTaskResult BuildClassDefinition()
             {
-                string programSource = defineString + UdonSharpUtils.ReadFileTextSync(sourceFilePath);
-
                 ResolverContext resolver = new ResolverContext();
                 SymbolTable classSymbols = new SymbolTable(resolver, null);
 
                 classSymbols.OpenSymbolTable();
 
                 LabelTable classLabels = new LabelTable();
-
-                Microsoft.CodeAnalysis.SyntaxTree tree = CSharpSyntaxTree.ParseText(programSource);
 
                 ClassVisitor classVisitor = new ClassVisitor(resolver, classSymbols, classLabels);
 
@@ -591,7 +636,7 @@ namespace UdonSharp.Compiler
 
                 try
                 {
-                    classVisitor.Visit(tree.GetRoot());
+                    classVisitor.Visit(syntaxTree.GetRoot());
                 }
                 catch (System.Exception e)
                 {
@@ -606,7 +651,7 @@ namespace UdonSharp.Compiler
                         FileLinePositionSpan lineSpan = node.GetLocation().GetLineSpan();
                         
                         charIndex = lineSpan.StartLinePosition.Character;
-                        lineIndex = lineSpan.StartLinePosition.Line - defineString.Count(c => c == '\n');
+                        lineIndex = lineSpan.StartLinePosition.Line;
                     }
                     else
                     {
@@ -629,31 +674,6 @@ namespace UdonSharp.Compiler
                 }
 
                 classSymbols.CloseSymbolTable();
-
-                int errorCount = 0;
-
-                foreach (Diagnostic diagnostic in tree.GetDiagnostics())
-                {
-                    if (diagnostic.Severity == DiagnosticSeverity.Error)
-                    {
-                        errorCount++;
-
-                        LinePosition linePosition = diagnostic.Location.GetLineSpan().StartLinePosition;
-
-                        CompileError error = new CompileError();
-                        error.script = programAsset.sourceCsScript;
-                        error.errorStr = $"error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}";
-                        error.lineIdx = linePosition.Line - defineString.Count(c => c == '\n');
-                        error.charIdx = linePosition.Character;
-
-                        bindTaskResult.compileErrors.Add(error);
-                    }
-                }
-
-                if (errorCount > 0)
-                {
-                    return bindTaskResult;
-                }
 
                 classVisitor.classDefinition.classScript = programAsset.sourceCsScript;
 
