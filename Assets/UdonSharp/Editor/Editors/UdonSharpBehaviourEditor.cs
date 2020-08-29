@@ -11,8 +11,43 @@ using UnityEngine;
 using VRC.Udon;
 using VRC.Udon.Editor;
 
+/// <summary>
+/// Example use of how to register a default inspector
+/// </summary>
+#if false
+using UdonSharpEditor;
+
+[assembly:DefaultUdonSharpBehaviourEditor(typeof(DemoDefaultBehaviourEditor), "UdonSharp Demo Inspector")]
+#endif
+
 namespace UdonSharpEditor
 {
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
+    public class DefaultUdonSharpBehaviourEditorAttribute : Attribute
+    {
+        internal System.Type inspectorType;
+        internal string inspectorDisplayName;
+
+        public DefaultUdonSharpBehaviourEditorAttribute(System.Type inspectorType, string inspectorDisplayName)
+        {
+            this.inspectorType = inspectorType;
+            this.inspectorDisplayName = inspectorDisplayName;
+        }
+    }
+
+    /// <summary>
+    /// Basic demo inspector that just draws fields using the Unity handling. Not intended to be used.
+    /// </summary>
+    internal class DemoDefaultBehaviourEditor : Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            if (UdonSharpGUI.DrawDefaultUdonSharpBehaviourHeader(target, false, false)) return;
+
+            base.OnInspectorGUI();
+        }
+    }
+
     [CustomEditor(typeof(UdonSharpBehaviour), true)]
     internal class UdonSharpBehaviourEditor : Editor
     {
@@ -73,7 +108,7 @@ namespace UdonSharpEditor
         }
     }
 
-    #region Drawer override boilerplate
+#region Drawer override boilerplate
     [InitializeOnLoad]
     internal class UdonBehaviourDrawerOverride
     {
@@ -162,13 +197,14 @@ namespace UdonSharpEditor
             addTypeMethod.Invoke(customEditorDictionary, addTypeInvokeParams);
         }
     }
-    #endregion
+#endregion
 
-    #region Editor Manager
+#region Editor Manager
     [InitializeOnLoad]
-    static class UdonSharpCustomEditorManager
+    internal static class UdonSharpCustomEditorManager
     {
         static Dictionary<System.Type, System.Type> _typeInspectorMap;
+        internal static Dictionary<string, (string, Type)> _defaultInspectorMap;
 
         static UdonSharpCustomEditorManager()
         {
@@ -179,6 +215,8 @@ namespace UdonSharpEditor
         static void InitInspectorMap()
         {
             _typeInspectorMap = new Dictionary<Type, Type>();
+            _defaultInspectorMap = new Dictionary<string, (string, Type)>();
+
             FieldInfo inspectedTypeField = typeof(CustomEditor).GetField("m_InspectedType", BindingFlags.NonPublic | BindingFlags.Instance);
 
             foreach (Assembly asm in UdonSharpUtils.GetLoadedEditorAssemblies())
@@ -202,6 +240,17 @@ namespace UdonSharpEditor
                             _typeInspectorMap.Add(inspectedType, editorType);
                         }
                     }
+                }
+
+                foreach (DefaultUdonSharpBehaviourEditorAttribute editorAttribute in asm.GetCustomAttributes<DefaultUdonSharpBehaviourEditorAttribute>())
+                {
+                    if (!editorAttribute.inspectorType.IsSubclassOf(typeof(Editor)))
+                    {
+                        Debug.LogError($"Could not add default inspector '{editorAttribute.inspectorType}', custom inspectors must inherit from UnityEditor.Editor");
+                        continue;
+                    }
+
+                    _defaultInspectorMap.Add(editorAttribute.inspectorType.ToString(), (editorAttribute.inspectorDisplayName, editorAttribute.inspectorType));
                 }
             }
         }
@@ -240,10 +289,28 @@ namespace UdonSharpEditor
             System.Type editorType;
             _typeInspectorMap.TryGetValue(udonSharpBehaviourType, out editorType);
 
+            if (editorType == null)
+            {
+                UdonSharpSettings settings = UdonSharpSettings.GetSettings();
+
+                if (settings)
+                {
+                    string defaultEditor = settings.defaultBehaviourInterfaceType;
+
+                    if (!string.IsNullOrEmpty(defaultEditor))
+                    {
+                        if (_defaultInspectorMap.TryGetValue(defaultEditor, out var defaultEditorType))
+                        {
+                            editorType = defaultEditorType.Item2;
+                        }
+                    }
+                }
+            }
+
             return editorType;
         }
     }
-    #endregion
+#endregion
 
     /// <summary>
     /// Custom U# editor for UdonBehaviours that can have custom behavior for drawing stuff like sync position and the program asset info

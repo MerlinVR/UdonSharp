@@ -1427,10 +1427,10 @@ namespace UdonSharpEditor
         }
 
         [PublicAPI]
-        public static bool DrawDefaultUdonSharpBehaviourHeader(UnityEngine.Object target, bool skipLine = false)
+        public static bool DrawDefaultUdonSharpBehaviourHeader(UnityEngine.Object target, bool skipLine = false , bool drawScript = true)
         {
             if (DrawConvertToUdonBehaviourButton(target)) return true;
-            if (DrawProgramSource(target)) return true;
+            if (DrawProgramSource(target, drawScript)) return true;
 
             DrawSyncSettings(target);
             DrawInteractSettings(target);
