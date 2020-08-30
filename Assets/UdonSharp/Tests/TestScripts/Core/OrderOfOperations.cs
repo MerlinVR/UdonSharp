@@ -15,7 +15,9 @@ namespace UdonSharp.Tests
         OrderOfOperations self;
 
         int[] intArray;
+#pragma warning disable 0414
         Vector3[] structArray;
+#pragma warning restore 0414
 
         public int overwriteArrayFields(int index)
         {

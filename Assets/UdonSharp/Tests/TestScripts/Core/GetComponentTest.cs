@@ -12,7 +12,7 @@ namespace UdonSharp.Tests
     {
         [System.NonSerialized]
         public IntegrationTestSuite tester;
-
+        
         public GameObject modObject;
 
         public void ExecuteTests()

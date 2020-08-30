@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using static UdonSharp.UdonSharpCompiler;
+using static UdonSharp.Compiler.UdonSharpCompiler;
 
-namespace UdonSharp
+namespace UdonSharp.Compiler
 {
 
     /// <summary>
@@ -17,7 +17,6 @@ namespace UdonSharp
     public class CompilationModule
     {
         public UdonSharpProgramAsset programAsset { get; private set; }
-        private string sourceCode;
         UdonSharpSettings settings;
 
         public ResolverContext resolver { get; private set; }
@@ -40,54 +39,69 @@ namespace UdonSharp
 
             if (programAsset.sourceCsScript == null)
                 throw new System.ArgumentException($"Asset '{AssetDatabase.GetAssetPath(programAsset)}' does not have a valid program source to compile from");
-
-
-            sourceCode = UdonSharpUtils.ReadFileTextSync(AssetDatabase.GetAssetPath(programAsset.sourceCsScript));
             
             settings = UdonSharpSettings.GetSettings();
         }
 
-        public CompileTaskResult Compile(List<ClassDefinition> classDefinitions)
+        void LogException(CompileTaskResult result, System.Exception e, SyntaxNode node, out string logMessage)
+        {
+            logMessage = "";
+
+            if (node != null)
+            {
+                FileLinePositionSpan lineSpan = node.GetLocation().GetLineSpan();
+
+                CompileError error = new CompileError();
+                error.script = programAsset.sourceCsScript;
+                error.errorStr = $"{e.GetType()}: {e.Message}";
+                error.lineIdx = lineSpan.StartLinePosition.Line;
+                error.charIdx = lineSpan.StartLinePosition.Character;
+
+                result.compileErrors.Add(error);
+            }
+            else
+            {
+                logMessage = e.ToString();
+                Debug.LogException(e);
+            }
+#if UDONSHARP_DEBUG
+            Debug.LogException(e);
+            Debug.LogError(e.StackTrace);
+#endif
+
+        }
+
+        public CompileTaskResult Compile(List<ClassDefinition> classDefinitions, Microsoft.CodeAnalysis.SyntaxTree syntaxTree, string sourceCode, bool isEditorBuild)
         {
             programAsset.compileErrors.Clear();
-            
-            Microsoft.CodeAnalysis.SyntaxTree tree = CSharpSyntaxTree.ParseText(sourceCode);
 
             CompileTaskResult result = new CompileTaskResult();
             result.programAsset = programAsset;
 
-            int errorCount = 0;
-
-            foreach (Diagnostic diagnostic in tree.GetDiagnostics())
-            {
-                if (diagnostic.Severity == DiagnosticSeverity.Error)
-                {
-                    errorCount++;
-
-                    LinePosition linePosition = diagnostic.Location.GetLineSpan().StartLinePosition;
-
-                    CompileError error = new CompileError();
-                    error.script = programAsset.sourceCsScript;
-                    error.errorStr = $"error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}";
-                    error.lineIdx = linePosition.Line;
-                    error.charIdx = linePosition.Character;
-
-                    result.compileErrors.Add(error);
-                }
-            }
-
-            if (errorCount > 0)
-            {
-                return result;
-            }
-
             moduleSymbols.OpenSymbolTable();
             
             UdonSharpFieldVisitor fieldVisitor = new UdonSharpFieldVisitor(fieldsWithInitializers);
-            fieldVisitor.Visit(tree.GetRoot());
+            fieldVisitor.Visit(syntaxTree.GetRoot());
 
             MethodVisitor methodVisitor = new MethodVisitor(resolver, moduleSymbols, moduleLabels);
-            methodVisitor.Visit(tree.GetRoot());
+
+            int errorCount = 0;
+
+            try
+            {
+                methodVisitor.Visit(syntaxTree.GetRoot());
+            }
+            catch (System.Exception e)
+            {
+                LogException(result, e, methodVisitor.visitorContext.currentNode, out string logMessage);
+
+                programAsset.compileErrors.Add(logMessage);
+
+                errorCount++;
+            }
+
+            if (ErrorCount > 0)
+                return result;
 
             ClassDebugInfo debugInfo = null;
 
@@ -100,37 +114,13 @@ namespace UdonSharp
 
             try
             {
-                visitor.Visit(tree.GetRoot());
+                visitor.Visit(syntaxTree.GetRoot());
                 visitor.VerifyIntegrity();
             }
             catch (System.Exception e)
             {
-                SyntaxNode currentNode = visitor.visitorContext.currentNode;
-
-                string logMessage = "";
-
-                if (currentNode != null)
-                {
-                    FileLinePositionSpan lineSpan = currentNode.GetLocation().GetLineSpan();
-
-                    CompileError error = new CompileError();
-                    error.script = programAsset.sourceCsScript;
-                    error.errorStr = $"{e.GetType()}: {e.Message}";
-                    error.lineIdx = lineSpan.StartLinePosition.Line;
-                    error.charIdx = lineSpan.StartLinePosition.Character;
-
-                    result.compileErrors.Add(error);
-                }
-                else
-                {
-                    logMessage = e.ToString();
-                    Debug.LogException(e);
-                }
-#if UDONSHARP_DEBUG
-                Debug.LogException(e);
-                Debug.LogError(e.StackTrace);
-#endif
-
+                LogException(result, e, visitor.visitorContext.currentNode, out string logMessage);
+                
                 programAsset.compileErrors.Add(logMessage);
 
                 errorCount++;
@@ -156,11 +146,15 @@ namespace UdonSharp
                 programAsset.behaviourIDHeapVarName = visitor.GetIDHeapVarName();
 
                 programAsset.fieldDefinitions = visitor.visitorContext.localFieldDefinitions;
+#if UDON_BETA_SDK
+                programAsset.behaviourSyncMode = visitor.visitorContext.behaviourSyncMode;
+#endif
 
                 if (debugInfo != null)
                     debugInfo.FinalizeDebugInfo();
 
-                programAsset.debugInfo = debugInfo;
+                UdonSharpEditorCache.Instance.SetDebugInfo(programAsset, isEditorBuild ? UdonSharpEditorCache.DebugInfoType.Editor : UdonSharpEditorCache.DebugInfoType.Client, debugInfo);
+                //programAsset.debugInfo = debugInfo;
             }
 
             return result;

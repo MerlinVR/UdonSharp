@@ -336,7 +336,17 @@ namespace UdonSharp.Editors
             if (ShouldHideMemberTopLevel(memberInfo))
                 return;
 
-            TreeViewItem memberItem = new TreeViewItem(currentID++, parentItem.depth + 1, $"<{memberInfo.MemberType}> {memberInfo.ToString()}");
+            string staticStr = "";
+            {
+                if ((memberInfo is FieldInfo fieldInfo && fieldInfo.IsStatic) ||
+                    (memberInfo is PropertyInfo propertyInfo && (propertyInfo.GetGetMethod()?.IsStatic ?? false)) ||
+                    (memberInfo is MethodInfo methodInfo && methodInfo.IsStatic))
+                {
+                    staticStr = "<Static>";
+                }
+            }
+
+            TreeViewItem memberItem = new TreeViewItem(currentID++, parentItem.depth + 1, $"<{memberInfo.MemberType}>{staticStr} {memberInfo.ToString()}");
             parentItem.AddChild(memberItem);
 
             TypeItemMetadata itemMetadata = new TypeItemMetadata();
@@ -682,7 +692,7 @@ namespace UdonSharp.Editors
                 //itemMetadatas.Add(typeDef, new TypeItemMetadata() { exposed = resolver.ValidateUdonTypeName(resolver.GetUdonTypeName(type), UdonReferenceType.Type) });
 
                 // Internal type
-                TreeViewItem internalTypeDef = new TreeViewItem(currentID++, typeParent.depth + 1, "<type> " + type.Name);
+                TreeViewItem internalTypeDef = new TreeViewItem(currentID++, typeParent.depth + 1, "<Type> " + type.Name);
                 typeParent.AddChild(internalTypeDef);
                 itemMetadatas.Add(internalTypeDef, new TypeItemMetadata() { exposed = UdonEditorManager.Instance.GetTypeFromTypeString(resolver.GetUdonTypeName(type)) != null });
 

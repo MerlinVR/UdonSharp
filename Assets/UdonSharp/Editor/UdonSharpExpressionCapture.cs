@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
-namespace UdonSharp
+namespace UdonSharp.Compiler
 {
     public enum ExpressionCaptureArchetype
     {
@@ -1780,17 +1780,14 @@ namespace UdonSharp
 
             return true;
         }
-
-        // Cacheing removed for multi-threaded compile
-        //private static Dictionary<(System.Type, BindingFlags), MethodInfo[]> typeMethodCache = new Dictionary<(System.Type, BindingFlags), MethodInfo[]>();
-
-        private static MethodInfo[] GetTypeMethods(System.Type type, BindingFlags bindingFlags)
+        
+        private MethodInfo[] GetTypeMethods(System.Type type, BindingFlags bindingFlags)
         {
             MethodInfo[] methods;
-            //if (!typeMethodCache.TryGetValue((type, bindingFlags), out methods))
+            if (!visitorContext.typeMethodCache.TryGetValue((type, bindingFlags), out methods))
             {
                 methods = type.GetMethods(bindingFlags);
-                //typeMethodCache.Add((type, bindingFlags), methods);
+                visitorContext.typeMethodCache.Add((type, bindingFlags), methods);
             }
 
             return methods;
@@ -1804,6 +1801,8 @@ namespace UdonSharp
 
             if (localUdonMethodName == "VRCInstantiate")
                 methods.AddRange(GetTypeMethods(typeof(UdonSharpBehaviour), BindingFlags.Static | BindingFlags.Public));
+            else if (localUdonMethodName == "SetProgramVariable" || localUdonMethodName == "GetProgramVariable")
+                methods.Add(typeof(UdonSharpBehaviour).GetMethod(localUdonMethodName, BindingFlags.Instance | BindingFlags.Public));
 
             IEnumerable<MethodInfo> foundMethods = methods.Where(e => e.Name == localUdonMethodName).Distinct();
 

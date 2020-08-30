@@ -22,12 +22,14 @@ namespace UdonSharp.Tests
             IntAssignment();
             LongAssignment();
             ByteIncrement();
+            ByteAssignment();
             LongIncrement();
             ShortIncrement();
             UShortIncrement();
             IntTruncate();
             UintBitOps();
             StringAddition();
+            DecimalOps();
         }
 
         void IntBinaryOps()
@@ -150,6 +152,9 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Unsigned Integer Prefix Decrement", --testVal == 5);
             tester.TestAssertion("Unsigned Integer Postfix Decrement", testVal-- == 5);
             tester.TestAssertion("Unsigned Integer Postfix Decrement 2", testVal == 4);
+
+            testVal = 0;
+            tester.TestAssertion("UInt overflow", (testVal - 1u) == uint.MaxValue);
         }
 
         void IntAssignment()
@@ -172,7 +177,7 @@ namespace UdonSharp.Tests
         void ByteAssignment()
         {
             sbyte testVal = 5;
-
+            
             tester.TestAssertion("sByte Add Assign", (testVal += 4) == 9);
             tester.TestAssertion("sByte Subtract Assign", (testVal -= 20) == -11);
             tester.TestAssertion("sByte Multiply Assign", (testVal *= 8) == -88);
@@ -277,6 +282,15 @@ namespace UdonSharp.Tests
             // https://github.com/Merlin-san/UdonSharp/issues/23
             //x = (x ^ 3);
             //tester.TestAssertion("uint ^", x == 10);
+        }
+
+        void DecimalOps()
+        {
+            decimal x = 4;
+
+            tester.TestAssertion("Decimal equality", x == 4);
+            tester.TestAssertion("Decimal addition", (x + 5) == 9);
+            tester.TestAssertion("Decimal mul", (3 * 0.5m) == 1.5m);
         }
 
         void StringAddition()

@@ -146,6 +146,16 @@ namespace UdonSharp
             { "_onPlayerLeft", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerLeftPlayer") } },
             { "_onStationEntered", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onStationEnteredPlayer") } },
             { "_onStationExited", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onStationExitedPlayer") } },
+#if UDON_BETA_SDK
+            { "_onOwnershipRequest", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onOwnershipRequestRequester"), new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onOwnershipRequestNewOwner") } },
+            { "_onPlayerTriggerEnter", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerTriggerEnterPlayer") } },
+            { "_onPlayerTriggerExit", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerTriggerExitPlayer") } },
+            { "_onPlayerTriggerStay", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerTriggerStayPlayer") } },
+            { "_onPlayerCollisionEnter", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerCollisionEnterPlayer") } },
+            { "_onPlayerCollisionExit", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerCollisionExitPlayer") } },
+            { "_onPlayerCollisionStay", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerCollisionStayPlayer") } },
+            { "_onPlayerParticleCollision", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerParticleCollisionPlayer") } },
+#endif
         };
 
         public System.Tuple<System.Type, string>[] GetMethodCustomArgs(string methodName)
@@ -942,6 +952,21 @@ namespace UdonSharp
             }
 
             return nodeDefinitionLookup.Contains(typeName);
+        }
+
+        public bool IsValidUdonType(System.Type type)
+        {
+            string udonTypeName = GetUdonTypeName(type);
+
+            bool isUserDefinedType = UdonSharpUtils.IsUserDefinedType(type);
+
+            if (!ValidateUdonTypeName(udonTypeName, UdonReferenceType.Variable) &&
+                !ValidateUdonTypeName(udonTypeName, UdonReferenceType.Type) &&
+                //VRC.Udon.Editor.UdonEditorManager.Instance.GetTypeFromTypeString(udonTypeName) != null && // I'd assume that this should work instead of the ValidateUdonTypeName calls, but it doesn't pick up a bunch of types
+                !isUserDefinedType)
+                return false;
+
+            return true;
         }
     }
 }

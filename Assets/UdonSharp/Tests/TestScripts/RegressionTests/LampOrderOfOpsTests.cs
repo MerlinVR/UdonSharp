@@ -11,8 +11,10 @@ namespace UdonSharp.Tests
     {
         [System.NonSerialized]
         public IntegrationTestSuite tester;
-        
+
+#pragma warning disable 0649
         private UdonBehaviour behaviour;
+#pragma warning restore 0649
 
         [System.NonSerialized]
         public float floatField = 4.4f;

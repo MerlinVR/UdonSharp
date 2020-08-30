@@ -1,8 +1,11 @@
 ﻿
 using Microsoft.CodeAnalysis;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace UdonSharp
 {
@@ -231,6 +234,60 @@ namespace UdonSharp
             return false;
         }
 
+        public static bool IsExplicitlyAssignableFrom(this System.Type targetType, System.Type assignee)
+        {
+            // Normal explicit assign
+            if (targetType.IsAssignableFrom(assignee))
+                return true;
+
+            // Numeric conversions
+            if (IsNumericType(targetType) && IsNumericType(assignee))
+                return true;
+
+            // Handle user-defined implicit conversion operators defined on both sides
+            // Roughly follows https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/conversions#processing-of-user-defined-implicit-conversions
+
+            // I doubt I'll ever deal with properly supporting nullable but ¯\_(ツ)_/¯
+            if (System.Nullable.GetUnderlyingType(targetType) != null)
+                targetType = System.Nullable.GetUnderlyingType(targetType);
+            if (System.Nullable.GetUnderlyingType(assignee) != null)
+                assignee = System.Nullable.GetUnderlyingType(assignee);
+
+            List<System.Type> operatorTypes = new List<System.Type>();
+            operatorTypes.Add(targetType);
+
+            System.Type currentSourceType = assignee;
+            while (currentSourceType != null)
+            {
+                operatorTypes.Add(currentSourceType);
+                currentSourceType = currentSourceType.BaseType;
+            }
+
+            foreach (System.Type operatorType in operatorTypes)
+            {
+                IEnumerable<MethodInfo> methods = operatorType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Implicit");
+
+                foreach (MethodInfo methodInfo in methods)
+                {
+                    if (methodInfo.ReturnType == targetType && (methodInfo.GetParameters()[0].ParameterType == assignee || methodInfo.GetParameters()[0].ParameterType == typeof(UnityEngine.Object)))
+                        return true;
+                }
+            }
+
+            foreach (System.Type operatorType in operatorTypes)
+            {
+                IEnumerable<MethodInfo> methods = operatorType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Explicit");
+
+                foreach (MethodInfo methodInfo in methods)
+                {
+                    if (methodInfo.ReturnType == targetType && (methodInfo.GetParameters()[0].ParameterType == assignee || methodInfo.GetParameters()[0].ParameterType == typeof(UnityEngine.Object)))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         public static bool IsValidNumericImplictCastSourceType(this System.Type sourceType)
         {
             return implicitBuiltinConversions.ContainsKey(sourceType);
@@ -291,6 +348,7 @@ namespace UdonSharp
             return first == second;
         }
 
+#if !UDON_BETA_SDK
         private static readonly HashSet<System.Type> udonSyncTypes = new HashSet<System.Type>()
         {
             typeof(bool),
@@ -310,6 +368,7 @@ namespace UdonSharp
         {
             return udonSyncTypes.Contains(type);
         }
+#endif
 
         private static readonly HashSet<System.Type> builtinTypes = new HashSet<System.Type>
         {
@@ -421,6 +480,14 @@ namespace UdonSharp
                    IsUserJaggedArray(type);
         }
 
+        public static System.Type GetRootElementType(System.Type type)
+        {
+            while (type.IsArray)
+                type = type.GetElementType();
+
+            return type;
+        }
+
         // Doesn't work in a multi threaded context, todo: consider making this a concurrent collection or making one for each thread.
         //private static Dictionary<System.Type, System.Type> userTypeToUdonTypeCache = new Dictionary<System.Type, System.Type>();
 
@@ -472,6 +539,21 @@ namespace UdonSharp
             return errorMessage;
         }
 
+        public static string LogRuntimeError(string message, string prefix, string filePath, int line, int character)
+        {
+            MethodInfo buildErrorLogMethod = typeof(UnityEngine.Debug).GetMethod("LogPlayerBuildError", BindingFlags.NonPublic | BindingFlags.Static);
+
+            string errorMessage = $"[<color=#FF00FF>UdonSharp</color>]{prefix} {filePath}({line + 1},{character}): {message}";
+
+            buildErrorLogMethod.Invoke(null, new object[] {
+                        errorMessage,
+                        filePath,
+                        line + 1,
+                        character });
+
+            return errorMessage;
+        }
+
         public static string ReadFileTextSync(string filePath, float timeoutSeconds = 2f)
         {
             bool sourceLoaded = false;
@@ -498,19 +580,69 @@ namespace UdonSharp
                     break;
                 else
                     System.Threading.Thread.Sleep(20);
-
-                // 2 second timeout
+                
                 System.TimeSpan timeFromStart = System.DateTime.Now - startTime;
 
                 if (timeFromStart.TotalSeconds > timeoutSeconds)
                 {
-                    UnityEngine.Debug.LogError("Timeout when attempting to read modified C# source file");
+                    UnityEngine.Debug.LogError("Timeout when attempting to read file");
                     if (exception != null)
                         throw exception;
                 }
             }
 
             return fileText;
+        }
+
+        internal static string HashString(string stringToHash)
+        {
+            using (SHA1Managed sha256 = new SHA1Managed())
+            {
+                return BitConverter.ToString(sha256.ComputeHash(Encoding.UTF8.GetBytes(stringToHash))).Replace("-", "");
+            }
+        }
+
+        internal static string[] GetProjectDefines(bool editorBuild)
+        {
+            List<string> defines = new List<string>();
+
+            foreach (string define in UnityEditor.EditorUserBuildSettings.activeScriptCompilationDefines)
+            {
+                if (!editorBuild)
+                    if (define.StartsWith("UNITY_EDITOR"))
+                        continue;
+
+                defines.Add(define);
+            }
+
+            defines.Add("COMPILER_UDONSHARP");
+
+            return defines.ToArray();
+        }
+
+        internal static void ShowEditorNotification(string notificationString)
+        {
+            typeof(UnityEditor.SceneView).GetMethod("ShowNotification", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { notificationString });
+        }
+
+        static PropertyInfo getLoadedAssembliesProp;
+        static object getLoadedAssembliesLock = new object();
+
+        internal static Assembly[] GetLoadedEditorAssemblies()
+        {
+            lock (getLoadedAssembliesLock)
+            {
+                if (getLoadedAssembliesProp == null)
+                {
+                    Assembly editorAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(e => e.GetName().Name == "UnityEditor");
+
+                    System.Type editorAssembliesType = editorAssembly.GetType("UnityEditor.EditorAssemblies");
+
+                    getLoadedAssembliesProp = editorAssembliesType.GetProperty("loadedAssemblies", BindingFlags.Static | BindingFlags.NonPublic);
+                }
+            }
+
+            return (Assembly[])getLoadedAssembliesProp.GetValue(null);
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using UdonSharp.Compiler;
 using UnityEditor;
 using UnityEngine;
 using VRC.Udon.Common.Interfaces;
@@ -13,19 +14,39 @@ namespace UdonSharp
     [InitializeOnLoad]
     public static class RuntimeExceptionWatcher
     {
+        class LogFileState
+        {
+            public string playerName;
+            public long lineOffset = -1;
+            public string nameColor = "0000ff";
+        }
+
         static Queue<string> debugOutputQueue = new Queue<string>();
-        static Dictionary<long, (string, ClassDebugInfo)> scriptLookup;
+        static Dictionary<long, (string, UdonSharpProgramAsset)> scriptLookup;
         
         // Log watcher vars
         static FileSystemWatcher logDirectoryWatcher;
         static object logModifiedLock = new object();
-        static Dictionary<string, long> lastLogOffsets = new Dictionary<string, long>();
+        static Dictionary<string, LogFileState> logFileStates = new Dictionary<string, LogFileState>();
         static HashSet<string> modifiedLogPaths = new HashSet<string>();
 
         static RuntimeExceptionWatcher()
         {
             EditorApplication.update += OnEditorUpdate;
             Application.logMessageReceived += OnLog;
+        }
+
+        static bool ShouldListenForVRC()
+        {
+            UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
+
+            if (udonSharpSettings == null)
+                return false;
+
+            if (udonSharpSettings.listenForVRCExceptions || udonSharpSettings.watcherMode != UdonSharpSettings.LogWatcherMode.Disabled)
+                return true;
+
+            return false;
         }
 
         static bool InitializeScriptLookup()
@@ -36,15 +57,54 @@ namespace UdonSharp
             if (EditorApplication.isCompiling || EditorApplication.isUpdating)
                 return false;
 
-            UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
+            scriptLookup = new Dictionary<long, (string, UdonSharpProgramAsset)>();
+            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
 
-            if (udonSharpSettings == null || !udonSharpSettings.listenForVRCExceptions)
-                return false;
+            UdonSharpEditorCache editorCache = UdonSharpEditorCache.Instance;
 
-            AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
+            foreach (string dataGuid in udonSharpDataAssets)
+            {
+                UdonSharpProgramAsset programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid));
 
+                if (programAsset.sourceCsScript == null)
+                    continue;
+
+                if (programAsset.GetSerializedProgramAssetWithoutRefresh() == null)
+                    continue;
+
+                IUdonProgram program = programAsset.GetSerializedProgramAssetWithoutRefresh().RetrieveProgram();
+
+                if (program == null ||
+                    program.Heap == null ||
+                    program.SymbolTable == null)
+                {
+                    Debug.LogWarning($"Could not load program for '{programAsset}', exceptions for this script will not be handled until scripts have been reloaded");
+                    continue;
+                }
+
+                long programID;
+
+                if (program.SymbolTable.TryGetAddressFromSymbol(programAsset.behaviourIDHeapVarName, out uint address))
+                    programID = program.Heap.GetHeapVariable<long>(address);
+                else
+                {
+                    Debug.LogWarning($"No symbol found for debug info on program asset '{programAsset}', exceptions for this program will not be caught until scripts have been reloaded.");
+                    continue;
+                }
+
+                if (scriptLookup.ContainsKey(programID))
+                    continue;
+
+                scriptLookup.Add(programID, (AssetDatabase.GetAssetPath(programAsset.sourceCsScript), programAsset));
+            }
+
+            if (!ShouldListenForVRC())
+                return true;
+            
             if (logDirectoryWatcher == null)
             {
+                AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
+
                 // Now setup the filesystem watcher
                 string[] splitPath = Application.persistentDataPath.Split('/', '\\');
                 string VRCDataPath = string.Join("\\", splitPath.Take(splitPath.Length - 2)) + "\\VRChat\\VRChat";
@@ -61,34 +121,6 @@ namespace UdonSharp
                 {
                     Debug.LogError("[UdonSharp] Could not locate VRChat data directory for exception watcher");
                 }
-            }
-
-            scriptLookup = new Dictionary<long, (string, ClassDebugInfo)>();
-            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
-
-            foreach (string dataGuid in udonSharpDataAssets)
-            {
-                UdonSharpProgramAsset programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid));
-
-                if (programAsset.sourceCsScript == null)
-                    continue;
-
-                if (programAsset.SerializedProgramAsset == null)
-                    continue;
-
-                IUdonProgram program = programAsset.SerializedProgramAsset.RetrieveProgram();
-
-                if (program == null ||
-                    program.Heap == null ||
-                    program.SymbolTable == null)
-                    continue;
-
-                long programID = program.Heap.GetHeapVariable<long>(program.SymbolTable.GetAddressFromSymbol(programAsset.behaviourIDHeapVarName));
-
-                if (scriptLookup.ContainsKey(programID))
-                    continue;
-
-                scriptLookup.Add(programID, (AssetDatabase.GetAssetPath(programAsset.sourceCsScript), programAsset.debugInfo));
             }
 
             return true;
@@ -125,6 +157,9 @@ namespace UdonSharp
             }
         }
 
+        const string MATCH_STR = "\\n\\n\\r\\n\\d{4}.\\d{2}.\\d{2} \\d{2}:\\d{2}:\\d{2} ";
+        static Regex lineMatch;
+
         static void OnEditorUpdate()
         {
             if (!InitializeScriptLookup())
@@ -132,17 +167,20 @@ namespace UdonSharp
 
             while (debugOutputQueue.Count > 0)
             {
-                HandleLogError(debugOutputQueue.Dequeue(), "Udon runtime exception detected!");
+                HandleLogError(debugOutputQueue.Dequeue(), "Udon runtime exception detected!", null);
             }
 
             UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
-            bool shouldListenForVRC = udonSharpSettings != null && udonSharpSettings.buildDebugInfo && udonSharpSettings.listenForVRCExceptions;
+            bool shouldListenForVRC = udonSharpSettings != null && ShouldListenForVRC();
 
             if (logDirectoryWatcher != null)
                 logDirectoryWatcher.EnableRaisingEvents = shouldListenForVRC;
 
             if (shouldListenForVRC)
             {
+                if (lineMatch == null)
+                    lineMatch = new Regex(MATCH_STR, RegexOptions.Compiled);
+
                 List<(string, string)> modifiedFilesAndContents = null;
 
                 lock (logModifiedLock)
@@ -154,11 +192,10 @@ namespace UdonSharp
 
                         foreach (string logPath in modifiedLogPaths)
                         {
-                            long lastFileOffset;
-                            if (!lastLogOffsets.TryGetValue(logPath, out lastFileOffset))
-                                lastLogOffsets.Add(logPath, -1);
+                            if (!logFileStates.TryGetValue(logPath, out LogFileState logState))
+                                logFileStates.Add(logPath, new LogFileState());
 
-                            lastFileOffset = lastLogOffsets[logPath];
+                            logState = logFileStates[logPath];
 
                             string newLogContent = "";
 
@@ -172,18 +209,46 @@ namespace UdonSharp
                                 {
                                     using (StreamReader reader = new StreamReader(stream))
                                     {
-                                        if (lastFileOffset == -1)
+                                        if (logState.playerName == null) // Search for the player name that this log belongs to
+                                        {
+                                            string fullFileContents = reader.ReadToEnd();
+
+                                            const string SEARCH_STR = "[VRCFlowManagerVRC] User Authenticated: ";
+                                            int userIdx = fullFileContents.IndexOf(SEARCH_STR);
+                                            if (userIdx != -1)
+                                            {
+                                                userIdx += SEARCH_STR.Length;
+
+                                                int endIdx = userIdx;
+
+                                                while (fullFileContents[endIdx] != '\r' && fullFileContents[endIdx] != '\n') endIdx++; // Seek to end of name
+
+                                                string username = fullFileContents.Substring(userIdx, endIdx - userIdx);
+
+                                                logState.playerName = username;
+
+                                                // Use the log path as well since Build & Test can have multiple of the same display named users
+                                                System.Random random = new System.Random((username + logPath).GetHashCode());
+
+                                                Color randomUserColor = Color.HSVToRGB((float)random.NextDouble(), 1.00f, EditorGUIUtility.isProSkin ? 0.9f : 0.6f);
+                                                string colorStr = ColorUtility.ToHtmlStringRGB(randomUserColor);
+
+                                                logState.nameColor = colorStr;
+                                            }
+                                        }
+
+                                        if (logState.lineOffset == -1)
                                         {
                                             reader.BaseStream.Seek(0, SeekOrigin.End);
                                         }
                                         else
                                         {
-                                            reader.BaseStream.Seek(lastFileOffset, SeekOrigin.Begin);
+                                            reader.BaseStream.Seek(logState.lineOffset - 4 < 0 ? 0 : logState.lineOffset - 4, SeekOrigin.Begin); // Subtract 4 characters to pick up the newlines from the prior line for the log forwarding
                                         }
 
                                         newLogContent = reader.ReadToEnd();
 
-                                        lastLogOffsets[logPath] = reader.BaseStream.Position;
+                                        logFileStates[logPath].lineOffset = reader.BaseStream.Position;
                                         reader.Close();
                                     }
 
@@ -207,24 +272,119 @@ namespace UdonSharp
                 {
                     foreach (var modifiedFile in modifiedFilesAndContents)
                     {
-                        const string errorMatchStr = "[UdonBehaviour] An exception occurred during Udon execution, this UdonBehaviour will be halted.";
+                        LogFileState state = logFileStates[modifiedFile.Item1];
 
-                        int currentErrorIndex = modifiedFile.Item2.IndexOf(errorMatchStr);
-                        while (currentErrorIndex != -1)
+                        // Log forwarding
+                        if (udonSharpSettings.watcherMode != UdonSharpSettings.LogWatcherMode.Disabled)
                         {
-                            HandleLogError(modifiedFile.Item2.Substring(currentErrorIndex, modifiedFile.Item2.Length - currentErrorIndex), $"VRChat client runtime Udon exception detected! Source log file: {Path.GetFileName(modifiedFile.Item1)}");
+                            int currentIdx = 0;
+                            Match match = null;
 
-                            currentErrorIndex = modifiedFile.Item2.IndexOf(errorMatchStr, currentErrorIndex + errorMatchStr.Length);
+                            do
+                            {
+                                currentIdx = (match?.Index ?? -1);
+
+                                match = lineMatch.Match(modifiedFile.Item2, currentIdx + 1);
+
+                                string logStr = null;
+
+                                if (currentIdx == -1)
+                                {
+                                    if (match.Success)
+                                    {
+                                        Match nextMatch = lineMatch.Match(modifiedFile.Item2, match.Index + 1);
+
+                                        if (nextMatch.Success)
+                                            logStr = modifiedFile.Item2.Substring(0, nextMatch.Index);
+                                        else
+                                            logStr = modifiedFile.Item2;
+
+                                        match = nextMatch;
+                                    }
+                                }
+                                else if (match.Success)
+                                {
+                                    logStr = modifiedFile.Item2.Substring(currentIdx < 0 ? 0 : currentIdx, match.Index - currentIdx);
+                                }
+                                else if (currentIdx != -1)
+                                {
+                                    logStr = modifiedFile.Item2.Substring(currentIdx < 0 ? 0 : currentIdx, modifiedFile.Item2.Length - currentIdx);
+                                }
+
+                                if (logStr != null)
+                                {
+                                    logStr = logStr.Trim('\n', '\r');
+
+                                    HandleForwardedLog(logStr, state, udonSharpSettings);
+                                }
+                            } while (match.Success);
+                        }
+
+                        if (udonSharpSettings.listenForVRCExceptions)
+                        {
+                            // Exception handling
+                            const string errorMatchStr = "[UdonBehaviour] An exception occurred during Udon execution, this UdonBehaviour will be halted.";
+
+                            int currentErrorIndex = modifiedFile.Item2.IndexOf(errorMatchStr);
+                            while (currentErrorIndex != -1)
+                            {
+                                HandleLogError(modifiedFile.Item2.Substring(currentErrorIndex, modifiedFile.Item2.Length - currentErrorIndex), $"VRChat client runtime Udon exception detected!", $"{ state.playerName ?? "Unknown"}");
+
+                                currentErrorIndex = modifiedFile.Item2.IndexOf(errorMatchStr, currentErrorIndex + errorMatchStr.Length);
+                            }
                         }
                     }
                 }
             }
         }
 
-        static void HandleLogError(string errorStr, string logPrefix)
+        static void HandleForwardedLog(string logMessage, LogFileState state, UdonSharpSettings settings)
         {
-            if (!errorStr.StartsWith("[<color=yellow>UdonBehaviour</color>] An exception occurred during Udon execution, this UdonBehaviour will be halted.") && // Editor
-                !errorStr.StartsWith("[UdonBehaviour] An exception occurred during Udon execution, this UdonBehaviour will be halted.")) // Client
+            const string FMT_STR = "0000.00.00 00:00:00 ";
+
+            string trimmedStr = logMessage.Substring(FMT_STR.Length);
+
+            string message = trimmedStr.Substring(trimmedStr.IndexOf('-') + 2);
+
+            if (settings.watcherMode == UdonSharpSettings.LogWatcherMode.Prefix)
+            {
+                string prefixStr = message.TrimStart(' ', '\t');
+                bool prefixFound = false;
+                foreach (string prefix in settings.logWatcherMatchStrings)
+                {
+                    if (!string.IsNullOrEmpty(prefix) && prefixStr.StartsWith(prefix))
+                    {
+                        prefixFound = true;
+                        break;
+                    }
+                }
+
+                if (!prefixFound)
+                    return;
+            }
+
+            string playername = state.playerName ?? "Unknown";
+
+            if (trimmedStr.StartsWith("Log"))
+                Debug.Log($"[<color=#{state.nameColor}>{playername}</color>]{message}");
+            else if (trimmedStr.StartsWith("Warning"))
+                Debug.LogWarning($"[<color=#{state.nameColor}>{playername}</color>]{message}");
+            else if (trimmedStr.StartsWith("Error"))
+                Debug.LogError($"[<color=#{state.nameColor}>{playername}</color>]{message}");
+        }
+
+        static void HandleLogError(string errorStr, string logPrefix, string prePrefix)
+        {
+            UdonSharpEditorCache.DebugInfoType debugType;
+            if (errorStr.StartsWith("[<color=yellow>UdonBehaviour</color>] An exception occurred during Udon execution, this UdonBehaviour will be halted.")) // Editor
+            {
+                debugType = UdonSharpEditorCache.DebugInfoType.Editor;
+            }
+            else if (errorStr.StartsWith("[UdonBehaviour] An exception occurred during Udon execution, this UdonBehaviour will be halted.")) // Client
+            {
+                debugType = UdonSharpEditorCache.DebugInfoType.Client;
+            }
+            else
                 return;
 
             const string exceptionMessageStr = "Exception Message:";
@@ -236,7 +396,19 @@ namespace UdonSharp
             int errorMessageEnd = errorStr.IndexOf(seperatorStr, errorMessageStart);
 
             if (errorMessageEnd == -1 || errorMessageEnd < errorMessageStart)
+            {
+                if (debugType == UdonSharpEditorCache.DebugInfoType.Client)
+                {
+                    errorMessageEnd = errorStr.IndexOf("\n\n\r\n");
+
+                    if (errorMessageEnd != -1)
+                        errorStr = errorStr.Substring(0, errorMessageEnd);
+
+                    Debug.LogError($"{(prePrefix != null ? $"[<color=#575ff2>{prePrefix}</color>]" : "")} Runtime error detected, but the client has not been launched with '--enable-udon-debug-logging' so the error cannot be traced. Add the argument to your client startup and try again. \n{errorStr}");
+                }
+
                 return;
+            }
 
             string errorMessage = errorStr.Substring(errorMessageStart, errorMessageEnd - errorMessageStart).TrimStart('\n', '\r');
             int programCounter;
@@ -259,24 +431,29 @@ namespace UdonSharp
                 return;
             }
 
-            (string, ClassDebugInfo) assetInfo;
+            (string, UdonSharpProgramAsset) assetInfo;
 
             if (!scriptLookup.TryGetValue(programID, out assetInfo))
                 return;
 
-            // No debug info was built
             if (assetInfo.Item2 == null)
                 return;
 
-            int debugSpanIdx = System.Array.BinarySearch(assetInfo.Item2.DebugLineSpans.Select(e => e.endInstruction).ToArray(), programCounter);
+            ClassDebugInfo debugInfo = UdonSharpEditorCache.Instance.GetDebugInfo(assetInfo.Item2, debugType);
+
+            // No debug info was built
+            if (debugInfo == null)
+                return;
+
+            int debugSpanIdx = System.Array.BinarySearch(debugInfo.DebugLineSpans.Select(e => e.endInstruction).ToArray(), programCounter);
             if (debugSpanIdx < 0)
                 debugSpanIdx = ~debugSpanIdx;
 
-            debugSpanIdx = Mathf.Clamp(debugSpanIdx, 0, assetInfo.Item2.DebugLineSpans.Length - 1);
+            debugSpanIdx = Mathf.Clamp(debugSpanIdx, 0, debugInfo.DebugLineSpans.Length - 1);
 
-            ClassDebugInfo.DebugLineSpan debugLineSpan = assetInfo.Item2.DebugLineSpans[debugSpanIdx];
+            ClassDebugInfo.DebugLineSpan debugLineSpan = debugInfo.DebugLineSpans[debugSpanIdx];
 
-            UdonSharpUtils.LogBuildError($"{logPrefix}\n{errorMessage}", assetInfo.Item1, debugLineSpan.line, debugLineSpan.lineChar);
+            UdonSharpUtils.LogRuntimeError($"{logPrefix}\n{errorMessage}", prePrefix != null ? $"[<color=#575ff2>{prePrefix}</color>]" : "", assetInfo.Item1, debugLineSpan.line, debugLineSpan.lineChar);
         }
     }
 }

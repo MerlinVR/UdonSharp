@@ -26,4 +26,14 @@ public class UdonSharpFieldVisitor : CSharpSyntaxWalker
             }
         }
     }
+
+    public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
+    {
+        return;
+    }
+
+    public override void VisitPropertyDeclaration(PropertyDeclarationSyntax node)
+    {
+        return;
+    }
 }

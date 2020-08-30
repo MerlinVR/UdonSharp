@@ -12,6 +12,8 @@ namespace UdonSharp.Tests
         [System.NonSerialized]
         public IntegrationTestSuite tester;
 
+        string[] splitStrs = new string[] { "aaaa", "a b c d", "e f g h i" };
+
         public void ExecuteTests()
         {
             string testStr = string.Concat("a", "bc", "d", "e", "fg", "hij", "klmn", "opq", "rstuv", "wx", "yz");
@@ -34,7 +36,10 @@ namespace UdonSharp.Tests
             string formatStr3 = string.Format("{0}", objArr);
             tester.TestAssertion("FormatStr 3", formatStr3 == "MethodCalls (VRC.Udon.UdonBehaviour)");
 
-            //Debug.Log(string.Join(", ", this, this, this, this)); // Runtime exception `Function '__Join__SystemString_SystemObjectArray__SystemString' is not implemented yet`
+            tester.TestAssertion("String Join Objects params", string.Join(", ", this, this, this, this) == "MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour)"); 
+            tester.TestAssertion("String Join Objects array", string.Join(", ", new object[] { this, this, this, this }) == "MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour)");
+
+            //tester.TestAssertion("Split test", "a b c d".Split(new [] { ' ' }, System.StringSplitOptions.None).Length == 4);
         }
 
         //public void test(int a, bool b, float c = 5f, params float[] d)

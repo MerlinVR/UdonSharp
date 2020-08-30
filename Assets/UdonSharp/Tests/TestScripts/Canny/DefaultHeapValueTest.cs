@@ -19,6 +19,9 @@ namespace UdonSharp.Tests
             TestSyncedString();
             TestPrivateArr();
             TestPrivateStr();
+            TestDefaultByte();
+            TestJaggedArrays();
+            TestObjectInt();
         }
 
         [HideInInspector]
@@ -43,8 +46,10 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Default String Value", defaultString == "");
         }
 
+#pragma warning disable 0649
         [UdonSynced]
         string networkSyncedString;
+#pragma warning restore 0649
 
         [UdonSynced]
         string networkSyncedStringDefaultEmpty = "";
@@ -72,22 +77,54 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Default Public Synced String Value", publicNetworkSyncedStringDefaultValue == "hello");
         }
 
+#pragma warning disable 0649
         string[] privateStrArr;
+        string privateStr;
+#pragma warning restore 0649
+        string privateNullInitializedString = null;
+        string privateInitializedString = "Test";
 
         void TestPrivateArr()
         {
             tester.TestAssertion("Private Array Default Null", privateStrArr == null);
         }
 
-        string privateStr;
-        string privateNullInitializedString = null;
-        string privateInitializedString = "Test";
-
         void TestPrivateStr()
         {
             tester.TestAssertion("Private String Default Null", privateStr == null);
             tester.TestAssertion("Private null initialized String", privateNullInitializedString == null);
             tester.TestAssertion("Private initialized String", privateInitializedString == "Test");
+        }
+        
+        byte byteVal = 0b1000_0000;
+
+        void TestDefaultByte()
+        {
+            tester.TestAssertion("Byte type match", byteVal.GetType() == typeof(byte));
+        }
+
+        int[][] jaggedArrayInitialVal = new[] { new[] { 1, 2 }, new[] { 3, 4 }, null };
+
+        void TestJaggedArrays()
+        {
+            tester.TestAssertion("Jagged array initialized", jaggedArrayInitialVal != null);
+            tester.TestAssertion("Jagged array type", jaggedArrayInitialVal.GetType() == typeof(object[]));
+            tester.TestAssertion("Jagged array element type", jaggedArrayInitialVal[0].GetType() == typeof(int[]));
+            tester.TestAssertion("Jagged array values", jaggedArrayInitialVal[0][0] == 1 &&
+                                                        jaggedArrayInitialVal[0][1] == 2 &&
+                                                        jaggedArrayInitialVal[1][0] == 3 &&
+                                                        jaggedArrayInitialVal[1][1] == 4 &&
+                                                        jaggedArrayInitialVal[2] == null);
+        }
+        
+        public object objectIntVal = 5;
+        // Should by synced by the custom inspector to the same value as objectIntVal
+        [HideInInspector]
+        public object syncedObjectIntVal = 5;
+
+        void TestObjectInt()
+        {
+            tester.TestAssertion("Object int is valid", (int)objectIntVal == (int)syncedObjectIntVal);
         }
     }
 }

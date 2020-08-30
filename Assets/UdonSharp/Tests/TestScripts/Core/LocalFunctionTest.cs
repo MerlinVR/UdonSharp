@@ -23,6 +23,7 @@ namespace UdonSharp.Tests
             TestIntermediateReturn();
             TestObjectArrayArg();
             TestStringCopy();
+            TestSetGetProgramVar();
         }
 
         int GetCountAmount() => 4;
@@ -132,6 +133,18 @@ namespace UdonSharp.Tests
             SetStr("");
 
             tester.TestAssertion("Basic string arg clear", targetVal == "");
+        }
+
+#pragma warning disable CS0649
+        int programVar;
+#pragma warning restore CS0649 
+
+        void TestSetGetProgramVar()
+        {
+            SetProgramVariable("programVar", 5);
+
+            tester.TestAssertion("SetProgramVariable local", programVar == 5);
+            tester.TestAssertion("GetProgramVariable local", (int)GetProgramVariable("programVar") == 5);
         }
     }
 }

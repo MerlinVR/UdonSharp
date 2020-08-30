@@ -10,13 +10,16 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.Text;
 using Microsoft.CSharp;
+using UdonSharp.Serialization;
+using UdonSharpEditor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
 using VRC.Udon.Common.Interfaces;
 
-namespace UdonSharp
+namespace UdonSharp.Compiler
 {
     public class UdonSharpCompiler
     {
@@ -37,17 +40,20 @@ namespace UdonSharp
         }
 
         private CompilationModule[] modules;
+        private bool isEditorBuild = true;
 
         private static int initAssemblyCounter = 0;
 
-        public UdonSharpCompiler(UdonSharpProgramAsset programAsset)
+        public UdonSharpCompiler(UdonSharpProgramAsset programAsset, bool editorBuild = true)
         {
             modules = new CompilationModule[] { new CompilationModule(programAsset) };
+            isEditorBuild = editorBuild;
         }
 
-        public UdonSharpCompiler(UdonSharpProgramAsset[] programAssets)
+        public UdonSharpCompiler(UdonSharpProgramAsset[] programAssets, bool editorBuild = true)
         {
             modules = programAssets.Where(e => e.sourceCsScript != null).Select(e => new CompilationModule(e)).ToArray();
+            isEditorBuild = editorBuild;
         }
 
         public void Compile()
@@ -61,10 +67,67 @@ namespace UdonSharp
 
             try
             {
-                List<ClassDefinition> classDefinitions = BuildClassDefinitions();
-                if (classDefinitions == null)
-                    totalErrorCount++;
+                EditorUtility.DisplayProgressBar("UdonSharp Compile", "Parsing Syntax Trees...", 0f);
+                
+                UdonSharpProgramAsset[] allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
+                List<(UdonSharpProgramAsset, string)> programAssetsAndPaths = new List<(UdonSharpProgramAsset, string)>();
 
+                foreach (UdonSharpProgramAsset programAsset in allPrograms)
+                {
+                    if (programAsset == null || programAsset.sourceCsScript == null)
+                        continue;
+
+                    programAssetsAndPaths.Add((programAsset, AssetDatabase.GetAssetPath(programAsset.sourceCsScript)));
+                }
+
+                object syntaxTreeLock = new object();
+                List<(UdonSharpProgramAsset, Microsoft.CodeAnalysis.SyntaxTree)> programsAndSyntaxTrees = new List<(UdonSharpProgramAsset, Microsoft.CodeAnalysis.SyntaxTree)>();
+                Dictionary<UdonSharpProgramAsset, (string, Microsoft.CodeAnalysis.SyntaxTree)> syntaxTreeSourceLookup = new Dictionary<UdonSharpProgramAsset, (string, Microsoft.CodeAnalysis.SyntaxTree)>();
+
+                string[] defines = UdonSharpUtils.GetProjectDefines(isEditorBuild);
+
+                Parallel.ForEach(programAssetsAndPaths, (currentProgram) =>
+                {
+                    string programSource = UdonSharpUtils.ReadFileTextSync(currentProgram.Item2);
+
+                    Microsoft.CodeAnalysis.SyntaxTree programSyntaxTree = CSharpSyntaxTree.ParseText(programSource, CSharpParseOptions.Default.WithDocumentationMode(DocumentationMode.None).WithPreprocessorSymbols(defines));
+
+                    lock (syntaxTreeLock)
+                    {
+                        programsAndSyntaxTrees.Add((currentProgram.Item1, programSyntaxTree));
+                        syntaxTreeSourceLookup.Add(currentProgram.Item1, (programSource, programSyntaxTree));
+                    }
+                });
+
+                foreach (var syntaxTree in programsAndSyntaxTrees)
+                {
+                    foreach (Diagnostic diagnostic in syntaxTree.Item2.GetDiagnostics())
+                    {
+                        if (diagnostic.Severity == DiagnosticSeverity.Error)
+                        {
+                            totalErrorCount++;
+
+                            LinePosition linePosition = diagnostic.Location.GetLineSpan().StartLinePosition;
+
+                            UdonSharpUtils.LogBuildError($"error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}", AssetDatabase.GetAssetPath(syntaxTree.Item1.sourceCsScript), linePosition.Line, linePosition.Character);
+                        }
+                    }
+                }
+
+                List<ClassDefinition> classDefinitions = null;
+
+                // Bind stage
+                if (totalErrorCount == 0)
+                {
+                    EditorUtility.DisplayProgressBar("UdonSharp Compile", "Building class definitions...", 0f);
+
+                    classDefinitions = BindPrograms(programsAndSyntaxTrees);
+
+                    if (classDefinitions == null)
+                        totalErrorCount++;
+                }
+
+                // Compile stage
                 if (totalErrorCount == 0)
                 {
 #if UDONSHARP_DEBUG // Single threaded compile
@@ -72,14 +135,18 @@ namespace UdonSharp
 
                     foreach (CompilationModule module in modules)
                     {
-                        compileTasks.Add(module.Compile(classDefinitions));
+                        var sourceTree = syntaxTreeSourceLookup[module.programAsset];
+
+                        compileTasks.Add(module.Compile(classDefinitions, sourceTree.Item2, sourceTree.Item1, isEditorBuild));
                     }
 #else
                     List<Task<CompileTaskResult>> compileTasks = new List<Task<CompileTaskResult>>();
 
                     foreach (CompilationModule module in modules)
                     {
-                        compileTasks.Add(Task.Factory.StartNew(() => module.Compile(classDefinitions)));
+                        var sourceTree = syntaxTreeSourceLookup[module.programAsset];
+
+                        compileTasks.Add(Task.Factory.StartNew(() => module.Compile(classDefinitions, sourceTree.Item2, sourceTree.Item1, isEditorBuild)));
                     }
 #endif
 
@@ -100,7 +167,22 @@ namespace UdonSharp
                         if (compileResult.compileErrors.Count == 0)
                         {
                             compileResult.programAsset.SetUdonAssembly(compileResult.compiledAssembly);
-                            compileResult.programAsset.AssembleCsProgram(compileResult.symbolCount);
+                            bool assembled = compileResult.programAsset.AssembleCsProgram(compileResult.symbolCount);
+                            compileResult.programAsset.SetUdonAssembly("");
+                            UdonSharpEditorCache.Instance.SetUASMStr(compileResult.programAsset, compileResult.compiledAssembly);
+
+                            if (!assembled)
+                            {
+                                FieldInfo assemblyError = typeof(VRC.Udon.Editor.ProgramSources.UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance);
+                                string error = (string)assemblyError.GetValue(compileResult.programAsset);
+
+                                totalErrorCount++;
+
+                                if (!string.IsNullOrEmpty(error))
+                                    UdonSharpUtils.LogBuildError(error, AssetDatabase.GetAssetPath(compileResult.programAsset.sourceCsScript), 0, 0);
+                                else
+                                    UdonSharpUtils.LogBuildError("Failed to assemble program", AssetDatabase.GetAssetPath(compileResult.programAsset.sourceCsScript), 0, 0);
+                            }
                         }
                         else
                         {
@@ -129,39 +211,112 @@ namespace UdonSharp
                         EditorUtility.DisplayProgressBar("UdonSharp Compile", "Assigning constants...", 1f);
                         int initializerErrorCount = AssignHeapConstants();
                         totalErrorCount += initializerErrorCount;
+                    }
 
-                        if (initializerErrorCount == 0)
+                    if (totalErrorCount == 0)
+                    {
+                        foreach (CompilationModule module in modules)
                         {
-                            foreach (CompilationModule module in modules)
-                            {
-                                module.programAsset.ApplyProgram();
-                            }
+                            module.programAsset.ApplyProgram();
+                            UdonSharpEditorCache.Instance.UpdateSourceHash(module.programAsset);
                         }
+
+                        EditorUtility.DisplayProgressBar("UdonSharp Compile", "Post Build Scene Fixup", 1f);
+                        UdonSharpEditorCache.Instance.LastBuildType = isEditorBuild ? UdonSharpEditorCache.DebugInfoType.Editor : UdonSharpEditorCache.DebugInfoType.Client;
+                        UdonSharpEditorManager.RunPostBuildSceneFixup();
+                    }
+                }
+
+                if (totalErrorCount > 0)
+                {
+                    foreach (CompilationModule module in modules)
+                    {
+                        UdonSharpEditorCache.Instance.ClearSourceHash(module.programAsset);
                     }
                 }
             }
             finally
             {
                 EditorUtility.ClearProgressBar();
+                Profiler.EndSample();
             }
 
             compileTimer.Stop();
-
-            EditorUtility.ClearProgressBar();
 
             if (totalErrorCount == 0)
             {
                 if (modules.Length > 5)
                 {
-                    Debug.Log($"[UdonSharp] Compile of {modules.Length} scripts finished in {compileTimer.Elapsed.ToString("mm\\:ss\\.fff")}");
+                    Debug.Log($"[<color=#0c824c>UdonSharp</color>] Compile of {modules.Length} scripts finished in {compileTimer.Elapsed.ToString("mm\\:ss\\.fff")}");
                 }
                 else
                 {
-                    Debug.Log($"[UdonSharp] Compile of script{(modules.Length > 1 ? "s" : "")} {string.Join(", ", modules.Select(e => Path.GetFileName(AssetDatabase.GetAssetPath(e.programAsset.sourceCsScript))))} finished in {compileTimer.Elapsed.ToString("mm\\:ss\\.fff")}");
+                    Debug.Log($"[<color=#0c824c>UdonSharp</color>] Compile of script{(modules.Length > 1 ? "s" : "")} {string.Join(", ", modules.Select(e => Path.GetFileName(AssetDatabase.GetAssetPath(e.programAsset.sourceCsScript))))} finished in {compileTimer.Elapsed.ToString("mm\\:ss\\.fff")}");
+                }
+            }
+        }
+
+        List<ClassDefinition> BindPrograms(List<(UdonSharpProgramAsset, Microsoft.CodeAnalysis.SyntaxTree)> allPrograms)
+        {
+            List<BindTaskResult> bindTaskResults = new List<BindTaskResult>();
+
+            List<ClassDefinitionBinder> classBinders = new List<ClassDefinitionBinder>();
+
+            foreach (var programAssetAndTree in allPrograms)
+            {
+                classBinders.Add(new ClassDefinitionBinder(programAssetAndTree.Item1, programAssetAndTree.Item2));
+            }
+
+#if UDONSHARP_DEBUG // Single threaded bind
+            List<BindTaskResult> bindTasks = new List<BindTaskResult>();
+
+            foreach (ClassDefinitionBinder binder in classBinders)
+            {
+                bindTasks.Add(binder.BuildClassDefinition());
+            }
+#else
+            List<Task<BindTaskResult>> bindTasks = new List<Task<BindTaskResult>>();
+
+            foreach (ClassDefinitionBinder binder in classBinders)
+            {
+                bindTasks.Add(Task.Factory.StartNew(() => binder.BuildClassDefinition()));
+            }
+#endif
+
+            int errorCount = 0;
+            List<ClassDefinition> classDefinitions = new List<ClassDefinition>();
+
+            while (bindTasks.Count > 0)
+            {
+#if UDONSHARP_DEBUG
+                BindTaskResult bindResult = bindTasks.Last();
+                bindTasks.RemoveAt(bindTasks.Count - 1);
+#else
+                Task<BindTaskResult> bindResultTask = Task.WhenAny(bindTasks).Result;
+                bindTasks.Remove(bindResultTask);
+
+                BindTaskResult bindResult = bindResultTask.Result;
+#endif
+
+                if (bindResult.compileErrors.Count == 0)
+                {
+                    classDefinitions.Add(bindResult.classDefinition);
+                }
+                else
+                {
+                    errorCount++;
+
+                    foreach (CompileError bindError in bindResult.compileErrors)
+                    {
+                        UdonSharpUtils.LogBuildError(bindError.errorStr, AssetDatabase.GetAssetPath(bindResult.sourceScript), bindError.lineIdx, bindError.charIdx);
+                    }
                 }
             }
 
-            Profiler.EndSample();
+            if (errorCount == 0)
+                return classDefinitions;
+
+            return null;
         }
 
         public int AssignHeapConstants()
@@ -238,6 +393,48 @@ namespace UdonSharp
 
             return fieldInitializerErrorCount;
         }
+        
+        // Called from the generated assembly to assign values to the program
+        static void SetHeapField<T>(IUdonProgram program, T value, string symbolName)
+        {
+            if (UdonSharpUtils.IsUserJaggedArray(typeof(T)))
+            {
+                Serializer<T> serializer = Serializer.CreatePooled<T>();
+
+                SimpleValueStorage<object[]> arrayStorage = new SimpleValueStorage<object[]>();
+                serializer.Write(arrayStorage, in value);
+                
+                program.Heap.SetHeapVariable<object[]>(program.SymbolTable.GetAddressFromSymbol(symbolName), arrayStorage.Value);
+            }
+            else
+            {
+                //program.Heap.SetHeapVariable<T>(program.SymbolTable.GetAddressFromSymbol(symbolName), value);
+                throw new System.NotImplementedException(); // This should not get hit currently
+            }
+        }
+
+        string GetFullTypeQualifiedName(System.Type type)
+        {
+            string namespaceStr = "";
+
+            if (type.Namespace != null &&
+                type.Namespace.Length > 0)
+            {
+                namespaceStr = type.Namespace + ".";
+            }
+
+            string nestedTypeStr = "";
+
+            System.Type declaringType = type.DeclaringType;
+
+            while (declaringType != null)
+            {
+                nestedTypeStr = $"{declaringType.Name}.{nestedTypeStr}";
+                declaringType = declaringType.DeclaringType;
+            }
+
+            return namespaceStr + nestedTypeStr + type.Name;
+        }
 
         private int RunFieldInitalizers(CompilationModule[] compiledModules)
         {
@@ -273,6 +470,7 @@ namespace UdonSharp
                 method.ReturnType = new CodeTypeReference(typeof(void));
                 method.Name = "DoInit";
                 method.Parameters.Add(new CodeParameterDeclarationExpression(typeof(IUdonProgram), "program"));
+                method.Parameters.Add(new CodeParameterDeclarationExpression(typeof(MethodInfo), "heapSetMethod"));
 
                 foreach (var fieldDeclarationSyntax in module.fieldsWithInitializers)
                 {
@@ -286,29 +484,7 @@ namespace UdonSharp
 
                         string typeQualifiedName = type.ToString().Replace('+', '.');
                         if (fieldDef != null)
-                        {
-                            string namespaceStr = "";
-
-                            System.Type symbolType = fieldDef.fieldSymbol.symbolCsType;
-
-                            if (symbolType.Namespace != null &&
-                                symbolType.Namespace.Length > 0)
-                            {
-                                namespaceStr = symbolType.Namespace + ".";
-                            }
-
-                            string nestedTypeStr = "";
-
-                            System.Type declaringType = symbolType.DeclaringType;
-
-                            while (declaringType != null)
-                            {
-                                nestedTypeStr = $"{declaringType.Name}.{nestedTypeStr}";
-                                declaringType = declaringType.DeclaringType;
-                            }
-
-                            typeQualifiedName = namespaceStr + nestedTypeStr + fieldDef.fieldSymbol.symbolCsType.Name;
-                        }
+                            typeQualifiedName = GetFullTypeQualifiedName(fieldDef.fieldSymbol.symbolCsType);
 
                         if (variable.Initializer != null)
                         {
@@ -322,8 +498,16 @@ namespace UdonSharp
                                 method.Statements.Add(new CodeSnippetStatement($"{typeQualifiedName} {name} {variable.Initializer};"));
                             }
 
-                            method.Statements.Add(new CodeSnippetStatement(
-                                $"program.Heap.SetHeapVariable(program.SymbolTable.GetAddressFromSymbol(\"{variable.Identifier}\"), {name});"));
+                            if (UdonSharpUtils.IsUserJaggedArray(fieldDef.fieldSymbol.userCsType))
+                            {
+                                method.Statements.Add(new CodeSnippetStatement(
+                                    "heapSetMethod.MakeGenericMethod(typeof(" + GetFullTypeQualifiedName(fieldDef.fieldSymbol.userCsType) + ")).Invoke(null, new object[] { program, " + name + ", \"" + variable.Identifier + "\"});"));
+                            }
+                            else
+                            {
+                                method.Statements.Add(new CodeSnippetStatement(
+                                    $"program.Heap.SetHeapVariable(program.SymbolTable.GetAddressFromSymbol(\"{variable.Identifier}\"), {name});"));
+                            }
 
                             count++;
                         }
@@ -391,7 +575,7 @@ namespace UdonSharp
 
                         System.Type cls = assembly.GetType($"FieldInitialzers.Initializer{moduleIdx}");
                         MethodInfo methodInfo = cls.GetMethod("DoInit", BindingFlags.Public | BindingFlags.Static);
-                        methodInfo.Invoke(null, new[] { program });
+                        methodInfo.Invoke(null, new object[] { program, typeof(UdonSharpCompiler).GetMethod("SetHeapField", BindingFlags.NonPublic | BindingFlags.Static) });
 
                         foreach (var fieldDeclarationSyntax in module.fieldsWithInitializers)
                         {
@@ -403,7 +587,7 @@ namespace UdonSharp
 
                                 if (heapValue != null && UdonSharpUtils.IsUserDefinedType(heapValue.GetType()))
                                 {
-                                    string fieldError = $"Field: '{varName}' UdonSharp does not yet support field initializers on user-defined types or jagged arrays";
+                                    string fieldError = $"Field: '{varName}' UdonSharp does not yet support field initializers on user-defined types";
 
                                     UdonSharpUtils.LogBuildError(fieldError, AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript), 0, 0);
 
@@ -418,27 +602,26 @@ namespace UdonSharp
             return initializerErrorCount;
         }
 
-        private List<ClassDefinition> BuildClassDefinitions()
+        class BindTaskResult
         {
-            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
+            public ClassDefinition classDefinition;
+            public MonoScript sourceScript;
+            public List<CompileError> compileErrors = new List<CompileError>();
+        }
 
-            List<UdonSharpProgramAsset> udonSharpPrograms = new List<UdonSharpProgramAsset>();
+        class ClassDefinitionBinder
+        {
+            UdonSharpProgramAsset programAsset;
+            Microsoft.CodeAnalysis.SyntaxTree syntaxTree;
 
-            foreach (string dataGuid in udonSharpDataAssets)
+            public ClassDefinitionBinder(UdonSharpProgramAsset programAsset, Microsoft.CodeAnalysis.SyntaxTree syntaxTree)
             {
-                udonSharpPrograms.Add(AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid)));
+                this.programAsset = programAsset;
+                this.syntaxTree = syntaxTree;
             }
 
-            List<ClassDefinition> classDefinitions = new List<ClassDefinition>();
-
-            foreach (UdonSharpProgramAsset udonSharpProgram in udonSharpPrograms)
+            public BindTaskResult BuildClassDefinition()
             {
-                if (udonSharpProgram.sourceCsScript == null)
-                    continue;
-
-                string sourcePath = AssetDatabase.GetAssetPath(udonSharpProgram.sourceCsScript);
-                string programSource = UdonSharpUtils.ReadFileTextSync(sourcePath);
-
                 ResolverContext resolver = new ResolverContext();
                 SymbolTable classSymbols = new SymbolTable(resolver, null);
 
@@ -446,28 +629,58 @@ namespace UdonSharp
 
                 LabelTable classLabels = new LabelTable();
 
-                Microsoft.CodeAnalysis.SyntaxTree tree = CSharpSyntaxTree.ParseText(programSource);
-
                 ClassVisitor classVisitor = new ClassVisitor(resolver, classSymbols, classLabels);
+
+                BindTaskResult bindTaskResult = new BindTaskResult();
+                bindTaskResult.sourceScript = programAsset.sourceCsScript;
 
                 try
                 {
-                    classVisitor.Visit(tree.GetRoot());
+                    classVisitor.Visit(syntaxTree.GetRoot());
                 }
                 catch (System.Exception e)
                 {
-                    UdonSharpUtils.LogBuildError($"{e.GetType()}: {e.Message}", sourcePath.Replace("/", "\\"), 0, 0);
+                    SyntaxNode node = classVisitor.visitorContext.currentNode;
 
-                    return null;
+                    string errorString;
+                    int charIndex;
+                    int lineIndex;
+
+                    if (node != null)
+                    {
+                        FileLinePositionSpan lineSpan = node.GetLocation().GetLineSpan();
+                        
+                        charIndex = lineSpan.StartLinePosition.Character;
+                        lineIndex = lineSpan.StartLinePosition.Line;
+                    }
+                    else
+                    {
+                        charIndex = 0;
+                        lineIndex = 0;
+                    }
+
+                    errorString = $"{e.GetType()}: {e.Message}";
+
+#if UDONSHARP_DEBUG
+                    Debug.LogException(e);
+                    Debug.LogError(e.StackTrace);
+#endif
+                    
+                    bindTaskResult.compileErrors.Add(new CompileError() { script = programAsset.sourceCsScript, errorStr = errorString, charIdx = charIndex, lineIdx = lineIndex });
+
+                    classSymbols.CloseSymbolTable();
+
+                    return bindTaskResult;
                 }
 
                 classSymbols.CloseSymbolTable();
 
-                classVisitor.classDefinition.classScript = udonSharpProgram.sourceCsScript;
-                classDefinitions.Add(classVisitor.classDefinition);
-            }
+                classVisitor.classDefinition.classScript = programAsset.sourceCsScript;
 
-            return classDefinitions;
+                bindTaskResult.classDefinition = classVisitor.classDefinition;
+
+                return bindTaskResult;
+            }
         }
     }
 }

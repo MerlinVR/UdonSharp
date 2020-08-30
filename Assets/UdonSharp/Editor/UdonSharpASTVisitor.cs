@@ -1,14 +1,12 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using UnityEngine;
 
-namespace UdonSharp
+namespace UdonSharp.Compiler
 {
     public class ASTVisitorContext
     {
@@ -19,6 +17,9 @@ namespace UdonSharp
         public System.Type behaviourUserType;
         public List<ClassDefinition> externClassDefinitions;
         public Dictionary<string, FieldDefinition> localFieldDefinitions;
+#if UDON_BETA_SDK
+        public BehaviourSyncMode behaviourSyncMode = BehaviourSyncMode.Any;
+#endif
 
         public Stack<ExpressionCaptureScope> expressionCaptureStack = new Stack<ExpressionCaptureScope>();
         
@@ -28,6 +29,9 @@ namespace UdonSharp
         public JumpLabel returnLabel = null;
         public SymbolDefinition returnJumpTarget = null;
         public SymbolDefinition returnSymbol = null;
+#if UDON_BETA_SDK
+        public bool requiresVRCReturn = false;
+#endif
         public Stack<JumpLabel> continueLabelStack = new Stack<JumpLabel>();
         public Stack<JumpLabel> breakLabelStack = new Stack<JumpLabel>();
 
@@ -38,6 +42,9 @@ namespace UdonSharp
         // Debugging info
         public SyntaxNode currentNode = null;
         public ClassDebugInfo debugInfo = null;
+        public bool pauseDebugInfoWrite = false;
+
+        internal Dictionary<(System.Type, BindingFlags), MethodInfo[]> typeMethodCache = new Dictionary<(System.Type, BindingFlags), MethodInfo[]>();
 
         public ASTVisitorContext(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTableIn, ClassDebugInfo debugInfoIn = null)
         {
@@ -105,15 +112,11 @@ namespace UdonSharp
     /// <summary>
     /// This is where most of the work is done to convert a C# AST into intermediate UAsm
     /// </summary>
-    public class ASTVisitor : CSharpSyntaxWalker
+    public class ASTVisitor : UdonSharpSyntaxWalker
     {
-        public ASTVisitorContext visitorContext { get; private set; }
-        private Stack<string> namespaceStack = new Stack<string>();
-
         public ASTVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable, List<MethodDefinition> methodDefinitions, List<ClassDefinition> externUserClassDefinitions, ClassDebugInfo debugInfo)
-            : base(SyntaxWalkerDepth.Node)
+            : base(resolver, rootTable, labelTable, debugInfo)
         {
-            visitorContext = new ASTVisitorContext(resolver, rootTable, labelTable, debugInfo);
             visitorContext.returnJumpTarget = rootTable.CreateNamedSymbol("returnTarget", typeof(uint), SymbolDeclTypeFlags.Internal);
             visitorContext.definedMethods = methodDefinitions;
             visitorContext.externClassDefinitions = externUserClassDefinitions;
@@ -147,14 +150,6 @@ namespace UdonSharp
         public int GetExternStrCount()
         {
             return visitorContext.uasmBuilder.GetExternStrCount();
-        }
-
-        private void UpdateSyntaxNode(SyntaxNode node)
-        {
-            visitorContext.currentNode = node;
-
-            if (visitorContext.debugInfo != null)
-                visitorContext.debugInfo.UpdateSyntaxNode(node);
         }
 
         public override void DefaultVisit(SyntaxNode node)
@@ -197,26 +192,6 @@ namespace UdonSharp
             {
                 Visit(member);
             }
-        }
-
-        // We don't care about namespaces at the moment. This may change in the future if we allow users to call custom behaviours.
-        public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            string[] namespaces = node.Name.ToFullString().TrimEnd('\r', '\n', ' ').Split('.');
-
-            foreach (string currentNamespace in namespaces)
-                namespaceStack.Push(currentNamespace);
-
-            foreach (UsingDirectiveSyntax usingDirective in node.Usings)
-                Visit(usingDirective);
-
-            foreach (MemberDeclarationSyntax memberDeclaration in node.Members)
-                Visit(memberDeclaration);
-
-            for (int i = 0; i < namespaces.Length; ++i)
-                namespaceStack.Pop();
         }
 
         public override void VisitSimpleBaseType(SimpleBaseTypeSyntax node)
@@ -276,6 +251,47 @@ namespace UdonSharp
                 visitorContext.behaviourUserType = selfTypeCaptureScope.captureType;
             }
 
+#if UDON_BETA_SDK
+            // Behaviour sync mode attribute handling
+            if (node.AttributeLists != null)
+            {
+                foreach (AttributeListSyntax attributeList in node.AttributeLists)
+                {
+                    foreach (AttributeSyntax attribute in attributeList.Attributes)
+                    {
+                        System.Type captureType = null;
+
+                        using (ExpressionCaptureScope attributeTypeScope = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            attributeTypeScope.isAttributeCaptureScope = true;
+
+                            Visit(attribute.Name);
+
+                            captureType = attributeTypeScope.captureType;
+                        }
+
+                        if (captureType != null && captureType == typeof(UdonBehaviourSyncModeAttribute))
+                        {
+                            if (attribute.ArgumentList != null && 
+                                attribute.ArgumentList.Arguments != null && 
+                                attribute.ArgumentList.Arguments.Count == 1)
+                            {
+                                using (ExpressionCaptureScope attributeCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+                                {
+                                    Visit(attribute.ArgumentList.Arguments[0].Expression);
+
+                                    if (!attributeCaptureScope.IsEnum())
+                                        throw new System.Exception("Invalid attribute argument provided for behaviour sync");
+
+                                    visitorContext.behaviourSyncMode = (BehaviourSyncMode)attributeCaptureScope.GetEnumValue();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+#endif
+
             Visit(node.BaseList);
 
             visitorContext.topTable.CreateReflectionSymbol("udonTypeID", typeof(long), Internal.UdonSharpInternalUtility.GetTypeID(visitorContext.behaviourUserType));
@@ -289,22 +305,6 @@ namespace UdonSharp
             }
 
             visitorContext.uasmBuilder.AppendLine(".code_end", 0);
-        }
-
-        public override void VisitUsingDirective(UsingDirectiveSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            using (ExpressionCaptureScope captureScope = new ExpressionCaptureScope(visitorContext, null))
-            {
-                Visit(node.Name);
-
-                if (!captureScope.IsNamespace())
-                    throw new System.Exception("Captured scope is not a namespace!");
-
-                //Debug.Log($"Added namespace: {captureScope.captureNamespace}");
-                visitorContext.resolverContext.AddNamespace(captureScope.captureNamespace);
-            }
         }
 
         public override void VisitEmptyStatement(EmptyStatementSyntax node)
@@ -355,6 +355,13 @@ namespace UdonSharp
             throw new System.NotSupportedException("Default expressions are not yet supported by UdonSharp");
         }
 
+        public override void VisitEnumDeclaration(EnumDeclarationSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            throw new System.NotSupportedException("UdonSharp does not yet support user defined enums");
+        }
+        
         public override void VisitTryStatement(TryStatementSyntax node)
         {
             UpdateSyntaxNode(node);
@@ -404,27 +411,6 @@ namespace UdonSharp
             Visit(node.Declaration);
         }
 
-        public override void VisitArrayType(ArrayTypeSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            using (ExpressionCaptureScope arrayTypeCaptureScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
-            {
-                Visit(node.ElementType);
-
-                for (int i = 0; i < node.RankSpecifiers.Count; ++i)
-                    arrayTypeCaptureScope.MakeArrayType();
-            }
-        }
-
-        public override void VisitArrayRankSpecifier(ArrayRankSpecifierSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            foreach (ExpressionSyntax size in node.Sizes)
-                Visit(size);
-        }
-
         public override void VisitArrayCreationExpression(ArrayCreationExpressionSyntax node)
         {
             UpdateSyntaxNode(node);
@@ -453,7 +439,7 @@ namespace UdonSharp
                 foreach (ArrayRankSpecifierSyntax rankSpecifierSyntax in node.Type.RankSpecifiers)
                 {
                     if (rankSpecifierSyntax.Sizes.Count != 1)
-                        throw new System.NotSupportedException("UdonSharp does not support multidimensional arrays at the moment");
+                        throw new System.NotSupportedException("UdonSharp does not support multidimensional arrays at the moment, use jagged arrays instead for now.");
                 }
 
                 SymbolDefinition arrayRankSymbol = null;
@@ -618,7 +604,7 @@ namespace UdonSharp
                 Visit(node.Expression);
 
                 if (node.ArgumentList.Arguments.Count != 1)
-                    throw new System.NotSupportedException("UdonSharp does not support multidimensional accesses yet");
+                    throw new System.NotSupportedException("UdonSharp does not support multidimensional array accesses yet");
 
                 using (ExpressionCaptureScope indexerCaptureScope = new ExpressionCaptureScope(visitorContext, null))
                 {
@@ -728,43 +714,50 @@ namespace UdonSharp
                             }
                             else if (captureType != null)
                             {
-                                object attributeObject = null;
+                                try
+                                {
+                                    object attributeObject = null;
 
-                                if (attribute.ArgumentList == null ||
-                                    attribute.ArgumentList.Arguments == null ||
-                                    attribute.ArgumentList.Arguments.Count == 0)
-                                {
-                                    attributeObject = System.Activator.CreateInstance(captureType);
-                                }
-                                else
-                                {
-                                    // todo: requires constant folding to support decently
-                                    object[] attributeArgs = new object[attribute.ArgumentList.Arguments.Count];
-                                    
-                                    for (int i = 0; i < attributeArgs.Length; ++i)
+                                    if (attribute.ArgumentList == null ||
+                                        attribute.ArgumentList.Arguments == null ||
+                                        attribute.ArgumentList.Arguments.Count == 0)
                                     {
-                                        AttributeArgumentSyntax attributeArg = attribute.ArgumentList.Arguments[i];
+                                        attributeObject = System.Activator.CreateInstance(captureType);
+                                    }
+                                    else
+                                    {
+                                        // todo: requires constant folding to support decently
+                                        object[] attributeArgs = new object[attribute.ArgumentList.Arguments.Count];
 
-                                        using (ExpressionCaptureScope attributeCapture = new ExpressionCaptureScope(visitorContext, null))
+                                        for (int i = 0; i < attributeArgs.Length; ++i)
                                         {
-                                            Visit(attributeArg);
+                                            AttributeArgumentSyntax attributeArg = attribute.ArgumentList.Arguments[i];
 
-                                            SymbolDefinition attrSymbol = attributeCapture.ExecuteGet();
-
-                                            if (!attrSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant))
+                                            using (ExpressionCaptureScope attributeCapture = new ExpressionCaptureScope(visitorContext, null))
                                             {
-                                                throw new System.ArgumentException("Attributes do not support non-constant expressions");
-                                            }
+                                                Visit(attributeArg);
 
-                                            attributeArgs[i] = attrSymbol.symbolDefaultValue;
+                                                SymbolDefinition attrSymbol = attributeCapture.ExecuteGet();
+
+                                                if (!attrSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant))
+                                                {
+                                                    throw new System.ArgumentException("Attributes do not support non-constant expressions");
+                                                }
+
+                                                attributeArgs[i] = attrSymbol.symbolDefaultValue;
+                                            }
                                         }
+
+                                        attributeObject = System.Activator.CreateInstance(captureType, attributeArgs);
                                     }
 
-                                    attributeObject = System.Activator.CreateInstance(captureType, attributeArgs);
+                                    if (attributeObject != null)
+                                        attributes.Add((System.Attribute)attributeObject);
                                 }
-
-                                if (attributeObject != null)
-                                    attributes.Add((System.Attribute)attributeObject);
+                                catch (System.Reflection.TargetInvocationException constructionException)
+                                {
+                                    throw constructionException.InnerException;
+                                }
                             }
                         }
                     }
@@ -779,11 +772,23 @@ namespace UdonSharp
             if (syncMode == UdonSyncMode.NotSynced)
                 return;
 
+#if UDON_BETA_SDK
+            if (!VRC.Udon.UdonNetworkTypes.CanSync(typeToSync))
+                throw new System.NotSupportedException($"Udon does not currently support syncing of the type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+            else if (syncMode == UdonSyncMode.Linear && !VRC.Udon.UdonNetworkTypes.CanSyncLinear(typeToSync))
+                throw new System.NotSupportedException($"Udon does not support linear interpolation of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+            else if (syncMode == UdonSyncMode.Smooth && !VRC.Udon.UdonNetworkTypes.CanSyncSmooth(typeToSync))
+                throw new System.NotSupportedException($"Udon does not support smooth interpolation of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+
+            if (visitorContext.behaviourSyncMode == BehaviourSyncMode.Manual && syncMode != UdonSyncMode.None)
+                throw new System.NotSupportedException($"Udon does not support variable tweening when the behaviour is in Manual sync mode");
+#else
             if (!UdonSharpUtils.IsUdonSyncedType(typeToSync))
                 throw new System.NotSupportedException($"Udon does not currently support syncing of the type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
-
+            
             if (syncMode != UdonSyncMode.None && (typeToSync == typeof(string) || typeToSync == typeof(char)))
                 throw new System.NotSupportedException($"Udon does not support tweening the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
+#endif
         }
 
         public override void VisitFieldDeclaration(FieldDeclarationSyntax node)
@@ -890,7 +895,6 @@ namespace UdonSharp
                             symbolCreationScope.ExecuteSet(initializerCapture.ExecuteGet());
                         }
                     }
-
                     
                     newSymbol.syncMode = syncMode;
                 }
@@ -899,33 +903,10 @@ namespace UdonSharp
                 newSymbols.Add(newSymbol);
             }
 
-            string udonTypeName = visitorContext.resolverContext.GetUdonTypeName(variableType);
-
-            bool isUserDefinedType = UdonSharpUtils.IsUserDefinedType(variableType);
-
-            if (!visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Variable) &&
-                !visitorContext.resolverContext.ValidateUdonTypeName(udonTypeName, UdonReferenceType.Type) &&
-                //VRC.Udon.Editor.UdonEditorManager.Instance.GetTypeFromTypeString(udonTypeName) != null && // I'd assume that this should work instead of the ValidateUdonTypeName calls, but it doesn't pick up a bunch of types
-                !isUserDefinedType)
+            if (!visitorContext.resolverContext.IsValidUdonType(variableType))
                 throw new System.NotSupportedException($"Udon does not support variables of type '{variableType.Name}' yet");
 
             return newSymbols;
-        }
-
-        public override void VisitIdentifierName(IdentifierNameSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            if (visitorContext.topCaptureScope != null)
-                visitorContext.topCaptureScope.ResolveAccessToken(node.Identifier.ValueText);
-        }
-
-        public override void VisitPredefinedType(PredefinedTypeSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            if (visitorContext.topCaptureScope != null)
-                visitorContext.topCaptureScope.ResolveAccessToken(node.Keyword.ValueText);
         }
 
         // Not really strictly needed since the compiler for the normal C# will yell at people for us if they attempt to access something not valid for `this`
@@ -1357,6 +1338,9 @@ namespace UdonSharp
             JumpLabel returnLabel = visitorContext.labelTable.GetNewJumpLabel("return");
             visitorContext.returnLabel = returnLabel;
             visitorContext.returnSymbol = definition.returnSymbol;
+#if UDON_BETA_SDK
+            visitorContext.requiresVRCReturn = functionName == "_onOwnershipRequest" ? true : false;
+#endif
 
             visitorContext.uasmBuilder.AddJumpLabel(definition.methodUdonEntryPoint);
             
@@ -1419,11 +1403,24 @@ namespace UdonSharp
 
                     if (visitorContext.returnSymbol != null)
                     {
+                        SymbolDefinition returnValue = expressionBodyCapture.ExecuteGet();
+
                         using (ExpressionCaptureScope returnSetterScope = new ExpressionCaptureScope(visitorContext, null))
                         {
                             returnSetterScope.SetToLocalSymbol(visitorContext.returnSymbol);
-                            returnSetterScope.ExecuteSetDirect(expressionBodyCapture);
+                            returnSetterScope.ExecuteSet(returnValue);
                         }
+
+#if UDON_BETA_SDK
+                        if (visitorContext.requiresVRCReturn)
+                        {
+                            using (ExpressionCaptureScope returnValueSetMethod = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                returnValueSetMethod.ResolveAccessToken(nameof(VRC.Udon.UdonBehaviour.WriteReturnValue));
+                                returnValueSetMethod.Invoke(new SymbolDefinition[] { returnValue });
+                            }
+                        }
+#endif
                     }
                 }
             }
@@ -1932,11 +1929,25 @@ namespace UdonSharp
                 {
                     Visit(node.Expression);
 
+                    SymbolDefinition returnSymbol = returnCaptureScope.ExecuteGet();
+
                     using (ExpressionCaptureScope returnOutSetter = new ExpressionCaptureScope(visitorContext, null))
                     {
                         returnOutSetter.SetToLocalSymbol(visitorContext.returnSymbol);
-                        returnOutSetter.ExecuteSet(returnCaptureScope.ExecuteGet());
+                        returnOutSetter.ExecuteSet(returnSymbol);
                     }
+
+#if UDON_BETA_SDK
+                    // Special methods like OnOwnershipRequest
+                    if (visitorContext.requiresVRCReturn)
+                    {
+                        using (ExpressionCaptureScope returnValueSetMethod = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            returnValueSetMethod.ResolveAccessToken(nameof(VRC.Udon.UdonBehaviour.WriteReturnValue));
+                            returnValueSetMethod.Invoke(new SymbolDefinition[] { returnSymbol });
+                        }
+                    }
+#endif
                 }
             }
 
@@ -2338,6 +2349,8 @@ namespace UdonSharp
 
             JumpLabel nextLabelJump = visitorContext.labelTable.GetNewJumpLabel("nextSwitchLabelJump");
 
+            visitorContext.pauseDebugInfoWrite = true;
+
             // Iterate all the sections and build the condition jumps first
             for (int i = 0; i < node.Sections.Count; ++i)
             {
@@ -2352,7 +2365,6 @@ namespace UdonSharp
 
                     if (switchLabel is DefaultSwitchLabelSyntax)
                     {
-                        UpdateSyntaxNode(switchLabel);
                         defaultJump = sectionJump;
                         continue;
                     }
@@ -2410,7 +2422,9 @@ namespace UdonSharp
             if (defaultJump != null)
                 visitorContext.uasmBuilder.AddJump(defaultJump);
             else
-                visitorContext.uasmBuilder.AddJump(switchExitLabel); 
+                visitorContext.uasmBuilder.AddJump(switchExitLabel);
+
+            visitorContext.pauseDebugInfoWrite = false;
 
             // Now fill out the code sections for each condition and resolve the jump labels for each section
             for (int i = 0; i < node.Sections.Count; ++i)
@@ -2541,9 +2555,11 @@ namespace UdonSharp
             using (ExpressionCaptureScope methodCaptureScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 Visit(node.Expression);
-                
-                if (!methodCaptureScope.IsMethod())
+
+                if (!methodCaptureScope.IsMethod() && !methodCaptureScope.IsUnknownArchetype())
                     throw new System.Exception("Invocation requires method expression!");
+                else if (methodCaptureScope.IsUnknownArchetype())
+                    throw new System.Exception($"Unrecognized identifier '{methodCaptureScope.unresolvedAccessChain}'");
                 
                 List<SymbolDefinition.COWValue> invocationArgs = new List<SymbolDefinition.COWValue>();
 

@@ -1,7 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UdonSharp.Compiler;
 using UnityEditor;
 using UnityEngine;
 
@@ -32,7 +32,6 @@ namespace UdonSharp
         static UdonSharpAssetCompileWatcher()
         {
             EditorApplication.update += OnEditorUpdate;
-            EditorApplication.playModeStateChanged += PlayModeErrorCheck;
         }
 
         static void SetupWatchers() 
@@ -126,14 +125,7 @@ namespace UdonSharp
             if (modifiedScripts.Count == 0)
                 return;
 
-            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
-
-            List<UdonSharpProgramAsset> udonSharpPrograms = new List<UdonSharpProgramAsset>();
-
-            foreach (string dataGuid in udonSharpDataAssets)
-            {
-                udonSharpPrograms.Add(AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid)));
-            }
+            UdonSharpProgramAsset[] udonSharpPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
 
             HashSet<UdonSharpProgramAsset> assetsToUpdate = new HashSet<UdonSharpProgramAsset>();
 
@@ -165,8 +157,6 @@ namespace UdonSharp
             {
                 modifiedScripts.Clear();
             }
-
-            modifiedScripts.Clear();
         }
 
         static void OnEditorUpdate()
@@ -188,41 +178,6 @@ namespace UdonSharp
             }
 
             HandleScriptModifications();
-        }
-
-        static void PlayModeErrorCheck(PlayModeStateChange state)
-        {
-            // Prevent people from entering play mode when there are compile errors, like normal Unity C#
-            // READ ME
-            // --------
-            // If you think you know better and are about to edit this out, be aware that you gain nothing by doing so. 
-            // If a script hits a compile error, it will not update until the compile errors are resolved.
-            // You will just be left wondering "why aren't my scripts changing when I edit them?" since the old copy of the script will be used until the compile errors are resolved.
-            // --------
-            if (state == PlayModeStateChange.EnteredPlayMode || state == PlayModeStateChange.ExitingEditMode)
-            {
-                string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
-
-                bool foundCompileErrors = false;
-
-                foreach (string dataGuid in udonSharpDataAssets)
-                {
-                    UdonSharpProgramAsset programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid));
-
-                    if (programAsset.sourceCsScript != null && programAsset.compileErrors.Count > 0)
-                    {
-                        foundCompileErrors = true;
-                        break;
-                    }
-                }
-
-                if (foundCompileErrors)
-                {
-                    EditorApplication.isPlaying = false;
-
-                    typeof(SceneView).GetMethod("ShowNotification", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { "All U# compile errors have to be fixed before you can enter playmode!" });
-                }
-            }
         }
 
         static void OnSourceFileChanged(object source, FileSystemEventArgs args)

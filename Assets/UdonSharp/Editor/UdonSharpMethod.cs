@@ -1,8 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-
-namespace UdonSharp
+﻿
+namespace UdonSharp.Compiler
 {
     [System.Flags]
     public enum MethodDeclFlags

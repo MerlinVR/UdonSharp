@@ -4,6 +4,12 @@ using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
 
+#if !COMPILER_UDONSHARP && UNITY_EDITOR
+using UnityEditor;
+using UnityEditorInternal;
+using UdonSharpEditor;
+#endif
+
 namespace UdonSharp.Tests
 {
     [AddComponentMenu("Udon Sharp/Test Lib/Integration Test Runner")]
@@ -44,4 +50,78 @@ namespace UdonSharp.Tests
             Debug.Log($"[<color=#00AF54>UdonSharp Tests</color>] Tests finished [{passedTests}/{totalTests}]");
         }
     }
+
+#if !COMPILER_UDONSHARP && UNITY_EDITOR
+    [CustomEditor(typeof(IntegrationTestRunner))]
+    public class IntegrationTestRunnerInspector : Editor
+    {
+        ReorderableList testList;
+
+        private void OnEnable()
+        {
+            testList = new ReorderableList(serializedObject, serializedObject.FindProperty("integrationTests"), true, true, true, true);
+            testList.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
+            {
+                SerializedProperty testSuiteProperty = testList.serializedProperty.GetArrayElementAtIndex(index);
+
+                Rect testFieldRect = new Rect(rect.x, rect.y + 2, rect.width, EditorGUIUtility.singleLineHeight);
+                EditorGUI.PropertyField(testFieldRect, testSuiteProperty, label: new GUIContent());
+
+                EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
+
+                Rect progressBarRect = new Rect(testFieldRect.x, testFieldRect.y + testFieldRect.height + 2, testFieldRect.width, 23f);
+
+                if (EditorApplication.isPlaying)
+                {
+                    IntegrationTestSuite testSuite = (IntegrationTestSuite)testSuiteProperty.objectReferenceValue;
+
+                    if (testSuite != null)
+                    {
+                        if (testSuite.runSuiteTests)
+                        {
+                            int totalTestCount = testSuite.GetTotalTestCount();
+                            int passedTestCount = testSuite.GetSucceededTestCount();
+
+                            float percentPassed = totalTestCount > 0 ? (passedTestCount / (float)totalTestCount) : 0f;
+
+                            EditorGUI.ProgressBar(progressBarRect, percentPassed, $"{passedTestCount}/{totalTestCount}");
+                        }
+                        else
+                            EditorGUI.ProgressBar(progressBarRect, 0f, "Tests disabled");
+                    }
+                    else
+                        EditorGUI.ProgressBar(progressBarRect, 0f, "0/0");
+                }
+                else
+                    EditorGUI.ProgressBar(progressBarRect, 0f, "0/0");
+
+                EditorGUI.EndDisabledGroup();
+            };
+            testList.elementHeightCallback = (int index) =>
+            {
+                return 45f;
+            };
+            testList.drawHeaderCallback = (Rect rect) => { EditorGUI.LabelField(rect, "Integration Tests"); };
+        }
+
+        private void OnDisable()
+        {
+            testList = null;
+        }
+
+        public override void OnInspectorGUI()
+        {
+            if (UdonSharpGUI.DrawDefaultUdonSharpBehaviourHeader(target)) return;
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("runTestOnStart"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("logPassedTests"));
+
+            EditorGUILayout.Space();
+
+            testList.DoLayoutList();
+
+            serializedObject.ApplyModifiedProperties();
+        }
+    }
+#endif
 }

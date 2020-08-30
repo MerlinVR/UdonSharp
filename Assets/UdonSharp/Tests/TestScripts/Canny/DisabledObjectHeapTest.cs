@@ -41,7 +41,7 @@ namespace UdonSharp.Tests
 
         int callCounter = 0;
 
-        public void CallEvent()
+        public void SpawnEvent()
         {
             callCounter++;
         }
@@ -51,7 +51,7 @@ namespace UdonSharp.Tests
             callCounter = 0;
 
             referenceScript.spawnerBehaviour = this;
-            referenceScript.SendCustomEvent("CallEvent");
+            referenceScript.CallEvent();
 
             tester.TestAssertion("Disabled Object Send Custom Event", callCounter == 1);
         }

@@ -1,11 +1,10 @@
 ﻿
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace UdonSharp
+namespace UdonSharp.Compiler
 {
     [System.Serializable]
     public class ClassDebugInfo
@@ -22,7 +21,7 @@ namespace UdonSharp
             public int line = 0;
             public int lineChar = 0;
 
-            public string spanCodeSection = "";
+            //public string spanCodeSection = "";
         }
 
         [UnityEngine.SerializeField]
@@ -62,7 +61,7 @@ namespace UdonSharp
 
             lastLineSpan.endInstruction = assemblyBuilder.programCounter - 1;
             lastLineSpan.endSourceChar = node.SpanStart;
-            lastLineSpan.spanCodeSection = sourceText.Substring(lastLineSpan.startSourceChar, lastLineSpan.endSourceChar - lastLineSpan.startSourceChar);
+            //lastLineSpan.spanCodeSection = sourceText.Substring(lastLineSpan.startSourceChar, lastLineSpan.endSourceChar - lastLineSpan.startSourceChar);
 
             DebugLineSpan nextLineSpan = new DebugLineSpan();
             nextLineSpan.startInstruction = assemblyBuilder.programCounter;
