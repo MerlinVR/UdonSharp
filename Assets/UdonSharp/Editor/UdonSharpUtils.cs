@@ -585,7 +585,7 @@ namespace UdonSharp
 
                 if (timeFromStart.TotalSeconds > timeoutSeconds)
                 {
-                    UnityEngine.Debug.LogError("Timeout when attempting to read file");
+                    UnityEngine.Debug.LogError($"Timeout when attempting to read file {filePath}");
                     if (exception != null)
                         throw exception;
                 }

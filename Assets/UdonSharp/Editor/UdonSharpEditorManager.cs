@@ -277,7 +277,14 @@ namespace UdonSharpEditor
                     Array array = (Array)rootArray;
                     for (int i = 0; i < array.Length; ++i)
                     {
-                        UdonBehaviour behaviour = (UdonBehaviour)array.GetValue(i);
+                        object arrayVal = array.GetValue(i);
+                        if (arrayVal != null && !(arrayVal is UdonBehaviour))
+                        {
+                            array.SetValue(null, i);
+                            continue;
+                        }
+
+                        UdonBehaviour behaviour = (UdonBehaviour)arrayVal;
 
                         if (!UdonSharpBehaviourTypeMatches(behaviour, elementType))
                             array.SetValue(null, i);
