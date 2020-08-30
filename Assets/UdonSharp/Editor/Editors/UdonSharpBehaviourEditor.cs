@@ -415,8 +415,11 @@ namespace UdonSharpEditor
             else
             {
                 // Create a proxy behaviour so that other things can find this object
-                currentProxyBehaviour = UdonSharpEditorUtility.GetProxyBehaviour(behaviour, ProxySerializationPolicy.NoSerialization);
-                currentProxyBehaviour.enabled = false;
+                if (programAsset.sourceCsScript != null)
+                {
+                    currentProxyBehaviour = UdonSharpEditorUtility.GetProxyBehaviour(behaviour, ProxySerializationPolicy.NoSerialization);
+                    currentProxyBehaviour.enabled = false;
+                }
 
                 DrawDefaultUdonSharpInspector();
             }
