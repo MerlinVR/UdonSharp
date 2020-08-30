@@ -44,12 +44,12 @@ namespace UdonSharp.Serialization
 
             if (USBSerializationContext.currentPolicy == null)
                 throw new NullReferenceException("Serialization policy cannot be null");
-            
-            if (USBSerializationContext.currentDepth >= USBSerializationContext.currentPolicy.MaxSerializationDepth)
-                return;
 
             if (targetObject == null)
                 targetObject = (T)UdonSharpEditorUtility.GetProxyBehaviour((UdonBehaviour)sourceObject.Value, ProxySerializationPolicy.NoSerialization);
+
+            if (USBSerializationContext.currentDepth >= USBSerializationContext.currentPolicy.MaxSerializationDepth)
+                return;
 
             if (USBSerializationContext.serializedBehaviourSet.Contains(targetObject))
                 return;
@@ -91,12 +91,8 @@ namespace UdonSharp.Serialization
                 return;
             }
 
-            if (USBSerializationContext.serializedBehaviourSet.Contains(sourceObject))
-                return;
-
-            USBSerializationContext.serializedBehaviourSet.Add(sourceObject);
             USBSerializationContext.currentDepth++;
-            
+
             try
             {
                 UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(sourceObject);
@@ -119,6 +115,11 @@ namespace UdonSharp.Serialization
                 {
                     targetObject.Value = null;
                 }
+
+                if (USBSerializationContext.serializedBehaviourSet.Contains(sourceObject))
+                    return;
+
+                USBSerializationContext.serializedBehaviourSet.Add(sourceObject);
 
                 UdonSharpBehaviourFormatterEmitter.GetFormatter<T>().Write(targetObject, sourceObject);
             }
