@@ -348,7 +348,27 @@ namespace UdonSharpEditor
                     if (GUILayout.Button("Send Custom Event"))
                     {
                         if (udonBehaviour != null)
-                            udonBehaviour.SendCustomEvent(editorState.customEventName);
+                        {
+                            bool needsProxyCall = false;
+
+                            UdonSharpBehaviour proxy = UdonSharpEditorUtility.FindProxyBehaviour(udonBehaviour);
+
+                            if (proxy)
+                            {
+                                System.Type inspectorType = UdonSharpCustomEditorManager.GetInspectorEditorType(proxy.GetType());
+                                if (inspectorType != null)
+                                    needsProxyCall = true;
+                            }
+
+                            if (needsProxyCall)
+                                UdonSharpEditorUtility.CopyProxyToBacker(proxy);
+
+                            if (udonBehaviour != null)
+                                udonBehaviour.SendCustomEvent(editorState.customEventName);
+
+                            if (needsProxyCall)
+                                UdonSharpEditorUtility.CopyBackerToProxy(proxy);
+                        }
                     }
 
                     editorState.customEventName = EditorGUILayout.TextField("Event Name:", editorState.customEventName);
@@ -1333,7 +1353,26 @@ namespace UdonSharpEditor
 
                 EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
                 if (GUILayout.Button("Trigger Interact"/*, GUILayout.Height(22f)*/))
+                {
+                    bool needsProxyCall = false;
+
+                    UdonSharpBehaviour proxy = UdonSharpEditorUtility.FindProxyBehaviour(behaviour);
+
+                    if (proxy)
+                    {
+                        System.Type inspectorType = UdonSharpCustomEditorManager.GetInspectorEditorType(proxy.GetType());
+                        if (inspectorType != null)
+                            needsProxyCall = true;
+                    }
+
+                    if (needsProxyCall)
+                        UdonSharpEditorUtility.CopyProxyToBacker(proxy);
+                    
                     behaviour.SendCustomEvent("_interact");
+
+                    if (needsProxyCall)
+                        UdonSharpEditorUtility.CopyBackerToProxy(proxy);
+                }
                 EditorGUI.EndDisabledGroup();
             }
         }
