@@ -250,6 +250,34 @@ namespace UdonSharpEditor
         }
 
         /// <summary>
+        /// Returns if the given UdonBehaviour is an UdonSharpBehaviour
+        /// </summary>
+        /// <param name="udonBehaviour"></param>
+        /// <returns></returns>
+        [PublicAPI]
+        public static bool IsUdonSharpBehaviour(UdonBehaviour udonBehaviour)
+        {
+            return udonBehaviour.programSource != null && 
+                   udonBehaviour.programSource is UdonSharpProgramAsset programAsset && 
+                   programAsset.sourceCsScript != null;
+        }
+
+        /// <summary>
+        /// Gets the UdonSharpBehaviour type from the given behaviour.
+        /// If the behaviour is not an UdonSharpBehaviour, returns null.
+        /// </summary>
+        /// <param name="udonBehaviour"></param>
+        /// <returns></returns>
+        [PublicAPI]
+        public static System.Type GetUdonSharpBehaviourType(UdonBehaviour udonBehaviour)
+        {
+            if (!IsUdonSharpBehaviour(udonBehaviour))
+                return null;
+
+            return ((UdonSharpProgramAsset)udonBehaviour.programSource).sourceCsScript.GetClass();
+        }
+
+        /// <summary>
         /// Gets the C# version of an UdonSharpBehaviour that proxies an UdonBehaviour with the program asset for the matching UdonSharpBehaviour type
         /// </summary>
         /// <param name="udonBehaviour"></param>

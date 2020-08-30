@@ -10,6 +10,28 @@ namespace UdonSharpEditor
 {
     public static class UdonSharpComponentExtensions
     {
+        #region Serialization Helper extensions
+        public static void UpdateProxy(this UdonSharpBehaviour behaviour)
+        {
+            UdonSharpEditorUtility.CopyBackerToProxy(behaviour);
+        }
+
+        public static void UpdateProxy(this UdonSharpBehaviour behaviour, ProxySerializationPolicy serializationPolicy)
+        {
+            UdonSharpEditorUtility.CopyBackerToProxy(behaviour, serializationPolicy);
+        }
+
+        public static void WriteProxyChanges(this UdonSharpBehaviour behaviour)
+        {
+            UdonSharpEditorUtility.CopyProxyToBacker(behaviour);
+        }
+
+        public static void WriteProxyChanges(this UdonSharpBehaviour behaviour, ProxySerializationPolicy serializationPolicy)
+        {
+            UdonSharpEditorUtility.CopyProxyToBacker(behaviour, serializationPolicy);
+        }
+        #endregion
+
         #region Utility functions
         private static UdonSharpBehaviour ConvertToUdonSharpComponent(UdonBehaviour behaviour, System.Type type, ProxySerializationPolicy proxySerializationPolicy)
         {
