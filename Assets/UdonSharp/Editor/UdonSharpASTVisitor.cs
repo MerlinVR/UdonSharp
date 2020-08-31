@@ -2307,7 +2307,7 @@ namespace UdonSharp.Compiler
                     if (resultSymbol == null)
                     {
                         // We didn't have a requested output symbol, so allocate one now.
-                        resultSymbol = outputScope.AllocateOutputSymbol(lhsScope.GetReturnType());
+                        resultSymbol = outputScope.AllocateOutputSymbol(lhsScope.GetReturnType(true));
                     }
                     
                     outputScope.SetToLocalSymbol(resultSymbol);
