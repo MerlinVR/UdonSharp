@@ -35,7 +35,23 @@ namespace UdonSharp.Serialization
     {
         public abstract T Value { get; set; }
 
-        object IValueStorage.Value { get { return Value; } set => Value = (T)value; }
+        object IValueStorage.Value
+        {
+            get => Value;
+            set
+            {
+                try
+                {
+                    Value = (T)value;
+                }
+                catch (System.InvalidCastException)
+                {
+                    Value = default;
+
+                    UnityEngine.Debug.LogWarning($"Failed to assign element in storage, could not cast from '{value.GetType()}' to '{typeof(T)}'. Assigning default value.");
+                }
+            }
+        }
 
         public System.Type ValueType { get { return typeof(T); } }
 
