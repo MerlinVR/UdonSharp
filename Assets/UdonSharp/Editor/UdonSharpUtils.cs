@@ -9,7 +9,7 @@ using System.Text;
 
 namespace UdonSharp
 {
-    public static class UdonSharpUtils
+    internal static class UdonSharpUtils
     {
         /// <summary>
         /// Apparently anything that takes a parameter is 5, and anything that doesn't is 1. So These are probably 1 byte per instruction, and 4 bytes per parameter

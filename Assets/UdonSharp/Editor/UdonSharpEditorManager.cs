@@ -17,7 +17,7 @@ using VRC.Udon.Serialization.OdinSerializer.Utilities;
 namespace UdonSharpEditor
 {
     [InitializeOnLoad]
-    public class UdonSharpEditorManager
+    internal class UdonSharpEditorManager
     {
         static UdonSharpEditorManager()
         {
