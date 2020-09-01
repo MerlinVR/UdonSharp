@@ -201,14 +201,21 @@ namespace UdonSharpEditor
         }
 #endif
 
-        static bool UdonSharpBehaviourTypeMatches(object symbolValue, System.Type expectedType)
+        static bool UdonSharpBehaviourTypeMatches(object symbolValue, System.Type expectedType, string behaviourName, string variableName)
         {
+            if (symbolValue == null)
+                return true;
+
+            // A reference to an actual UdonSharpBehaviour has been put in the UdonBehaviour, UdonSharpBehaviours are not serializable into VRC so this will cause issues
+            if (symbolValue is UdonSharpBehaviour)
+            {
+                Debug.LogWarning($"Clearing reference to an UdonSharpBehaviour's proxy '{symbolValue}' from variable '{variableName}' on behaviour '{behaviourName}' You must only reference backer UdonBehaviours, not their proxies.");
+                return false;
+            }
+
             if (!(expectedType == typeof(UdonBehaviour) ||
                   expectedType == typeof(UdonSharpBehaviour) ||
                   expectedType.IsSubclassOf(typeof(UdonSharpBehaviour))))
-                return true;
-
-            if (symbolValue == null)
                 return true;
 
             if (symbolValue.GetType() != typeof(UdonBehaviour))
@@ -257,7 +264,7 @@ namespace UdonSharpEditor
         /// <param name="jaggedArrayDimensionCount"></param>
         /// <param name="currentDepth"></param>
         /// <returns></returns>
-        static bool VerifyArrayValidity(object rootArray, System.Type rootArrayType, int arrayDimensionCount, int currentDepth = 1)
+        static bool VerifyArrayValidity(object rootArray, System.Type rootArrayType, int arrayDimensionCount, int currentDepth, string behaviourName, string variableName)
         {
             if (rootArray == null)
                 return true;
@@ -286,7 +293,7 @@ namespace UdonSharpEditor
 
                         UdonBehaviour behaviour = (UdonBehaviour)arrayVal;
 
-                        if (!UdonSharpBehaviourTypeMatches(behaviour, elementType))
+                        if (!UdonSharpBehaviourTypeMatches(behaviour, elementType, behaviourName, variableName))
                             array.SetValue(null, i);
                     }
                 }
@@ -301,7 +308,7 @@ namespace UdonSharpEditor
 
                 foreach (object element in array)
                 {
-                    if (!VerifyArrayValidity(element, rootArrayType, arrayDimensionCount, currentDepth + 1))
+                    if (!VerifyArrayValidity(element, rootArrayType, arrayDimensionCount, currentDepth + 1, behaviourName, variableName))
                         return false;
                 }
             }
@@ -391,9 +398,11 @@ namespace UdonSharpEditor
                             }
                         }
 
+                        string behaviourName = behaviour.ToString();
+
                         // Clean up UdonSharpBehaviour types that are no longer compatible
                         System.Type userType = fieldDefinition.fieldSymbol.userCsType;
-                        if (!UdonSharpBehaviourTypeMatches(symbolValue, userType))
+                        if (!UdonSharpBehaviourTypeMatches(symbolValue, userType, behaviourName, variableSymbol))
                         {
                             updatedBehaviourVariables++;
                             publicVariables.RemoveVariable(variableSymbol);
@@ -411,7 +420,7 @@ namespace UdonSharpEditor
                                 currentType = currentType.GetElementType();
                             }
 
-                            if (!VerifyArrayValidity(symbolValue, currentType.MakeArrayType(), arrayDepth, 1))
+                            if (!VerifyArrayValidity(symbolValue, currentType.MakeArrayType(), arrayDepth, 1, behaviourName, variableSymbol))
                             {
                                 publicVariables.RemoveVariable(variableSymbol);
                                 object defaultValue = programAsset.GetPublicVariableDefaultValue(variableSymbol);
