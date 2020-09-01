@@ -11,24 +11,46 @@ namespace UdonSharpEditor
     public static class UdonSharpComponentExtensions
     {
         #region Serialization Helper extensions
+        /// <summary>
+        /// Updates the proxy representation from the underlying UdonBehaviour state
+        /// </summary>
+        /// <param name="behaviour"></param>
+        [PublicAPI]
         public static void UpdateProxy(this UdonSharpBehaviour behaviour)
         {
-            UdonSharpEditorUtility.CopyBackerToProxy(behaviour);
+            UdonSharpEditorUtility.CopyUdonToProxy(behaviour);
         }
 
+        /// <summary>
+        /// Updates the proxy representation from the underlying UdonBehaviour state
+        /// </summary>
+        /// <param name="behaviour"></param>
+        /// <param name="serializationPolicy"></param>
+        [PublicAPI]
         public static void UpdateProxy(this UdonSharpBehaviour behaviour, ProxySerializationPolicy serializationPolicy)
         {
-            UdonSharpEditorUtility.CopyBackerToProxy(behaviour, serializationPolicy);
+            UdonSharpEditorUtility.CopyUdonToProxy(behaviour, serializationPolicy);
         }
-
+        
+        /// <summary>
+        /// Writes changes to the proxy's data to the underlying UdonBehaviour
+        /// </summary>
+        /// <param name="behaviour"></param>
+        [PublicAPI]
         public static void WriteProxyChanges(this UdonSharpBehaviour behaviour)
         {
-            UdonSharpEditorUtility.CopyProxyToBacker(behaviour);
+            UdonSharpEditorUtility.CopyProxyToUdon(behaviour);
         }
 
+        /// <summary>
+        /// Writes changes to the proxy's data to the underlying UdonBehaviour
+        /// </summary>
+        /// <param name="behaviour"></param>
+        /// <param name="serializationPolicy"></param>
+        [PublicAPI]
         public static void WriteProxyChanges(this UdonSharpBehaviour behaviour, ProxySerializationPolicy serializationPolicy)
         {
-            UdonSharpEditorUtility.CopyProxyToBacker(behaviour, serializationPolicy);
+            UdonSharpEditorUtility.CopyProxyToUdon(behaviour, serializationPolicy);
         }
         #endregion
 
@@ -43,7 +65,7 @@ namespace UdonSharpEditor
 
             if (udonSharpBehaviour && (uSharpBehaviourType == type || uSharpBehaviourType.IsSubclassOf(type)))
             {
-                UdonSharpEditorUtility.CopyBackerToProxy(udonSharpBehaviour, proxySerializationPolicy);
+                UdonSharpEditorUtility.CopyUdonToProxy(udonSharpBehaviour, proxySerializationPolicy);
                 return udonSharpBehaviour;
             }
 

@@ -15,6 +15,7 @@ using VRC.Udon.Common.Interfaces;
 
 namespace UdonSharpEditor
 {
+    #region Beta SDK sync mode menu editor
 #if UDON_BETA_SDK
     internal class SyncModeMenu : EditorWindow
     {
@@ -227,6 +228,7 @@ namespace UdonSharpEditor
         }
     }
 #endif
+    #endregion
 
     public static class UdonSharpGUI
     {
@@ -239,6 +241,11 @@ namespace UdonSharpEditor
         private static Texture2D clearColorDark;
         private static GUIStyle clearColorStyle;
 
+        /// <summary>
+        /// Draws compile errors if there are any, shows nothing if there are no compile errors
+        /// </summary>
+        /// <param name="udonSharpProgram"></param>
+        [PublicAPI]
         public static void DrawCompileErrorTextArea(UdonSharpProgramAsset udonSharpProgram)
         {
             if (udonSharpProgram.compileErrors == null || udonSharpProgram.compileErrors.Count == 0)
@@ -361,13 +368,13 @@ namespace UdonSharpEditor
                             }
 
                             if (needsProxyCall)
-                                UdonSharpEditorUtility.CopyProxyToBacker(proxy);
+                                UdonSharpEditorUtility.CopyProxyToUdon(proxy);
 
                             if (udonBehaviour != null)
                                 udonBehaviour.SendCustomEvent(editorState.customEventName);
 
                             if (needsProxyCall)
-                                UdonSharpEditorUtility.CopyBackerToProxy(proxy);
+                                UdonSharpEditorUtility.CopyUdonToProxy(proxy);
                         }
                     }
 
@@ -410,6 +417,10 @@ namespace UdonSharpEditor
             }
         }
 
+        /// <summary>
+        /// Draws the default utilities for UdonSharpBehaviours, these are currently the compile all scripts button and the send custom event button
+        /// </summary>
+        /// <param name="target"></param>
         [PublicAPI]
         public static void DrawUtilities(UnityEngine.Object target)
         {
@@ -421,8 +432,8 @@ namespace UdonSharpEditor
             }
         }
 
-        [PublicAPI]
-        public static bool DrawCreateScriptButton(UdonSharpProgramAsset programAsset)
+        #region Default UdonSharpBehaviour drawing
+        internal static bool DrawCreateScriptButton(UdonSharpProgramAsset programAsset)
         {
             if (GUILayout.Button("Create Script"))
             {
@@ -1118,7 +1129,14 @@ namespace UdonSharpEditor
 
             return variableValue;
         }
+        #endregion
 
+        /// <summary>
+        /// The default drawing for UdonSharpBehaviour public variables
+        /// </summary>
+        /// <param name="behaviour"></param>
+        /// <param name="programAsset"></param>
+        /// <param name="dirty"></param>
         [PublicAPI]
         public static void DrawPublicVariables(UdonBehaviour behaviour, UdonSharpProgramAsset programAsset, ref bool dirty)
         {
@@ -1322,6 +1340,10 @@ namespace UdonSharpEditor
 #endif
         }
 
+        /// <summary>
+        /// Draws the syncing settings for a behaviour, currently this is the position sync and collision ownership transfer check boxes, but will be updated when new Udon SDKs are released.
+        /// </summary>
+        /// <param name="target"></param>
         [PublicAPI]
         public static void DrawSyncSettings(UnityEngine.Object target)
         {
@@ -1331,6 +1353,10 @@ namespace UdonSharpEditor
                 DrawSyncSettings(backingBehaviour);
         }
         
+        /// <summary>
+        /// Draws the interact settings for UdonBehaviours, this is the interact text and proximity settings. These settings will only show if the script has an Interact() event.
+        /// </summary>
+        /// <param name="behaviour"></param>
         [PublicAPI]
         public static void DrawInteractSettings(UdonBehaviour behaviour)
         {
@@ -1366,17 +1392,20 @@ namespace UdonSharpEditor
                     }
 
                     if (needsProxyCall)
-                        UdonSharpEditorUtility.CopyProxyToBacker(proxy);
+                        UdonSharpEditorUtility.CopyProxyToUdon(proxy);
                     
                     behaviour.SendCustomEvent("_interact");
 
                     if (needsProxyCall)
-                        UdonSharpEditorUtility.CopyBackerToProxy(proxy);
+                        UdonSharpEditorUtility.CopyUdonToProxy(proxy);
                 }
                 EditorGUI.EndDisabledGroup();
             }
         }
 
+        /// <summary>
+        /// Draws the interact settings for UdonBehaviours, this is the interact text and proximity settings. These settings will only show if the script has an Interact() event.
+        /// </summary>
         [PublicAPI]
         public static void DrawInteractSettings(UnityEngine.Object target)
         {
@@ -1465,6 +1494,13 @@ namespace UdonSharpEditor
             return false;
         }
 
+        /// <summary>
+        /// Draws the default header for UdonSharpBehaviours, contains the script drawing, sync settings, interact settings, and utilities.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="skipLine"></param>
+        /// <param name="drawScript"></param>
+        /// <returns></returns>
         [PublicAPI]
         public static bool DrawDefaultUdonSharpBehaviourHeader(UnityEngine.Object target, bool skipLine = false , bool drawScript = true)
         {
@@ -1474,6 +1510,10 @@ namespace UdonSharpEditor
             DrawSyncSettings(target);
             DrawInteractSettings(target);
             DrawUtilities(target);
+            UdonSharpProgramAsset programAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset((UdonSharpBehaviour)target);
+
+            if (programAsset)
+                DrawCompileErrorTextArea(programAsset);
 
             if (!skipLine)
                 DrawUILine();

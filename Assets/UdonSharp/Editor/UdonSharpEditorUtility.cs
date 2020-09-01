@@ -149,6 +149,11 @@ namespace UdonSharpEditor
             return null;
         }
 
+        /// <summary>
+        /// Gets the UdonSharpProgramAsset that represents the program for the given UdonSharpBehaviour
+        /// </summary>
+        /// <param name="udonSharpBehaviour"></param>
+        /// <returns></returns>
         [PublicAPI]
         public static UdonSharpProgramAsset GetUdonSharpProgramAsset(UdonSharpBehaviour udonSharpBehaviour)
         {
@@ -156,6 +161,12 @@ namespace UdonSharpEditor
         }
 
         private static readonly FieldInfo _backingBehaviourField = typeof(UdonSharpBehaviour).GetField("_backingUdonBehaviour", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        /// <summary>
+        /// Gets the backing UdonBehaviour for a proxy
+        /// </summary>
+        /// <param name="behaviour"></param>
+        /// <returns></returns>
         [PublicAPI]
         public static UdonBehaviour GetBackingUdonBehaviour(UdonSharpBehaviour behaviour)
         {
@@ -169,8 +180,6 @@ namespace UdonSharpEditor
 
         /// <summary>
         /// Returns true if the given behaviour is a proxy behaviour that's linked to an UdonBehaviour.
-        /// Proxy behaviours are used to interact with Udon heap data using a C# proxy of the UdonBehaviour's UdonSharpProgramAsset program, 
-        ///   and should not be used to do anything other than interact with this data
         /// </summary>
         /// <param name="behaviour"></param>
         /// <returns></returns>
@@ -206,7 +215,7 @@ namespace UdonSharpEditor
             {
                 if (proxyBehaviour != null)
                 {
-                    CopyBackerToProxy(proxyBehaviour, proxySerializationPolicy);
+                    CopyUdonToProxy(proxyBehaviour, proxySerializationPolicy);
 
                     proxyBehaviour.enabled = false;
 
@@ -227,7 +236,7 @@ namespace UdonSharpEditor
                 {
                     _proxyBehaviourLookup.Add(udonBehaviour, udonSharpBehaviour);
 
-                    CopyBackerToProxy(udonSharpBehaviour, proxySerializationPolicy);
+                    CopyUdonToProxy(udonSharpBehaviour, proxySerializationPolicy);
 
                     udonSharpBehaviour.enabled = false;
 
@@ -317,30 +326,43 @@ namespace UdonSharpEditor
 
             _proxyBehaviourLookup.Add(udonBehaviour, proxyBehaviour);
             
-            CopyBackerToProxy(proxyBehaviour, proxySerializationPolicy);
+            CopyUdonToProxy(proxyBehaviour, proxySerializationPolicy);
 
             return proxyBehaviour;
         }
-        
+
+        /// <summary>
+        /// Copies the state of the proxy to its backing UdonBehaviour
+        /// </summary>
+        /// <param name="proxy"></param>
         [PublicAPI]
-        public static void CopyProxyToBacker(UdonSharpBehaviour proxy)
+        public static void CopyProxyToUdon(UdonSharpBehaviour proxy)
         {
-            CopyProxyToBacker(proxy, ProxySerializationPolicy.Default);
+            CopyProxyToUdon(proxy, ProxySerializationPolicy.Default);
         }
 
+        /// <summary>
+        /// Copies the state of the UdonBehaviour to its proxy object
+        /// </summary>
+        /// <param name="proxy"></param>
         [PublicAPI]
-        public static void CopyBackerToProxy(UdonSharpBehaviour proxy)
+        public static void CopyUdonToProxy(UdonSharpBehaviour proxy)
         {
-            CopyBackerToProxy(proxy, ProxySerializationPolicy.Default);
+            CopyUdonToProxy(proxy, ProxySerializationPolicy.Default);
         }
 
+        /// <summary>
+        /// Copies the state of the proxy to its backing UdonBehaviour
+        /// </summary>
+        /// <param name="proxy"></param>
+        /// <param name="serializationPolicy"></param>
         [PublicAPI]
-        public static void CopyProxyToBacker(UdonSharpBehaviour proxy, ProxySerializationPolicy serializationPolicy)
+        public static void CopyProxyToUdon(UdonSharpBehaviour proxy, ProxySerializationPolicy serializationPolicy)
         {
             if (serializationPolicy.MaxSerializationDepth == 0)
                 return;
 
-            Profiler.BeginSample("CopyProxyToBacker");
+            Profiler.BeginSample("CopyProxyToUdon");
 
             SimpleValueStorage<UdonBehaviour> udonBehaviourStorage = new SimpleValueStorage<UdonBehaviour>(GetBackingUdonBehaviour(proxy));
 
@@ -354,13 +376,18 @@ namespace UdonSharpEditor
             Profiler.EndSample();
         }
 
+        /// <summary>
+        /// Copies the state of the UdonBehaviour to its proxy object
+        /// </summary>
+        /// <param name="proxy"></param>
+        /// <param name="serializationPolicy"></param>
         [PublicAPI]
-        public static void CopyBackerToProxy(UdonSharpBehaviour proxy, ProxySerializationPolicy serializationPolicy)
+        public static void CopyUdonToProxy(UdonSharpBehaviour proxy, ProxySerializationPolicy serializationPolicy)
         {
             if (serializationPolicy.MaxSerializationDepth == 0)
                 return;
 
-            Profiler.BeginSample("CopyBackerToProxy");
+            Profiler.BeginSample("CopyUdonToProxy");
 
             SimpleValueStorage<UdonBehaviour> udonBehaviourStorage = new SimpleValueStorage<UdonBehaviour>(GetBackingUdonBehaviour(proxy));
 
@@ -386,11 +413,15 @@ namespace UdonSharpEditor
                 backingBehaviour.programSource = GetUdonSharpProgramAsset(udonSharpBehaviour);
             }
 
-            CopyProxyToBacker(udonSharpBehaviour);
+            CopyProxyToUdon(udonSharpBehaviour);
 
             return backingBehaviour;
         }
 
+        /// <summary>
+        /// Destroys an UdonSharpBehaviour proxy and its underlying UdonBehaviour
+        /// </summary>
+        /// <param name="behaviour"></param>
         [PublicAPI]
         public static void DestroyImmediate(UdonSharpBehaviour behaviour)
         {
@@ -559,11 +590,6 @@ namespace UdonSharpEditor
 
                 udonBehaviour.programSource = programAsset;
 
-                //if (shouldUndo)
-                //    Undo.DestroyObjectImmediate(targetObject);
-                //else
-                //    Object.DestroyImmediate(targetObject);
-
                 if (shouldUndo)
                     Undo.RegisterCompleteObjectUndo(targetObject, "Convert C# to U# behaviour");
 
@@ -572,23 +598,42 @@ namespace UdonSharpEditor
                 try
                 {
                     if (convertChildren)
-                        UdonSharpEditorUtility.CopyProxyToBacker(targetObject, shouldUndo ? ProxySerializationPolicy.AllWithUndo : ProxySerializationPolicy.Default);
+                        UdonSharpEditorUtility.CopyProxyToUdon(targetObject, shouldUndo ? ProxySerializationPolicy.AllWithUndo : ProxySerializationPolicy.Default);
                     else
-                        UdonSharpEditorUtility.CopyProxyToBacker(targetObject, ProxySerializationPolicy.RootOnly);
+                        UdonSharpEditorUtility.CopyProxyToUdon(targetObject, ProxySerializationPolicy.RootOnly);
                 }
                 catch (System.Exception e)
                 {
                     Debug.LogError(e);
                 }
 
+                UdonSharpEditorUtility.SetBackingUdonBehaviour(targetObject, null);
 
-                targetObject.hideFlags = HideFlags.DontSaveInBuild |
+                System.Type behaviourType = targetObject.GetType();
+
+                UdonSharpBehaviour newProxy;
+
+                if (shouldUndo)
+                    newProxy = (UdonSharpBehaviour)Undo.AddComponent(targetObject.gameObject, behaviourType);
+                else
+                    newProxy = (UdonSharpBehaviour)targetObject.gameObject.AddComponent(behaviourType);
+
+                UdonSharpEditorUtility.SetBackingUdonBehaviour(newProxy, udonBehaviour);
+
+                UdonSharpEditorUtility.CopyUdonToProxy(newProxy);
+                
+                if (shouldUndo)
+                    Undo.DestroyObjectImmediate(targetObject);
+                else
+                    Object.DestroyImmediate(targetObject);
+
+                newProxy.hideFlags = HideFlags.DontSaveInBuild |
 #if !UDONSHARP_DEBUG
-                                         HideFlags.HideInInspector |
+                                     HideFlags.HideInInspector |
 #endif
-                                         HideFlags.DontSaveInEditor;
+                                     HideFlags.DontSaveInEditor;
 
-                targetObject.enabled = false;
+                newProxy.enabled = false;
 
                 createdComponents.Add(udonBehaviour);
             }

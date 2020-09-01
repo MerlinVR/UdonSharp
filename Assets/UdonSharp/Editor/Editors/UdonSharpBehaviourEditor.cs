@@ -339,7 +339,7 @@ namespace UdonSharpEditor
 
             if (inspectorTarget)
             {
-                UdonSharpEditorUtility.CopyProxyToBacker(inspectorTarget);
+                UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget);
             }
         }
 
@@ -410,7 +410,7 @@ namespace UdonSharpEditor
 
                 baseEditor.OnInspectorGUI();
 
-                UdonSharpEditorUtility.CopyProxyToBacker(inspectorTarget);
+                UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget);
             }
             else
             {

@@ -20,6 +20,12 @@ namespace UdonSharpEditor
             Undo.DestroyObjectImmediate(behaviour);
         }
 
+        /// <summary>
+        /// Adds an UdonSharpBehaviour to the target GameObject and registers an Undo operation for the add
+        /// </summary>
+        /// <param name="gameObject"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
         [PublicAPI]
         public static UdonSharpBehaviour AddComponent(GameObject gameObject, System.Type type)
         {
@@ -52,11 +58,17 @@ namespace UdonSharpEditor
             proxyComponent.enabled = false;
 
             UdonSharpEditorUtility.SetBackingUdonBehaviour(proxyComponent, udonBehaviour);
-            UdonSharpEditorUtility.CopyBackerToProxy(proxyComponent, ProxySerializationPolicy.AllWithUndo);
+            UdonSharpEditorUtility.CopyUdonToProxy(proxyComponent, ProxySerializationPolicy.AllWithUndo);
 
             return proxyComponent;
         }
 
+        /// <summary>
+        /// Adds an UdonSharpBehaviour to the target GameObject and registers an Undo operation for the add
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="gameObject"></param>
+        /// <returns></returns>
         [PublicAPI]
         public static T AddComponent<T>(GameObject gameObject) where T : UdonSharpBehaviour
         {

@@ -14,12 +14,11 @@ namespace UdonSharpEditor
 
         public ChildProxyCreateMode ChildProxyMode { get; private set; } = ChildProxyCreateMode.Create;
         public int MaxSerializationDepth { get; private set; } = int.MaxValue;
+        
+        internal static readonly ProxySerializationPolicy AllWithUndo = new ProxySerializationPolicy() { ChildProxyMode = ChildProxyCreateMode.CreateWithUndo };
 
         [PublicAPI]
         public static readonly ProxySerializationPolicy Default = new ProxySerializationPolicy();
-
-        [PublicAPI]
-        public static readonly ProxySerializationPolicy AllWithUndo = new ProxySerializationPolicy() { ChildProxyMode = ChildProxyCreateMode.CreateWithUndo };
 
         [PublicAPI]
         public static readonly ProxySerializationPolicy RootOnly = new ProxySerializationPolicy() { ChildProxyMode = ChildProxyCreateMode.Null, MaxSerializationDepth = 1 };
