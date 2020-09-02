@@ -32,7 +32,6 @@ namespace UdonSharpEditor
             List<UdonBehaviour> udonBehaviours = GetAllUdonBehaviours();
 
             RunAllUpdates(udonBehaviours);
-            CreateProxyBehaviours(udonBehaviours);
         }
 
         internal static void RunPostBuildSceneFixup()
@@ -67,6 +66,10 @@ namespace UdonSharpEditor
 
                     UdonSharpUtils.ShowEditorNotification("All U# compile errors have to be fixed before you can enter playmode!");
                 }
+                else if (state == PlayModeStateChange.EnteredPlayMode)
+                {
+                    CreateProxyBehaviours(GetAllUdonBehaviours());
+                }
             }
 
             if (state == PlayModeStateChange.EnteredEditMode)
@@ -91,6 +94,7 @@ namespace UdonSharpEditor
 #if UDON_BETA_SDK
             UpdateSyncModes(allBehaviours);
 #endif
+            CreateProxyBehaviours(allBehaviours);
         }
 
         static bool _requiresCompile = false;
