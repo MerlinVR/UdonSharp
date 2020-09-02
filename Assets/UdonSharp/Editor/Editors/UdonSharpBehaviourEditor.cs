@@ -325,6 +325,19 @@ namespace UdonSharpEditor
         {
             Undo.undoRedoPerformed += OnUndoRedo;
             UdonEditorManager.Instance.WantRepaint += Repaint;
+
+            if (target is UdonBehaviour udonBehaviour)
+            {
+                UdonSharpBehaviour proxyBehaviour = UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour);
+
+                if (proxyBehaviour)
+                    proxyBehaviour.hideFlags =
+                        HideFlags.DontSaveInBuild |
+#if !UDONSHAP_DEBUG
+                        HideFlags.HideInInspector |
+#endif
+                        HideFlags.DontSaveInEditor;
+            }
         }
 
         private void OnDisable()
@@ -423,6 +436,48 @@ namespace UdonSharpEditor
 
                 DrawDefaultUdonSharpInspector();
             }
+        }
+
+        private void OnSceneGUI()
+        {
+            UdonBehaviour behaviour = target as UdonBehaviour;
+            
+            if (behaviour.programSource == null || 
+                !(behaviour.programSource is UdonSharpProgramAsset udonSharpProgram) || 
+                udonSharpProgram.sourceCsScript == null)
+                return;
+            
+            System.Type customEditorType = null;
+            System.Type inspectedType = udonSharpProgram.sourceCsScript.GetClass();
+            if (inspectedType != null)
+                customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(inspectedType);
+
+            if (customEditorType == null)
+                return;
+
+            MethodInfo onSceneGUIMethod = customEditorType.GetMethod("OnSceneGUI", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { }, null);
+
+            if (onSceneGUIMethod == null)
+                return;
+
+            udonSharpProgram.UpdateProgram();
+
+            if (baseEditor != null && baseEditor.GetType() != customEditorType)
+            {
+                DestroyImmediate(baseEditor);
+                baseEditor = null;
+            }
+
+            UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.GetProxyBehaviour(behaviour);
+            inspectorTarget.enabled = false;
+
+            Editor.CreateCachedEditorWithContext(inspectorTarget, this, customEditorType, ref baseEditor);
+
+            baseEditor.serializedObject.Update();
+
+            onSceneGUIMethod.Invoke(baseEditor, null);
+
+            UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget);
         }
 
         void DrawDefaultUdonSharpInspector()

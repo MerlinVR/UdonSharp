@@ -590,8 +590,8 @@ namespace UdonSharpEditor
 
                 udonBehaviour.programSource = programAsset;
 
-                if (shouldUndo)
-                    Undo.RegisterCompleteObjectUndo(targetObject, "Convert C# to U# behaviour");
+                //if (shouldUndo)
+                //    Undo.RegisterCompleteObjectUndo(targetObject, "Convert C# to U# behaviour");
 
                 UdonSharpEditorUtility.SetBackingUdonBehaviour(targetObject, udonBehaviour);
 
