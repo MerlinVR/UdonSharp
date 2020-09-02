@@ -245,12 +245,15 @@ namespace UdonSharp
         [PublicAPI]
         public static bool AnyUdonSharpScriptHasError()
         {
+            FieldInfo assemblyErrorField = typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance);
+            
             foreach (UdonSharpProgramAsset programAsset in GetAllUdonSharpPrograms())
             {
                 if (programAsset.sourceCsScript != null && programAsset.compileErrors.Count > 0)
-                {
                     return true;
-                }
+
+                if (!string.IsNullOrEmpty((string)assemblyErrorField.GetValue(programAsset)))
+                    return true;
             }
 
             return false;
