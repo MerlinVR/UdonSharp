@@ -138,6 +138,9 @@ namespace UdonSharpEditor
 
             UdonSharpBehaviour proxyComponent = UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour);
 
+            if (EditorApplication.isPlaying)
+                udonBehaviour.InitializeUdonContent();
+
             return proxyComponent;
         }
 

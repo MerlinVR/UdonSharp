@@ -60,6 +60,9 @@ namespace UdonSharpEditor
             UdonSharpEditorUtility.SetBackingUdonBehaviour(proxyComponent, udonBehaviour);
             UdonSharpEditorUtility.CopyUdonToProxy(proxyComponent, ProxySerializationPolicy.AllWithUndo);
 
+            if (EditorApplication.isPlaying)
+                udonBehaviour.InitializeUdonContent();
+
             return proxyComponent;
         }
 
