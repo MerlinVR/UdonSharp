@@ -132,21 +132,27 @@ namespace UdonSharpEditor
             return ConvertToUdonBehavioursInternal(components, true, false);
         }
 
+        static Dictionary<MonoScript, UdonSharpProgramAsset> _programAssetLookup;
         private static UdonSharpProgramAsset GetUdonSharpProgramAsset(MonoScript programScript)
         {
-            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
-
-            foreach (string dataGuid in udonSharpDataAssets)
+            if (_programAssetLookup == null)
             {
-                UdonSharpProgramAsset programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid));
+                _programAssetLookup = new Dictionary<MonoScript, UdonSharpProgramAsset>();
 
-                if (programAsset && programAsset.sourceCsScript == programScript)
+                UdonSharpProgramAsset[] udonSharpProgramAssets = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
+
+                foreach (UdonSharpProgramAsset programAsset in udonSharpProgramAssets)
                 {
-                    return programAsset;
+                    if (programAsset && programAsset.sourceCsScript != null && !_programAssetLookup.ContainsKey(programScript))
+                    {
+                        _programAssetLookup.Add(programAsset.sourceCsScript, programAsset);
+                    }
                 }
             }
 
-            return null;
+            _programAssetLookup.TryGetValue(programScript, out UdonSharpProgramAsset foundProgramAsset);
+
+            return foundProgramAsset;
         }
 
         /// <summary>

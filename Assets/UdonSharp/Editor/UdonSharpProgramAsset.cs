@@ -223,19 +223,23 @@ namespace UdonSharp
             compiler.Compile();
         }
 
+        static UdonSharpProgramAsset[] _programAssetCache;
         [PublicAPI]
         public static UdonSharpProgramAsset[] GetAllUdonSharpPrograms()
         {
-            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
-
-            UdonSharpProgramAsset[] udonSharpPrograms = new UdonSharpProgramAsset[udonSharpDataAssets.Length];
-
-            for (int i = 0; i < udonSharpPrograms.Length; ++i)
+            if (_programAssetCache == null)
             {
-                udonSharpPrograms[i] = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(udonSharpDataAssets[i]));
+                string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
+
+                _programAssetCache = new UdonSharpProgramAsset[udonSharpDataAssets.Length];
+
+                for (int i = 0; i < _programAssetCache.Length; ++i)
+                {
+                    _programAssetCache[i] = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(udonSharpDataAssets[i]));
+                }
             }
 
-            return udonSharpPrograms;
+            return (UdonSharpProgramAsset[])_programAssetCache.Clone();
         }
 
         [PublicAPI]
