@@ -109,7 +109,8 @@ namespace UdonSharp.Compiler
 
                             LinePosition linePosition = diagnostic.Location.GetLineSpan().StartLinePosition;
 
-                            UdonSharpUtils.LogBuildError($"error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}", AssetDatabase.GetAssetPath(syntaxTree.Item1.sourceCsScript), linePosition.Line, linePosition.Character);
+                            string errorMessage = UdonSharpUtils.LogBuildError($"error {diagnostic.Descriptor.Id}: {diagnostic.GetMessage()}", AssetDatabase.GetAssetPath(syntaxTree.Item1.sourceCsScript), linePosition.Line, linePosition.Character);
+                            syntaxTree.Item1.compileErrors.Add(errorMessage);
                         }
                     }
                 }
@@ -308,7 +309,8 @@ namespace UdonSharp.Compiler
 
                     foreach (CompileError bindError in bindResult.compileErrors)
                     {
-                        UdonSharpUtils.LogBuildError(bindError.errorStr, AssetDatabase.GetAssetPath(bindResult.sourceScript), bindError.lineIdx, bindError.charIdx);
+                        string buildError = UdonSharpUtils.LogBuildError(bindError.errorStr, AssetDatabase.GetAssetPath(bindResult.sourceScript), bindError.lineIdx, bindError.charIdx);
+                        bindResult.programAsset.compileErrors.Add(buildError);
                     }
                 }
             }
@@ -603,6 +605,7 @@ namespace UdonSharp.Compiler
 
         class BindTaskResult
         {
+            public UdonSharpProgramAsset programAsset;
             public ClassDefinition classDefinition;
             public MonoScript sourceScript;
             public List<CompileError> compileErrors = new List<CompileError>();
@@ -631,6 +634,7 @@ namespace UdonSharp.Compiler
                 ClassVisitor classVisitor = new ClassVisitor(resolver, classSymbols, classLabels);
 
                 BindTaskResult bindTaskResult = new BindTaskResult();
+                bindTaskResult.programAsset = programAsset;
                 bindTaskResult.sourceScript = programAsset.sourceCsScript;
 
                 try
