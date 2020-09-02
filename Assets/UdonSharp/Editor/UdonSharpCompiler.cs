@@ -417,8 +417,7 @@ namespace UdonSharp.Compiler
         {
             string namespaceStr = "";
 
-            if (type.Namespace != null &&
-                type.Namespace.Length > 0)
+            if (!string.IsNullOrEmpty(type.Namespace))
             {
                 namespaceStr = type.Namespace + ".";
             }

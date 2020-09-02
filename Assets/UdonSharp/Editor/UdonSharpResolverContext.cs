@@ -328,7 +328,7 @@ namespace UdonSharp
 
                 inheritedTypeMap = new Dictionary<System.Type, System.Type>();
 
-                IEnumerable<System.Type> typeList = System.AppDomain.CurrentDomain.GetAssemblies().SelectMany(t => t.GetTypes()).Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
+                IEnumerable<System.Type> typeList = System.AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == "VRCSDK3").GetTypes().Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
 
                 foreach (System.Type childType in typeList)
                 {
