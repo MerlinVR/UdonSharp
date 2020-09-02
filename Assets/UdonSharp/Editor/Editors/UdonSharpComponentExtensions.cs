@@ -37,7 +37,7 @@ namespace UdonSharpEditor
         /// </summary>
         /// <param name="behaviour"></param>
         [PublicAPI]
-        public static void WriteProxyChanges(this UdonSharpBehaviour behaviour)
+        public static void ApplyProxyModifications(this UdonSharpBehaviour behaviour)
         {
             UdonSharpEditorUtility.CopyProxyToUdon(behaviour);
         }
@@ -48,7 +48,7 @@ namespace UdonSharpEditor
         /// <param name="behaviour"></param>
         /// <param name="serializationPolicy"></param>
         [PublicAPI]
-        public static void WriteProxyChanges(this UdonSharpBehaviour behaviour, ProxySerializationPolicy serializationPolicy)
+        public static void ApplyProxyModifications(this UdonSharpBehaviour behaviour, ProxySerializationPolicy serializationPolicy)
         {
             UdonSharpEditorUtility.CopyProxyToUdon(behaviour, serializationPolicy);
         }
