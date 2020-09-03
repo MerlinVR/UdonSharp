@@ -439,7 +439,8 @@ namespace UdonSharpEditor
                 if (programAsset.sourceCsScript != null && !PrefabUtility.IsPartOfPrefabAsset(target))
                 {
                     currentProxyBehaviour = UdonSharpEditorUtility.GetProxyBehaviour(behaviour, ProxySerializationPolicy.NoSerialization);
-                    currentProxyBehaviour.enabled = false;
+                    if (currentProxyBehaviour)
+                        currentProxyBehaviour.enabled = false;
                 }
 
                 DrawDefaultUdonSharpInspector();

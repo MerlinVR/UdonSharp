@@ -320,6 +320,9 @@ namespace UdonSharpEditor
             // We've failed to find an existing proxy behaviour so we need to create one
             System.Type scriptType = udonSharpProgram.sourceCsScript.GetClass();
 
+            if (scriptType == null)
+                return null;
+
             proxyBehaviour = (UdonSharpBehaviour)udonBehaviour.gameObject.AddComponent(scriptType);
             proxyBehaviour.hideFlags = HideFlags.DontSaveInBuild |
 #if !UDONSHARP_DEBUG
