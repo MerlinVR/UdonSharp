@@ -330,7 +330,7 @@ namespace UdonSharpEditor
 
             Undo.undoRedoPerformed += OnUndoRedo;
 
-            if (target is UdonBehaviour udonBehaviour)
+            if (target is UdonBehaviour udonBehaviour && UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour))
             {
                 UdonSharpBehaviour proxyBehaviour = UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour);
 
