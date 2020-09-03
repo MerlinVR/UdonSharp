@@ -72,7 +72,7 @@ namespace UdonSharpEditor
                 }
             }
 
-            if (state == PlayModeStateChange.EnteredEditMode)
+            if (state == PlayModeStateChange.EnteredEditMode || state == PlayModeStateChange.ExitingEditMode)
             {
                 UdonSharpEditorCache.ResetInstance();
                 if (UdonSharpEditorCache.Instance.LastBuildType == UdonSharpEditorCache.DebugInfoType.Client)
