@@ -12,7 +12,7 @@ using VRC.Udon.Common.Interfaces;
 namespace UdonSharp
 {
     [InitializeOnLoad]
-    public static class RuntimeExceptionWatcher
+    public static class RuntimeLogWatcher
     {
         class LogFileState
         {
@@ -30,7 +30,7 @@ namespace UdonSharp
         static Dictionary<string, LogFileState> logFileStates = new Dictionary<string, LogFileState>();
         static HashSet<string> modifiedLogPaths = new HashSet<string>();
 
-        static RuntimeExceptionWatcher()
+        static RuntimeLogWatcher()
         {
             EditorApplication.update += OnEditorUpdate;
             Application.logMessageReceived += OnLog;
