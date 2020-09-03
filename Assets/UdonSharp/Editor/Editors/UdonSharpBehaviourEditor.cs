@@ -360,7 +360,10 @@ namespace UdonSharpEditor
 
             if (inspectorTarget)
             {
-                UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget);
+                System.Type customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(inspectorTarget.GetType());
+
+                if (customEditorType != null) // Only do the undo copying on things with a custom inspector
+                    UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget);
             }
         }
 
