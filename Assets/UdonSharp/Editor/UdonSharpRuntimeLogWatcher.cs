@@ -115,6 +115,7 @@ namespace UdonSharp
                     logDirectoryWatcher.IncludeSubdirectories = false;
                     logDirectoryWatcher.NotifyFilter = NotifyFilters.LastWrite;
                     logDirectoryWatcher.Changed += OnLogFileChanged;
+                    logDirectoryWatcher.InternalBufferSize = 1024;
                     logDirectoryWatcher.EnableRaisingEvents = false;
                 }
                 else
