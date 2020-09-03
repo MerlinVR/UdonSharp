@@ -154,14 +154,9 @@ namespace UdonSharp
 
         protected override void RefreshProgramImpl()
         {
-            string assemblyError = (string)typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
-
-            bool hasAssemblyError = !string.IsNullOrEmpty(assemblyError);
-            
             if (sourceCsScript != null &&
                 !EditorApplication.isCompiling &&
                 !EditorApplication.isUpdating &&
-                !hasAssemblyError &&
                 !UdonSharpProgramAsset.AnyUdonSharpScriptHasError())
             {
                 CompileAllCsPrograms(true);
@@ -249,7 +244,10 @@ namespace UdonSharp
             
             foreach (UdonSharpProgramAsset programAsset in GetAllUdonSharpPrograms())
             {
-                if (programAsset.sourceCsScript != null && programAsset.compileErrors.Count > 0)
+                if (programAsset.sourceCsScript == null)
+                    continue;
+
+                if (programAsset.compileErrors.Count > 0)
                     return true;
 
                 if (!string.IsNullOrEmpty((string)assemblyErrorField.GetValue(programAsset)))
