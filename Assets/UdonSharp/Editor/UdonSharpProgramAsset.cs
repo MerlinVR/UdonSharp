@@ -219,6 +219,11 @@ namespace UdonSharp
         }
 
         static UdonSharpProgramAsset[] _programAssetCache;
+        internal static void ClearProgramAssetCache()
+        {
+            _programAssetCache = null;
+        }
+
         [PublicAPI]
         public static UdonSharpProgramAsset[] GetAllUdonSharpPrograms()
         {

@@ -21,6 +21,8 @@ namespace UdonSharp
                 }
             }
 
+            UdonSharpProgramAsset.ClearProgramAssetCache();
+
             if (importedUdonSharpAsset)
                 UdonSharpEditorManager.QueueScriptCompile();
         }
