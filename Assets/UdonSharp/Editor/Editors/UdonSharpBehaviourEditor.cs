@@ -323,8 +323,12 @@ namespace UdonSharpEditor
 
         private void OnEnable()
         {
-            Undo.undoRedoPerformed += OnUndoRedo;
             UdonEditorManager.Instance.WantRepaint += Repaint;
+
+            if (target && PrefabUtility.IsPartOfPrefabAsset(target))
+                return;
+
+            Undo.undoRedoPerformed += OnUndoRedo;
 
             if (target is UdonBehaviour udonBehaviour)
             {
@@ -333,7 +337,7 @@ namespace UdonSharpEditor
                 if (proxyBehaviour)
                     proxyBehaviour.hideFlags =
                         HideFlags.DontSaveInBuild |
-#if !UDONSHAP_DEBUG
+#if !UDONSHARP_DEBUG
                         HideFlags.HideInInspector |
 #endif
                         HideFlags.DontSaveInEditor;
@@ -342,8 +346,12 @@ namespace UdonSharpEditor
 
         private void OnDisable()
         {
-            Undo.undoRedoPerformed -= OnUndoRedo;
             UdonEditorManager.Instance.WantRepaint -= Repaint;
+
+            if (target && PrefabUtility.IsPartOfPrefabAsset(target))
+                return;
+
+            Undo.undoRedoPerformed -= OnUndoRedo;
         }
 
         void OnUndoRedo()
@@ -404,7 +412,7 @@ namespace UdonSharpEditor
                     customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(inspectedType);
             }
 
-            if (customEditorType != null)
+            if (customEditorType != null && !PrefabUtility.IsPartOfPrefabAsset(target))
             {
                 if (baseEditor != null && baseEditor.GetType() != customEditorType)
                 {
@@ -428,7 +436,7 @@ namespace UdonSharpEditor
             else
             {
                 // Create a proxy behaviour so that other things can find this object
-                if (programAsset.sourceCsScript != null)
+                if (programAsset.sourceCsScript != null && !PrefabUtility.IsPartOfPrefabAsset(target))
                 {
                     currentProxyBehaviour = UdonSharpEditorUtility.GetProxyBehaviour(behaviour, ProxySerializationPolicy.NoSerialization);
                     currentProxyBehaviour.enabled = false;
@@ -440,6 +448,9 @@ namespace UdonSharpEditor
 
         private void OnSceneGUI()
         {
+            if (PrefabUtility.IsPartOfPrefabAsset(target))
+                return;
+
             UdonBehaviour behaviour = target as UdonBehaviour;
             
             if (behaviour.programSource == null || 
