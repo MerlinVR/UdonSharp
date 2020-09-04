@@ -38,10 +38,8 @@ This compiler is in an early state and I have no prior experience making compile
 - Numeric casts are checked for overflow due to UdonVM limitations
 
 ## Udon bugs that affect U#
-- Heap variables do not get initialized immediately which can cause unexpected behavior. Mainly when you use VRCInstantiate to create an object, the UdonBehaviour components on the instantiated object will not be setup until the next frame. So you cannot set values on the UdonBehaviour script immediately after initialization and attempts to get variables will return null. Due to how `GetComponent<T>` on user defined types works, it will also fail and return null until the behaviour has a chance to initialize its heap. This also happens if you have a UdonBehaviour that has never been enabled. https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/heap-values-are-not-initialized-in-some-cases-so-getprogramvariable-returns-null
-- In a similar manner custom events will not be fired immediately after instantiation. And they will not fire on UdonBehaviours that have never been enabled. https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/sendcustomevent-fails-on-gameobjects-that-where-instantiated-in-the-same-functio
-- Mutating methods on structs do not modify the struct https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/raysetorigin-and-raysetdirection-not-working
-- Instantiated objects will sometimes lose their UdonBehaviour or cannot be interacted with/triggered https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/interactive-objects-break-after-being-clonedinstanciated-on-live-worlds
+- Mutating methods on structs do not modify the struct (this can be seen on things like calling Normalize() on a Vector3) https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/raysetorigin-and-raysetdirection-not-working
+- Instantiated objects will lose their UdonBehaviours when instantiated from a prefab and cannot be interacted with/triggered https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/interactive-objects-break-after-being-clonedinstanciated-on-live-worlds
 - Calling Destroy() on an object in game and then using a null check to check if it's valid will throw exceptions in game https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/null-check-on-gameobject-will-throw-exception-if-the-gameobj-is-destroyed
 
 ## Setup
@@ -63,6 +61,15 @@ This compiler is in an early state and I have no prior experience making compile
 4. Now click the New Program button, this will create a new UdonSharp program asset for you
 5. Click the Create Script button and choose a save destination and name for the script.
 6. This will create a template script that's ready for you to start working on, open the script in your editor of choice and start programming
+
+#### Asset explorer asset creation
+
+Instead of creating assets from an UdonBehaviour you can also do the following:
+1. Right-click in your project asset explorer
+2. Navigate to Create > U# script
+3. Click U# script, this will open a create file dialog
+4. Choose a name for your script and click Save
+5. This will create a .cs script file and an UdonSharp program asset that's set up for the script in the same directory
 
 ### Example scripts
 
