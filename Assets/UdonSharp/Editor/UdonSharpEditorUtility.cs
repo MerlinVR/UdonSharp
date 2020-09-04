@@ -132,7 +132,7 @@ namespace UdonSharpEditor
             return ConvertToUdonBehavioursInternal(components, true, false);
         }
 
-        static Dictionary<MonoScript, UdonSharpProgramAsset> _programAssetLookup;
+        static internal Dictionary<MonoScript, UdonSharpProgramAsset> _programAssetLookup;
         private static UdonSharpProgramAsset GetUdonSharpProgramAsset(MonoScript programScript)
         {
             if (_programAssetLookup == null)
@@ -628,8 +628,14 @@ namespace UdonSharpEditor
                     newProxy = (UdonSharpBehaviour)targetObject.gameObject.AddComponent(behaviourType);
 
                 UdonSharpEditorUtility.SetBackingUdonBehaviour(newProxy, udonBehaviour);
-
-                UdonSharpEditorUtility.CopyUdonToProxy(newProxy);
+                try
+                {
+                    UdonSharpEditorUtility.CopyUdonToProxy(newProxy);
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError(e);
+                }
                 
                 if (shouldUndo)
                     Undo.DestroyObjectImmediate(targetObject);

@@ -332,7 +332,7 @@ namespace UdonSharpEditor
 
             if (target is UdonBehaviour udonBehaviour && UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour))
             {
-                UdonSharpBehaviour proxyBehaviour = UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour);
+                UdonSharpBehaviour proxyBehaviour = UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour, ProxySerializationPolicy.NoSerialization);
 
                 if (proxyBehaviour)
                     proxyBehaviour.hideFlags =
