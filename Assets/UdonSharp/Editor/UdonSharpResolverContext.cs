@@ -337,6 +337,9 @@ namespace UdonSharp
                         inheritedTypeMap.Add(childType.BaseType, childType);
                     }
                 }
+
+                inheritedTypeMap.Add(typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
+                inheritedTypeMap.Add(typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
             }
 
             return inheritedTypeMap;
