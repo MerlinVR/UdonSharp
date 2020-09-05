@@ -102,13 +102,16 @@ namespace UdonSharp
         public virtual void OnStationEntered(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnStationExited(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnVideoEnd() { }
+        public virtual void OnVideoError() { }
+        public virtual void OnVideoLoop() { }
         public virtual void OnVideoPause() { }
         public virtual void OnVideoPlay() { }
+        public virtual void OnVideoReady() { }
         public virtual void OnVideoStart() { }
         public virtual void OnPreSerialization() { }
         public virtual void OnDeserialization() { }
-#if UDON_BETA_SDK
-        public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi requestedOwner) => true;
+#if UDON_BETA_SDK || true
+        //public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi requestedOwner) => true;
         public virtual void OnPlayerTriggerEnter(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerTriggerExit(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerTriggerStay(VRC.SDKBase.VRCPlayerApi player) { }
