@@ -362,6 +362,7 @@ namespace UdonSharp
             typeof(UnityEngine.Vector2), typeof(UnityEngine.Vector3), typeof(UnityEngine.Vector4),
             typeof(UnityEngine.Quaternion),
             typeof(UnityEngine.Color32), typeof(UnityEngine.Color),
+            typeof(VRC.SDKBase.VRCUrl),
         };
 
         public static bool IsUdonSyncedType(System.Type type)
