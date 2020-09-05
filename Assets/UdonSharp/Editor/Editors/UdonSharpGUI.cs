@@ -1179,6 +1179,8 @@ namespace UdonSharpEditor
 
             string[] exportedSymbolNames = symbolTable.GetExportedSymbols();
 
+            EditorGUI.BeginChangeCheck();
+
             foreach (string exportedSymbol in exportedSymbolNames)
             {
                 System.Type symbolType = symbolTable.GetSymbolType(exportedSymbol);
@@ -1207,10 +1209,28 @@ namespace UdonSharpEditor
                         Debug.LogError($"Failed to set public variable '{exportedSymbol}' value.");
                     }
                 }
-
-                if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
-                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
             }
+            
+            foreach (string exportedSymbolName in exportedSymbolNames)
+            {
+                bool foundValue = behaviour.publicVariables.TryGetVariableValue(exportedSymbolName, out var variableValue);
+                bool foundType = behaviour.publicVariables.TryGetVariableType(exportedSymbolName, out var variableType);
+
+                // Remove this variable from the publicVariable list since UdonBehaviours set all null GameObjects, UdonBehaviours, and Transforms to the current behavior's equivalent object regardless of if it's marked as a `null` heap variable or `this`
+                // This default behavior is not the same as Unity, where the references are just left null. And more importantly, it assumes that the user has interacted with the inspector on that object at some point which cannot be guaranteed. 
+                // Specifically, if the user adds some public variable to a class, and multiple objects in the scene reference the program asset, 
+                //   the user will need to go through each of the objects' inspectors to make sure each UdonBehavior has its `publicVariables` variable populated by the inspector
+                if (foundValue && foundType &&
+                    variableValue == null &&
+                    (variableType == typeof(GameObject) || variableType == typeof(UdonBehaviour) || variableType == typeof(Transform)))
+                {
+                    behaviour.publicVariables.RemoveVariable(exportedSymbolName);
+                    GUI.changed = true;
+                }
+            }
+
+            if (EditorGUI.EndChangeCheck() && PrefabUtility.IsPartOfPrefabInstance(behaviour))
+                PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
         }
 
         // https://forum.unity.com/threads/horizontal-line-in-editor-window.520812/#post-3534861
