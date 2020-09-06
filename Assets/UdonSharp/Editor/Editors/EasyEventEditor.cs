@@ -50,6 +50,14 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 
+#if UDONSHARP
+using VRC.Udon;
+using UdonSharp;
+using UdonSharpEditor;
+using VRC.Udon.Graph;
+using VRC.Udon.Editor;
+#endif
+
 namespace Merlin
 {
     [InitializeOnLoad]
@@ -61,6 +69,9 @@ namespace Merlin
         private const string eeeDisplayArgumentTypeKey = "EEE.displayArgumentType";
         private const string eeeGroupSameComponentTypeKey = "EEE.groupSameComponentType";
         private const string eeeUseHotkeys = "EEE.usehotkeys";
+#if UDONSHARP
+        private const string eeeHideOriginalUdonBehaviour = "EEE.hideOriginalUdonBehaviour";
+#endif
 
         private static bool patchApplied = false;
         private static FieldInfo internalDrawerTypeMap = null;
@@ -74,6 +85,9 @@ namespace Merlin
             public bool displayArgumentType;
             public bool groupSameComponentType;
             public bool useHotkeys;
+#if UDONSHARP
+            public bool hideOriginalUdonBehaviour;
+#endif
         }
 
         // https://stackoverflow.com/questions/12898282/type-gettype-not-working 
@@ -357,6 +371,9 @@ namespace Merlin
                 displayArgumentType = EditorPrefs.GetBool(eeeDisplayArgumentTypeKey, true),
                 groupSameComponentType = EditorPrefs.GetBool(eeeGroupSameComponentTypeKey, false),
                 useHotkeys = EditorPrefs.GetBool(eeeUseHotkeys, true),
+#if UDONSHARP
+                hideOriginalUdonBehaviour = EditorPrefs.GetBool(eeeHideOriginalUdonBehaviour, false),
+#endif
             };
 
             return settings;
@@ -370,6 +387,9 @@ namespace Merlin
             EditorPrefs.SetBool(eeeDisplayArgumentTypeKey, settings.displayArgumentType);
             EditorPrefs.SetBool(eeeGroupSameComponentTypeKey, settings.groupSameComponentType);
             EditorPrefs.SetBool(eeeUseHotkeys, settings.useHotkeys);
+#if UDONSHARP
+            EditorPrefs.SetBool(eeeHideOriginalUdonBehaviour, settings.hideOriginalUdonBehaviour);
+#endif
         }
     }
 
@@ -381,6 +401,9 @@ namespace Merlin
         private static GUIContent displayArgumentTypeContent = new GUIContent("Display argument type on function name", "Shows the argument that a function takes on the function header");
         private static GUIContent groupSameComponentTypeContent = new GUIContent("Do not group components of the same type", "If you have multiple components of the same type on one object, show all components. Unity hides duplicate components by default.");
         private static GUIContent useHotkeys = new GUIContent("Use hotkeys", "Adds common Unity hotkeys to event editor that operate on the currently selected event. The commands are Add (CTRL+A), Copy, Paste, Cut, Delete, and Duplicate");
+#if UDONSHARP
+        private static GUIContent hideOriginalUdonBehaviourContent = new GUIContent("Hide original UdonBehaviour", "Hides the original UdonBehaviour from the event interface and only shows the C# version of it.");
+#endif
 
         public static void DrawSettingsButtons(EasyEventEditorHandler.EEESettings settings)
         {
@@ -395,6 +418,12 @@ namespace Merlin
             settings.displayArgumentType = EditorGUILayout.ToggleLeft(displayArgumentTypeContent, settings.displayArgumentType);
             settings.groupSameComponentType = !EditorGUILayout.ToggleLeft(groupSameComponentTypeContent, !settings.groupSameComponentType);
             settings.useHotkeys = EditorGUILayout.ToggleLeft(useHotkeys, settings.useHotkeys);
+
+#if UDONSHARP
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Udon Sharp settings", EditorStyles.boldLabel);
+            settings.hideOriginalUdonBehaviour = EditorGUILayout.ToggleLeft(hideOriginalUdonBehaviourContent, settings.hideOriginalUdonBehaviour);
+#endif
 
             EditorGUI.EndDisabledGroup();
             EditorGUI.indentLevel -= 1;
@@ -1308,6 +1337,13 @@ namespace Merlin
 
             foreach (Component component in components)
             {
+#if UDONSHARP
+                if (cachedSettings.hideOriginalUdonBehaviour &&
+                    component is UdonBehaviour udonBehaviour &&
+                    udonBehaviour.programSource != null && udonBehaviour.programSource is UdonSharpProgramAsset)
+                    continue;
+#endif
+
                 int componentCount = 0;
 
                 if (!cachedSettings.groupSameComponentType)
@@ -1323,10 +1359,67 @@ namespace Merlin
             return menu;
         }
 
+#if UDONSHARP
+        private static Dictionary<string, string> builtinEventLookup;
+#endif
+
         // Where the event data actually gets added when you choose a function
         static void SetEventFunctionCallback(object functionUserData)
         {
             FunctionData functionData = functionUserData as FunctionData;
+
+#if UDONSHARP
+            if (functionData.targetObject is UdonSharpBehaviour udonSharpBehaviour &&
+                UdonSharpEditorUtility.IsProxyBehaviour(udonSharpBehaviour))
+            {
+                MethodInfo originalTargetMethod = functionData.targetMethod;
+                functionData.targetObject = UdonSharpEditorUtility.GetBackingUdonBehaviour(udonSharpBehaviour);
+                functionData.targetMethod = typeof(UdonBehaviour).GetMethod("SendCustomEvent");
+                functionData.listenerMode = PersistentListenerMode.String;
+
+                if (originalTargetMethod.Name != "SendCustomEvent" && 
+                    originalTargetMethod.Name != "SendCustomNetworkEvent")
+                {
+                    SerializedProperty serializedArgsFixer = functionData.listenerElement.FindPropertyRelative("m_Arguments");
+
+                    UdonSharpProgramAsset programAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset(udonSharpBehaviour);
+
+                    // Stolen from the resolver context
+                    if (builtinEventLookup == null)
+                    {
+                        builtinEventLookup = new Dictionary<string, string>();
+
+                        foreach (UdonNodeDefinition nodeDefinition in UdonEditorManager.Instance.GetNodeDefinitions("Event_"))
+                        {
+                            if (nodeDefinition.fullName == "Event_Custom")
+                                continue;
+
+                            string eventNameStr = nodeDefinition.fullName.Substring(6);
+                            char[] eventName = eventNameStr.ToCharArray();
+                            eventName[0] = char.ToLowerInvariant(eventName[0]);
+
+                            builtinEventLookup.Add(eventNameStr, "_" + new string(eventName));
+                        }
+                    }
+
+                    string targetMethodName = originalTargetMethod.Name;
+
+                    bool isBuiltin = false;
+                    if (builtinEventLookup.ContainsKey(targetMethodName))
+                    {
+                        targetMethodName = builtinEventLookup[targetMethodName];
+                        isBuiltin = true;
+                    }
+
+                    SerializedProperty targetMethodProperty = serializedArgsFixer.FindPropertyRelative("m_StringArgument");
+
+                    targetMethodProperty.stringValue = targetMethodName;
+
+                    if (!isBuiltin && !originalTargetMethod.IsPublic)
+                        targetMethodProperty.stringValue = "<Custom events called via UI must be public>";
+                }
+            }
+#endif
 
             SerializedProperty serializedElement = functionData.listenerElement;
 
