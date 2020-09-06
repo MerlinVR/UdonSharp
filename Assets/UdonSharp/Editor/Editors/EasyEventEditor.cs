@@ -1375,11 +1375,12 @@ namespace Merlin
                 MethodInfo originalTargetMethod = functionData.targetMethod;
                 functionData.targetObject = UdonSharpEditorUtility.GetBackingUdonBehaviour(udonSharpBehaviour);
                 functionData.targetMethod = typeof(UdonBehaviour).GetMethod("SendCustomEvent");
-                functionData.listenerMode = PersistentListenerMode.String;
 
                 if (originalTargetMethod.Name != "SendCustomEvent" && 
                     originalTargetMethod.Name != "SendCustomNetworkEvent")
                 {
+                    functionData.listenerMode = PersistentListenerMode.String;
+
                     SerializedProperty serializedArgsFixer = functionData.listenerElement.FindPropertyRelative("m_Arguments");
 
                     UdonSharpProgramAsset programAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset(udonSharpBehaviour);
