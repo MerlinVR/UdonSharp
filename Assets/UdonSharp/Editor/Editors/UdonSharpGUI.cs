@@ -1210,7 +1210,7 @@ namespace UdonSharpEditor
                     }
                 }
             }
-            
+
             foreach (string exportedSymbolName in exportedSymbolNames)
             {
                 bool foundValue = behaviour.publicVariables.TryGetVariableValue(exportedSymbolName, out var variableValue);

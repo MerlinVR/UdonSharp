@@ -55,18 +55,23 @@ namespace UdonSharp
 
         static UdonSharpEditorCache()
         {
-            EditorApplication.playModeStateChanged += SaveOnPlayExit;
             AssemblyReloadEvents.beforeAssemblyReload += AssemblyReloadSave;
         }
 
         // Saves cache on play mode exit/enter and once we've entered the target mode reload the state from disk to persist the changes across play/edit mode
-        static void SaveOnPlayExit(PlayModeStateChange state)
+        static internal void SaveOnPlayExit(PlayModeStateChange state)
         {
             if (state == PlayModeStateChange.ExitingPlayMode ||
                 state == PlayModeStateChange.ExitingEditMode)
             {
-                Instance.SaveAllCacheData();
+                SaveAllCache();
             }
+        }
+
+        static internal void SaveAllCache()
+        {
+            if (_instance != null)
+                Instance.SaveAllCacheData();
         }
 
         internal static void ResetInstance()
