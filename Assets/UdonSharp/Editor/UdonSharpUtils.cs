@@ -575,6 +575,10 @@ namespace UdonSharp
                 catch (System.IO.IOException e)
                 {
                     exception = e;
+
+                    if (e is System.IO.FileNotFoundException ||
+                        e is System.IO.DirectoryNotFoundException)
+                        throw e;
                 }
 
                 if (sourceLoaded)
