@@ -72,7 +72,7 @@ namespace UdonSharpEditor
                 }
             }
 
-            if (state == PlayModeStateChange.EnteredEditMode || state == PlayModeStateChange.ExitingEditMode)
+            if (state == PlayModeStateChange.EnteredEditMode)
             {
                 UdonSharpEditorCache.ResetInstance();
                 if (UdonSharpEditorCache.Instance.LastBuildType == UdonSharpEditorCache.DebugInfoType.Client)
@@ -82,6 +82,15 @@ namespace UdonSharpEditor
 
                 RunAllUpdates();
             }
+            else if (state == PlayModeStateChange.ExitingEditMode)
+            {
+                if (UdonSharpEditorCache.Instance.LastBuildType == UdonSharpEditorCache.DebugInfoType.Client)
+                {
+                    UdonSharpProgramAsset.CompileAllCsPrograms(true);
+                }
+            }
+
+            UdonSharpEditorCache.SaveOnPlayExit(state);
         }
 
         static void RunAllUpdates(List<UdonBehaviour> allBehaviours = null)

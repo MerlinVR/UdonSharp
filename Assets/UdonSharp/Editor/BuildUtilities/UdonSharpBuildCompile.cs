@@ -17,6 +17,7 @@ namespace UdonSharp
                 return true;
 
             UdonSharpProgramAsset.CompileAllCsPrograms(true, false);
+            UdonSharpEditorCache.SaveAllCache();
 
             if (UdonSharpProgramAsset.AnyUdonSharpScriptHasError())
             {
