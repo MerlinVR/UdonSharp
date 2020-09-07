@@ -85,8 +85,6 @@ public class <TemplateClassName> : UdonSharpBehaviour
             UdonSharpSettings settings = AssetDatabase.LoadAssetAtPath<UdonSharpSettings>(SettingsSavePath);
             if (settings == null)
             {
-                Debug.LogWarning("Settings null!");
-
                 settings = ScriptableObject.CreateInstance<UdonSharpSettings>();
                 AssetDatabase.CreateAsset(settings, SettingsSavePath);
                 AssetDatabase.SaveAssets();
