@@ -363,7 +363,7 @@ namespace UdonSharpEditor
                 System.Type customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(inspectorTarget.GetType());
 
                 if (customEditorType != null) // Only do the undo copying on things with a custom inspector
-                    UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget);
+                    UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget, ProxySerializationPolicy.All);
             }
         }
 
@@ -423,7 +423,7 @@ namespace UdonSharpEditor
                     baseEditor = null;
                 }
 
-                UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.GetProxyBehaviour(behaviour);
+                UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.GetProxyBehaviour(behaviour, ProxySerializationPolicy.All);
                 inspectorTarget.enabled = false;
 
                 Editor.CreateCachedEditorWithContext(inspectorTarget, this, customEditorType, ref baseEditor);
@@ -434,7 +434,7 @@ namespace UdonSharpEditor
 
                 baseEditor.OnInspectorGUI();
 
-                UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget);
+                UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget, ProxySerializationPolicy.All);
             }
             else
             {
@@ -483,7 +483,7 @@ namespace UdonSharpEditor
                 baseEditor = null;
             }
 
-            UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.GetProxyBehaviour(behaviour);
+            UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.GetProxyBehaviour(behaviour, ProxySerializationPolicy.All);
             inspectorTarget.enabled = false;
 
             Editor.CreateCachedEditorWithContext(inspectorTarget, this, customEditorType, ref baseEditor);
@@ -492,7 +492,7 @@ namespace UdonSharpEditor
 
             onSceneGUIMethod.Invoke(baseEditor, null);
 
-            UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget);
+            UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget, ProxySerializationPolicy.All);
         }
 
         void DrawDefaultUdonSharpInspector()

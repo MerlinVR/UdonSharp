@@ -607,7 +607,7 @@ namespace UdonSharpEditor
                 try
                 {
                     if (convertChildren)
-                        UdonSharpEditorUtility.CopyProxyToUdon(targetObject, shouldUndo ? ProxySerializationPolicy.AllWithUndo : ProxySerializationPolicy.Default);
+                        UdonSharpEditorUtility.CopyProxyToUdon(targetObject, shouldUndo ? ProxySerializationPolicy.AllWithCreateUndo : ProxySerializationPolicy.All);
                     else
                         UdonSharpEditorUtility.CopyProxyToUdon(targetObject, ProxySerializationPolicy.RootOnly);
                 }
