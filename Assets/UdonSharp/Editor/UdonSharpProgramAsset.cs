@@ -46,6 +46,8 @@ namespace UdonSharp
 
         private UdonBehaviour currentBehaviour = null;
 
+        internal bool showUtilityDropdown = false;
+
         internal void DrawErrorTextAreas()
         {
             UdonSharpGUI.DrawCompileErrorTextArea(this);
