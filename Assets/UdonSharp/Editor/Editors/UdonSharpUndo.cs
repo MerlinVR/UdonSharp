@@ -58,7 +58,7 @@ namespace UdonSharpEditor
             proxyComponent.enabled = false;
 
             UdonSharpEditorUtility.SetBackingUdonBehaviour(proxyComponent, udonBehaviour);
-            UdonSharpEditorUtility.CopyUdonToProxy(proxyComponent, ProxySerializationPolicy.AllWithUndo);
+            UdonSharpEditorUtility.CopyUdonToProxy(proxyComponent, ProxySerializationPolicy.AllWithCreateUndo);
 
             if (EditorApplication.isPlaying)
                 udonBehaviour.InitializeUdonContent();

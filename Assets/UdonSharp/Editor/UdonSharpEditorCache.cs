@@ -162,7 +162,7 @@ namespace UdonSharp
             return false;
         }
 
-        public void UpdateSourceHash(UdonSharpProgramAsset programAsset)
+        public void UpdateSourceHash(UdonSharpProgramAsset programAsset, string sourceText)
         {
             if (programAsset?.sourceCsScript == null)
                 return;
@@ -170,7 +170,7 @@ namespace UdonSharp
             if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string programAssetGuid, out long _))
                 return;
 
-            string newHash = HashSourceFile(programAsset.sourceCsScript);
+            string newHash = UdonSharpUtils.HashString(sourceText);
 
             if (sourceFileHashLookup.ContainsKey(programAssetGuid))
             {

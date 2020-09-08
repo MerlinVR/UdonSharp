@@ -46,6 +46,8 @@ namespace UdonSharp
 
         private UdonBehaviour currentBehaviour = null;
 
+        internal bool showUtilityDropdown = false;
+
         internal void DrawErrorTextAreas()
         {
             UdonSharpGUI.DrawCompileErrorTextArea(this);
@@ -223,6 +225,7 @@ namespace UdonSharp
         {
             _programAssetCache = null;
             UdonSharpEditorUtility._programAssetLookup = null;
+            UdonSharpEditorUtility._programAssetTypeLookup = null;
         }
 
         [PublicAPI]
@@ -268,20 +271,8 @@ namespace UdonSharp
         {
             if (classType == null)
                 throw new System.ArgumentNullException();
-
-            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
-
-            foreach (string programAssetId in udonSharpDataAssets)
-            {
-                UdonSharpProgramAsset programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(programAssetId));
-
-                if (programAsset &&
-                    programAsset.sourceCsScript &&
-                    programAsset.sourceCsScript.GetClass() == classType)
-                    return programAsset;
-            }
-
-            return null;
+            
+            return UdonSharpEditorUtility.GetUdonSharpProgramAsset(classType); 
         }
         
         [PublicAPI]

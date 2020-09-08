@@ -36,7 +36,9 @@ namespace UdonSharp.Serialization
 
         public override void Read(ref T targetObject, IValueStorage sourceObject)
         {
-            if (sourceObject.Value == null)
+            UdonBehaviour sourceBehaviour = (UdonBehaviour)sourceObject.Value;
+
+            if (sourceBehaviour == null)
             {
                 targetObject = null;
                 return;
@@ -45,8 +47,7 @@ namespace UdonSharp.Serialization
             if (USBSerializationContext.currentPolicy == null)
                 throw new NullReferenceException("Serialization policy cannot be null");
 
-            if (targetObject == null)
-                targetObject = (T)UdonSharpEditorUtility.GetProxyBehaviour((UdonBehaviour)sourceObject.Value, ProxySerializationPolicy.NoSerialization);
+            targetObject = (T)UdonSharpEditorUtility.GetProxyBehaviour(sourceBehaviour, ProxySerializationPolicy.NoSerialization);
 
             if (USBSerializationContext.currentDepth >= USBSerializationContext.currentPolicy.MaxSerializationDepth)
                 return;
@@ -85,9 +86,15 @@ namespace UdonSharp.Serialization
             if (USBSerializationContext.currentPolicy == null)
                 throw new NullReferenceException("Serialization policy cannot be null");
 
+            UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(sourceObject);
+
             if (USBSerializationContext.currentDepth >= USBSerializationContext.currentPolicy.MaxSerializationDepth)
             {
-                targetObject.Value = null;
+                if (backingBehaviour)
+                    targetObject.Value = backingBehaviour;
+                else
+                    targetObject.Value = null;
+
                 return;
             }
 
@@ -95,8 +102,6 @@ namespace UdonSharp.Serialization
 
             try
             {
-                UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(sourceObject);
-
                 if (backingBehaviour)
                 {
                     targetObject.Value = backingBehaviour;

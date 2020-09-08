@@ -76,7 +76,7 @@ namespace UdonSharp.Examples.Inspectors
                 inspectorBehaviour.childBehaviours = inspectorBehaviour.childBehaviours.Append(newChild).ToArray();
 
                 // Will recursively apply the child behaviour as well since it is referenced in the childBehaviours array
-                inspectorBehaviour.ApplyProxyModifications();
+                inspectorBehaviour.ApplyProxyModifications(ProxySerializationPolicy.All);
             }
 
             if (GUILayout.Button("Remove child behaviour"))

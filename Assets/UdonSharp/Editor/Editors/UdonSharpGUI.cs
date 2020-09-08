@@ -317,6 +317,7 @@ namespace UdonSharpEditor
             if (!_editorStates.TryGetValue(programAsset, out editorState))
             {
                 editorState = new USharpEditorState();
+                editorState.showExtraOptions = programAsset.showUtilityDropdown;
                 _editorStates.Add(programAsset, editorState);
             }
 
@@ -342,7 +343,7 @@ namespace UdonSharpEditor
 
             if (udonBehaviour)
             {
-                editorState.showExtraOptions = EditorGUILayout.Foldout(editorState.showExtraOptions, "Utilities");
+                editorState.showExtraOptions = programAsset.showUtilityDropdown = EditorGUILayout.Foldout(editorState.showExtraOptions, "Utilities");
                 if (editorState.showExtraOptions)
                 {
                     if (GUILayout.Button("Compile All UdonSharp Programs"))
@@ -368,13 +369,13 @@ namespace UdonSharpEditor
                             }
 
                             if (needsProxyCall)
-                                UdonSharpEditorUtility.CopyProxyToUdon(proxy);
+                                UdonSharpEditorUtility.CopyProxyToUdon(proxy, ProxySerializationPolicy.All);
 
                             if (udonBehaviour != null)
                                 udonBehaviour.SendCustomEvent(editorState.customEventName);
 
                             if (needsProxyCall)
-                                UdonSharpEditorUtility.CopyUdonToProxy(proxy);
+                                UdonSharpEditorUtility.CopyUdonToProxy(proxy, ProxySerializationPolicy.All);
                         }
                     }
 
@@ -1424,12 +1425,12 @@ namespace UdonSharpEditor
                     }
 
                     if (needsProxyCall)
-                        UdonSharpEditorUtility.CopyProxyToUdon(proxy);
+                        UdonSharpEditorUtility.CopyProxyToUdon(proxy, ProxySerializationPolicy.All);
                     
                     behaviour.SendCustomEvent("_interact");
 
                     if (needsProxyCall)
-                        UdonSharpEditorUtility.CopyUdonToProxy(proxy);
+                        UdonSharpEditorUtility.CopyUdonToProxy(proxy, ProxySerializationPolicy.All);
                 }
                 EditorGUI.EndDisabledGroup();
             }
