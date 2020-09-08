@@ -369,13 +369,13 @@ namespace UdonSharpEditor
                             }
 
                             if (needsProxyCall)
-                                UdonSharpEditorUtility.CopyProxyToUdon(proxy);
+                                UdonSharpEditorUtility.CopyProxyToUdon(proxy, ProxySerializationPolicy.All);
 
                             if (udonBehaviour != null)
                                 udonBehaviour.SendCustomEvent(editorState.customEventName);
 
                             if (needsProxyCall)
-                                UdonSharpEditorUtility.CopyUdonToProxy(proxy);
+                                UdonSharpEditorUtility.CopyUdonToProxy(proxy, ProxySerializationPolicy.All);
                         }
                     }
 
@@ -1413,12 +1413,12 @@ namespace UdonSharpEditor
                     }
 
                     if (needsProxyCall)
-                        UdonSharpEditorUtility.CopyProxyToUdon(proxy);
+                        UdonSharpEditorUtility.CopyProxyToUdon(proxy, ProxySerializationPolicy.All);
                     
                     behaviour.SendCustomEvent("_interact");
 
                     if (needsProxyCall)
-                        UdonSharpEditorUtility.CopyUdonToProxy(proxy);
+                        UdonSharpEditorUtility.CopyUdonToProxy(proxy, ProxySerializationPolicy.All);
                 }
                 EditorGUI.EndDisabledGroup();
             }
