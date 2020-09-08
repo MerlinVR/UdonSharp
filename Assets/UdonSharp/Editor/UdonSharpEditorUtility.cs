@@ -133,22 +133,31 @@ namespace UdonSharpEditor
         }
 
         static internal Dictionary<MonoScript, UdonSharpProgramAsset> _programAssetLookup;
-        private static UdonSharpProgramAsset GetUdonSharpProgramAsset(MonoScript programScript)
+        static internal Dictionary<System.Type, UdonSharpProgramAsset> _programAssetTypeLookup;
+        private static void InitTypeLookups()
         {
             if (_programAssetLookup == null)
             {
                 _programAssetLookup = new Dictionary<MonoScript, UdonSharpProgramAsset>();
+                _programAssetTypeLookup = new Dictionary<System.Type, UdonSharpProgramAsset>();
 
                 UdonSharpProgramAsset[] udonSharpProgramAssets = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
 
                 foreach (UdonSharpProgramAsset programAsset in udonSharpProgramAssets)
                 {
-                    if (programAsset && programAsset.sourceCsScript != null && !_programAssetLookup.ContainsKey(programScript))
+                    if (programAsset && programAsset.sourceCsScript != null && !_programAssetLookup.ContainsKey(programAsset.sourceCsScript))
                     {
                         _programAssetLookup.Add(programAsset.sourceCsScript, programAsset);
+                        if (programAsset.sourceCsScript.GetClass() != null)
+                            _programAssetTypeLookup.Add(programAsset.sourceCsScript.GetClass(), programAsset);
                     }
                 }
             }
+        }
+
+        private static UdonSharpProgramAsset GetUdonSharpProgramAsset(MonoScript programScript)
+        {
+            InitTypeLookups();
 
             _programAssetLookup.TryGetValue(programScript, out UdonSharpProgramAsset foundProgramAsset);
 
@@ -164,6 +173,16 @@ namespace UdonSharpEditor
         public static UdonSharpProgramAsset GetUdonSharpProgramAsset(UdonSharpBehaviour udonSharpBehaviour)
         {
             return GetUdonSharpProgramAsset(MonoScript.FromMonoBehaviour(udonSharpBehaviour));
+        }
+
+        [PublicAPI]
+        public static UdonSharpProgramAsset GetUdonSharpProgramAsset(System.Type type)
+        {
+            InitTypeLookups();
+
+            _programAssetTypeLookup.TryGetValue(type, out UdonSharpProgramAsset foundProgramAsset);
+
+            return foundProgramAsset;
         }
 
         private static readonly FieldInfo _backingBehaviourField = typeof(UdonSharpBehaviour).GetField("_backingUdonBehaviour", BindingFlags.NonPublic | BindingFlags.Instance);
