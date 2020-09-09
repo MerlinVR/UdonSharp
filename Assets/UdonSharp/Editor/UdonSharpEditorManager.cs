@@ -76,7 +76,15 @@ namespace UdonSharpEditor
                 const BindingFlags eventBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
                 MethodInfo eventInfo = behaviourType.GetMethods(eventBindingFlags).FirstOrDefault(e => e.Name == eventName && e.ReturnType == typeof(void));
-                if (eventInfo != null) harmony.Patch(eventInfo, injectedMethod);
+
+                try
+                {
+                    if (eventInfo != null) harmony.Patch(eventInfo, injectedMethod);
+                }
+                catch (System.Exception)
+                {
+                    Debug.LogWarning($"Failed to patch event {eventInfo} on {behaviourType}");
+                }
             }
 
             foreach (System.Type udonSharpBehaviourType in udonSharpBehaviourTypes)
