@@ -387,7 +387,7 @@ namespace UdonSharpEditor
         /// <param name="jaggedArrayDimensionCount"></param>
         /// <param name="currentDepth"></param>
         /// <returns></returns>
-        static bool VerifyArrayValidity(object rootArray, System.Type rootArrayType, int arrayDimensionCount, int currentDepth, string behaviourName, string variableName)
+        static bool VerifyArrayValidity(ref object rootArray, ref bool modifiedArray, System.Type rootArrayType, System.Type currentTargetType, int arrayDimensionCount, int currentDepth, string behaviourName, string variableName)
         {
             if (rootArray == null)
                 return true;
@@ -421,7 +421,62 @@ namespace UdonSharpEditor
                     }
                 }
                 else if (rootArray.GetType() != rootArrayType)
-                    return false;
+                {
+                    System.Type targetElementType = rootArrayType.GetElementType();
+
+                    if (!targetElementType.IsArray /*&& (rootArray.GetType().GetElementType() == null || !rootArray.GetType().GetElementType().IsArray)*/)
+                    {
+                        Array rootArrayArr = (Array)rootArray;
+                        int arrayLen = rootArrayArr.Length;
+                        Array newArray = (Array)Activator.CreateInstance(rootArrayType, new object[] { arrayLen });
+                        rootArray = newArray;
+                        modifiedArray = true;
+
+                        for (int i = 0; i < arrayLen; ++i)
+                        {
+                            object oldValue = rootArrayArr.GetValue(i);
+
+                            if (!oldValue.IsUnityObjectNull())
+                            {
+                                System.Type oldType = oldValue.GetType();
+
+                                if (targetElementType.IsAssignableFrom(oldType))
+                                {
+                                    newArray.SetValue(oldValue, i);
+                                }
+                                else if (targetElementType.IsExplicitlyAssignableFrom(oldType))
+                                {
+                                    object newValue;
+                                    try
+                                    {
+                                        newValue = Convert.ChangeType(oldValue, targetElementType);
+                                    }
+                                    catch (Exception e) when (e is InvalidCastException || e is OverflowException)
+                                    {
+                                        MethodInfo castMethod = oldType.GetCastMethod(targetElementType);
+
+                                        if (castMethod != null)
+                                            newValue = castMethod.Invoke(null, new object[] { oldValue });
+                                        else
+                                            newValue = targetElementType.IsValueType ? Activator.CreateInstance(targetElementType) : null;
+                                    }
+
+                                    newArray.SetValue(newValue, i);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (currentDepth == 1)
+                            return false;
+                        else
+                        {
+                            rootArray = null;
+                            modifiedArray = true;
+                        }
+                    }
+                }
             }
             else
             {
@@ -429,10 +484,18 @@ namespace UdonSharpEditor
                 if (array == null)
                     return false;
 
-                foreach (object element in array)
+                if (array.GetType() != UdonSharpUtils.UserTypeToUdonType(currentTargetType))
+                    return false;
+
+                int arrayLen = array.Length;
+                for (int i = 0; i < arrayLen; ++i)
                 {
-                    if (!VerifyArrayValidity(element, rootArrayType, arrayDimensionCount, currentDepth + 1, behaviourName, variableName))
+                    object elementObj = array.GetValue(i);
+
+                    if (!VerifyArrayValidity(ref elementObj, ref modifiedArray, rootArrayType, currentTargetType.GetElementType(), arrayDimensionCount, currentDepth + 1, behaviourName, variableName))
                         return false;
+
+                    array.SetValue(elementObj, i);
                 }
             }
 
@@ -491,7 +554,7 @@ namespace UdonSharpEditor
                         // Specifically, if the user adds some public variable to a class, and multiple objects in the scene reference the program asset, 
                         //   the user will need to go through each of the objects' inspectors to make sure each UdonBehavior has its `publicVariables` variable populated by the inspector
                         if (foundValue &&
-                            symbolValue == null &&
+                            symbolValue.IsUnityObjectNull() &&
                             (publicFieldType == typeof(GameObject) || publicFieldType == typeof(UdonBehaviour) || publicFieldType == typeof(Transform)))
                         {
                             behaviour.publicVariables.RemoveVariable(variableSymbol);
@@ -500,38 +563,58 @@ namespace UdonSharpEditor
                         }
 
                         System.Type programSymbolType = fieldDefinition.fieldSymbol.symbolCsType;
-                        if (!publicFieldType.IsAssignableFrom(programSymbolType))
+
+                        if (!symbolValue.IsUnityObjectNull())
+                        {
+                            System.Type valueType = symbolValue.GetType();
+
+                            if (!programSymbolType.IsAssignableFrom(valueType))
+                            {
+                                updatedBehaviourVariables++;
+
+                                if (programSymbolType.IsExplicitlyAssignableFrom(valueType))
+                                {
+                                    object convertedValue;
+                                    try
+                                    {
+                                        convertedValue = Convert.ChangeType(symbolValue, programSymbolType);
+                                    }
+                                    catch (Exception e) when (e is InvalidCastException || e is OverflowException)
+                                    {
+                                        MethodInfo castMethod = valueType.GetCastMethod(programSymbolType);
+
+                                        if (castMethod != null)
+                                            convertedValue = castMethod.Invoke(null, new object[] { symbolValue });
+                                        else
+                                            convertedValue = programAsset.GetPublicVariableDefaultValue(variableSymbol);
+                                    }
+
+                                    publicVariables.RemoveVariable(variableSymbol);
+                                    IUdonVariable newVariable = (IUdonVariable)Activator.CreateInstance(typeof(UdonVariable<>).MakeGenericType(programSymbolType), new object[] { variableSymbol, convertedValue });
+                                    publicVariables.TryAddVariable(newVariable);
+                                }
+                                else
+                                {
+                                    publicVariables.RemoveVariable(variableSymbol);
+                                    object defaultValue = programAsset.GetPublicVariableDefaultValue(variableSymbol);
+                                    IUdonVariable newVariable = (IUdonVariable)Activator.CreateInstance(typeof(UdonVariable<>).MakeGenericType(programSymbolType), new object[] { variableSymbol, defaultValue });
+                                    publicVariables.TryAddVariable(newVariable);
+                                }
+                            }
+                            else if (publicFieldType != programSymbolType) // It's assignable but the storage type is wrong
+                            {
+                                updatedBehaviourVariables++;
+                                publicVariables.RemoveVariable(variableSymbol);
+                                IUdonVariable newVariable = (IUdonVariable)Activator.CreateInstance(typeof(UdonVariable<>).MakeGenericType(programSymbolType), new object[] { variableSymbol, symbolValue });
+                                publicVariables.TryAddVariable(newVariable);
+                            }
+                        }
+                        else if (publicFieldType != programSymbolType) // It's a null value, but the storage type is wrong so reassign the correct storage type
                         {
                             updatedBehaviourVariables++;
-
-                            if (publicFieldType.IsExplicitlyAssignableFrom(programSymbolType))
-                            {
-                                object convertedValue;
-                                try
-                                {
-                                    convertedValue = Convert.ChangeType(symbolValue, programSymbolType);
-                                }
-                                catch (InvalidCastException)
-                                {
-                                    MethodInfo castMethod = publicFieldType.GetCastMethod(programSymbolType);
-
-                                    if (castMethod != null)
-                                        convertedValue = castMethod.Invoke(null, new object[] { symbolValue });
-                                    else
-                                        convertedValue = programAsset.GetPublicVariableDefaultValue(variableSymbol);
-                                }
-
-                                publicVariables.RemoveVariable(variableSymbol);
-                                IUdonVariable newVariable = (IUdonVariable)Activator.CreateInstance(typeof(UdonVariable<>).MakeGenericType(programSymbolType), new object[] { variableSymbol, convertedValue });
-                                publicVariables.TryAddVariable(newVariable);
-                            }
-                            else
-                            {
-                                publicVariables.RemoveVariable(variableSymbol);
-                                object defaultValue = programAsset.GetPublicVariableDefaultValue(variableSymbol);
-                                IUdonVariable newVariable = (IUdonVariable)Activator.CreateInstance(typeof(UdonVariable<>).MakeGenericType(programSymbolType), new object[] { variableSymbol, defaultValue });
-                                publicVariables.TryAddVariable(newVariable);
-                            }
+                            publicVariables.RemoveVariable(variableSymbol);
+                            IUdonVariable newVariable = (IUdonVariable)Activator.CreateInstance(typeof(UdonVariable<>).MakeGenericType(programSymbolType), new object[] { variableSymbol, null });
+                            publicVariables.TryAddVariable(newVariable);
                         }
 
                         string behaviourName = behaviour.ToString();
@@ -556,11 +639,21 @@ namespace UdonSharpEditor
                                 currentType = currentType.GetElementType();
                             }
 
-                            if (!VerifyArrayValidity(symbolValue, currentType.MakeArrayType(), arrayDepth, 1, behaviourName, variableSymbol))
+                            bool modifiedArray = false;
+                            object arrayObject = symbolValue;
+
+                            if (!VerifyArrayValidity(ref arrayObject, ref modifiedArray, currentType.MakeArrayType(), userType, arrayDepth, 1, behaviourName, variableSymbol))
                             {
                                 publicVariables.RemoveVariable(variableSymbol);
                                 object defaultValue = programAsset.GetPublicVariableDefaultValue(variableSymbol);
                                 IUdonVariable newVariable = (IUdonVariable)Activator.CreateInstance(typeof(UdonVariable<>).MakeGenericType(programSymbolType), new object[] { variableSymbol, defaultValue });
+                                publicVariables.TryAddVariable(newVariable);
+                                updatedBehaviourVariables++;
+                            }
+                            else if (modifiedArray)
+                            {
+                                publicVariables.RemoveVariable(variableSymbol);
+                                IUdonVariable newVariable = (IUdonVariable)Activator.CreateInstance(typeof(UdonVariable<>).MakeGenericType(programSymbolType), new object[] { variableSymbol, arrayObject });
                                 publicVariables.TryAddVariable(newVariable);
                                 updatedBehaviourVariables++;
                             }
