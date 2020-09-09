@@ -352,6 +352,14 @@ namespace UdonSharp.Compiler
 
             int fieldInitializerErrorCount = RunFieldInitalizers(compiledModules);
 
+            if (fieldInitializerErrorCount > 0)
+            {
+                foreach (CompilationModule module in compiledModules)
+                {
+                    module.programAsset.compileErrors.Add("Initializer error on an UdonSharpBehaviour, see output log for details.");
+                }
+            }
+
             foreach (CompilationModule module in compiledModules)
             {
                 IUdonProgram program = module.programAsset.GetRealProgram();
@@ -534,11 +542,25 @@ namespace UdonSharp.Compiler
             for (int i = 0; i < assemblies.Length; i++)
             {
                 if (!assemblies[i].IsDynamic && assemblies[i].Location.Length > 0)
-                    references.Add(MetadataReference.CreateFromFile(assemblies[i].Location));
+                {
+                    PortableExecutableReference executableReference = null;
+
+                    try
+                    {
+                        executableReference = MetadataReference.CreateFromFile(assemblies[i].Location);
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogError($"Unable to locate assembly {assemblies[i].Location} Exception: {e}");
+                    }
+
+                    if (executableReference != null)
+                        references.Add(executableReference);
+                }
             }
 
             CSharpCompilation compilation = CSharpCompilation.Create(
-                $"init{initAssemblyCounter++}",
+                $"UdonSharpInitAssembly{initAssemblyCounter++}",
                 syntaxTrees: initializerTrees,
                 references: references,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
