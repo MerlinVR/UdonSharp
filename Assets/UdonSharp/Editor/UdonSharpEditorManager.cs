@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HarmonyLib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -25,6 +26,7 @@ namespace UdonSharpEditor
             EditorApplication.update += OnEditorUpdate;
             EditorApplication.playModeStateChanged += OnChangePlayMode;
             AssemblyReloadEvents.afterAssemblyReload += RunPostAssemblyBuildRefresh;
+            AssemblyReloadEvents.afterAssemblyReload += InjectUnityEventInterceptors;
         }
 
         private static void EditorSceneManager_sceneOpened(Scene scene, OpenSceneMode mode)
@@ -47,6 +49,106 @@ namespace UdonSharpEditor
         static void RunPostAssemblyBuildRefresh()
         {
             UdonSharpProgramAsset.CompileAllCsPrograms();
+        }
+
+        static void InjectUnityEventInterceptors()
+        {
+            List<System.Type> udonSharpBehaviourTypes = new List<Type>();
+
+            foreach (Assembly assembly in UdonSharpUtils.GetLoadedEditorAssemblies())
+            {
+                foreach (System.Type type in assembly.GetTypes())
+                {
+                    if (type != typeof(UdonSharpBehaviour) && type.IsSubclassOf(typeof(UdonSharpBehaviour)))
+                        udonSharpBehaviourTypes.Add(type);
+                }
+            }
+
+            const string harmonyID = "UdonSharp.Editor.EventPatch";
+            Harmony harmony = new Harmony(harmonyID);
+            harmony.UnpatchAll(harmonyID);
+
+            MethodInfo injectedEvent = typeof(EventInjectedMethods).GetMethod("EventInterceptor", BindingFlags.Static | BindingFlags.Public);
+            HarmonyMethod injectedMethod = new HarmonyMethod(injectedEvent);
+
+            void InjectEvent(System.Type behaviourType, string eventName)
+            {
+                const BindingFlags eventBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+
+                MethodInfo eventInfo = behaviourType.GetMethods(eventBindingFlags).FirstOrDefault(e => e.Name == eventName && e.ReturnType == typeof(void));
+                if (eventInfo != null) harmony.Patch(eventInfo, injectedMethod);
+            }
+
+            foreach (System.Type udonSharpBehaviourType in udonSharpBehaviourTypes)
+            {
+                // Trigger events
+                InjectEvent(udonSharpBehaviourType, "OnTriggerEnter");
+                InjectEvent(udonSharpBehaviourType, "OnTriggerExit");
+                InjectEvent(udonSharpBehaviourType, "OnTriggerStay");
+                InjectEvent(udonSharpBehaviourType, "OnTriggerEnter2D");
+                InjectEvent(udonSharpBehaviourType, "OnTriggerExit2D");
+                InjectEvent(udonSharpBehaviourType, "OnTriggerStay2D");
+
+                // Collision events
+                InjectEvent(udonSharpBehaviourType, "OnCollisionEnter");
+                InjectEvent(udonSharpBehaviourType, "OnCollisionExit");
+                InjectEvent(udonSharpBehaviourType, "OnCollisionStay");
+                InjectEvent(udonSharpBehaviourType, "OnCollisionEnter2D");
+                InjectEvent(udonSharpBehaviourType, "OnCollisionExit2D");
+                InjectEvent(udonSharpBehaviourType, "OnCollisionStay2D");
+
+                // Controller
+                InjectEvent(udonSharpBehaviourType, "OnControllerColliderHit");
+
+                // Animator events
+                InjectEvent(udonSharpBehaviourType, "OnAnimatorIK");
+                InjectEvent(udonSharpBehaviourType, "OnAnimatorMove");
+
+                // Mouse events
+                InjectEvent(udonSharpBehaviourType, "OnMouseDown");
+                InjectEvent(udonSharpBehaviourType, "OnMouseDrag");
+                InjectEvent(udonSharpBehaviourType, "OnMouseEnter");
+                InjectEvent(udonSharpBehaviourType, "OnMouseExit");
+                InjectEvent(udonSharpBehaviourType, "OnMouseOver");
+                InjectEvent(udonSharpBehaviourType, "OnMouseUp");
+                InjectEvent(udonSharpBehaviourType, "OnMouseUpAsButton");
+
+                // Particle events
+                InjectEvent(udonSharpBehaviourType, "OnParticleCollision");
+                InjectEvent(udonSharpBehaviourType, "OnParticleSystemStopped");
+                InjectEvent(udonSharpBehaviourType, "OnParticleTrigger");
+                InjectEvent(udonSharpBehaviourType, "OnParticleUpdateJobScheduled");
+
+                // Rendering events
+                InjectEvent(udonSharpBehaviourType, "OnPostRender");
+                InjectEvent(udonSharpBehaviourType, "OnPreCull");
+                InjectEvent(udonSharpBehaviourType, "OnPreRender");
+                InjectEvent(udonSharpBehaviourType, "OnRenderImage");
+                InjectEvent(udonSharpBehaviourType, "OnRenderObject");
+                InjectEvent(udonSharpBehaviourType, "OnWillRenderObject");
+
+                // Joint events
+                InjectEvent(udonSharpBehaviourType, "OnJointBreak");
+                InjectEvent(udonSharpBehaviourType, "OnJointBreak2D");
+
+                // Audio
+                InjectEvent(udonSharpBehaviourType, "OnAudioFilterRead");
+                
+                // Transforms
+                InjectEvent(udonSharpBehaviourType, "OnTransformChildrenChanged");
+                InjectEvent(udonSharpBehaviourType, "OnTransformParentChanged");
+            }
+        }
+
+        static class EventInjectedMethods
+        {
+            public static bool EventInterceptor(UdonSharpBehaviour __instance)
+            {
+                if (UdonSharpEditorUtility.IsProxyBehaviour(__instance))
+                    return false;
+                
+                return true;
+            }
         }
 
         static void OnChangePlayMode(PlayModeStateChange state)
@@ -386,6 +488,7 @@ namespace UdonSharpEditor
                         {
                             behaviour.publicVariables.RemoveVariable(variableSymbol);
                             updatedBehaviourVariables++;
+                            continue;
                         }
 
                         System.Type programSymbolType = fieldDefinition.fieldSymbol.symbolCsType;

@@ -26,7 +26,8 @@
         "VRCSDK3.dll",
         "VRCSDKBase.dll",
         "System.Collections.Immutable.dll",
-        "VRCSDKBase-Editor.dll"
+        "VRCSDKBase-Editor.dll",
+        "0Harmony.dll"
     ],
     "autoReferenced": true,
     "defineConstraints": []
