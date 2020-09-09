@@ -1231,7 +1231,12 @@ namespace Merlin
         void BuildMenuForObject(Object targetObject, SerializedProperty elementProperty, GenericMenu menu, int componentCount = 0)
         {
             List<FunctionData> methodInfos = new List<FunctionData>();
-            string contentPath = targetObject.GetType().Name + (componentCount > 0 ? string.Format("({0})", componentCount) : "") + "/";
+            string contentPath = targetObject.GetType().Name + (componentCount > 0 ? string.Format("({0})", componentCount) : "")
+#if UDONSHARP
+                //+ ((targetObject is UdonSharpBehaviour udonSharpBehaviour && UdonSharpEditorUtility.IsProxyBehaviour(udonSharpBehaviour)) ? " <proxy>" : "")
+                + ((targetObject is UdonBehaviour udonBehaviour && UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour)) ? $" ({UdonSharpEditorUtility.GetUdonSharpBehaviourType(udonBehaviour)})" : "")
+#endif
+                + "/";
 
             FindValidMethods(targetObject, PersistentListenerMode.Void, methodInfos);
             FindValidMethods(targetObject, PersistentListenerMode.Int, methodInfos);
@@ -1340,7 +1345,13 @@ namespace Merlin
 #if UDONSHARP
                 if (cachedSettings.hideOriginalUdonBehaviour &&
                     component is UdonBehaviour udonBehaviour &&
-                    udonBehaviour.programSource != null && udonBehaviour.programSource is UdonSharpProgramAsset)
+                    udonBehaviour.programSource != null && udonBehaviour.programSource is UdonSharpProgramAsset &&
+                    UdonSharpEditorUtility.FindProxyBehaviour(udonBehaviour, ProxySerializationPolicy.NoSerialization) != null)
+                    continue;
+
+                if (!cachedSettings.hideOriginalUdonBehaviour &&
+                    component is UdonSharpBehaviour proxyBehaviour &&
+                    UdonSharpEditorUtility.IsProxyBehaviour(proxyBehaviour))
                     continue;
 #endif
 
