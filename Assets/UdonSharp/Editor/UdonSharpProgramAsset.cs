@@ -167,6 +167,9 @@ namespace UdonSharp
         
         protected override object GetPublicVariableDefaultValue(string symbol, Type type)
         {
+            if (program == null && SerializedProgramAsset != null)
+                program = SerializedProgramAsset.RetrieveProgram();
+
             return program.Heap.GetHeapVariable(program.SymbolTable.GetAddressFromSymbol(symbol));
         }
 
