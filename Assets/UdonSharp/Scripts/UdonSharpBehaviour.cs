@@ -113,6 +113,7 @@ namespace UdonSharp
         public virtual void OnPreSerialization() { }
         public virtual void OnDeserialization() { }
 #if UDON_BETA_SDK
+        public virtual void OnPostSerialization() { }
         public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi newOwner) => true;
         public virtual void OnPlayerTriggerEnter(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerTriggerExit(VRC.SDKBase.VRCPlayerApi player) { }
