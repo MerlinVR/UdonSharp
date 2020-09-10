@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define UDON_BETA_SDK
+
+using System;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -110,8 +112,8 @@ namespace UdonSharp
         public virtual void OnVideoStart() { }
         public virtual void OnPreSerialization() { }
         public virtual void OnDeserialization() { }
-#if UDON_BETA_SDK || true
-        //public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi requestedOwner) => true;
+#if UDON_BETA_SDK
+        public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi newOwner) => true;
         public virtual void OnPlayerTriggerEnter(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerTriggerExit(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerTriggerStay(VRC.SDKBase.VRCPlayerApi player) { }

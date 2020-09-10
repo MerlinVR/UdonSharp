@@ -19,6 +19,7 @@ namespace UdonSharp.Compiler
         This = 64, // defines one of the 3 builtin `this` assignments for UdonBehaviour, GameObject, and Transform
         Reflection = 128, // Metadata information for type checking and other editor time info
         Readonly = 256, // Symbols marked as either const or readonly by the user, treat them the same for now. 
+        BuiltinVar = 512,
     }
 
     [Serializable]
@@ -639,7 +640,7 @@ namespace UdonSharp.Compiler
             if (resolvedSymbolType == null || symbolName == null)
                 throw new System.ArgumentNullException();
 
-            if (!declType.HasFlag(SymbolDeclTypeFlags.Internal) && symbolName.StartsWith("__"))
+            if (!declType.HasFlag(SymbolDeclTypeFlags.Internal) && !declType.HasFlag(SymbolDeclTypeFlags.BuiltinVar) && symbolName.StartsWith("__"))
             {
                 throw new System.ArgumentException($"Symbol {symbolName} cannot have name starting with \"__\", this naming is reserved for internal variables.");
             }
@@ -731,7 +732,8 @@ namespace UdonSharp.Compiler
                 {
                     if (!declType.HasFlag(SymbolDeclTypeFlags.Reflection) &&
                         !declType.HasFlag(SymbolDeclTypeFlags.Constant) &&
-                        !declType.HasFlag(SymbolDeclTypeFlags.This))
+                        !declType.HasFlag(SymbolDeclTypeFlags.This) &&
+                        !declType.HasFlag(SymbolDeclTypeFlags.BuiltinVar))
                         throw new Exception($"Cannot add symbol {symbolDefinition} to root table while other tables are in use.");
                 }
             }

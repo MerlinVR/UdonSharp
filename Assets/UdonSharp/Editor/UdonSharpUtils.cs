@@ -1,4 +1,5 @@
-﻿
+﻿#define UDON_BETA_SDK
+
 using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;

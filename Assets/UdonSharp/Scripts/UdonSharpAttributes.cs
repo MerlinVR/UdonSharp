@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define UDON_BETA_SDK
+
+using System;
 
 namespace UdonSharp
 {

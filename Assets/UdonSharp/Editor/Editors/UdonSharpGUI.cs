@@ -1,4 +1,5 @@
-﻿
+﻿#define UDON_BETA_SDK
+
 using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;

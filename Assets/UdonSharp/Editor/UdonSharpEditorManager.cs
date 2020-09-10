@@ -1,4 +1,6 @@
-﻿using HarmonyLib;
+﻿#define UDON_BETA_SDK
+
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,4 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
+﻿#define UDON_BETA_SDK
+
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
@@ -1414,10 +1416,16 @@ namespace UdonSharp.Compiler
 #if UDON_BETA_SDK
                         if (visitorContext.requiresVRCReturn)
                         {
+                            SymbolTable globalSymbolTable = visitorContext.topTable.GetGlobalSymbolTable();
+
+                            SymbolDefinition autoAssignedEventSymbol = globalSymbolTable.FindUserDefinedSymbol("__returnValue");
+                            if (autoAssignedEventSymbol == null)
+                                autoAssignedEventSymbol = globalSymbolTable.CreateNamedSymbol("__returnValue", typeof(System.Object), SymbolDeclTypeFlags.Private | SymbolDeclTypeFlags.BuiltinVar);
+
                             using (ExpressionCaptureScope returnValueSetMethod = new ExpressionCaptureScope(visitorContext, null))
                             {
-                                returnValueSetMethod.ResolveAccessToken(nameof(VRC.Udon.UdonBehaviour.WriteReturnValue));
-                                returnValueSetMethod.Invoke(new SymbolDefinition[] { returnValue });
+                                returnValueSetMethod.SetToLocalSymbol(autoAssignedEventSymbol);
+                                returnValueSetMethod.ExecuteSet(returnValue);
                             }
                         }
 #endif
@@ -1938,13 +1946,18 @@ namespace UdonSharp.Compiler
                     }
 
 #if UDON_BETA_SDK
-                    // Special methods like OnOwnershipRequest
                     if (visitorContext.requiresVRCReturn)
                     {
+                        SymbolTable globalSymbolTable = visitorContext.topTable.GetGlobalSymbolTable();
+
+                        SymbolDefinition autoAssignedEventSymbol = globalSymbolTable.FindUserDefinedSymbol("__returnValue");
+                        if (autoAssignedEventSymbol == null)
+                            autoAssignedEventSymbol = globalSymbolTable.CreateNamedSymbol("__returnValue", typeof(System.Object), SymbolDeclTypeFlags.Private | SymbolDeclTypeFlags.BuiltinVar);
+
                         using (ExpressionCaptureScope returnValueSetMethod = new ExpressionCaptureScope(visitorContext, null))
                         {
-                            returnValueSetMethod.ResolveAccessToken(nameof(VRC.Udon.UdonBehaviour.WriteReturnValue));
-                            returnValueSetMethod.Invoke(new SymbolDefinition[] { returnSymbol });
+                            returnValueSetMethod.SetToLocalSymbol(autoAssignedEventSymbol);
+                            returnValueSetMethod.ExecuteSet(returnSymbol);
                         }
                     }
 #endif
