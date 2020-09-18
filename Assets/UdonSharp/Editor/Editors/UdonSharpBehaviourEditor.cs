@@ -263,23 +263,23 @@ namespace UdonSharpEditor
         /// <returns></returns>
         static UndoPropertyModification[] OnPostprocessUndoModifications(UndoPropertyModification[] propertyModifications)
         {
-            if (!EditorApplication.isPlaying)
-            {
-                foreach (UndoPropertyModification propertyModification in propertyModifications)
-                {
-                    UnityEngine.Object target = propertyModification.currentValue.target;
+            //if (!EditorApplication.isPlaying)
+            //{
+            //    foreach (UndoPropertyModification propertyModification in propertyModifications)
+            //    {
+            //        UnityEngine.Object target = propertyModification.currentValue.target;
 
-                    if (target is UdonSharpBehaviour udonSharpBehaviour)
-                    {
-                        UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(udonSharpBehaviour);
+            //        if (target is UdonSharpBehaviour udonSharpBehaviour)
+            //        {
+            //            UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(udonSharpBehaviour);
 
-                        if (backingBehaviour)
-                        {
-                            EditorSceneManager.MarkSceneDirty(backingBehaviour.gameObject.scene);
-                        }
-                    }
-                }
-            }
+            //            if (backingBehaviour)
+            //            {
+            //                EditorSceneManager.MarkSceneDirty(backingBehaviour.gameObject.scene);
+            //            }
+            //        }
+            //    }
+            //}
 
             return propertyModifications;
         }
@@ -397,7 +397,7 @@ namespace UdonSharpEditor
             {
                 if (!baseEditor)
                     Editor.CreateCachedEditorWithContext(targets, this, typeof(UdonBehaviourEditor), ref baseEditor);
-            
+
                 baseEditor.OnInspectorGUI();
                 return;
             }
@@ -427,14 +427,14 @@ namespace UdonSharpEditor
                 inspectorTarget.enabled = false;
 
                 Editor.CreateCachedEditorWithContext(inspectorTarget, this, customEditorType, ref baseEditor);
-
                 currentProxyBehaviour = inspectorTarget;
 
                 baseEditor.serializedObject.Update();
 
                 baseEditor.OnInspectorGUI();
-
+                
                 UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget, ProxySerializationPolicy.All);
+                Undo.RecordObject(behaviour, Undo.GetCurrentGroupName());
             }
             else
             {
@@ -456,12 +456,12 @@ namespace UdonSharpEditor
                 return;
 
             UdonBehaviour behaviour = target as UdonBehaviour;
-            
-            if (behaviour.programSource == null || 
-                !(behaviour.programSource is UdonSharpProgramAsset udonSharpProgram) || 
+
+            if (behaviour.programSource == null ||
+                !(behaviour.programSource is UdonSharpProgramAsset udonSharpProgram) ||
                 udonSharpProgram.sourceCsScript == null)
                 return;
-            
+
             System.Type customEditorType = null;
             System.Type inspectedType = udonSharpProgram.sourceCsScript.GetClass();
             if (inspectedType != null)

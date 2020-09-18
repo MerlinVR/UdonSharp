@@ -912,6 +912,10 @@ namespace UdonSharpEditor
             {
                 return EditorGUILayout.BoundsField(fieldLabel, (Bounds?)value ?? default);
             }
+            else if (declaredType == typeof(BoundsInt))
+            {
+                return EditorGUILayout.BoundsIntField(fieldLabel, (BoundsInt?)value ?? default);
+            }
             else if (declaredType == typeof(ParticleSystem.MinMaxCurve))
             {
                 // This is just matching the standard Udon editor's capability at the moment, I want to eventually switch it to use the proper curve editor, but that will take a chunk of work
@@ -1000,10 +1004,18 @@ namespace UdonSharpEditor
             {
                 return (ushort)Mathf.Clamp(EditorGUILayout.IntField(fieldLabel, (ushort?)value ?? default), ushort.MinValue, ushort.MaxValue);
             }
+            else if (declaredType == typeof(Rect))
+            {
+                return EditorGUILayout.RectField(fieldLabel, (Rect?)value ?? default);
+            }
+            else if (declaredType == typeof(RectInt))
+            {
+                return EditorGUILayout.RectIntField(fieldLabel, (RectInt?)value ?? default);
+            }
             else if (declaredType == typeof(VRC.SDKBase.VRCUrl))
             {
-                VRC.SDKBase.VRCUrl url = (VRC.SDKBase.VRCUrl)value ?? new VRC.SDKBase.VRCUrl();
-                url.Set(EditorGUILayout.TextField(fieldLabel, url.Get()));
+                VRC.SDKBase.VRCUrl url = (VRC.SDKBase.VRCUrl)value ?? new VRC.SDKBase.VRCUrl("");
+                url = new VRC.SDKBase.VRCUrl(EditorGUILayout.TextField(fieldLabel, url.Get()));
                 return url;
             }
             else

@@ -22,6 +22,7 @@ namespace UdonSharp.Tests
             TestDefaultByte();
             TestJaggedArrays();
             TestObjectInt();
+            TestDefaultReferences();
         }
 
         [HideInInspector]
@@ -125,6 +126,20 @@ namespace UdonSharp.Tests
         void TestObjectInt()
         {
             tester.TestAssertion("Object int is valid", (int)objectIntVal == (int)syncedObjectIntVal);
+        }     
+ 
+        //[HideInInspector]
+        public Transform nullTransform;
+        //[HideInInspector]
+        public GameObject nullGameObject;
+        //[HideInInspector]
+        public UdonBehaviour nullUdonBehaviour;
+
+        void TestDefaultReferences()
+        {
+            tester.TestAssertion("Default Transform null", nullTransform == null);
+            tester.TestAssertion("Default GameObject null", nullGameObject == null);
+            tester.TestAssertion("Default UdonBehaviour null", nullUdonBehaviour == null);
         }
     }
 }
