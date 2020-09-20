@@ -145,6 +145,11 @@ namespace UdonSharpEditor
                 // Transforms
                 InjectEvent(udonSharpBehaviourType, "OnTransformChildrenChanged");
                 InjectEvent(udonSharpBehaviourType, "OnTransformParentChanged");
+
+                // Object state, these can get called regardless of the enabled state of the component
+                InjectEvent(udonSharpBehaviourType, "OnEnable");
+                InjectEvent(udonSharpBehaviourType, "OnDisable");
+                InjectEvent(udonSharpBehaviourType, "OnDestroy");
             }
         }
 
