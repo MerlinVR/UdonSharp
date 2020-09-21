@@ -263,23 +263,36 @@ namespace UdonSharpEditor
         /// <returns></returns>
         static UndoPropertyModification[] OnPostprocessUndoModifications(UndoPropertyModification[] propertyModifications)
         {
-            //if (!EditorApplication.isPlaying)
-            //{
-            //    foreach (UndoPropertyModification propertyModification in propertyModifications)
-            //    {
-            //        UnityEngine.Object target = propertyModification.currentValue.target;
+            if (!EditorApplication.isPlaying)
+            {
+                HashSet<UdonBehaviour> modifiedBehaviours = new HashSet<UdonBehaviour>();
 
-            //        if (target is UdonSharpBehaviour udonSharpBehaviour)
-            //        {
-            //            UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(udonSharpBehaviour);
+                foreach (UndoPropertyModification propertyModification in propertyModifications)
+                {
+                    UnityEngine.Object target = propertyModification.currentValue.target;
 
-            //            if (backingBehaviour)
-            //            {
-            //                EditorSceneManager.MarkSceneDirty(backingBehaviour.gameObject.scene);
-            //            }
-            //        }
-            //    }
-            //}
+                    if (target is UdonSharpBehaviour udonSharpBehaviour)
+                    {
+                        UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(udonSharpBehaviour);
+
+                        if (backingBehaviour)
+                        {
+                            modifiedBehaviours.Add(backingBehaviour);
+                        }
+                    }
+                }
+
+                if (modifiedBehaviours.Count > 0)
+                {
+                    foreach (UdonBehaviour behaviour in modifiedBehaviours)
+                    {
+                        if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
+                            PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                    }
+
+                    EditorSceneManager.MarkAllScenesDirty();
+                }
+            }
 
             return propertyModifications;
         }
@@ -356,14 +369,20 @@ namespace UdonSharpEditor
 
         void OnUndoRedo()
         {
-            UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.FindProxyBehaviour(target as UdonBehaviour, ProxySerializationPolicy.NoSerialization);
+            UdonBehaviour behaviour = target as UdonBehaviour;
+            UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.FindProxyBehaviour(behaviour, ProxySerializationPolicy.NoSerialization);
 
             if (inspectorTarget)
             {
                 System.Type customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(inspectorTarget.GetType());
 
                 if (customEditorType != null) // Only do the undo copying on things with a custom inspector
+                {
                     UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget, ProxySerializationPolicy.All);
+                    
+                    if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                }
             }
         }
 
@@ -430,11 +449,10 @@ namespace UdonSharpEditor
                 currentProxyBehaviour = inspectorTarget;
 
                 baseEditor.serializedObject.Update();
-
-                baseEditor.OnInspectorGUI();
                 
+                baseEditor.OnInspectorGUI();
+
                 UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget, ProxySerializationPolicy.All);
-                Undo.RecordObject(behaviour, Undo.GetCurrentGroupName());
             }
             else
             {
