@@ -68,7 +68,7 @@ namespace UdonSharpEditor
             Harmony harmony = new Harmony(harmonyID);
             harmony.UnpatchAll(harmonyID);
 
-            MethodInfo injectedEvent = typeof(EventInjectedMethods).GetMethod("EventInterceptor", BindingFlags.Static | BindingFlags.Public);
+            MethodInfo injectedEvent = typeof(InjectedMethods).GetMethod("EventInterceptor", BindingFlags.Static | BindingFlags.Public);
             HarmonyMethod injectedMethod = new HarmonyMethod(injectedEvent);
 
             void InjectEvent(System.Type behaviourType, string eventName)
@@ -146,20 +146,142 @@ namespace UdonSharpEditor
                 InjectEvent(udonSharpBehaviourType, "OnTransformChildrenChanged");
                 InjectEvent(udonSharpBehaviourType, "OnTransformParentChanged");
 
-                // Object state, these can get called regardless of the enabled state of the component
+                // Object state, OnDisable and OnDestroy will get called regardless of the enabled state of the component, include OnEnable for consistency
                 InjectEvent(udonSharpBehaviourType, "OnEnable");
                 InjectEvent(udonSharpBehaviourType, "OnDisable");
                 InjectEvent(udonSharpBehaviourType, "OnDestroy");
             }
+
+            // Patch GUI object field drawer
+            MethodInfo doObjectFieldMethod = typeof(EditorGUI).GetMethods(BindingFlags.Static | BindingFlags.NonPublic).FirstOrDefault(e => e.Name == "DoObjectField" && e.GetParameters().Length == 9);
+
+            HarmonyMethod objectFieldProxy = new HarmonyMethod(typeof(InjectedMethods).GetMethod("DoObjectFieldProxy"));
+            harmony.Patch(doObjectFieldMethod, objectFieldProxy);
+
+            System.Type validatorDelegateType = typeof(EditorGUI).GetNestedType("ObjectFieldValidator", BindingFlags.Static | BindingFlags.NonPublic);
+            InjectedMethods.validationDelegate = Delegate.CreateDelegate(validatorDelegateType, typeof(InjectedMethods).GetMethod("ValidateObjectReference"));
+
+            InjectedMethods.objectValidatorMethod = typeof(EditorGUI).GetMethod("ValidateObjectReferenceValue", BindingFlags.NonPublic | BindingFlags.Static);
+
+            MethodInfo crossSceneRefCheckMethod = typeof(EditorGUI).GetMethod("CheckForCrossSceneReferencing", BindingFlags.NonPublic | BindingFlags.Static);
+            InjectedMethods.crossSceneRefCheckMethod = (Func<UnityEngine.Object, UnityEngine.Object, bool>)Delegate.CreateDelegate(typeof(Func<UnityEngine.Object, UnityEngine.Object, bool>), crossSceneRefCheckMethod);
         }
 
-        static class EventInjectedMethods
+        static class InjectedMethods
         {
+            public static Delegate validationDelegate;
+            public static MethodInfo objectValidatorMethod;
+            public static Func<UnityEngine.Object, UnityEngine.Object, bool> crossSceneRefCheckMethod;
+
             public static bool EventInterceptor(UdonSharpBehaviour __instance)
             {
                 if (UdonSharpEditorUtility.IsProxyBehaviour(__instance))
                     return false;
                 
+                return true;
+            }
+
+            public static UnityEngine.Object ValidateObjectReference(UnityEngine.Object[] references, System.Type objType, SerializedProperty property, Enum options = null)
+            {
+                if (references.Length == 0)
+                    return null;
+
+                if (property != null)
+                {
+                    if (references[0] != null)
+                    {
+                        if (EditorSceneManager.preventCrossSceneReferences && crossSceneRefCheckMethod(references[0], property.serializedObject.targetObject))
+                            return null;
+
+                        if (references[0] is GameObject gameObject)
+                        {
+                            references = gameObject.GetComponents<UdonSharpBehaviour>();
+                        }
+
+                        foreach (UnityEngine.Object reference in references)
+                        {
+                            System.Type refType = reference.GetType();
+
+                            if (objType.IsAssignableFrom(reference.GetType()))
+                            {
+                                return reference;
+                            }
+                            else if (reference is UdonBehaviour udonBehaviour && UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour))
+                            {
+                                UdonSharpBehaviour proxy = UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour);
+
+                                if (proxy && objType.IsAssignableFrom(proxy.GetType()))
+                                    return proxy;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (objType == typeof(UdonSharpBehaviour) ||
+                        objType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+                    {
+                        foreach (UnityEngine.Object reference in references)
+                        {
+                            System.Type refType = reference.GetType();
+
+                            if (objType.IsAssignableFrom(refType))
+                            {
+                                return reference;
+                            }
+                            else if (reference is GameObject referenceObject)
+                            {
+                                UnityEngine.Object foundRef = ValidateObjectReference(referenceObject.GetComponents<UdonSharpBehaviour>(), objType, null);
+
+                                if (foundRef)
+                                    return foundRef;
+                            }
+                            else if (reference is UdonBehaviour referenceBehaviour && UdonSharpEditorUtility.IsUdonSharpBehaviour(referenceBehaviour))
+                            {
+                                UdonSharpBehaviour proxy = UdonSharpEditorUtility.GetProxyBehaviour(referenceBehaviour);
+
+                                if (proxy && objType.IsAssignableFrom(proxy.GetType()))
+                                    return proxy;
+                            }
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            delegate FieldInfo GetFieldInfoDelegate(SerializedProperty property, out System.Type type);
+            static GetFieldInfoDelegate getFieldInfoFunc;
+
+            public static bool DoObjectFieldProxy(ref System.Type objType, SerializedProperty property, ref object validator)
+            {
+                if (validator == null)
+                {
+                    if (objType != null && (objType == typeof(UdonSharpBehaviour) || objType.IsSubclassOf(typeof(UdonSharpBehaviour))))
+                        validator = validationDelegate;
+                    else if (property != null)
+                    {
+                        if (getFieldInfoFunc == null)
+                        {
+                            Assembly editorAssembly = AppDomain.CurrentDomain.GetAssemblies().First(e => e.GetName().Name == "UnityEditor");
+
+                            System.Type scriptAttributeUtilityType = editorAssembly.GetType("UnityEditor.ScriptAttributeUtility");
+
+                            MethodInfo fieldInfoMethod = scriptAttributeUtilityType.GetMethod("GetFieldInfoFromProperty", BindingFlags.NonPublic | BindingFlags.Static);
+
+                            getFieldInfoFunc = (GetFieldInfoDelegate)Delegate.CreateDelegate(typeof(GetFieldInfoDelegate), fieldInfoMethod);
+                        }
+
+                        getFieldInfoFunc(property, out System.Type fieldType);
+
+                        if (fieldType != null && (fieldType == typeof(UdonSharpBehaviour) || fieldType.IsSubclassOf(typeof(UdonSharpBehaviour))))
+                        {
+                            objType = fieldType;
+                            validator = validationDelegate;
+                        }
+                    }
+                }
+
                 return true;
             }
         }
