@@ -596,9 +596,13 @@ namespace UdonSharpEditor
 
                         programAsset = ScriptableObject.CreateInstance<UdonSharpProgramAsset>();
                         programAsset.sourceCsScript = behaviourScript;
+                        AssetDatabase.CreateAsset(programAsset, assetPath);
+                        AssetDatabase.SaveAssets();
+
+                        UdonSharpProgramAsset.ClearProgramAssetCache();
+
                         programAsset.CompileCsProgram();
 
-                        AssetDatabase.CreateAsset(programAsset, assetPath);
                         AssetDatabase.SaveAssets();
 
                         AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
