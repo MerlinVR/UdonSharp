@@ -36,10 +36,10 @@ namespace UdonSharpEditor
 
             newProgramAsset = AssetDatabase.LoadAssetAtPath<UdonAssemblyProgramAsset>(savePath);
 
-            FieldInfo assemblyField = typeof(UdonAssemblyProgramAsset).GetField("udonAssembly", BindingFlags.NonPublic | BindingFlags.Instance);
             udonSharpProgramAsset.CompileCsProgram();
 
-            assemblyField.SetValue(newProgramAsset, assemblyField.GetValue(udonSharpProgramAsset));
+            FieldInfo assemblyField = typeof(UdonAssemblyProgramAsset).GetField("udonAssembly", BindingFlags.NonPublic | BindingFlags.Instance);
+            assemblyField.SetValue(newProgramAsset, UdonSharpEditorCache.Instance.GetUASMStr(udonSharpProgramAsset));
 
             MethodInfo assembleMethod = typeof(UdonAssemblyProgramAsset).GetMethod("AssembleProgram", BindingFlags.NonPublic | BindingFlags.Instance);
             assembleMethod.Invoke(newProgramAsset, new object[] { });
