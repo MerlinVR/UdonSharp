@@ -378,10 +378,13 @@ namespace UdonSharpEditor
 
                 if (customEditorType != null) // Only do the undo copying on things with a custom inspector
                 {
-                    UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget, ProxySerializationPolicy.All);
-                    
-                    if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
-                        PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                    if ((bool)typeof(UdonSharpBehaviour).GetField("_isValidForAutoCopy", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(inspectorTarget))
+                    {
+                        UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget, ProxySerializationPolicy.All);
+
+                        if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
+                            PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                    }
                 }
             }
         }
@@ -406,6 +409,8 @@ namespace UdonSharpEditor
                 }
             }
         }
+        
+        static FieldInfo _autoCopyValidField = null;
 
         public override void OnInspectorGUI()
         {
@@ -444,6 +449,11 @@ namespace UdonSharpEditor
 
                 UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.GetProxyBehaviour(behaviour, ProxySerializationPolicy.All);
                 inspectorTarget.enabled = false;
+
+                if (_autoCopyValidField == null)
+                    _autoCopyValidField = typeof(UdonSharpBehaviour).GetField("_isValidForAutoCopy", BindingFlags.NonPublic | BindingFlags.Instance);
+
+                _autoCopyValidField.SetValue(inspectorTarget, true);
 
                 Editor.CreateCachedEditorWithContext(inspectorTarget, this, customEditorType, ref baseEditor);
                 currentProxyBehaviour = inspectorTarget;
