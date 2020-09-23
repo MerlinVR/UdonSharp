@@ -461,8 +461,8 @@ namespace UdonSharpEditor
 
             return false;
         }
-        
-        private static MonoScript currentUserScript = null;
+
+        private static MonoScript currentUserScript;
         private static UnityEngine.Object ValidateObjectReference(UnityEngine.Object[] references, System.Type objType, SerializedProperty property, Enum options = null)
         {
             if (property != null)
@@ -552,25 +552,31 @@ namespace UdonSharpEditor
             Rect originalRect = objectRect;
             int id = GUIUtility.GetControlID(typeof(UnityEngine.Object).GetHashCode(), FocusType.Keyboard, originalRect);
 
-            System.Type validatorDelegateType = typeof(EditorGUI).GetNestedType("ObjectFieldValidator", BindingFlags.Static | BindingFlags.NonPublic);
-            MethodInfo validateMethodInfo = typeof(UdonSharpGUI).GetMethod(nameof(ValidateObjectReference), BindingFlags.NonPublic | BindingFlags.Static);
-
             objectRect = EditorGUI.PrefixLabel(objectRect, id, new GUIContent(fieldName));
 
-            currentUserScript = fieldDefinition.userBehaviourSource;
+            System.Type searchType = fieldDefinition.userBehaviourSource != null ? fieldDefinition.userBehaviourSource.GetClass() : typeof(UdonSharpBehaviour);
 
             UnityEngine.Object objectFieldValue = (UnityEngine.Object)doObjectFieldMethod.Invoke(null, new object[] {
                 objectRect,
                 objectRect,
                 id,
                 (UnityEngine.Object)value,
-                typeof(UdonBehaviour),
+                searchType,
                 null,
-                System.Delegate.CreateDelegate(validatorDelegateType, validateMethodInfo),
+                null,
                 true
             });
 
-            currentUserScript = null;
+            if (objectFieldValue != null &&
+                objectFieldValue is UdonSharpBehaviour udonSharpBehaviour &&
+                UdonSharpEditorUtility.IsProxyBehaviour(udonSharpBehaviour))
+            {
+                objectFieldValue = UdonSharpEditorUtility.GetBackingUdonBehaviour(udonSharpBehaviour);
+            }
+            else if (!(objectFieldValue is UdonBehaviour))
+            {
+                objectFieldValue = null;
+            }
 
             string labelText;
             System.Type variableType = fieldDefinition.fieldSymbol.userCsType;
@@ -740,6 +746,7 @@ namespace UdonSharpEditor
                                 Array.Copy(draggedReferences.ToArray(), 0, newArray, oldArray.Length, draggedReferences.Count);
 
                                 GUI.changed = true;
+                                Event.current.Use();
                                 DragAndDrop.AcceptDrag();
 
                                 return newArray;
