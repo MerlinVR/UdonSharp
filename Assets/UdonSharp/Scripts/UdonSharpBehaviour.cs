@@ -146,7 +146,7 @@ namespace UdonSharp
         [OdinSerialize]
         private IUdonBehaviour _backingUdonBehaviour;
 
-        [SerializeField]
+        [SerializeField, HideInInspector]
         private bool _isValidForAutoCopy = false;
 #endif
     }
