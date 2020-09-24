@@ -146,8 +146,10 @@ namespace UdonSharp
         [OdinSerialize]
         private IUdonBehaviour _backingUdonBehaviour;
 
+#pragma warning disable CS0414 // Referenced via reflection
         [SerializeField, HideInInspector]
         private bool _isValidForAutoCopy = false;
+#pragma warning restore CS0414
 #endif
     }
 }
