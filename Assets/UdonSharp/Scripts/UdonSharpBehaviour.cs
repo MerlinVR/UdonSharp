@@ -102,7 +102,7 @@ namespace UdonSharp
         public virtual void OnStationEntered(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnStationExited(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnVideoEnd() { }
-        public virtual void OnVideoError() { }
+        public virtual void OnVideoError(VRC.SDK3.Components.Video.VideoError videoError) { }
         public virtual void OnVideoLoop() { }
         public virtual void OnVideoPause() { }
         public virtual void OnVideoPlay() { }
