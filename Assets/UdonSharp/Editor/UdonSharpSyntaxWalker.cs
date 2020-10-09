@@ -53,7 +53,8 @@ namespace UdonSharp.Compiler
         public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
         {
             UpdateSyntaxNode(node);
-            string[] namespaces = node.Name.ToFullString().TrimEnd('\r', '\n', ' ').Split('.');
+
+            string[] namespaces = node.Name.ToString().Split('.');
 
             foreach (string currentNamespace in namespaces)
                 namespaceStack.Push(currentNamespace);
