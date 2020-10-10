@@ -157,9 +157,9 @@ namespace UdonSharp
         {
             UnitySerializationUtility.DeserializeUnityObject(this, ref serializationData);
         }
-
+        
         [OdinSerialize]
-        private IUdonBehaviour _backingUdonBehaviour;
+        private IUdonBehaviour _backingUdonBehaviour = null;
 
 #pragma warning disable CS0414 // Referenced via reflection
         [SerializeField, HideInInspector]
