@@ -15,18 +15,38 @@ namespace UdonSharp.Compiler
         {
         }
 
+        readonly string[] builtinMethodNames = new string[]
+        {
+            "SendCustomEvent",
+            "SendCustomNetworkEvent",
+            "SetProgramVariable",
+            "GetProgramVariable",
+            "VRCInstantiate",
+            "GetUdonTypeID",
+            "GetUdonTypeName",
+        };
+
         public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
+            UpdateSyntaxNode(node);
+
             MethodDefinition methodDefinition = new MethodDefinition();
 
             methodDefinition.declarationFlags = node.Modifiers.HasModifier("public") ? MethodDeclFlags.Public : MethodDeclFlags.Private;
             methodDefinition.methodUdonEntryPoint = visitorContext.labelTable.GetNewJumpLabel("udonMethodEntryPoint");
             methodDefinition.methodUserCallStart = visitorContext.labelTable.GetNewJumpLabel("userMethodCallEntry");
             methodDefinition.methodReturnPoint = visitorContext.labelTable.GetNewJumpLabel("methodReturnPoint");
-            
-            methodDefinition.originalMethodName = node.Identifier.ValueText;
+
+            string methodName = node.Identifier.ValueText;
+            methodDefinition.originalMethodName = methodName;
             methodDefinition.uniqueMethodName = methodDefinition.originalMethodName;
             visitorContext.resolverContext.ReplaceInternalEventName(ref methodDefinition.uniqueMethodName);
+
+            foreach (string builtinMethodName in builtinMethodNames)
+            {
+                if (methodName == builtinMethodName)
+                    throw new System.Exception($"Cannot define method '{methodName}' with the same name as a built-in UdonSharpBehaviour method");
+            }
 
             // Resolve the type arguments
             using (ExpressionCaptureScope returnTypeCapture = new ExpressionCaptureScope(visitorContext, null))
