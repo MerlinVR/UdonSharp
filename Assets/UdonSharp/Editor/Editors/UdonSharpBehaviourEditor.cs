@@ -265,6 +265,8 @@ namespace UdonSharpEditor
         {
             if (!EditorApplication.isPlaying)
             {
+                HashSet<UdonBehaviour> modifiedBehaviours = new HashSet<UdonBehaviour>();
+
                 foreach (UndoPropertyModification propertyModification in propertyModifications)
                 {
                     UnityEngine.Object target = propertyModification.currentValue.target;
@@ -275,9 +277,20 @@ namespace UdonSharpEditor
 
                         if (backingBehaviour)
                         {
-                            EditorSceneManager.MarkSceneDirty(backingBehaviour.gameObject.scene);
+                            modifiedBehaviours.Add(backingBehaviour);
                         }
                     }
+                }
+
+                if (modifiedBehaviours.Count > 0)
+                {
+                    foreach (UdonBehaviour behaviour in modifiedBehaviours)
+                    {
+                        if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
+                            PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                    }
+
+                    EditorSceneManager.MarkAllScenesDirty();
                 }
             }
 
@@ -356,14 +369,23 @@ namespace UdonSharpEditor
 
         void OnUndoRedo()
         {
-            UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.FindProxyBehaviour(target as UdonBehaviour, ProxySerializationPolicy.NoSerialization);
+            UdonBehaviour behaviour = target as UdonBehaviour;
+            UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.FindProxyBehaviour(behaviour, ProxySerializationPolicy.NoSerialization);
 
             if (inspectorTarget)
             {
                 System.Type customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(inspectorTarget.GetType());
 
                 if (customEditorType != null) // Only do the undo copying on things with a custom inspector
-                    UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget, ProxySerializationPolicy.All);
+                {
+                    if ((bool)typeof(UdonSharpBehaviour).GetField("_isValidForAutoCopy", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(inspectorTarget))
+                    {
+                        UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget, ProxySerializationPolicy.All);
+
+                        if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
+                            PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                    }
+                }
             }
         }
 
@@ -387,6 +409,8 @@ namespace UdonSharpEditor
                 }
             }
         }
+        
+        static FieldInfo _autoCopyValidField = null;
 
         public override void OnInspectorGUI()
         {
@@ -397,7 +421,7 @@ namespace UdonSharpEditor
             {
                 if (!baseEditor)
                     Editor.CreateCachedEditorWithContext(targets, this, typeof(UdonBehaviourEditor), ref baseEditor);
-            
+
                 baseEditor.OnInspectorGUI();
                 return;
             }
@@ -426,12 +450,16 @@ namespace UdonSharpEditor
                 UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.GetProxyBehaviour(behaviour, ProxySerializationPolicy.All);
                 inspectorTarget.enabled = false;
 
-                Editor.CreateCachedEditorWithContext(inspectorTarget, this, customEditorType, ref baseEditor);
+                if (_autoCopyValidField == null)
+                    _autoCopyValidField = typeof(UdonSharpBehaviour).GetField("_isValidForAutoCopy", BindingFlags.NonPublic | BindingFlags.Instance);
 
+                _autoCopyValidField.SetValue(inspectorTarget, true);
+
+                Editor.CreateCachedEditorWithContext(inspectorTarget, this, customEditorType, ref baseEditor);
                 currentProxyBehaviour = inspectorTarget;
 
                 baseEditor.serializedObject.Update();
-
+                
                 baseEditor.OnInspectorGUI();
 
                 UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget, ProxySerializationPolicy.All);
@@ -456,12 +484,12 @@ namespace UdonSharpEditor
                 return;
 
             UdonBehaviour behaviour = target as UdonBehaviour;
-            
-            if (behaviour.programSource == null || 
-                !(behaviour.programSource is UdonSharpProgramAsset udonSharpProgram) || 
+
+            if (behaviour.programSource == null ||
+                !(behaviour.programSource is UdonSharpProgramAsset udonSharpProgram) ||
                 udonSharpProgram.sourceCsScript == null)
                 return;
-            
+
             System.Type customEditorType = null;
             System.Type inspectedType = udonSharpProgram.sourceCsScript.GetClass();
             if (inspectedType != null)

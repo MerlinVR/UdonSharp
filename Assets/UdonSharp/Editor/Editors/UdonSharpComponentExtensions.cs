@@ -55,9 +55,12 @@ namespace UdonSharpEditor
         #endregion
 
         #region Utility functions
-        private static UdonSharpBehaviour ConvertToUdonSharpComponent(UdonBehaviour behaviour, System.Type type, ProxySerializationPolicy proxySerializationPolicy)
+        private static UdonSharpBehaviour ConvertToUdonSharpComponentIntnl(UdonBehaviour behaviour, System.Type type, ProxySerializationPolicy proxySerializationPolicy)
         {
             if (behaviour == null)
+                return null;
+
+            if (!UdonSharpEditorUtility.IsUdonSharpBehaviour(behaviour))
                 return null;
 
             UdonSharpBehaviour udonSharpBehaviour = UdonSharpEditorUtility.GetProxyBehaviour(behaviour, ProxySerializationPolicy.NoSerialization);
@@ -72,9 +75,22 @@ namespace UdonSharpEditor
             return null;
         }
 
-        private static T ConvertToUdonSharpComponent<T>(UdonBehaviour behaviour, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour
+        private static UdonSharpBehaviour ConvertToUdonSharpComponent(UdonBehaviour[] behaviours, System.Type type, ProxySerializationPolicy proxySerializationPolicy)
         {
-            return (T)ConvertToUdonSharpComponent(behaviour, typeof(T), proxySerializationPolicy);
+            foreach (UdonBehaviour behaviour in behaviours)
+            {
+                UdonSharpBehaviour udonSharpBehaviour = ConvertToUdonSharpComponentIntnl(behaviour, type, proxySerializationPolicy);
+
+                if (udonSharpBehaviour)
+                    return udonSharpBehaviour;
+            }
+
+            return null;
+        }
+
+        private static T ConvertToUdonSharpComponent<T>(UdonBehaviour[] behaviours, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour
+        {
+            return (T)ConvertToUdonSharpComponent(behaviours, typeof(T), proxySerializationPolicy);
         }
 
         private static UdonSharpBehaviour[] ConvertToUdonSharpComponents(UdonBehaviour[] behaviours, System.Type type, ProxySerializationPolicy proxySerializationPolicy)
@@ -86,7 +102,7 @@ namespace UdonSharpEditor
 
             foreach (UdonBehaviour behaviour in behaviours)
             {
-                UdonSharpBehaviour udonSharpBehaviour = ConvertToUdonSharpComponent(behaviour, type, proxySerializationPolicy);
+                UdonSharpBehaviour udonSharpBehaviour = ConvertToUdonSharpComponentIntnl(behaviour, type, proxySerializationPolicy);
 
                 if (udonSharpBehaviour)
                     udonSharpBehaviours.Add(udonSharpBehaviour);
@@ -104,7 +120,7 @@ namespace UdonSharpEditor
 
             foreach (UdonBehaviour behaviour in behaviours)
             {
-                UdonSharpBehaviour udonSharpBehaviour = ConvertToUdonSharpComponent<T>(behaviour, proxySerializationPolicy);
+                UdonSharpBehaviour udonSharpBehaviour = ConvertToUdonSharpComponentIntnl(behaviour, typeof(T), proxySerializationPolicy);
 
                 if (udonSharpBehaviour)
                     udonSharpBehaviours.Add((T)udonSharpBehaviour);
@@ -152,35 +168,35 @@ namespace UdonSharpEditor
         #region GetComponent
         [PublicAPI]
         public static T GetUdonSharpComponent<T>(this GameObject gameObject) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponent<UdonBehaviour>(), ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent<T>(gameObject.GetComponents<UdonBehaviour>(), ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static T GetUdonSharpComponent<T>(this GameObject gameObject, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponent<UdonBehaviour>(), proxySerializationPolicy);
+            ConvertToUdonSharpComponent<T>(gameObject.GetComponents<UdonBehaviour>(), proxySerializationPolicy);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponent(this GameObject gameObject, System.Type type) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponent<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent(gameObject.GetComponents<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponent(this GameObject gameObject, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponent<UdonBehaviour>(), type, proxySerializationPolicy);
+            ConvertToUdonSharpComponent(gameObject.GetComponents<UdonBehaviour>(), type, proxySerializationPolicy);
 
         [PublicAPI]
         public static T GetUdonSharpComponent<T>(this Component component) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(component.GetComponent<UdonBehaviour>(), ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent<T>(component.GetComponents<UdonBehaviour>(), ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static T GetUdonSharpComponent<T>(this Component component, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour => 
-            ConvertToUdonSharpComponent<T>(component.GetComponent<UdonBehaviour>(), proxySerializationPolicy);
+            ConvertToUdonSharpComponent<T>(component.GetComponents<UdonBehaviour>(), proxySerializationPolicy);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponent(this Component component, System.Type type) =>
-            ConvertToUdonSharpComponent(component.GetComponent<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent(component.GetComponents<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponent(this Component component, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(component.GetComponent<UdonBehaviour>(), type, proxySerializationPolicy);
+            ConvertToUdonSharpComponent(component.GetComponents<UdonBehaviour>(), type, proxySerializationPolicy);
         #endregion
 
         #region GetComponents
@@ -220,67 +236,67 @@ namespace UdonSharpEditor
         #region GetComponentInChildren
         [PublicAPI]
         public static T GetUdonSharpComponentInChildren<T>(this GameObject gameObject) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponentInChildren<UdonBehaviour>(), ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent<T>(gameObject.GetComponentsInChildren<UdonBehaviour>(), ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static T GetUdonSharpComponentInChildren<T>(this GameObject gameObject, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponentInChildren<UdonBehaviour>(), proxySerializationPolicy);
+            ConvertToUdonSharpComponent<T>(gameObject.GetComponentsInChildren<UdonBehaviour>(), proxySerializationPolicy);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this GameObject gameObject, System.Type type) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponentInChildren<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent(gameObject.GetComponentsInChildren<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this GameObject gameObject, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponentInChildren<UdonBehaviour>(), type, proxySerializationPolicy);
+            ConvertToUdonSharpComponent(gameObject.GetComponentsInChildren<UdonBehaviour>(), type, proxySerializationPolicy);
 
         [PublicAPI]
         public static T GetUdonSharpComponentInChildren<T>(this GameObject gameObject, bool includeInactive) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponentInChildren<UdonBehaviour>(includeInactive), ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent<T>(gameObject.GetComponentsInChildren<UdonBehaviour>(includeInactive), ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static T GetUdonSharpComponentInChildren<T>(this GameObject gameObject, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponentInChildren<UdonBehaviour>(includeInactive), proxySerializationPolicy);
+            ConvertToUdonSharpComponent<T>(gameObject.GetComponentsInChildren<UdonBehaviour>(includeInactive), proxySerializationPolicy);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this GameObject gameObject, System.Type type, bool includeInactive) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponentInChildren<UdonBehaviour>(includeInactive), type, ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent(gameObject.GetComponentsInChildren<UdonBehaviour>(includeInactive), type, ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this GameObject gameObject, System.Type type, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponentInChildren<UdonBehaviour>(includeInactive), type, proxySerializationPolicy);
+            ConvertToUdonSharpComponent(gameObject.GetComponentsInChildren<UdonBehaviour>(includeInactive), type, proxySerializationPolicy);
 
         [PublicAPI]
         public static T GetUdonSharpComponentInChildren<T>(this Component component) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(component.GetComponentInChildren<UdonBehaviour>(), ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent<T>(component.GetComponentsInChildren<UdonBehaviour>(), ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static T GetUdonSharpComponentInChildren<T>(this Component component, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(component.GetComponentInChildren<UdonBehaviour>(), proxySerializationPolicy);
+            ConvertToUdonSharpComponent<T>(component.GetComponentsInChildren<UdonBehaviour>(), proxySerializationPolicy);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this Component component, System.Type type) =>
-            ConvertToUdonSharpComponent(component.GetComponentInChildren<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent(component.GetComponentsInChildren<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this Component component, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(component.GetComponentInChildren<UdonBehaviour>(), type, proxySerializationPolicy);
+            ConvertToUdonSharpComponent(component.GetComponentsInChildren<UdonBehaviour>(), type, proxySerializationPolicy);
 
         [PublicAPI]
         public static T GetUdonSharpComponentInChildren<T>(this Component component, bool includeInactive) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(component.GetComponentInChildren<UdonBehaviour>(includeInactive), ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent<T>(component.GetComponentsInChildren<UdonBehaviour>(includeInactive), ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static T GetUdonSharpComponentInChildren<T>(this Component component, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(component.GetComponentInChildren<UdonBehaviour>(includeInactive), proxySerializationPolicy);
+            ConvertToUdonSharpComponent<T>(component.GetComponentsInChildren<UdonBehaviour>(includeInactive), proxySerializationPolicy);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this Component component, System.Type type, bool includeInactive) =>
-            ConvertToUdonSharpComponent(component.GetComponentInChildren<UdonBehaviour>(includeInactive), type, ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent(component.GetComponentsInChildren<UdonBehaviour>(includeInactive), type, ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this Component component, System.Type type, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(component.GetComponentInChildren<UdonBehaviour>(includeInactive), type, proxySerializationPolicy);
+            ConvertToUdonSharpComponent(component.GetComponentsInChildren<UdonBehaviour>(includeInactive), type, proxySerializationPolicy);
         #endregion
 
         #region GetComponentsInChildren
@@ -352,35 +368,35 @@ namespace UdonSharpEditor
         #region GetComponentInParent
         [PublicAPI]
         public static T GetUdonSharpComponentInParent<T>(this GameObject gameObject) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponentInParent<UdonBehaviour>(), ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent<T>(gameObject.GetComponentsInParent<UdonBehaviour>(), ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static T GetUdonSharpComponentInParent<T>(this GameObject gameObject, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponentInParent<UdonBehaviour>(), proxySerializationPolicy);
+            ConvertToUdonSharpComponent<T>(gameObject.GetComponentsInParent<UdonBehaviour>(), proxySerializationPolicy);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponentInParent(this GameObject gameObject, System.Type type) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponentInParent<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent(gameObject.GetComponentsInParent<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponentInParent(this GameObject gameObject, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponentInParent<UdonBehaviour>(), type, proxySerializationPolicy);
+            ConvertToUdonSharpComponent(gameObject.GetComponentsInParent<UdonBehaviour>(), type, proxySerializationPolicy);
 
         [PublicAPI]
         public static T GetUdonSharpComponentInParent<T>(this Component component) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(component.GetComponentInParent<UdonBehaviour>(), ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent<T>(component.GetComponentsInParent<UdonBehaviour>(), ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static T GetUdonSharpComponentInParent<T>(this Component component, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(component.GetComponentInParent<UdonBehaviour>(), proxySerializationPolicy);
+            ConvertToUdonSharpComponent<T>(component.GetComponentsInParent<UdonBehaviour>(), proxySerializationPolicy);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponentInParent(this Component component, System.Type type) =>
-            ConvertToUdonSharpComponent(component.GetComponentInParent<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+            ConvertToUdonSharpComponent(component.GetComponentsInParent<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
 
         [PublicAPI]
         public static UdonSharpBehaviour GetUdonSharpComponentInParent(this Component component, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(component.GetComponentInParent<UdonBehaviour>(), type, proxySerializationPolicy);
+            ConvertToUdonSharpComponent(component.GetComponentsInParent<UdonBehaviour>(), type, proxySerializationPolicy);
         #endregion
 
         #region GetComponentsInParent

@@ -157,6 +157,7 @@ namespace UdonSharp
             { "_onPlayerCollisionExit", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerCollisionExitPlayer") } },
             { "_onPlayerCollisionStay", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerCollisionStayPlayer") } },
             { "_onPlayerParticleCollision", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerParticleCollisionPlayer") } },
+            { "_onVideoError", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDK3.Components.Video.VideoError), "onVideoErrorVideoError") } },
 #endif
         };
 

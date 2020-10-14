@@ -36,10 +36,10 @@ namespace UdonSharpEditor
 
             newProgramAsset = AssetDatabase.LoadAssetAtPath<UdonAssemblyProgramAsset>(savePath);
 
-            FieldInfo assemblyField = typeof(UdonAssemblyProgramAsset).GetField("udonAssembly", BindingFlags.NonPublic | BindingFlags.Instance);
             udonSharpProgramAsset.CompileCsProgram();
 
-            assemblyField.SetValue(newProgramAsset, assemblyField.GetValue(udonSharpProgramAsset));
+            FieldInfo assemblyField = typeof(UdonAssemblyProgramAsset).GetField("udonAssembly", BindingFlags.NonPublic | BindingFlags.Instance);
+            assemblyField.SetValue(newProgramAsset, UdonSharpEditorCache.Instance.GetUASMStr(udonSharpProgramAsset));
 
             MethodInfo assembleMethod = typeof(UdonAssemblyProgramAsset).GetMethod("AssembleProgram", BindingFlags.NonPublic | BindingFlags.Instance);
             assembleMethod.Invoke(newProgramAsset, new object[] { });
@@ -465,7 +465,7 @@ namespace UdonSharpEditor
         }
 
         #region Internal utilities
-        internal static void CollectSharpUdonBehaviourReferencesInternal(object rootObject, HashSet<UdonSharpBehaviour> gatheredSet, HashSet<object> visitedSet = null)
+        internal static void CollectUdonSharpBehaviourReferencesInternal(object rootObject, HashSet<UdonSharpBehaviour> gatheredSet, HashSet<object> visitedSet = null)
         {
             if (gatheredSet == null)
                 gatheredSet = new HashSet<UdonSharpBehaviour>();
@@ -499,7 +499,7 @@ namespace UdonSharpEditor
             {
                 foreach (object arrayElement in (System.Array)rootObject)
                 {
-                    CollectSharpUdonBehaviourReferencesInternal(arrayElement, gatheredSet, visitedSet);
+                    CollectUdonSharpBehaviourReferencesInternal(arrayElement, gatheredSet, visitedSet);
                 }
             }
             else
@@ -510,7 +510,7 @@ namespace UdonSharpEditor
                 {
                     object fieldValue = fieldInfo.GetValue(rootObject);
 
-                    CollectSharpUdonBehaviourReferencesInternal(fieldValue, gatheredSet, visitedSet);
+                    CollectUdonSharpBehaviourReferencesInternal(fieldValue, gatheredSet, visitedSet);
                 }
             }
         }
@@ -530,7 +530,7 @@ namespace UdonSharpEditor
                 {
                     HashSet<UdonSharpBehaviour> referencedBehaviours = new HashSet<UdonSharpBehaviour>();
 
-                    CollectSharpUdonBehaviourReferencesInternal(targetObject, referencedBehaviours);
+                    CollectUdonSharpBehaviourReferencesInternal(targetObject, referencedBehaviours);
 
                     if (referencedBehaviours.Count > 1)
                     {
@@ -588,23 +588,35 @@ namespace UdonSharpEditor
 
                         string assetPath = Path.Combine(scriptDirectory, $"{scriptFileName}.asset").Replace('\\', '/');
 
-                        if (AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(assetPath) != null)
+                        if (EditorUtility.DisplayDialog("No linked program asset", $"There was no UdonSharpProgramAsset found for '{behaviourScript.GetClass()}', do you want to create one?", "Ok", "Cancel"))
                         {
-                            if (!EditorUtility.DisplayDialog("Existing file found", $"Asset file {assetPath} already exists, do you want to overwrite it?", "Ok", "Cancel"))
-                                continue;
+                            if (AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(assetPath) != null)
+                            {
+                                if (!EditorUtility.DisplayDialog("Existing file found", $"Asset file {assetPath} already exists, do you want to overwrite it?", "Ok", "Cancel"))
+                                    continue;
+                            }
                         }
+                        else
+                            continue;
 
                         programAsset = ScriptableObject.CreateInstance<UdonSharpProgramAsset>();
                         programAsset.sourceCsScript = behaviourScript;
+                        AssetDatabase.CreateAsset(programAsset, assetPath);
+                        AssetDatabase.SaveAssets();
+
+                        UdonSharpProgramAsset.ClearProgramAssetCache();
+
                         programAsset.CompileCsProgram();
 
-                        AssetDatabase.CreateAsset(programAsset, assetPath);
                         AssetDatabase.SaveAssets();
 
                         AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
                     }
                     else
+                    {
+                        Debug.LogWarning($"Could not convert U# behaviour '{behaviourScript.GetClass()}' on '{targetObject.gameObject}' because it does not have a corresponding UdonSharpProgramAsset");
                         continue;
+                    }
                 }
 
                 GameObject targetGameObject = targetObject.gameObject;

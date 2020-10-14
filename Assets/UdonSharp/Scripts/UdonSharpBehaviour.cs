@@ -5,7 +5,11 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using VRC.Udon.Common.Interfaces;
+
+#if UNITY_EDITOR
+using System.Diagnostics;
 using VRC.Udon.Serialization.OdinSerializer;
+#endif
 
 namespace UdonSharp
 {
@@ -37,6 +41,17 @@ namespace UdonSharp
 
         public void SendCustomEvent(string eventName)
         {
+#if UNITY_EDITOR
+            if (_backingUdonBehaviour != null) // If this is a proxy, we need to check if this is a valid call to SendCustomEvent, since animation events can call it when they shouldn't
+            {
+                StackFrame frame = new StackFrame(1); // Get the frame of the calling method
+
+                // If the calling method is null, this has been called from native code which indicates it was called by Unity, which we don't want on proxies
+                if (frame.GetMethod() == null)
+                    return;
+            }
+#endif
+
             MethodInfo eventmethod = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == eventName && e.GetParameters().Length == 0).FirstOrDefault();
 
             if (eventmethod != null)
@@ -104,7 +119,7 @@ namespace UdonSharp
         public virtual void OnStationEntered(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnStationExited(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnVideoEnd() { }
-        public virtual void OnVideoError() { }
+        public virtual void OnVideoError(VRC.SDK3.Components.Video.VideoError videoError) { }
         public virtual void OnVideoLoop() { }
         public virtual void OnVideoPause() { }
         public virtual void OnVideoPlay() { }
@@ -145,9 +160,14 @@ namespace UdonSharp
         {
             UnitySerializationUtility.DeserializeUnityObject(this, ref serializationData);
         }
-
+        
         [OdinSerialize]
-        private IUdonBehaviour _backingUdonBehaviour;
+        private IUdonBehaviour _backingUdonBehaviour = null;
+
+#pragma warning disable CS0414 // Referenced via reflection
+        [SerializeField, HideInInspector]
+        private bool _isValidForAutoCopy = false;
+#pragma warning restore CS0414
 #endif
     }
 }

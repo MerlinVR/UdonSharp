@@ -498,22 +498,27 @@ namespace UdonSharp.Compiler
                         if (variable.Initializer != null)
                         {
                             string name = variable.Identifier.ToString();
-                            if (isConst)
-                            {
-                                _class.Members.Add(new CodeSnippetTypeMember($"const {typeQualifiedName} {name} {variable.Initializer};"));
-                            }
-                            else
-                            {
-                                method.Statements.Add(new CodeSnippetStatement($"{typeQualifiedName} {name} {variable.Initializer};"));
-                            }
 
                             if (UdonSharpUtils.IsUserJaggedArray(fieldDef.fieldSymbol.userCsType))
                             {
+                                if (fieldDef != null)
+                                    typeQualifiedName = GetFullTypeQualifiedName(fieldDef.fieldSymbol.userCsType);
+
+                                if (isConst)
+                                    _class.Members.Add(new CodeSnippetTypeMember($"const {typeQualifiedName} {name} {variable.Initializer};"));
+                                else
+                                    method.Statements.Add(new CodeSnippetStatement($"{typeQualifiedName} {name} {variable.Initializer};"));
+
                                 method.Statements.Add(new CodeSnippetStatement(
                                     "heapSetMethod.MakeGenericMethod(typeof(" + GetFullTypeQualifiedName(fieldDef.fieldSymbol.userCsType) + ")).Invoke(null, new object[] { program, " + name + ", \"" + variable.Identifier + "\"});"));
                             }
                             else
                             {
+                                if (isConst)
+                                    _class.Members.Add(new CodeSnippetTypeMember($"const {typeQualifiedName} {name} {variable.Initializer};"));
+                                else
+                                    method.Statements.Add(new CodeSnippetStatement($"{typeQualifiedName} {name} {variable.Initializer};"));
+
                                 method.Statements.Add(new CodeSnippetStatement(
                                     $"program.Heap.SetHeapVariable(program.SymbolTable.GetAddressFromSymbol(\"{variable.Identifier}\"), {name});"));
                             }

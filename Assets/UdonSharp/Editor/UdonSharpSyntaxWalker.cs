@@ -53,7 +53,22 @@ namespace UdonSharp.Compiler
         public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
         {
             UpdateSyntaxNode(node);
-            string[] namespaces = node.Name.ToFullString().TrimEnd('\r', '\n', ' ').Split('.');
+
+            List<string> namespaces = new List<string>();
+
+            SyntaxToken lastToken = node.Name.GetLastToken();
+            SyntaxToken currentToken = node.Name.GetFirstToken();
+
+            while (currentToken != null)
+            {
+                if (currentToken.Text != ".")
+                    namespaces.Add(currentToken.Text);
+
+                if (currentToken == lastToken)
+                    break;
+
+                currentToken = currentToken.GetNextToken();
+            }
 
             foreach (string currentNamespace in namespaces)
                 namespaceStack.Push(currentNamespace);
@@ -64,7 +79,7 @@ namespace UdonSharp.Compiler
             foreach (MemberDeclarationSyntax memberDeclaration in node.Members)
                 Visit(memberDeclaration);
 
-            for (int i = 0; i < namespaces.Length; ++i)
+            for (int i = 0; i < namespaces.Count; ++i)
                 namespaceStack.Pop();
         }
 

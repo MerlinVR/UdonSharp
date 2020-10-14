@@ -336,6 +336,20 @@ namespace UdonSharp
             }
         }
 
+        // Common messages that can spam the log and have no use for debugging
+        static readonly string[] filteredPrefixes = new string[]
+        {
+            "Received Notification: <Notification from username:",
+            "Received Message of type: notification content: {{\"id\":\"",
+            "[VRCFlowNetworkManager] Sending token from provider vrchat",
+            "[USpeaker] uSpeak [",
+            "Internal: JobTempAlloc has allocations",
+            "To Debug, enable the define: TLA_DEBUG_STACK_LEAK in ThreadsafeLinearAllocator.cpp.",
+            "PLAYLIST GET id=",
+            "Checking server time received at ",
+            "[RoomManager] Room metadata is unchanged, skipping update",
+        };
+
         static void HandleForwardedLog(string logMessage, LogFileState state, UdonSharpSettings settings)
         {
             const string FMT_STR = "0000.00.00 00:00:00 ";
@@ -343,10 +357,11 @@ namespace UdonSharp
             string trimmedStr = logMessage.Substring(FMT_STR.Length);
 
             string message = trimmedStr.Substring(trimmedStr.IndexOf('-') + 2);
+            string trimmedMessage = message.TrimStart(' ', '\t');
 
             if (settings.watcherMode == UdonSharpSettings.LogWatcherMode.Prefix)
             {
-                string prefixStr = message.TrimStart(' ', '\t');
+                string prefixStr = trimmedMessage;
                 bool prefixFound = false;
                 foreach (string prefix in settings.logWatcherMatchStrings)
                 {
@@ -358,6 +373,12 @@ namespace UdonSharp
                 }
 
                 if (!prefixFound)
+                    return;
+            }
+
+            foreach (string filteredPrefix in filteredPrefixes)
+            {
+                if (trimmedMessage.StartsWith(filteredPrefix))
                     return;
             }
 
