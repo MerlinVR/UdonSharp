@@ -894,7 +894,7 @@ namespace UdonSharpEditor
             }
             else if (declaredType == typeof(Color))
             {
-                ColorUsageAttribute colorUsage = fieldDefinition == null ? null : fieldDefinition.GetAttribute<ColorUsageAttribute>();
+                ColorUsageAttribute colorUsage = fieldDefinition?.GetAttribute<ColorUsageAttribute>();
 
                 if (colorUsage != null)
                 {
@@ -907,7 +907,16 @@ namespace UdonSharpEditor
             }
             else if (declaredType == typeof(Color32))
             {
-                return (Color32)EditorGUILayout.ColorField(fieldLabel, (Color32?)value ?? default);
+                ColorUsageAttribute colorUsage = fieldDefinition?.GetAttribute<ColorUsageAttribute>();
+
+                if (colorUsage != null)
+                {
+                    return (Color32)EditorGUILayout.ColorField(fieldLabel, (Color32?)value ?? default, false, colorUsage.showAlpha, false);
+                }
+                else
+                {
+                    return (Color32)EditorGUILayout.ColorField(fieldLabel, (Color32?)value ?? default);
+                }
             }
             else if (declaredType == typeof(Quaternion))
             {
