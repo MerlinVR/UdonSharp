@@ -223,21 +223,24 @@ namespace UdonSharpEditor
             {
                 foreach (Type editorType in asm.GetTypes())
                 {
-                    CustomEditor editorAttribute = editorType.GetCustomAttribute<CustomEditor>();
+                    IEnumerable<CustomEditor> editorAttributes = editorType.GetCustomAttributes<CustomEditor>();
 
-                    if (editorAttribute != null)
+                    foreach (CustomEditor editorAttribute in editorAttributes)
                     {
-                        Type inspectedType = (Type)inspectedTypeField.GetValue(editorAttribute);
-
-                        if (inspectedType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+                        if (editorAttribute != null && editorAttribute.GetType() == typeof(CustomEditor)) // The CustomEditorForRenderPipeline attribute inherits from CustomEditor, but we do not want to take that into account.
                         {
-                            if (_typeInspectorMap.ContainsKey(inspectedType))
-                            {
-                                Debug.LogError($"Cannot register inspector '{editorType.Name}' for type '{inspectedType.Name}' since inspector '{_typeInspectorMap[inspectedType].Name}' is already registered");
-                                continue;
-                            }
+                            Type inspectedType = (Type)inspectedTypeField.GetValue(editorAttribute);
 
-                            _typeInspectorMap.Add(inspectedType, editorType);
+                            if (inspectedType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+                            {
+                                if (_typeInspectorMap.ContainsKey(inspectedType))
+                                {
+                                    Debug.LogError($"Cannot register inspector '{editorType.Name}' for type '{inspectedType.Name}' since inspector '{_typeInspectorMap[inspectedType].Name}' is already registered");
+                                    continue;
+                                }
+
+                                _typeInspectorMap.Add(inspectedType, editorType);
+                            }
                         }
                     }
                 }
