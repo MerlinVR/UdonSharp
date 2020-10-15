@@ -343,7 +343,7 @@ namespace UdonSharpEditor
 
             if (udonBehaviour)
             {
-                editorState.showExtraOptions = programAsset.showUtilityDropdown = EditorGUILayout.Foldout(editorState.showExtraOptions, "Utilities");
+                editorState.showExtraOptions = programAsset.showUtilityDropdown = EditorGUILayout.Foldout(editorState.showExtraOptions, "Utilities", true);
                 if (editorState.showExtraOptions)
                 {
                     if (GUILayout.Button("Compile All UdonSharp Programs"))
