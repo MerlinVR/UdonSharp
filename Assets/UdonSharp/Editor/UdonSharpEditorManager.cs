@@ -372,13 +372,17 @@ namespace UdonSharpEditor
             for (int i = 0; i < sceneCount; ++i)
             {
                 Scene scene = EditorSceneManager.GetSceneAt(i);
-                int rootCount = scene.rootCount;
 
-                scene.GetRootGameObjects(rootObjects);
-
-                for (int j = 0; j < rootCount; ++j)
+                if (scene.isLoaded)
                 {
-                    behaviourList.AddRange(rootObjects[j].GetComponentsInChildren<UdonBehaviour>(true));
+                    int rootCount = scene.rootCount;
+
+                    scene.GetRootGameObjects(rootObjects);
+
+                    for (int j = 0; j < rootCount; ++j)
+                    {
+                        behaviourList.AddRange(rootObjects[j].GetComponentsInChildren<UdonBehaviour>(true));
+                    }
                 }
             }
 
