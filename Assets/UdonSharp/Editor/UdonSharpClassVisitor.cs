@@ -40,7 +40,7 @@ namespace UdonSharp.Compiler
             classDefinition.methodDefinitions = methodVisitor.definedMethods;
 
             if (classCount == 0)
-                throw new System.Exception($"No UdonSharpBehaviour class found in script file, you must define an UdonSharpBehaviour class in a script referenced by and UdonSharpProgramAsset");
+                throw new System.Exception($"No UdonSharpBehaviour class found in script file, you must define an UdonSharpBehaviour class in a script referenced by an UdonSharpProgramAsset");
         }
 
         public override void VisitClassDeclaration(ClassDeclarationSyntax node)
