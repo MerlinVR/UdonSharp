@@ -54,7 +54,7 @@ namespace UdonSharp.Tests
             UdonBehaviour selfUdon = (UdonBehaviour)(Component)this;
 
             selfUdon.enabled = false;
-            tester.TestAssertion("UdonSharpBehaviour ref enabled", selfUdon.enabled == false);
+            tester.TestAssertion("UdonBehaviour ref enabled", selfUdon.enabled == false);
             selfUdon.enabled = true;
         }
 
