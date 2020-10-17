@@ -272,9 +272,9 @@ namespace UdonSharpEditor
 
                 foreach (UndoPropertyModification propertyModification in propertyModifications)
                 {
-                    UnityEngine.Object target = propertyModification.currentValue.target;
+                    UnityEngine.Object target = propertyModification.currentValue?.target;
 
-                    if (target is UdonSharpBehaviour udonSharpBehaviour)
+                    if (target != null && target is UdonSharpBehaviour udonSharpBehaviour)
                     {
                         UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(udonSharpBehaviour);
 
