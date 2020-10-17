@@ -629,7 +629,6 @@ namespace UdonSharpEditor
                     udonBehaviour = targetGameObject.AddComponent<UdonBehaviour>();
 
                 udonBehaviour.programSource = programAsset;
-                udonBehaviour.AllowCollisionOwnershipTransfer = false;
 
                 //if (shouldUndo)
                 //    Undo.RegisterCompleteObjectUndo(targetObject, "Convert C# to U# behaviour");
