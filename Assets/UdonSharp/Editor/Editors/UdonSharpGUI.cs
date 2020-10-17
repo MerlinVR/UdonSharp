@@ -1378,6 +1378,11 @@ namespace UdonSharpEditor
             {
                 newCollisionTransfer = EditorGUILayout.Toggle(ownershipTransferOnCollisionContent, behaviour.AllowCollisionOwnershipTransfer);
             }
+            else if(newCollisionTransfer)
+            {
+                newCollisionTransfer = false;
+                GUI.changed = true;
+            }
             EditorGUI.EndDisabledGroup();
 
             if (EditorGUI.EndChangeCheck())
