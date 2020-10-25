@@ -350,8 +350,21 @@ namespace UdonSharp
         {
             var typeMap = GetInheritedTypeMap();
 
-            if (typeMap.ContainsKey(type))
-                return typeMap[type];
+            int arrayDepth = 0;
+            System.Type currentType = type;
+            while (currentType.IsArray)
+            {
+                currentType = currentType.GetElementType();
+                ++arrayDepth;
+            }
+
+            if (typeMap.ContainsKey(currentType))
+            {
+                type = typeMap[currentType];
+
+                while (arrayDepth-- > 0)
+                    type = type.MakeArrayType();
+            }
 
             return type;
         }
