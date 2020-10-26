@@ -26,7 +26,6 @@ namespace UdonSharpEditor
             EditorApplication.update += OnEditorUpdate;
             EditorApplication.playModeStateChanged += OnChangePlayMode;
             AssemblyReloadEvents.afterAssemblyReload += RunPostAssemblyBuildRefresh;
-            AssemblyReloadEvents.afterAssemblyReload += InjectUnityEventInterceptors;
         }
 
         private static void EditorSceneManager_sceneOpened(Scene scene, OpenSceneMode mode)
@@ -49,6 +48,7 @@ namespace UdonSharpEditor
         static void RunPostAssemblyBuildRefresh()
         {
             UdonSharpProgramAsset.CompileAllCsPrograms();
+            InjectUnityEventInterceptors();
         }
 
         static void InjectUnityEventInterceptors()
@@ -68,7 +68,7 @@ namespace UdonSharpEditor
             Harmony harmony = new Harmony(harmonyID);
             harmony.UnpatchAll(harmonyID);
 
-            MethodInfo injectedEvent = typeof(InjectedMethods).GetMethod("EventInterceptor", BindingFlags.Static | BindingFlags.Public);
+            MethodInfo injectedEvent = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.EventInterceptor), BindingFlags.Static | BindingFlags.Public);
             HarmonyMethod injectedMethod = new HarmonyMethod(injectedEvent);
 
             void InjectEvent(System.Type behaviourType, string eventName)
@@ -165,6 +165,14 @@ namespace UdonSharpEditor
 
             MethodInfo crossSceneRefCheckMethod = typeof(EditorGUI).GetMethod("CheckForCrossSceneReferencing", BindingFlags.NonPublic | BindingFlags.Static);
             InjectedMethods.crossSceneRefCheckMethod = (Func<UnityEngine.Object, UnityEngine.Object, bool>)Delegate.CreateDelegate(typeof(Func<UnityEngine.Object, UnityEngine.Object, bool>), crossSceneRefCheckMethod);
+
+            // Patch post BuildAssetBundles fixup function
+            MethodInfo buildAssetbundlesMethod = typeof(BuildPipeline).GetMethods(BindingFlags.NonPublic | BindingFlags.Static).First(e => e.Name == "BuildAssetBundles" && e.GetParameters().Length == 5);
+
+            MethodInfo postBuildMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.PostBuildAssetBundles), BindingFlags.Public | BindingFlags.Static);
+            HarmonyMethod postBuildHarmonyMethod = new HarmonyMethod(postBuildMethod);
+
+            harmony.Patch(buildAssetbundlesMethod, null, postBuildHarmonyMethod);
         }
 
         static class InjectedMethods
@@ -283,6 +291,11 @@ namespace UdonSharpEditor
                 }
 
                 return true;
+            }
+
+            public static void PostBuildAssetBundles()
+            {
+                CreateProxyBehaviours(GetAllUdonBehaviours());
             }
         }
 
