@@ -134,9 +134,14 @@ namespace UdonSharp.Compiler
 #if UDONSHARP_DEBUG // Single threaded compile
                     List<CompileTaskResult> compileTasks = new List<CompileTaskResult>();
 
-                    foreach (CompilationModule module in modules)
+                    for (int i = 0; i < modules.Length; ++i)
                     {
+                        CompilationModule module = modules[i];
                         var sourceTree = syntaxTreeSourceLookup[module.programAsset];
+                    
+                        EditorUtility.DisplayProgressBar("UdonSharp Compile",
+                                                         $"Compiling scripts ({i}/{modules.Length})...",
+                                                         Mathf.Clamp01((i / ((float)modules.Length + 1f))));
 
                         compileTasks.Add(module.Compile(classDefinitions, sourceTree.Item2, sourceTree.Item1, isEditorBuild));
                     }
@@ -202,9 +207,11 @@ namespace UdonSharp.Compiler
 
                         int processedTaskCount = totalTaskCount - compileTasks.Count;
 
+#if !UDONSHARP_DEBUG
                         EditorUtility.DisplayProgressBar("UdonSharp Compile",
                                                          $"Compiling scripts ({processedTaskCount}/{totalTaskCount})...",
                                                          Mathf.Clamp01((processedTaskCount / ((float)totalTaskCount + 1f))));
+#endif
                     }
 
                     if (totalErrorCount == 0)
