@@ -141,7 +141,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: voiceNear
+      Data: voiceFar
     - Name: $v
       Entry: 7
       Data: 9|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -162,10 +162,10 @@ MonoBehaviour:
       Data: SystemSingle
     - Name: symbolOriginalName
       Entry: 1
-      Data: voiceNear
+      Data: voiceFar
     - Name: symbolUniqueName
       Entry: 1
-      Data: voiceNear
+      Data: voiceFar
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -183,8 +183,7 @@ MonoBehaviour:
       Data: 12|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
-      Data: The near radius in meters where player audio starts to fall off, it is
-        recommended to keep this at 0
+      Data: The end of the range for hearing a user's voice
     - Name: 
       Entry: 8
       Data: 
@@ -208,7 +207,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: voiceFar
+      Data: voiceNear
     - Name: $v
       Entry: 7
       Data: 13|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -229,10 +228,10 @@ MonoBehaviour:
       Data: SystemSingle
     - Name: symbolOriginalName
       Entry: 1
-      Data: voiceFar
+      Data: voiceNear
     - Name: symbolUniqueName
       Entry: 1
-      Data: voiceFar
+      Data: voiceNear
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -250,7 +249,8 @@ MonoBehaviour:
       Data: 16|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
-      Data: The end of the range for hearing a user's voice
+      Data: The near radius in meters where player audio starts to fall off, it is
+        recommended to keep this at 0
     - Name: 
       Entry: 8
       Data: 
@@ -500,7 +500,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: avatarMaxNearRadius
+      Data: avatarMaxFarRadius
     - Name: $v
       Entry: 7
       Data: 32|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -521,10 +521,10 @@ MonoBehaviour:
       Data: SystemSingle
     - Name: symbolOriginalName
       Entry: 1
-      Data: avatarMaxNearRadius
+      Data: avatarMaxFarRadius
     - Name: symbolUniqueName
       Entry: 1
-      Data: avatarMaxNearRadius
+      Data: avatarMaxFarRadius
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -542,7 +542,8 @@ MonoBehaviour:
       Data: 35|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
-      Data: The maximum for the radius where avatar audio starts to fall off
+      Data: The maximum end of avatar audio range, a value of 0 will effectively mute
+        avatar audio
     - Name: 
       Entry: 8
       Data: 
@@ -566,7 +567,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: avatarMaxFarRadius
+      Data: avatarMaxNearRadius
     - Name: $v
       Entry: 7
       Data: 36|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -587,10 +588,10 @@ MonoBehaviour:
       Data: SystemSingle
     - Name: symbolOriginalName
       Entry: 1
-      Data: avatarMaxFarRadius
+      Data: avatarMaxNearRadius
     - Name: symbolUniqueName
       Entry: 1
-      Data: avatarMaxFarRadius
+      Data: avatarMaxNearRadius
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -608,8 +609,7 @@ MonoBehaviour:
       Data: 39|UnityEngine.TooltipAttribute, UnityEngine.CoreModule
     - Name: tooltip
       Entry: 1
-      Data: The maximum end of avatar audio range, a value of 0 will effectively mute
-        avatar audio
+      Data: The maximum for the radius where avatar audio starts to fall off
     - Name: 
       Entry: 8
       Data: 
