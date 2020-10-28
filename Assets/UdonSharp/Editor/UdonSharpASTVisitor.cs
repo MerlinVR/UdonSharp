@@ -2516,7 +2516,7 @@ namespace UdonSharp.Compiler
                     if (!typeCaptureScope.IsType())
                         throw new System.ArgumentException("Generic argument must be a valid type");
 
-                    argumentTypes.Add(visitorContext.resolverContext.RemapBaseType(typeCaptureScope.captureType));
+                    argumentTypes.Add(UdonSharpUtils.RemapBaseType(typeCaptureScope.captureType));
                 }
             }
 

@@ -741,7 +741,7 @@ namespace UdonSharpEditor
                             {
                                 Array oldArray = (Array)value;
 
-                                Array newArray = Activator.CreateInstance(arrayDataType, new object[] { oldArray.Length + draggedReferences.Count }) as Array;
+                                Array newArray = Activator.CreateInstance(UdonSharpUtils.RemapBaseType(arrayDataType), new object[] { oldArray.Length + draggedReferences.Count }) as Array;
                                 Array.Copy(oldArray, newArray, oldArray.Length);
                                 Array.Copy(draggedReferences.ToArray(), 0, newArray, oldArray.Length, draggedReferences.Count);
 
@@ -763,7 +763,7 @@ namespace UdonSharpEditor
                     if (value == null)
                     {
                         GUI.changed = true;
-                        return System.Activator.CreateInstance(arrayDataType, new object[] { 0 });
+                        return System.Activator.CreateInstance(UdonSharpUtils.RemapBaseType(arrayDataType), new object[] { 0 });
                     }
 
                     EditorGUI.indentLevel++;
@@ -783,7 +783,7 @@ namespace UdonSharpEditor
                         // We need to resize the array
                         if (EditorGUI.EndChangeCheck())
                         {
-                            Array newArray = Activator.CreateInstance(arrayDataType, new object[] { newLength }) as Array;
+                            Array newArray = Activator.CreateInstance(UdonSharpUtils.RemapBaseType(arrayDataType), new object[] { newLength }) as Array;
 
                             for (int i = 0; i < newLength && i < valueArray.Length; ++i)
                             {
