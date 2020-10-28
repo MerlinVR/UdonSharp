@@ -157,6 +157,9 @@ namespace UdonSharpEditor
                 InjectEvent(udonSharpBehaviourType, "OnDestroy");
             }
 
+            // Add method for checking if events need to be skipped
+            InjectedMethods.shouldSkipEventsMethod = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), typeof(UdonSharpBehaviour).GetMethod("ShouldSkipEvents", BindingFlags.Static | BindingFlags.NonPublic));
+
             // Patch GUI object field drawer
             MethodInfo doObjectFieldMethod = typeof(EditorGUI).GetMethods(BindingFlags.Static | BindingFlags.NonPublic).FirstOrDefault(e => e.Name == "DoObjectField" && e.GetParameters().Length == 9);
 
@@ -188,12 +191,13 @@ namespace UdonSharpEditor
             public static Delegate validationDelegate;
             public static MethodInfo objectValidatorMethod;
             public static Func<UnityEngine.Object, UnityEngine.Object, bool> crossSceneRefCheckMethod;
+            public static Func<bool> shouldSkipEventsMethod;
 
             public static bool EventInterceptor(UdonSharpBehaviour __instance)
             {
-                if (UdonSharpEditorUtility.IsProxyBehaviour(__instance))
+                if (UdonSharpEditorUtility.IsProxyBehaviour(__instance) || shouldSkipEventsMethod())
                     return false;
-                
+
                 return true;
             }
 
@@ -360,6 +364,8 @@ namespace UdonSharpEditor
 
         static void RunAllUpdates(List<UdonBehaviour> allBehaviours = null)
         {
+            UdonSharpEditorUtility.SetIgnoreEvents(false);
+
             if (allBehaviours == null)
                 allBehaviours = GetAllUdonBehaviours();
 

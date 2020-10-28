@@ -408,7 +408,16 @@ namespace UdonSharpEditor
 
                 if (backingBehaviour == null)
                 {
-                    UnityEngine.Object.DestroyImmediate(currentProxyBehaviour);
+                    UdonSharpEditorUtility.SetIgnoreEvents(true);
+
+                    try
+                    {
+                        UnityEngine.Object.DestroyImmediate(currentProxyBehaviour);
+                    }
+                    finally
+                    {
+                        UdonSharpEditorUtility.SetIgnoreEvents(false);
+                    }
                 }
             }
         }

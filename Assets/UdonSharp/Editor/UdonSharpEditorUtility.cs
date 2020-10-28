@@ -242,7 +242,16 @@ namespace UdonSharpEditor
                 {
                     CopyUdonToProxy(proxyBehaviour, proxySerializationPolicy);
 
-                    proxyBehaviour.enabled = false;
+                    SetIgnoreEvents(true);
+
+                    try
+                    {
+                        proxyBehaviour.enabled = false;
+                    }
+                    finally
+                    {
+                        SetIgnoreEvents(false);
+                    }
 
                     return proxyBehaviour;
                 }
@@ -253,7 +262,7 @@ namespace UdonSharpEditor
             }
 
             UdonSharpBehaviour[] behaviours = udonBehaviour.GetComponents<UdonSharpBehaviour>();
-
+            
             foreach (UdonSharpBehaviour udonSharpBehaviour in behaviours)
             {
                 IUdonBehaviour backingBehaviour = GetBackingUdonBehaviour(udonSharpBehaviour);
@@ -263,7 +272,16 @@ namespace UdonSharpEditor
 
                     CopyUdonToProxy(udonSharpBehaviour, proxySerializationPolicy);
 
-                    udonSharpBehaviour.enabled = false;
+                    SetIgnoreEvents(true);
+
+                    try
+                    {
+                        udonSharpBehaviour.enabled = false;
+                    }
+                    finally
+                    {
+                        SetIgnoreEvents(false);
+                    }
 
                     return udonSharpBehaviour;
                 }
@@ -311,6 +329,20 @@ namespace UdonSharpEditor
             return ((UdonSharpProgramAsset)udonBehaviour.programSource).sourceCsScript.GetClass();
         }
 
+        static FieldInfo _skipEventsField = null;
+
+        /// <summary>
+        /// Used to disable sending events to UdonSharpBehaviours for OnEnable, OnDisable, and OnDestroy since they are not always in a valid state to be recognized as proxies during these events.
+        /// </summary>
+        /// <param name="ignore"></param>
+        internal static void SetIgnoreEvents(bool ignore)
+        {
+            if (_skipEventsField == null)
+                _skipEventsField = typeof(UdonSharpBehaviour).GetField("_skipEvents", BindingFlags.Static | BindingFlags.NonPublic);
+
+            _skipEventsField.SetValue(null, ignore);
+        }
+
         /// <summary>
         /// Gets the C# version of an UdonSharpBehaviour that proxies an UdonBehaviour with the program asset for the matching UdonSharpBehaviour type
         /// </summary>
@@ -342,13 +374,22 @@ namespace UdonSharpEditor
             if (scriptType == null)
                 return null;
 
-            proxyBehaviour = (UdonSharpBehaviour)udonBehaviour.gameObject.AddComponent(scriptType);
-            proxyBehaviour.hideFlags = HideFlags.DontSaveInBuild |
+            SetIgnoreEvents(true);
+
+            try
+            {
+                proxyBehaviour = (UdonSharpBehaviour)udonBehaviour.gameObject.AddComponent(scriptType);
+                proxyBehaviour.hideFlags = HideFlags.DontSaveInBuild |
 #if !UDONSHARP_DEBUG
                                        HideFlags.HideInInspector |
 #endif
                                        HideFlags.DontSaveInEditor;
-            proxyBehaviour.enabled = false;
+                proxyBehaviour.enabled = false;
+            }
+            finally
+            {
+                SetIgnoreEvents(false);
+            }
 
             SetBackingUdonBehaviour(proxyBehaviour, udonBehaviour);
 
@@ -460,7 +501,17 @@ namespace UdonSharpEditor
             if (backingBehaviour)
             {
                 _proxyBehaviourLookup.Remove(backingBehaviour);
-                Object.DestroyImmediate(backingBehaviour);
+
+                SetIgnoreEvents(true);
+
+                try
+                {
+                    Object.DestroyImmediate(backingBehaviour);
+                }
+                finally
+                {
+                    SetIgnoreEvents(false);
+                }
             }
         }
 
@@ -653,33 +704,42 @@ namespace UdonSharpEditor
 
                 UdonSharpBehaviour newProxy;
 
-                if (shouldUndo)
-                    newProxy = (UdonSharpBehaviour)Undo.AddComponent(targetObject.gameObject, behaviourType);
-                else
-                    newProxy = (UdonSharpBehaviour)targetObject.gameObject.AddComponent(behaviourType);
+                SetIgnoreEvents(true);
 
-                UdonSharpEditorUtility.SetBackingUdonBehaviour(newProxy, udonBehaviour);
                 try
                 {
-                    UdonSharpEditorUtility.CopyUdonToProxy(newProxy);
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogError(e);
-                }
-                
-                if (shouldUndo)
-                    Undo.DestroyObjectImmediate(targetObject);
-                else
-                    Object.DestroyImmediate(targetObject);
+                    if (shouldUndo)
+                        newProxy = (UdonSharpBehaviour)Undo.AddComponent(targetObject.gameObject, behaviourType);
+                    else
+                        newProxy = (UdonSharpBehaviour)targetObject.gameObject.AddComponent(behaviourType);
 
-                newProxy.hideFlags = HideFlags.DontSaveInBuild |
+                    UdonSharpEditorUtility.SetBackingUdonBehaviour(newProxy, udonBehaviour);
+                    try
+                    {
+                        UdonSharpEditorUtility.CopyUdonToProxy(newProxy);
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogError(e);
+                    }
+
+                    if (shouldUndo)
+                        Undo.DestroyObjectImmediate(targetObject);
+                    else
+                        Object.DestroyImmediate(targetObject);
+
+                    newProxy.hideFlags = HideFlags.DontSaveInBuild |
 #if !UDONSHARP_DEBUG
                                      HideFlags.HideInInspector |
 #endif
                                      HideFlags.DontSaveInEditor;
 
-                newProxy.enabled = false;
+                    newProxy.enabled = false;
+                }
+                finally
+                {
+                    SetIgnoreEvents(false);
+                }
 
                 createdComponents.Add(udonBehaviour);
             }

@@ -17,7 +17,16 @@ namespace UdonSharpEditor
             if (udonBehaviour)
                 Undo.DestroyObjectImmediate(udonBehaviour);
 
-            Undo.DestroyObjectImmediate(behaviour);
+            UdonSharpEditorUtility.SetIgnoreEvents(true);
+
+            try
+            {
+                Undo.DestroyObjectImmediate(behaviour);
+            }
+            finally
+            {
+                UdonSharpEditorUtility.SetIgnoreEvents(false);
+            }
         }
 
         /// <summary>
