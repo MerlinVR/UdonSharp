@@ -85,7 +85,10 @@ namespace UdonSharp
                         char[] eventName = eventNameStr.ToCharArray();
                         eventName[0] = char.ToLowerInvariant(eventName[0]);
 
-                        builtinEventLookup.Add(eventNameStr, "_" + new string(eventName));
+                        if (!builtinEventLookup.ContainsKey(eventNameStr))
+                            builtinEventLookup.Add(eventNameStr, "_" + new string(eventName));
+                        else
+                            Debug.LogWarning($"Duplicate VRC event {eventNameStr} found");
                     }
                 }
 
