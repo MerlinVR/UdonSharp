@@ -127,9 +127,6 @@ namespace UdonSharp
         public virtual void OnVideoStart() { }
         public virtual void OnPreSerialization() { }
         public virtual void OnDeserialization() { }
-#if UDON_BETA_SDK
-        public virtual void OnPostSerialization() { }
-        public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi newOwner) => true;
         public virtual void OnPlayerTriggerEnter(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerTriggerExit(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerTriggerStay(VRC.SDKBase.VRCPlayerApi player) { }
@@ -137,6 +134,9 @@ namespace UdonSharp
         public virtual void OnPlayerCollisionExit(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerCollisionStay(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerParticleCollision(VRC.SDKBase.VRCPlayerApi player) { }
+#if UDON_BETA_SDK
+        public virtual void OnPostSerialization() { }
+        public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi requestedOwner) => true;
 #endif
 
         [Obsolete("The OnStationEntered() event is deprecated use the OnStationEntered(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
@@ -167,7 +167,11 @@ namespace UdonSharp
 #pragma warning disable CS0414 // Referenced via reflection
         [SerializeField, HideInInspector]
         private bool _isValidForAutoCopy = false;
+
+        private static bool _skipEvents = false;
 #pragma warning restore CS0414
+
+        private static bool ShouldSkipEvents() => _skipEvents;
 #endif
     }
 }

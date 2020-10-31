@@ -366,7 +366,7 @@ namespace Merlin
             EEESettings settings = new EEESettings
             {
                 overrideEventDrawer = EditorPrefs.GetBool(eeeOverrideEventDrawerKey, true),
-                showPrivateMembers = EditorPrefs.GetBool(eeeShowPrivateMembersKey, true),
+                showPrivateMembers = EditorPrefs.GetBool(eeeShowPrivateMembersKey, false),
                 showInvokeField = EditorPrefs.GetBool(eeeShowInvokeFieldKey, true),
                 displayArgumentType = EditorPrefs.GetBool(eeeDisplayArgumentTypeKey, true),
                 groupSameComponentType = EditorPrefs.GetBool(eeeGroupSameComponentTypeKey, false),

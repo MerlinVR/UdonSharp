@@ -489,6 +489,58 @@ namespace UdonSharp
 
             return type;
         }
+        
+        private static Dictionary<System.Type, System.Type> inheritedTypeMap = null;
+        private readonly static object inheritedTypeMapLock = new object();
+
+        private static Dictionary<System.Type, System.Type> GetInheritedTypeMap()
+        {
+            lock (inheritedTypeMapLock)
+            {
+                if (inheritedTypeMap != null)
+                    return inheritedTypeMap;
+
+                inheritedTypeMap = new Dictionary<System.Type, System.Type>();
+
+                IEnumerable<System.Type> typeList = System.AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == "VRCSDK3").GetTypes().Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
+
+                foreach (System.Type childType in typeList)
+                {
+                    if (childType.BaseType != null && childType.BaseType.Namespace.StartsWith("VRC.SDKBase"))
+                    {
+                        inheritedTypeMap.Add(childType.BaseType, childType);
+                    }
+                }
+
+                inheritedTypeMap.Add(typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
+                inheritedTypeMap.Add(typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
+            }
+
+            return inheritedTypeMap;
+        }
+
+        internal static System.Type RemapBaseType(System.Type type)
+        {
+            var typeMap = GetInheritedTypeMap();
+
+            int arrayDepth = 0;
+            System.Type currentType = type;
+            while (currentType.IsArray)
+            {
+                currentType = currentType.GetElementType();
+                ++arrayDepth;
+            }
+
+            if (typeMap.ContainsKey(currentType))
+            {
+                type = typeMap[currentType];
+
+                while (arrayDepth-- > 0)
+                    type = type.MakeArrayType();
+            }
+
+            return type;
+        }
 
         // Doesn't work in a multi threaded context, todo: consider making this a concurrent collection or making one for each thread.
         //private static Dictionary<System.Type, System.Type> userTypeToUdonTypeCache = new Dictionary<System.Type, System.Type>();
@@ -496,32 +548,30 @@ namespace UdonSharp
         public static System.Type UserTypeToUdonType(System.Type type)
         {
             System.Type udonType = null;
-            //if (!userTypeToUdonTypeCache.TryGetValue(type, out udonType))
+
+            if (IsUserDefinedType(type))
             {
-                if (IsUserDefinedType(type))
+                if (type.IsArray)
                 {
-                    if (type.IsArray)
+                    if (!type.GetElementType().IsArray)
                     {
-                        if (!type.GetElementType().IsArray)
-                        {
-                            udonType = typeof(UnityEngine.Component[]);// Hack because VRC doesn't expose the array type of UdonBehaviour
-                        }
-                        else // Jagged arrays
-                        {
-                            udonType = typeof(object[]);
-                        }
+                        udonType = typeof(UnityEngine.Component[]);// Hack because VRC doesn't expose the array type of UdonBehaviour
                     }
-                    else
+                    else // Jagged arrays
                     {
-                        udonType = typeof(VRC.Udon.UdonBehaviour);
+                        udonType = typeof(object[]);
                     }
                 }
-
-                if (udonType == null)
-                    udonType = type;
-
-                //userTypeToUdonTypeCache.Add(type, udonType);
+                else
+                {
+                    udonType = typeof(VRC.Udon.UdonBehaviour);
+                }
             }
+
+            if (udonType == null)
+                udonType = type;
+
+            udonType = RemapBaseType(udonType);
 
             return udonType;
         }

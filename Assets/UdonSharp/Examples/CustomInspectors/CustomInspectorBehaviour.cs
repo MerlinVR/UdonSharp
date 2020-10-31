@@ -1,5 +1,6 @@
 
 using UnityEngine;
+using VRC.SDKBase;
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR // These using statements must be wrapped in this check to prevent issues on builds
 using UnityEditor;
@@ -20,6 +21,8 @@ namespace UdonSharp.Examples.Inspectors
         public Vector3 orbitOrigin = new Vector3(0, 3f, 0);
 
         public CustomInspectorChildBehaviour[] childBehaviours;
+
+        public VRCStation[] stations;
     }
 
     // Editor scripts must be wrapped in a UNITY_EDITOR check to prevent issues while uploading worlds. The !COMPILER_UDONSHARP check prevents UdonSharp from throwing errors about unsupported code here.
@@ -27,12 +30,22 @@ namespace UdonSharp.Examples.Inspectors
     [CustomEditor(typeof(CustomInspectorBehaviour))]
     public class CustomInspectorEditor : Editor
     {
+        SerializedProperty stationProperty;
+
+        private void OnEnable()
+        {
+            stationProperty = serializedObject.FindProperty("stations");
+        }
+
         public override void OnInspectorGUI()
         {
             // Draws the default convert to UdonBehaviour button, program asset field, sync settings, etc.
             if (UdonSharpGUI.DrawDefaultUdonSharpBehaviourHeader(target)) return;
 
             CustomInspectorBehaviour inspectorBehaviour = (CustomInspectorBehaviour)target;
+
+            //EditorGUILayout.PropertyField(stationProperty, true);
+            //serializedObject.ApplyModifiedProperties();
 
             EditorGUI.BeginChangeCheck();
 

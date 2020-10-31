@@ -1819,11 +1819,9 @@ namespace UdonSharp.Compiler
         private bool HandleLocalUdonBehaviourPropertyLookup(string localUdonPropertyName)
         {
             PropertyInfo[] foundProperties = typeof(Component).GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(e => e.Name == localUdonPropertyName).ToArray();
-
+            
             if (localUdonPropertyName == "enabled")
-            {
-                throw new System.NotSupportedException("Udon does not expose the `enabled` property on UdonBehaviours try using gameObject.active instead and find my post on the canny complaining about it");
-            }
+                foundProperties = typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(e => e.Name == localUdonPropertyName).ToArray();
 
             if (foundProperties.Length == 0)
                 return false;
@@ -2006,6 +2004,14 @@ namespace UdonSharp.Compiler
             System.Type currentReturnType = GetReturnType();
 
             PropertyInfo[] foundProperties = currentReturnType.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == propertyToken).ToArray();
+
+            if (propertyToken == "enabled" &&
+                (currentReturnType == typeof(VRC.Udon.UdonBehaviour) ||
+                 currentReturnType == typeof(UdonSharpBehaviour) ||
+                 currentReturnType.IsSubclassOf(typeof(UdonSharpBehaviour))))
+            {
+                foundProperties = typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(e => e.Name == propertyToken).ToArray();
+            }
 
             if (foundProperties.Length == 0)
                 return false;

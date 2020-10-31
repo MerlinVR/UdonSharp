@@ -316,48 +316,6 @@ namespace UdonSharp
             return null;
         }
 
-        private static Dictionary<System.Type, System.Type> inheritedTypeMap = null;
-        private readonly static object inheritedTypeMapLock = new object();
-
-        private Dictionary<System.Type, System.Type> GetInheritedTypeMap()
-        {
-            if (inheritedTypeMap != null)
-                return inheritedTypeMap;
-
-            lock (inheritedTypeMapLock)
-            {
-                if (inheritedTypeMap != null)
-                    return inheritedTypeMap;
-
-                inheritedTypeMap = new Dictionary<System.Type, System.Type>();
-
-                IEnumerable<System.Type> typeList = System.AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == "VRCSDK3").GetTypes().Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
-
-                foreach (System.Type childType in typeList)
-                {
-                    if (childType.BaseType != null && childType.BaseType.Namespace.StartsWith("VRC.SDKBase"))
-                    {
-                        inheritedTypeMap.Add(childType.BaseType, childType);
-                    }
-                }
-
-                inheritedTypeMap.Add(typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
-                inheritedTypeMap.Add(typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
-            }
-
-            return inheritedTypeMap;
-        }
-
-        public System.Type RemapBaseType(System.Type type)
-        {
-            var typeMap = GetInheritedTypeMap();
-
-            if (typeMap.ContainsKey(type))
-                return typeMap[type];
-
-            return type;
-        }
-
         public string SanitizeTypeName(string typeName)
         {
             return typeName.Replace(",", "")
@@ -377,7 +335,7 @@ namespace UdonSharp
         public string GetUdonTypeName(System.Type externType, bool skipBaseTypeRemap = false)
         {
             if (!skipBaseTypeRemap)
-                externType = RemapBaseType(externType);
+                externType = UdonSharpUtils.RemapBaseType(externType);
 
             string externTypeName = externType.GetNameWithoutGenericArity();
             while (externType.IsArray || externType.IsByRef)
@@ -445,7 +403,7 @@ namespace UdonSharp
                 methodSourceType = genericArguments.First();
             }
 
-            methodSourceType = RemapBaseType(methodSourceType);
+            methodSourceType = UdonSharpUtils.RemapBaseType(methodSourceType);
 
             bool isUdonSharpBehaviour = false;
 
@@ -506,7 +464,7 @@ namespace UdonSharp
 
         public string GetUdonFieldAccessorName(FieldInfo externField, FieldAccessorType accessorType, bool validate = true)
         {
-            System.Type fieldType = RemapBaseType(externField.DeclaringType);
+            System.Type fieldType = UdonSharpUtils.RemapBaseType(externField.DeclaringType);
 
             string functionNamespace = SanitizeTypeName(fieldType.FullName).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
             string methodName = $"__{(accessorType == FieldAccessorType.Get ? "get" : "set")}_{externField.Name.Trim('_')}";

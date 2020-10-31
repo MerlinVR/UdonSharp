@@ -39,7 +39,23 @@ namespace UdonSharp.Tests
             tester.TestAssertion("String Join Objects params", string.Join(", ", this, this, this, this) == "MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour)"); 
             tester.TestAssertion("String Join Objects array", string.Join(", ", new object[] { this, this, this, this }) == "MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour)");
 
-            //tester.TestAssertion("Split test", "a b c d".Split(new [] { ' ' }, System.StringSplitOptions.None).Length == 4);
+            tester.TestAssertion("Split test", "a b c d".Split(new [] { ' ' }, System.StringSplitOptions.None).Length == 4);
+
+            enabled = false;
+            tester.TestAssertion("UdonBehaviour enabled", enabled == false);
+            enabled = true;
+
+            UdonSharpBehaviour self = this;
+
+            self.enabled = false;
+            tester.TestAssertion("UdonSharpBehaviour ref enabled", self.enabled == false);
+            self.enabled = true;
+
+            UdonBehaviour selfUdon = (UdonBehaviour)(Component)this;
+
+            selfUdon.enabled = false;
+            tester.TestAssertion("UdonBehaviour ref enabled", selfUdon.enabled == false);
+            selfUdon.enabled = true;
         }
 
         //public void test(int a, bool b, float c = 5f, params float[] d)
