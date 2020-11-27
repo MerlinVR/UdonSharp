@@ -637,7 +637,19 @@ namespace UdonSharp.Compiler
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
             {
                 SymbolDefinition arraySymbol = accessValue.symbol;
-                string setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Set").First());
+                string setIndexerUdonName;
+
+                if (arraySymbol.symbolCsType == typeof(Vector2) ||
+                    arraySymbol.symbolCsType == typeof(Vector3) ||
+                    arraySymbol.symbolCsType == typeof(Vector4) ||
+                    arraySymbol.symbolCsType == typeof(Matrix4x4))
+                {
+                    setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "set_Item" && e.GetParameters().Length == 2));
+                }
+                else
+                {
+                    setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Set").First());
+                }
 
                 visitorContext.uasmBuilder.AddPush(arraySymbol);
                 visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
@@ -1649,6 +1661,12 @@ namespace UdonSharp.Compiler
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
             {
                 SymbolDefinition arraySymbol = accessValue.symbol;
+
+                if (arraySymbol.symbolCsType == typeof(Vector2) ||
+                    arraySymbol.symbolCsType == typeof(Vector3) ||
+                    arraySymbol.symbolCsType == typeof(Vector4) ||
+                    arraySymbol.symbolCsType == typeof(Matrix4x4))
+                    return typeof(float);
 
                 if (!arraySymbol.symbolCsType.IsArray)
                     throw new System.Exception("Type is not an array type");

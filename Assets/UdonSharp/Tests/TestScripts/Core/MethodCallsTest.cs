@@ -61,10 +61,29 @@ namespace UdonSharp.Tests
 
             tester.TestAssertion("String indexer", testStr2[0] == 'h' && testStr2[1] == 'e' && testStr2[2] == 'l');
 
-            tester.TestAssertion("Vector2 indexer", new Vector2(1f, 2f)[1] == 2f);
-            tester.TestAssertion("Vector3 indexer", new Vector3(1f, 2f)[1] == 2f);
-            tester.TestAssertion("Vector4 indexer", new Vector4(1f, 2f)[1] == 2f);
-            tester.TestAssertion("Matrix4x4 indexer", Matrix4x4.identity[0] == 1f && Matrix4x4.identity[1] == 0f);
+            tester.TestAssertion("Vector2 get indexer", new Vector2(1f, 2f)[1] == 2f);
+            tester.TestAssertion("Vector3 get indexer", new Vector3(1f, 2f)[1] == 2f);
+            tester.TestAssertion("Vector4 get indexer", new Vector4(1f, 2f)[1] == 2f);
+            tester.TestAssertion("Matrix4x4 get indexer", Matrix4x4.identity[0] == 1f && Matrix4x4.identity[1] == 0f);
+
+            Vector2 vec2Test = new Vector2(1f, 2f);
+            vec2Test[0] = 4f;
+            tester.TestAssertion("Vector2 set indexer", vec2Test[0] == 4f);
+
+            Vector3 vec3Test = new Vector3(1f, 2f, 3f);
+            vec3Test[0] = 4f;
+            tester.TestAssertion("Vector3 set indexer", vec3Test[0] == 4f);
+
+            Vector4 vec4Test = new Vector4(1f, 2f, 3f, 4f);
+            vec4Test[0] = 4f;
+            tester.TestAssertion("Vector4 set indexer", vec4Test[0] == 4f);
+
+            Matrix4x4 mat4x4Test = Matrix4x4.identity;
+            mat4x4Test[1] = 4f;
+            tester.TestAssertion("Matrix4x4 set indexer", mat4x4Test[1] == 4f);
+
+            mat4x4Test[0] += 2f;
+            tester.TestAssertion("Matrix4x4 get and set in place", mat4x4Test[0] == 3f);
 
             tester.TestAssertion("U# Behaviour GetComponent", tester.GetComponent<IntegrationTestSuite>() != null);
             tester.TestAssertion("UdonBehaviour GetComponent", ((UdonBehaviour)(Component)tester).GetComponent<IntegrationTestSuite>() != null);
