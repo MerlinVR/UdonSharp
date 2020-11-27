@@ -281,23 +281,31 @@ namespace UdonSharpEditor
                         validator = validationDelegate;
                     else if (property != null)
                     {
-                        if (getFieldInfoFunc == null)
+                        // Just in case, we don't want to blow up default Unity UI stuff if something goes wrong here.
+                        try
                         {
-                            Assembly editorAssembly = AppDomain.CurrentDomain.GetAssemblies().First(e => e.GetName().Name == "UnityEditor");
+                            if (getFieldInfoFunc == null)
+                            {
+                                Assembly editorAssembly = AppDomain.CurrentDomain.GetAssemblies().First(e => e.GetName().Name == "UnityEditor");
 
-                            System.Type scriptAttributeUtilityType = editorAssembly.GetType("UnityEditor.ScriptAttributeUtility");
+                                System.Type scriptAttributeUtilityType = editorAssembly.GetType("UnityEditor.ScriptAttributeUtility");
 
-                            MethodInfo fieldInfoMethod = scriptAttributeUtilityType.GetMethod("GetFieldInfoFromProperty", BindingFlags.NonPublic | BindingFlags.Static);
+                                MethodInfo fieldInfoMethod = scriptAttributeUtilityType.GetMethod("GetFieldInfoFromProperty", BindingFlags.NonPublic | BindingFlags.Static);
 
-                            getFieldInfoFunc = (GetFieldInfoDelegate)Delegate.CreateDelegate(typeof(GetFieldInfoDelegate), fieldInfoMethod);
+                                getFieldInfoFunc = (GetFieldInfoDelegate)Delegate.CreateDelegate(typeof(GetFieldInfoDelegate), fieldInfoMethod);
+                            }
+
+                            getFieldInfoFunc(property, out System.Type fieldType);
+
+                            if (fieldType != null && (fieldType == typeof(UdonSharpBehaviour) || fieldType.IsSubclassOf(typeof(UdonSharpBehaviour))))
+                            {
+                                objType = fieldType;
+                                validator = validationDelegate;
+                            }
                         }
-
-                        getFieldInfoFunc(property, out System.Type fieldType);
-
-                        if (fieldType != null && (fieldType == typeof(UdonSharpBehaviour) || fieldType.IsSubclassOf(typeof(UdonSharpBehaviour))))
+                        catch (Exception)
                         {
-                            objType = fieldType;
-                            validator = validationDelegate;
+                            validator = null;
                         }
                     }
                 }
