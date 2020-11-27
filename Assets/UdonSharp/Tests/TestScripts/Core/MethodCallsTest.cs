@@ -60,6 +60,11 @@ namespace UdonSharp.Tests
             string testStr2 = "hello";
 
             tester.TestAssertion("String indexer", testStr2[0] == 'h' && testStr2[1] == 'e' && testStr2[2] == 'l');
+
+            tester.TestAssertion("Vector2 indexer", new Vector2(1f, 2f)[1] == 2f);
+            tester.TestAssertion("Vector3 indexer", new Vector3(1f, 2f)[1] == 2f);
+            tester.TestAssertion("Vector4 indexer", new Vector4(1f, 2f)[1] == 2f);
+            tester.TestAssertion("Matrix4x4 indexer", Matrix4x4.identity[0] == 1f && Matrix4x4.identity[1] == 0f);
         }
 
         //public void test(int a, bool b, float c = 5f, params float[] d)

@@ -517,9 +517,21 @@ namespace UdonSharp.Compiler
                     visitorContext.uasmBuilder.AddPush(subStrCharArrSymbol);
                     visitorContext.uasmBuilder.AddPush(visitorContext.topTable.CreateConstSymbol(typeof(int), 0)); // 0 index
                 }
+                else if (arraySymbol.symbolCsType == typeof(Vector2) ||
+                         arraySymbol.symbolCsType == typeof(Vector3) ||
+                         arraySymbol.symbolCsType == typeof(Vector4) ||
+                         arraySymbol.symbolCsType == typeof(Matrix4x4))
+                {
+                    elementType = typeof(float);
+
+                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "get_Item" && e.GetParameters().Length == 1));
+
+                    visitorContext.uasmBuilder.AddPush(arraySymbol);
+                    visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
+                }
                 else
                 {
-                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Get").First());
+                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
                     elementType = arraySymbol.userCsType.GetElementType();
 
                     visitorContext.uasmBuilder.AddPush(arraySymbol);
@@ -2201,7 +2213,12 @@ namespace UdonSharp.Compiler
 
             System.Type returnType = GetReturnType(true);
 
-            if (!returnType.IsArray && returnType != typeof(string)) // We have hacky handling for strings now
+            if (!returnType.IsArray && 
+                returnType != typeof(string) && // We have hacky handling for strings now
+                returnType != typeof(Vector2) &&
+                returnType != typeof(Vector3) &&
+                returnType != typeof(Vector4) &&
+                returnType != typeof(Matrix4x4))
                 throw new System.Exception("Can only run array indexers on array types");
 
             SymbolDefinition cowIndexerSymbol = indexerValue.symbol;
