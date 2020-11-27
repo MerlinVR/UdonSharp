@@ -11,8 +11,10 @@ namespace UdonSharp.Examples.Utilities
         public float jumpHeight = 3f;
         public float runSpeed = 4f;
         public float walkSpeed = 2f;
+        public float strafeSpeed = 2f;
         public float gravity = 1f;
 
+        [Tooltip("Enables legacy locomotion which allows stutter stepping and wall climbing")]
         public bool useLegacyLocomotion = false;
 
         void Start()
@@ -25,6 +27,7 @@ namespace UdonSharp.Examples.Utilities
                 playerApi.SetJumpImpulse(jumpHeight);
                 playerApi.SetRunSpeed(runSpeed);
                 playerApi.SetWalkSpeed(walkSpeed);
+                playerApi.SetStrafeSpeed(strafeSpeed);
                 playerApi.SetGravityStrength(gravity);
 
                 if (useLegacyLocomotion)
