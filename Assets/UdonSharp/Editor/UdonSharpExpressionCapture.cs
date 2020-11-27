@@ -1375,25 +1375,36 @@ namespace UdonSharp.Compiler
             if (targetMethod == null)
             {
                 targetMethod = visitorContext.resolverContext.FindBestOverloadFunction(captureMethods, invokeParams.Select(e => e.symbolCsType).ToList(), false);
-                if (targetMethod != null)
+
+                if (targetMethod != null &&
+                    targetMethod.ReflectedType == typeof(VRC.Udon.UdonBehaviour) &&
+                    targetMethod.Name.StartsWith("GetComponent") &&
+                    ((MethodInfo)targetMethod).ReturnType.IsGenericParameter)
                 {
-                    throw new System.Exception($"Method is not exposed to Udon: {targetMethod}, Udon signature: {visitorContext.resolverContext.GetUdonMethodName(targetMethod, false)}");
-                }
-
-                string udonFilteredMethods = "";
-
-                udonFilteredMethods = string.Join("\n", captureMethods
-                    .Select(e => new System.Tuple<MethodBase, string>(e, visitorContext.resolverContext.GetUdonMethodName(e, false)))
-                    .Where(e => !visitorContext.resolverContext.IsValidUdonMethod(e.Item2))
-                    .Select(e => e.Item1));
-
-                if (udonFilteredMethods.Length > 0)
-                {
-                    throw new System.Exception($"Could not find valid method that exists in Udon.\nList of applicable methods that do not exist:\n{udonFilteredMethods}");
+                    // Uhh just skip the else stuff
                 }
                 else
                 {
-                    throw new System.Exception("Could not find valid method for given parameters!");
+                    if (targetMethod != null)
+                    {
+                        throw new System.Exception($"Method is not exposed to Udon: {targetMethod}, Udon signature: {visitorContext.resolverContext.GetUdonMethodName(targetMethod, false)}");
+                    }
+
+                    string udonFilteredMethods = "";
+
+                    udonFilteredMethods = string.Join("\n", captureMethods
+                        .Select(e => new System.Tuple<MethodBase, string>(e, visitorContext.resolverContext.GetUdonMethodName(e, false)))
+                        .Where(e => !visitorContext.resolverContext.IsValidUdonMethod(e.Item2))
+                        .Select(e => e.Item1));
+
+                    if (udonFilteredMethods.Length > 0)
+                    {
+                        throw new System.Exception($"Could not find valid method that exists in Udon.\nList of applicable methods that do not exist:\n{udonFilteredMethods}");
+                    }
+                    else
+                    {
+                        throw new System.Exception("Could not find valid method for given parameters!");
+                    }
                 }
             }
 

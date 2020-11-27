@@ -65,6 +65,9 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Vector3 indexer", new Vector3(1f, 2f)[1] == 2f);
             tester.TestAssertion("Vector4 indexer", new Vector4(1f, 2f)[1] == 2f);
             tester.TestAssertion("Matrix4x4 indexer", Matrix4x4.identity[0] == 1f && Matrix4x4.identity[1] == 0f);
+
+            tester.TestAssertion("U# Behaviour GetComponent", tester.GetComponent<IntegrationTestSuite>() != null);
+            tester.TestAssertion("UdonBehaviour GetComponent", ((UdonBehaviour)(Component)tester).GetComponent<IntegrationTestSuite>() != null);
         }
 
         //public void test(int a, bool b, float c = 5f, params float[] d)
