@@ -56,6 +56,10 @@ namespace UdonSharp.Tests
             selfUdon.enabled = false;
             tester.TestAssertion("UdonBehaviour ref enabled", selfUdon.enabled == false);
             selfUdon.enabled = true;
+
+            string testStr2 = "hello";
+
+            tester.TestAssertion("String indexer", testStr2[0] == 'h' && testStr2[1] == 'e' && testStr2[2] == 'l');
         }
 
         //public void test(int a, bool b, float c = 5f, params float[] d)

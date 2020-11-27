@@ -489,21 +489,47 @@ namespace UdonSharp.Compiler
                 string getIndexerUdonName;
                 if (arraySymbol.symbolCsType == typeof(string))
                 {
-                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "get_Chars").First());
+                    // udon-workaround: This is where support for Udon's string indexer would go, IF IT HAD ONE
+                    //getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "get_Chars").First());
+                    
                     elementType = typeof(char);
+
+                    SymbolDefinition substringStrSymbol;
+                    using (ExpressionCaptureScope substringScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        substringScope.SetToLocalSymbol(arraySymbol);
+                        substringScope.ResolveAccessToken(nameof(string.Substring));
+
+                        substringStrSymbol = substringScope.Invoke(new SymbolDefinition[] { arrayIndexerIndexValue.symbol, visitorContext.topTable.CreateConstSymbol(typeof(int), 1) });
+                    }
+
+                    SymbolDefinition subStrCharArrSymbol;
+
+                    using (ExpressionCaptureScope charArrScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        charArrScope.SetToLocalSymbol(substringStrSymbol);
+                        charArrScope.ResolveAccessToken(nameof(string.ToCharArray));
+
+                        subStrCharArrSymbol = charArrScope.Invoke(new SymbolDefinition[] { });
+                    }
+
+                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(typeof(char[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
+                    visitorContext.uasmBuilder.AddPush(subStrCharArrSymbol);
+                    visitorContext.uasmBuilder.AddPush(visitorContext.topTable.CreateConstSymbol(typeof(int), 0)); // 0 index
                 }
                 else
                 {
                     getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Get").First());
                     elementType = arraySymbol.userCsType.GetElementType();
+
+                    visitorContext.uasmBuilder.AddPush(arraySymbol);
+                    visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
                 }
 
                 arrayBacktraceValue = accessValue;
 
                 outSymbol = AllocateOutputSymbol(elementType);
 
-                visitorContext.uasmBuilder.AddPush(arraySymbol);
-                visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
                 visitorContext.uasmBuilder.AddPush(outSymbol);
                 visitorContext.uasmBuilder.AddExternCall(getIndexerUdonName);
             }
@@ -2175,7 +2201,7 @@ namespace UdonSharp.Compiler
 
             System.Type returnType = GetReturnType(true);
 
-            if (!returnType.IsArray/* && returnType != typeof(string)*/) // Uncomment the check for string when VRC has added the actual indexer function to Udon. 
+            if (!returnType.IsArray && returnType != typeof(string)) // We have hacky handling for strings now
                 throw new System.Exception("Can only run array indexers on array types");
 
             SymbolDefinition cowIndexerSymbol = indexerValue.symbol;
