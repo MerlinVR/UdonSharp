@@ -19,6 +19,7 @@ namespace UdonSharp.Compiler
         This = 64, // defines one of the 3 builtin `this` assignments for UdonBehaviour, GameObject, and Transform
         Reflection = 128, // Metadata information for type checking and other editor time info
         Readonly = 256, // Symbols marked as either const or readonly by the user, treat them the same for now. 
+        MethodParameter = 512, // Symbols used for passing around method parameters
     }
 
     [Serializable]
@@ -657,6 +658,10 @@ namespace UdonSharp.Compiler
                 uniqueSymbolName = $"const_{uniqueSymbolName}";
                 hasGlobalDeclaration = true;
             }
+            if (declType.HasFlag(SymbolDeclTypeFlags.MethodParameter))
+            {
+                uniqueSymbolName = $"mp_{uniqueSymbolName}";
+            }
             if (declType.HasFlag(SymbolDeclTypeFlags.This))
             {
                 uniqueSymbolName = $"this_{uniqueSymbolName}";
@@ -690,6 +695,7 @@ namespace UdonSharp.Compiler
                 throw new System.ArgumentException($"Could not locate Udon type for system type {resolvedSymbolType.FullName}");
             
             udonTypeName = udonTypeName.Replace("VRCUdonCommonInterfacesIUdonEventReceiver", "VRCUdonUdonBehaviour");
+            //udonTypeName = udonTypeName.Replace("VRCUdonUdonBehaviourArray", "VRCUdonCommonInterfacesIUdonEventReceiverArray");
 
             SymbolDefinition symbolDefinition = new SymbolDefinition();
             symbolDefinition.declarationType = declType;
@@ -761,12 +767,12 @@ namespace UdonSharp.Compiler
 
             while (currentTable != null)
             {
-                //foreach (SymbolDefinition symbolDefinition in currentTable.symbolDefinitions)
                 for (int i = currentTable.symbolDefinitions.Count - 1; i >= 0; --i)
                 {
                     SymbolDefinition symbolDefinition = currentTable.symbolDefinitions[i];
 
                     if (!symbolDefinition.declarationType.HasFlag(SymbolDeclTypeFlags.Internal) &&
+                        (!currentTable.IsGlobalSymbolTable || !symbolDefinition.declarationType.HasFlag(SymbolDeclTypeFlags.MethodParameter)) && // Method parameters are declared globally, but only valid in their current local scope
                         symbolDefinition.symbolOriginalName == symbolName)
                     {
                         return symbolDefinition;

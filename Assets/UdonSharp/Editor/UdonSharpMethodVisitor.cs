@@ -82,7 +82,7 @@ namespace UdonSharp.Compiler
 
                     paramDef.type = paramTypeCapture.captureType;
                     paramDef.symbolName = parameter.Identifier.ValueText;
-                    paramDef.paramSymbol = visitorContext.topTable.CreateNamedSymbol(parameter.Identifier.ValueText, paramDef.type, SymbolDeclTypeFlags.Local);
+                    paramDef.paramSymbol = visitorContext.topTable.CreateNamedSymbol(parameter.Identifier.ValueText, paramDef.type, SymbolDeclTypeFlags.Local | SymbolDeclTypeFlags.MethodParameter);
                 }
 
                 methodDefinition.parameters[i] = paramDef;
