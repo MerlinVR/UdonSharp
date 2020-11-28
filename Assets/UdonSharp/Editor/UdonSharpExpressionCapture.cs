@@ -700,6 +700,54 @@ namespace UdonSharp.Compiler
             return requestedDestination;
         }
 
+        Dictionary<System.Type, SymbolDefinition> _enumCastSymbols;
+
+        /// <summary>
+        /// Creates a const object array that is populated with each value of an enum which can be used for integer casts
+        /// </summary>
+        /// <param name="enumType"></param>
+        /// <returns></returns>
+        SymbolDefinition GetEnumArrayForType(System.Type enumType)
+        {
+            if (_enumCastSymbols == null) // Lazy init since this will relatively never be used
+                _enumCastSymbols = new Dictionary<System.Type, SymbolDefinition>();
+
+            SymbolDefinition enumArraySymbol;
+            if (_enumCastSymbols.TryGetValue(enumType, out enumArraySymbol))
+                return enumArraySymbol;
+
+            int maxEnumVal = 0;
+            foreach (var enumVal in System.Enum.GetValues(enumType))
+                maxEnumVal = (int)enumVal > maxEnumVal ? (int)enumVal : maxEnumVal;
+
+            // After a survey of what enums are exposed by Udon, it doesn't seem like anything goes above this limit. The only things I see that go past this are some System.Reflection enums which are unlikely to ever be exposed.
+            if (maxEnumVal > 2048)
+                throw new System.NotSupportedException($"Cannot cast integer to enum {enumType.Name} because target enum has too many potential states({maxEnumVal}) to contain in an UdonBehaviour reasonably");
+
+            // Find the most significant bit of this enum so we can generate all combinations <= it
+            int mostSignificantBit = 0;
+            int currentEnumVal = maxEnumVal;
+
+            while (currentEnumVal > 0)
+            {
+                currentEnumVal >>= 1;
+                ++mostSignificantBit;
+            }
+
+            int enumValCount = (1 << mostSignificantBit) - 1;
+
+            object[] enumConstArr = new object[enumValCount];
+
+            for (int i = 0; i < enumConstArr.Length; ++i)
+                enumConstArr[i] = System.Enum.ToObject(enumType, i);
+
+            enumArraySymbol = visitorContext.topTable.CreateConstSymbol(typeof(object[]), enumConstArr);
+
+            _enumCastSymbols.Add(enumType, enumArraySymbol);
+
+            return enumArraySymbol;
+        }
+
         // There's probably a better place for this function...
         public SymbolDefinition CastSymbolToType(SymbolDefinition sourceSymbol, System.Type targetType, bool isExplicit, bool needsNewSymbol = false, SymbolDefinition requestedDestination = null)
         {
@@ -836,6 +884,25 @@ namespace UdonSharp.Compiler
                     visitorContext.uasmBuilder.AddPush(sourceSymbol);
                     visitorContext.uasmBuilder.AddPush(castOutput);
                     visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(foundConversion));
+
+                    return castOutput;
+                }
+
+                // Int to enum cast
+                if (UdonSharpUtils.IsIntegerType(sourceSymbol.symbolCsType) && targetType.IsEnum)
+                {
+                    SymbolDefinition enumArraySymbol = GetEnumArrayForType(targetType);
+
+                    SymbolDefinition indexSymbol = CastSymbolToType(sourceSymbol, typeof(int), true);
+                    
+                    SymbolDefinition castOutput = requestedDestination != null ? requestedDestination : visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
+
+                    string objArrayGetMethod = visitorContext.resolverContext.GetUdonMethodName(typeof(object[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
+
+                    visitorContext.uasmBuilder.AddPush(enumArraySymbol);
+                    visitorContext.uasmBuilder.AddPush(indexSymbol);
+                    visitorContext.uasmBuilder.AddPush(castOutput);
+                    visitorContext.uasmBuilder.AddExternCall(objArrayGetMethod);
 
                     return castOutput;
                 }

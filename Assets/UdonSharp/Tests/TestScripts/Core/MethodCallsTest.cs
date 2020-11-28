@@ -87,6 +87,10 @@ namespace UdonSharp.Tests
 
             tester.TestAssertion("U# Behaviour GetComponent", tester.GetComponent<IntegrationTestSuite>() != null);
             tester.TestAssertion("UdonBehaviour GetComponent", ((UdonBehaviour)(Component)tester).GetComponent<IntegrationTestSuite>() != null);
+
+            RigidbodyConstraints constraints = (RigidbodyConstraints)126;
+
+            tester.TestAssertion("Enum cast", constraints == RigidbodyConstraints.FreezeAll);
         }
 
         //public void test(int a, bool b, float c = 5f, params float[] d)
