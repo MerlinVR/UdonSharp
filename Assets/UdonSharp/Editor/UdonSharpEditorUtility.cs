@@ -12,6 +12,7 @@ using UnityEngine.Profiling;
 using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Editor.ProgramSources;
+using VRC.Udon.EditorBindings;
 
 namespace UdonSharpEditor
 {
@@ -38,15 +39,34 @@ namespace UdonSharpEditor
 
             udonSharpProgramAsset.CompileCsProgram();
 
-            FieldInfo assemblyField = typeof(UdonAssemblyProgramAsset).GetField("udonAssembly", BindingFlags.NonPublic | BindingFlags.Instance);
-            assemblyField.SetValue(newProgramAsset, UdonSharpEditorCache.Instance.GetUASMStr(udonSharpProgramAsset));
+            string programAssembly = UdonSharpEditorCache.Instance.GetUASMStr(udonSharpProgramAsset);
 
-            MethodInfo assembleMethod = typeof(UdonAssemblyProgramAsset).GetMethod("AssembleProgram", BindingFlags.NonPublic | BindingFlags.Instance);
-            assembleMethod.Invoke(newProgramAsset, new object[] { });
+            FieldInfo assemblyField = typeof(UdonAssemblyProgramAsset).GetField("udonAssembly", BindingFlags.NonPublic | BindingFlags.Instance);
+            assemblyField.SetValue(newProgramAsset, programAssembly);
+
+            IUdonProgram program = null;
+
+            try
+            {
+                UdonSharp.HeapFactory heapFactory = new UdonSharp.HeapFactory();
+
+                UdonEditorInterface editorInterface = new UdonEditorInterface(null, heapFactory, null, null, null, null, null, null, null);
+                heapFactory.FactoryHeapSize = udonSharpProgramAsset.GetSerializedUdonProgramAsset().RetrieveProgram().Heap.GetHeapCapacity();
+
+                program = editorInterface.Assemble(programAssembly);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError(e);
+
+                return null;
+            }
+
+            FieldInfo assemblyProgramField = typeof(UdonProgramAsset).GetField("program", BindingFlags.NonPublic | BindingFlags.Instance);
+            assemblyProgramField.SetValue(newProgramAsset, program);
 
             IUdonProgram uSharpProgram = udonSharpProgramAsset.GetRealProgram();
-            FieldInfo assemblyProgramGetter = typeof(UdonProgramAsset).GetField("program", BindingFlags.NonPublic | BindingFlags.Instance);
-            IUdonProgram assemblyProgram = (IUdonProgram)assemblyProgramGetter.GetValue(newProgramAsset);
+            IUdonProgram assemblyProgram = (IUdonProgram)assemblyProgramField.GetValue(newProgramAsset);
 
             if (uSharpProgram == null || assemblyProgram == null)
                 return null;
