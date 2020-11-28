@@ -41,6 +41,22 @@ namespace UdonSharp.Tests
             }
 
             tester.TestAssertion("Foreach string loop", builtStr == helloStr);
+
+            GameObject[] gameObjects = new GameObject[2000];
+            int gameObjectLen = gameObjects.Length;
+
+            for (int i = 0; i < gameObjects.Length; ++i)
+            {
+                gameObjects[i] = gameObject;
+            }
+
+            System.DateTime startTime = System.DateTime.UtcNow;
+            for (int i = 0; i < gameObjects.Length; ++i)
+            {
+                gameObjects[i] = gameObject;
+            }
+
+            tester.TestAssertion("Array indexer performance", (System.DateTime.UtcNow - startTime).TotalSeconds < 1f);
         }
     }
 }

@@ -486,8 +486,10 @@ namespace UdonSharp.Compiler
                 SymbolDefinition arraySymbol = accessValue.symbol;
                 System.Type elementType = null;
 
+                System.Type arraySymbolType = arraySymbol.symbolCsType;
+
                 string getIndexerUdonName;
-                if (arraySymbol.symbolCsType == typeof(string))
+                if (arraySymbolType == typeof(string))
                 {
                     // udon-workaround: This is where support for Udon's string indexer would go, IF IT HAD ONE
                     //getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "get_Chars").First());
@@ -517,21 +519,27 @@ namespace UdonSharp.Compiler
                     visitorContext.uasmBuilder.AddPush(subStrCharArrSymbol);
                     visitorContext.uasmBuilder.AddPush(visitorContext.topTable.CreateConstSymbol(typeof(int), 0)); // 0 index
                 }
-                else if (arraySymbol.symbolCsType == typeof(Vector2) ||
-                         arraySymbol.symbolCsType == typeof(Vector3) ||
-                         arraySymbol.symbolCsType == typeof(Vector4) ||
-                         arraySymbol.symbolCsType == typeof(Matrix4x4))
+                else if (arraySymbolType == typeof(Vector2) ||
+                         arraySymbolType == typeof(Vector3) ||
+                         arraySymbolType == typeof(Vector4) ||
+                         arraySymbolType == typeof(Matrix4x4))
                 {
                     elementType = typeof(float);
 
-                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "get_Item" && e.GetParameters().Length == 1));
+                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbolType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "get_Item" && e.GetParameters().Length == 1));
 
                     visitorContext.uasmBuilder.AddPush(arraySymbol);
                     visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
                 }
                 else
                 {
-                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
+                    // udon-workaround: VRC scans UnityEngine.Object arrays in their respective methods, so those methods are useless since they get disproportionately expensive the larger the array is.
+                    // Instead use the object[] indexer for these objects since it does not get scanned
+                    if (arraySymbolType.GetElementType() == typeof(UnityEngine.Object) || arraySymbolType.GetElementType().IsSubclassOf(typeof(UnityEngine.Object)))
+                        getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(typeof(object[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
+                    else
+                        getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbolType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
+
                     elementType = arraySymbol.userCsType.GetElementType();
 
                     visitorContext.uasmBuilder.AddPush(arraySymbol);
@@ -638,17 +646,23 @@ namespace UdonSharp.Compiler
             {
                 SymbolDefinition arraySymbol = accessValue.symbol;
                 string setIndexerUdonName;
+                System.Type arraySymbolType = arraySymbol.symbolCsType;
 
-                if (arraySymbol.symbolCsType == typeof(Vector2) ||
-                    arraySymbol.symbolCsType == typeof(Vector3) ||
-                    arraySymbol.symbolCsType == typeof(Vector4) ||
-                    arraySymbol.symbolCsType == typeof(Matrix4x4))
+                if (arraySymbolType == typeof(Vector2) ||
+                    arraySymbolType == typeof(Vector3) ||
+                    arraySymbolType == typeof(Vector4) ||
+                    arraySymbolType == typeof(Matrix4x4))
                 {
                     setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "set_Item" && e.GetParameters().Length == 2));
                 }
                 else
                 {
-                    setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Set").First());
+                    // udon-workaround: VRC scans UnityEngine.Object arrays in their respective methods, so those methods are useless since they get disproportionately expensive the larger the array is.
+                    // Instead use the object[] indexer for these objects since it does not get scanned
+                    if (arraySymbolType.GetElementType() == typeof(UnityEngine.Object) || arraySymbolType.GetElementType().IsSubclassOf(typeof(UnityEngine.Object)))
+                        setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(typeof(object[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Set"));
+                    else
+                        setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbolType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Set"));
                 }
 
                 visitorContext.uasmBuilder.AddPush(arraySymbol);
@@ -886,7 +900,7 @@ namespace UdonSharp.Compiler
                     return castOutput;
                 }
 
-                // Int to enum cast
+                // udon-workaround: Int to enum cast
                 if (UdonSharpUtils.IsIntegerType(sourceSymbol.symbolCsType) && targetType.IsEnum)
                 {
                     SymbolDefinition enumArraySymbol = GetEnumArrayForType(targetType);
