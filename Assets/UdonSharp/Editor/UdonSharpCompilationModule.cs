@@ -79,13 +79,33 @@ namespace UdonSharp.Compiler
             result.programAsset = programAsset;
 
             moduleSymbols.OpenSymbolTable();
+
+            ClassDebugInfo debugInfo = null;
+
+            if (settings == null || settings.buildDebugInfo)
+            {
+                debugInfo = new ClassDebugInfo(sourceCode, settings == null || settings.includeInlineCode);
+            }
+
+            UdonSharpFieldVisitor fieldVisitor = new UdonSharpFieldVisitor(fieldsWithInitializers, resolver, moduleSymbols, moduleLabels, classDefinitions, debugInfo);
             
-            UdonSharpFieldVisitor fieldVisitor = new UdonSharpFieldVisitor(fieldsWithInitializers);
-            fieldVisitor.Visit(syntaxTree.GetRoot());
+            try
+            {
+                fieldVisitor.Visit(syntaxTree.GetRoot());
+            }
+            catch (System.Exception e)
+            {
+                LogException(result, e, fieldVisitor.visitorContext.currentNode, out string logMessage);
+
+                programAsset.compileErrors.Add(logMessage);
+
+                ErrorCount++;
+            }
+
+            if (ErrorCount > 0)
+                return result;
 
             MethodVisitor methodVisitor = new MethodVisitor(resolver, moduleSymbols, moduleLabels);
-
-            int errorCount = 0;
 
             try
             {
@@ -97,18 +117,11 @@ namespace UdonSharp.Compiler
 
                 programAsset.compileErrors.Add(logMessage);
 
-                errorCount++;
+                ErrorCount++;
             }
 
             if (ErrorCount > 0)
                 return result;
-
-            ClassDebugInfo debugInfo = null;
-
-            if (settings == null || settings.buildDebugInfo)
-            {
-                debugInfo = new ClassDebugInfo(sourceCode, settings == null || settings.includeInlineCode);
-            }
 
             ASTVisitor visitor = new ASTVisitor(resolver, moduleSymbols, moduleLabels, methodVisitor.definedMethods, classDefinitions, debugInfo);
 
@@ -123,17 +136,17 @@ namespace UdonSharp.Compiler
                 
                 programAsset.compileErrors.Add(logMessage);
 
-                errorCount++;
+                ErrorCount++;
             }
 
-            if (errorCount > 0)
+            if (ErrorCount > 0)
             {
                 return result;
             }
 
             moduleSymbols.CloseSymbolTable();
 
-            if (errorCount == 0)
+            if (ErrorCount == 0)
             {
                 compiledClassDefinition = classDefinitions.Find(e => e.userClassType == visitor.visitorContext.behaviourUserType);
 
@@ -145,7 +158,7 @@ namespace UdonSharp.Compiler
 
                 programAsset.behaviourIDHeapVarName = visitor.GetIDHeapVarName();
 
-                programAsset.fieldDefinitions = visitor.visitorContext.localFieldDefinitions;
+                programAsset.fieldDefinitions = fieldVisitor.visitorContext.localFieldDefinitions;
 #if UDON_BETA_SDK
                 programAsset.behaviourSyncMode = visitor.visitorContext.behaviourSyncMode;
 #endif
