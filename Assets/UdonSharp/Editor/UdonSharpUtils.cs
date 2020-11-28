@@ -201,6 +201,10 @@ namespace UdonSharp
             if (IsNumericImplicitCastValid(targetType, assignee))
                 return true;
 
+            // We use void as a placeholder for a null constant value getting passed in, if null is passed in and the target type is a reference type then we assume they are compatible
+            if (assignee == typeof(void) && !targetType.IsValueType)
+                return true;
+
             // Handle user-defined implicit conversion operators defined on both sides
             // Roughly follows https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/conversions#processing-of-user-defined-implicit-conversions
 

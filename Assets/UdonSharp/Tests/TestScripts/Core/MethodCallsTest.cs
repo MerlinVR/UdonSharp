@@ -91,16 +91,14 @@ namespace UdonSharp.Tests
             RigidbodyConstraints constraints = (RigidbodyConstraints)126;
 
             tester.TestAssertion("Enum cast", constraints == RigidbodyConstraints.FreezeAll);
+
+            Transform currentParent = transform.parent;
+
+            transform.SetParent(null);
+
+            tester.TestAssertion("Transform detach parent (null parameter method finding)", transform.parent == null);
+
+            transform.SetParent(currentParent);
         }
-
-        //public void test(int a, bool b, float c = 5f, params float[] d)
-        //{
-        //    test(a, b);
-        //}
-
-        //public void test2(params object[] strings)
-        //{
-        //    test2(new string[] { "aa", "bbb" });
-        //}
     }
 }

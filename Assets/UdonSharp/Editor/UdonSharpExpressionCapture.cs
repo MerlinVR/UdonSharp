@@ -1460,19 +1460,30 @@ namespace UdonSharp.Compiler
 
         private SymbolDefinition InvokeExtern(SymbolDefinition[] invokeParams)
         {
+            // We use void as a placeholder for a null constant value getting passed in, if null is passed in and the target type is a reference type then we assume they are compatible
+            List<System.Type> typeList = invokeParams.Select(e =>
+            {
+                if (e.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) &&
+                    e.symbolCsType == typeof(object) &&
+                    e.symbolDefaultValue == null)
+                    return typeof(void);
+
+                return e.symbolCsType;
+            }).ToList();
+
             // Find valid overrides
-            MethodBase targetMethod = visitorContext.resolverContext.FindBestOverloadFunction(captureMethods, invokeParams.Select(e => e.symbolCsType).ToList());
+            MethodBase targetMethod = visitorContext.resolverContext.FindBestOverloadFunction(captureMethods, typeList);
 
             if (targetMethod == null)
             {
-                targetMethod = visitorContext.resolverContext.FindBestOverloadFunction(captureMethods, invokeParams.Select(e => e.symbolCsType).ToList(), false);
+                targetMethod = visitorContext.resolverContext.FindBestOverloadFunction(captureMethods, typeList, false);
 
                 if (targetMethod != null &&
                     targetMethod.ReflectedType == typeof(VRC.Udon.UdonBehaviour) &&
                     targetMethod.Name.StartsWith("GetComponent") &&
                     ((MethodInfo)targetMethod).ReturnType.IsGenericParameter)
                 {
-                    // Uhh just skip the else stuff
+                    // Uhh just skip the else stuff, this fixes GetComponent(s) on UdonBehaviour variables.
                 }
                 else
                 {
