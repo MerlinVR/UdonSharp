@@ -65,7 +65,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
         // Debug settings
         public bool buildDebugInfo = true;
         public bool includeInlineCode = true;
-        public bool listenForVRCExceptions = false;
+        public bool listenForVRCExceptions = true;
 
         public bool shouldForceCompile = false;
 
