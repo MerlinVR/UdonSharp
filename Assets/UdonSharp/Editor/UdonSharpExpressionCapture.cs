@@ -700,8 +700,6 @@ namespace UdonSharp.Compiler
             return requestedDestination;
         }
 
-        Dictionary<System.Type, SymbolDefinition> _enumCastSymbols;
-
         /// <summary>
         /// Creates a const object array that is populated with each value of an enum which can be used for integer casts
         /// </summary>
@@ -709,11 +707,11 @@ namespace UdonSharp.Compiler
         /// <returns></returns>
         SymbolDefinition GetEnumArrayForType(System.Type enumType)
         {
-            if (_enumCastSymbols == null) // Lazy init since this will relatively never be used
-                _enumCastSymbols = new Dictionary<System.Type, SymbolDefinition>();
+            if (visitorContext.enumCastSymbols == null) // Lazy init since this will relatively never be used
+                visitorContext.enumCastSymbols = new Dictionary<System.Type, SymbolDefinition>();
 
             SymbolDefinition enumArraySymbol;
-            if (_enumCastSymbols.TryGetValue(enumType, out enumArraySymbol))
+            if (visitorContext.enumCastSymbols.TryGetValue(enumType, out enumArraySymbol))
                 return enumArraySymbol;
 
             int maxEnumVal = 0;
@@ -743,7 +741,7 @@ namespace UdonSharp.Compiler
 
             enumArraySymbol = visitorContext.topTable.CreateConstSymbol(typeof(object[]), enumConstArr);
 
-            _enumCastSymbols.Add(enumType, enumArraySymbol);
+            visitorContext.enumCastSymbols.Add(enumType, enumArraySymbol);
 
             return enumArraySymbol;
         }
