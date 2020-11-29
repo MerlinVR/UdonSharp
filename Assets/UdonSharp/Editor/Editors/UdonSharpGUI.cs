@@ -1382,8 +1382,7 @@ namespace UdonSharpEditor
             {
                 newCollisionTransfer = false;
 
-                if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
-                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                GUI.changed = true;
             }
             EditorGUI.EndDisabledGroup();
 
