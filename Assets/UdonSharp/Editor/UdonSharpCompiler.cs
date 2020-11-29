@@ -42,6 +42,10 @@ namespace UdonSharp.Compiler
         private CompilationModule[] modules;
         private bool isEditorBuild = true;
 
+        public delegate void ProgramAssetCompileCallback(UdonSharpProgramAsset programAsset);
+        public static event ProgramAssetCompileCallback beforeProgramAssetCompile;
+        public static event ProgramAssetCompileCallback afterProgramAssetCompile;
+
         private static int initAssemblyCounter = 0;
 
         public UdonSharpCompiler(UdonSharpProgramAsset programAsset, bool editorBuild = true)
@@ -76,6 +80,9 @@ namespace UdonSharp.Compiler
                 {
                     if (programAsset == null || programAsset.sourceCsScript == null)
                         continue;
+
+                    if (beforeProgramAssetCompile != null)
+                        beforeProgramAssetCompile(programAsset);
 
                     programAssetsAndPaths.Add((programAsset, AssetDatabase.GetAssetPath(programAsset.sourceCsScript)));
                 }
@@ -241,6 +248,15 @@ namespace UdonSharp.Compiler
                     {
                         UdonSharpEditorCache.Instance.ClearSourceHash(module.programAsset);
                     }
+                }
+
+                foreach (UdonSharpProgramAsset programAsset in allPrograms)
+                {
+                    if (programAsset == null || programAsset.sourceCsScript == null)
+                        continue;
+
+                    if (afterProgramAssetCompile != null)
+                        afterProgramAssetCompile(programAsset);
                 }
             }
             finally
