@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -43,8 +44,12 @@ namespace UdonSharp.Compiler
         private bool isEditorBuild = true;
 
         public delegate void ProgramAssetCompileCallback(UdonSharpProgramAsset programAsset);
-        public static event ProgramAssetCompileCallback beforeProgramAssetCompile;
-        public static event ProgramAssetCompileCallback afterProgramAssetCompile;
+        public delegate void CompileCallback();
+
+        [PublicAPI] public static event CompileCallback beforeCompile;
+        [PublicAPI] public static event CompileCallback afterCompile;
+        [PublicAPI] public static event ProgramAssetCompileCallback beforeProgramAssetCompile;
+        [PublicAPI] public static event ProgramAssetCompileCallback afterProgramAssetCompile;
 
         private static int initAssemblyCounter = 0;
 
@@ -81,10 +86,32 @@ namespace UdonSharp.Compiler
                     if (programAsset == null || programAsset.sourceCsScript == null)
                         continue;
 
-                    if (beforeProgramAssetCompile != null)
-                        beforeProgramAssetCompile(programAsset);
-
                     programAssetsAndPaths.Add((programAsset, AssetDatabase.GetAssetPath(programAsset.sourceCsScript)));
+                }
+
+                try
+                {
+                    beforeCompile?.Invoke();
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"Exception thrown by pre compile listener\n{e}");
+                }
+
+                foreach (CompilationModule module in modules)
+                {
+                    UdonSharpProgramAsset programAsset = module.programAsset;
+                    if (programAsset == null || programAsset.sourceCsScript == null)
+                        continue;
+
+                    try
+                    {
+                        beforeProgramAssetCompile?.Invoke(programAsset);
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogError($"Exception thrown by pre program asset compile listener\n{e}");
+                    }
                 }
 
                 object syntaxTreeLock = new object();
@@ -250,13 +277,29 @@ namespace UdonSharp.Compiler
                     }
                 }
 
-                foreach (UdonSharpProgramAsset programAsset in allPrograms)
+                foreach (CompilationModule module in modules)
                 {
+                    UdonSharpProgramAsset programAsset = module.programAsset;
                     if (programAsset == null || programAsset.sourceCsScript == null)
                         continue;
 
-                    if (afterProgramAssetCompile != null)
-                        afterProgramAssetCompile(programAsset);
+                    try
+                    {
+                        afterProgramAssetCompile?.Invoke(programAsset);
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogError($"Exception thrown by post program asset compile listener\n{e}");
+                    }
+                }
+
+                try
+                {
+                    afterCompile?.Invoke();
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"Exception thrown by post compile listener\n{e}");
                 }
             }
             finally
