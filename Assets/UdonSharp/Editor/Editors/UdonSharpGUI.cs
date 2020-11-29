@@ -1377,6 +1377,9 @@ namespace UdonSharpEditor
             if (behaviour.GetComponent<Collider>() != null)
             {
                 newCollisionTransfer = EditorGUILayout.Toggle(ownershipTransferOnCollisionContent, behaviour.AllowCollisionOwnershipTransfer);
+
+                if (newCollisionTransfer)
+                    EditorGUILayout.HelpBox("Collision transfer is currently bugged and can cause network spam that lags your world, use at your own risk.", MessageType.Warning);
             }
             else if(newCollisionTransfer)
             {
