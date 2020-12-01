@@ -15,9 +15,28 @@ namespace UdonSharp.Tests
         
         public GameObject modObject;
 
+        Transform[] transforms;
+
+        //Transform transformIn;
+
+        //private void Start()
+        //{
+        //    SetProgramVariable("transformIn", transform);
+
+        //    Debug.Log(transformIn.GetComponent<Transform>().position);
+        //}
+
         public void ExecuteTests()
         {
+            transforms = new[] { transform, transform };
+
+            // Udon StrongBox assignment test
+            transforms[1].GetComponentInChildren<BoxCollider>().enabled = false;
+            transforms[1].GetComponentInChildren<BoxCollider>().enabled = true;
+            
             tester.TestAssertion("GetComponent<Transform>()", GetComponent<Transform>() != null);
+
+            tester.TestAssertion("GetComponent(typeof(Transform))", GetComponent(typeof(Transform)) != null);
 
             BoxCollider[] colliders = GetComponentsInChildren<BoxCollider>();
 
