@@ -593,9 +593,9 @@ namespace UdonSharpEditor
                             array.SetValue(null, i);
                     }
                 }
-                else if (rootArray.GetType() != rootArrayType)
+                else if (rootArray.GetType() != UdonSharpUtils.UserTypeToUdonType(rootArrayType))
                 {
-                    System.Type targetElementType = rootArrayType.GetElementType();
+                    System.Type targetElementType = UdonSharpUtils.UserTypeToUdonType(rootArrayType).GetElementType();
 
                     if (!targetElementType.IsArray /*&& (rootArray.GetType().GetElementType() == null || !rootArray.GetType().GetElementType().IsArray)*/)
                     {
