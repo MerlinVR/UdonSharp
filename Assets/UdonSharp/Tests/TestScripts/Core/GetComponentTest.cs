@@ -39,8 +39,8 @@ namespace UdonSharp.Tests
             tester.TestAssertion("GetComponent(typeof(Transform))", GetComponent(typeof(Transform)) != null);
 
             BoxCollider[] colliders = GetComponentsInChildren<BoxCollider>();
-
-            tester.TestAssertion("GetComponentsInChildren<BoxCollider>()", colliders.Length == 2);
+            
+            tester.TestAssertion("GetComponentsInChildren<BoxCollider>()", colliders.Length == 3);
 
             tester.TestAssertion("GetComponentInChildren<NameOf>()", GetComponentInChildren<NameOf>() != null);
 
