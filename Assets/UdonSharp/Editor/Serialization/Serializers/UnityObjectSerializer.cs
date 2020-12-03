@@ -31,14 +31,31 @@ namespace UdonSharp.Serialization
                 return;
             }
 
-            ValueStorage<T> storage = sourceObject as ValueStorage<T>;
+            IValueStorage storage = sourceObject as ValueStorage<T>;
             if (storage == null)
             {
-                Debug.LogError($"Type {typeof(T)} not compatible with serializer {sourceObject}");
-                return;
+                System.Type storageType = sourceObject.GetType().GetGenericArguments()[0];
+
+                if (typeof(T).IsSubclassOf(storageType))
+                {
+                    storage = sourceObject;
+                }
+                else if (targetObject != null && targetObject.GetType().IsAssignableFrom(storageType))
+                {
+                    storage = sourceObject;
+                }
+                else if (targetObject == null && storageType.IsSubclassOf(typeof(T)))
+                {
+                    storage = sourceObject;
+                }
+                else
+                {
+                    Debug.LogError($"Type {typeof(T)} not compatible with serializer {sourceObject}");
+                    return;
+                }
             }
 
-            targetObject = storage.Value;
+            targetObject = (T)storage.Value;
         }
 
         public override void Write(IValueStorage targetObject, in T sourceObject)
@@ -51,11 +68,27 @@ namespace UdonSharp.Serialization
                 return;
             }
 
-            ValueStorage<T> storage = targetObject as ValueStorage<T>;
+            IValueStorage storage = targetObject as ValueStorage<T>;
             if (storage == null)
             {
-                Debug.LogError($"Type {typeof(T)} not compatible with serializer {targetObject}");
-                return;
+                System.Type storageType = targetObject.GetType().GetGenericArguments()[0];
+                if (typeof(T).IsSubclassOf(storageType))
+                {
+                    storage = targetObject;
+                }
+                else if (sourceObject != null && storageType.IsAssignableFrom(sourceObject.GetType()))
+                {
+                    storage = targetObject;
+                }
+                else if (sourceObject == null && storageType.IsSubclassOf(typeof(T)))
+                {
+                    storage = targetObject;
+                }
+                else
+                {
+                    Debug.LogError($"Type {typeof(T)} not compatible with serializer {targetObject}");
+                    return;
+                }
             }
 
             // This is checking for UnityEngine.Object's special "null" which is not actually null
