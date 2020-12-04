@@ -535,10 +535,9 @@ namespace UdonSharp.Compiler
                 {
                     // udon-workaround: VRC scans UnityEngine.Object arrays in their respective methods, so those methods are useless since they get disproportionately expensive the larger the array is.
                     // Instead use the object[] indexer for these objects since it does not get scanned
-                    // Breaks GetComponent(s)<T> since they depend on the heap strongbox type which gets changed to System.Object here instead of just getting the component assigned
-                    //if (arraySymbolType.GetElementType() == typeof(UnityEngine.Object) || arraySymbolType.GetElementType().IsSubclassOf(typeof(UnityEngine.Object)))
-                    //    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(typeof(object[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
-                    //else
+                    if (arraySymbolType.GetElementType() == typeof(UnityEngine.Object) || arraySymbolType.GetElementType().IsSubclassOf(typeof(UnityEngine.Object)))
+                        getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(typeof(object[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
+                    else
                         getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbolType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
 
                     elementType = arraySymbol.userCsType.GetElementType();
