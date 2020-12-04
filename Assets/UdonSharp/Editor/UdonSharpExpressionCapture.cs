@@ -1512,7 +1512,8 @@ namespace UdonSharp.Compiler
             }
 
             SymbolDefinition[] expandedParams = GetExpandedInvokeParams(targetMethod, invokeParams);
-            bool isUserTypeGetComponent = targetMethod.Name.StartsWith("GetComponent") && genericTypeArguments != null && genericTypeArguments.First().IsSubclassOf(typeof(UdonSharpBehaviour));
+            bool isGetComponent = targetMethod.Name.StartsWith("GetComponent") && genericTypeArguments != null;
+            bool isUserTypeGetComponent = isGetComponent && genericTypeArguments.First().IsSubclassOf(typeof(UdonSharpBehaviour));
 
             // Now make the needed symbol definitions and run the invoke
             if (!targetMethod.IsStatic && !(targetMethod is ConstructorInfo)/* && targetMethod.Name != "Instantiate"*/) // Constructors don't take an instance argument, but are still classified as an instance method
@@ -1527,8 +1528,23 @@ namespace UdonSharp.Compiler
                         visitorContext.uasmBuilder.AddPush(transformComponentGetScope.ExecuteGet());
                     }
                 }
-                else
+                else if (isGetComponent)
                 {
+                    // udon-workaround: Works around a bug in Udon's GetComponent methods that require a variable with the **StrongBox** type of Transform or GameObject, instead of the actual variable type
+                    // This means that if the strongbox of the variable for the object we're getting changes, then GetComponent will start failing
+
+                    MethodInfo getTransformMethod = typeof(Component).GetProperty("transform", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
+
+                    SymbolDefinition outputTransformComponent = visitorContext.topTable.CreateUnnamedSymbol(typeof(Transform), SymbolDeclTypeFlags.Internal);
+
+                    visitorContext.uasmBuilder.AddPush(accessSymbol);
+                    visitorContext.uasmBuilder.AddPush(outputTransformComponent);
+                    visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(getTransformMethod), "GetComponent strongbox mismatch fix");
+
+                    visitorContext.uasmBuilder.AddPush(outputTransformComponent);
+                }
+                else
+                { 
                     visitorContext.uasmBuilder.AddPush(accessSymbol);
                 }
             }

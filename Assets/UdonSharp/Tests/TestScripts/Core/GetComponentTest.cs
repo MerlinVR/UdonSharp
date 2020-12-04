@@ -17,17 +17,14 @@ namespace UdonSharp.Tests
 
         Transform[] transforms;
 
-        //Transform transformIn;
-
-        //private void Start()
-        //{
-        //    SetProgramVariable("transformIn", transform);
-
-        //    Debug.Log(transformIn.GetComponent<Transform>().position);
-        //}
+        Transform transformIn;
 
         public void ExecuteTests()
         {
+            SetProgramVariable("transformIn", transform);
+
+            tester.TestAssertion("GetComponent on object strongbox", transformIn.GetComponent<Transform>().position != Vector3.one * 1000f); // Shouldn't throw
+
             transforms = new[] { transform, transform };
 
             // Udon StrongBox assignment test
