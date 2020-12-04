@@ -900,6 +900,8 @@ GameObject:
   - component: {fileID: 534102783}
   - component: {fileID: 534102780}
   - component: {fileID: 534102782}
+  - component: {fileID: 534102785}
+  - component: {fileID: 534102784}
   m_Layer: 0
   m_Name: SerializationTest
   m_TagString: Untagged
@@ -994,6 +996,43 @@ MonoBehaviour:
   publicVariablesUnityEngineObjects:
   - {fileID: 534102780}
   publicVariablesSerializationDataFormat: 0
+--- !u!114 &534102784
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 534102779}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1743794047, guid: 661092b4961be7145bfbe56e1e62337b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  videoURL:
+    url: 
+  autoPlay: 1
+  loop: 1
+  maximumResolution: 720
+--- !u!114 &534102785
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 534102779}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 1073094524, guid: 661092b4961be7145bfbe56e1e62337b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  PlayerMobility: 1
+  canUseStationFromStation: 1
+  animatorController: {fileID: 0}
+  disableStationExit: 0
+  seated: 1
+  stationEnterPlayerLocation: {fileID: 0}
+  stationExitPlayerLocation: {fileID: 0}
+  controlsObject: {fileID: 0}
 --- !u!1 &537557771
 GameObject:
   m_ObjectHideFlags: 0
@@ -6998,7 +7037,7 @@ MonoBehaviour:
   interactTextGO: {fileID: 0}
   proximity: 2
   SynchronizePosition: 0
-  AllowCollisionOwnershipTransfer: 1
+  AllowCollisionOwnershipTransfer: 0
   serializedProgramAsset: {fileID: 11400000, guid: 68d8eee2becedbc43b62ce8457edf59c,
     type: 2}
   programSource: {fileID: 11400000, guid: 399f041c3cb27e246ab4aab3fc18dbc9, type: 2}
