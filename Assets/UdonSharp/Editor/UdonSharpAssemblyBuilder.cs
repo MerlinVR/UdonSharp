@@ -95,7 +95,8 @@ namespace UdonSharp.Compiler
 
             assemblyTextBuilder.Append($"{new string(' ', indent * 4)}{line}");
             if (comment.Length > 0)
-                assemblyTextBuilder.Append($" #{comment}");
+                assemblyTextBuilder.Append($" # {comment}");
+
             assemblyTextBuilder.Append("\n"); // Keep consistent between Linux/Windows
         }
 

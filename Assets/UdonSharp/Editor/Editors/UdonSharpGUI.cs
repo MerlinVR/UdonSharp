@@ -403,7 +403,7 @@ namespace UdonSharpEditor
 
                 EditorGUILayout.Space();
 
-                editorState.showProgramUasm = EditorGUILayout.Foldout(editorState.showProgramUasm, "Compiled C# Udon Assembly");
+                editorState.showProgramUasm = EditorGUILayout.Foldout(editorState.showProgramUasm, "Compiled C# Udon Assembly", true);
                 if (editorState.showProgramUasm)
                 {
                     programAsset.DrawAssemblyText();
@@ -411,7 +411,7 @@ namespace UdonSharpEditor
 
                 if (programAsset.GetRealProgram() != null)
                 {
-                    editorState.showProgramDisassembly = EditorGUILayout.Foldout(editorState.showProgramDisassembly, "Program Disassembly");
+                    editorState.showProgramDisassembly = EditorGUILayout.Foldout(editorState.showProgramDisassembly, "Program Disassembly", true);
                     if (editorState.showProgramDisassembly)
                         programAsset.DrawProgramDisassembly();
                 }
