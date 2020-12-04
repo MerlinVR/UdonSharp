@@ -565,6 +565,8 @@ namespace UdonSharpEditor
             if (rootArray == null)
                 return true;
 
+            System.Type arrayStorageType = UdonSharpUtils.UserTypeToUdonType(rootArrayType);
+
             if (arrayDimensionCount == currentDepth)
             {
                 System.Type elementType = rootArrayType.GetElementType();
@@ -593,15 +595,15 @@ namespace UdonSharpEditor
                             array.SetValue(null, i);
                     }
                 }
-                else if (rootArray.GetType() != UdonSharpUtils.UserTypeToUdonType(rootArrayType))
+                else if (rootArray.GetType() != arrayStorageType)
                 {
-                    System.Type targetElementType = UdonSharpUtils.UserTypeToUdonType(rootArrayType).GetElementType();
+                    System.Type targetElementType = arrayStorageType.GetElementType();
 
                     if (!targetElementType.IsArray /*&& (rootArray.GetType().GetElementType() == null || !rootArray.GetType().GetElementType().IsArray)*/)
                     {
                         Array rootArrayArr = (Array)rootArray;
                         int arrayLen = rootArrayArr.Length;
-                        Array newArray = (Array)Activator.CreateInstance(rootArrayType, new object[] { arrayLen });
+                        Array newArray = (Array)Activator.CreateInstance(arrayStorageType, new object[] { arrayLen });
                         rootArray = newArray;
                         modifiedArray = true;
 
