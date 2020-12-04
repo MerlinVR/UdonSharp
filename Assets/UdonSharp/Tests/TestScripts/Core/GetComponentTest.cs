@@ -17,7 +17,7 @@ namespace UdonSharp.Tests
 
         Transform[] transforms;
 
-        Transform transformIn;
+        Transform transformIn = null;
 
         public void ExecuteTests()
         {
