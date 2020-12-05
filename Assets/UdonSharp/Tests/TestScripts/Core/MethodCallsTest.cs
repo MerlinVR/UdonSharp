@@ -92,6 +92,11 @@ namespace UdonSharp.Tests
 
             tester.TestAssertion("Enum cast", constraints == RigidbodyConstraints.FreezeAll);
 
+            constraints = RigidbodyConstraints.FreezePosition;
+
+            tester.TestAssertion("Enum assignment after cast", constraints == RigidbodyConstraints.FreezePosition);
+            tester.TestAssertion("Enum type after cast", (RigidbodyConstraints)126 == RigidbodyConstraints.FreezeAll);
+
             Transform currentParent = transform.parent;
 
             transform.SetParent(null);

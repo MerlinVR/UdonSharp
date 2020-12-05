@@ -25,6 +25,8 @@ namespace UdonSharp.Tests
 
             tester.TestAssertion("GetComponent on object strongbox", transformIn.GetComponent<Transform>().position != Vector3.one * 1000f); // Shouldn't throw
 
+            tester.TestAssertion("GetComponent UdonSharp Type", transformIn.GetComponent<GetComponentTest>() != null);
+
             transforms = new[] { transform, transform };
 
             // Udon StrongBox assignment test
