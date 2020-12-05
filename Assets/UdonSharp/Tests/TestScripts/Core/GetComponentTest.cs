@@ -27,6 +27,12 @@ namespace UdonSharp.Tests
 
             tester.TestAssertion("GetComponent UdonSharp Type", transformIn.GetComponent<GetComponentTest>() != null);
 
+            tester.TestAssertion("GetComponent on GameObject", transformIn.gameObject.GetComponent<Transform>() != null);
+
+            tester.TestAssertion("GetComponent user type on GameObject", transformIn.gameObject.GetComponent<GetComponentTest>() != null);
+            
+            tester.TestAssertion("GetComponent on GameObject 2", GameObject.Find("GetComponents").GetComponent<GetComponentTest>() != null);
+
             transforms = new[] { transform, transform };
 
             // Udon StrongBox assignment test

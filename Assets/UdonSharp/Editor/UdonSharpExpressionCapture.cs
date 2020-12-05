@@ -1527,7 +1527,7 @@ namespace UdonSharp.Compiler
                         visitorContext.uasmBuilder.AddPush(transformComponentGetScope.ExecuteGet());
                     }
                 }
-                else if (isGetComponent)
+                else if (isGetComponent && !isUserTypeGetComponent)
                 {
                     // udon-workaround: Works around a bug in Udon's GetComponent methods that require a variable with the **StrongBox** type of Transform or GameObject, instead of the actual variable type
                     // This means that if the strongbox of the variable for the object we're getting changes, then GetComponent will start failing
