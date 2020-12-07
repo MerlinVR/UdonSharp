@@ -195,13 +195,6 @@ namespace UdonSharp.Compiler
             }
         }
 
-        public override void VisitSimpleBaseType(SimpleBaseTypeSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            Visit(node.Type);
-        }
-
         public override void VisitBaseList(BaseListSyntax node)
         {
             UpdateSyntaxNode(node);
@@ -308,11 +301,6 @@ namespace UdonSharp.Compiler
             visitorContext.uasmBuilder.AppendLine(".code_end", 0);
         }
 
-        public override void VisitEmptyStatement(EmptyStatementSyntax node)
-        {
-            UpdateSyntaxNode(node);
-        }
-
         public override void VisitBlock(BlockSyntax node)
         {
             UpdateSyntaxNode(node);
@@ -354,13 +342,6 @@ namespace UdonSharp.Compiler
             UpdateSyntaxNode(node);
 
             throw new System.NotSupportedException("Default expressions are not yet supported by UdonSharp");
-        }
-
-        public override void VisitEnumDeclaration(EnumDeclarationSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            throw new System.NotSupportedException("UdonSharp does not yet support user defined enums");
         }
         
         public override void VisitTryStatement(TryStatementSyntax node)
@@ -2194,13 +2175,6 @@ namespace UdonSharp.Compiler
 
                 invocationArgs.ForEach((arg) => arg.Dispose());
             }
-        }
-
-        public override void VisitNullableType(NullableTypeSyntax node)
-        {
-            UpdateSyntaxNode(node);
-
-            throw new System.NotImplementedException("Nullable types are not currently supported by UdonSharp");
         }
 
         // Constructors

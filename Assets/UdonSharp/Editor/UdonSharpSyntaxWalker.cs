@@ -56,6 +56,31 @@ namespace UdonSharp.Compiler
             Visit(node.Expression);
         }
 
+        public override void VisitSimpleBaseType(SimpleBaseTypeSyntax node)
+        {
+            UpdateSyntaxNode(node);
+            Visit(node.Type);
+        }
+
+        public override void VisitEmptyStatement(EmptyStatementSyntax node)
+        {
+            UpdateSyntaxNode(node);
+        }
+
+        public override void VisitNullableType(NullableTypeSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            throw new System.NotImplementedException("Nullable types are not currently supported by UdonSharp");
+        }
+
+        public override void VisitEnumDeclaration(EnumDeclarationSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            throw new System.NotSupportedException("UdonSharp does not yet support user defined enums");
+        }
+
         public override void VisitTypeOfExpression(TypeOfExpressionSyntax node)
         {
             UpdateSyntaxNode(node);
