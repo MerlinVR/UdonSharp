@@ -243,6 +243,9 @@ namespace UdonSharpEditor
                     {
                         foreach (UnityEngine.Object reference in references)
                         {
+                            if (reference == null)
+                                continue;
+
                             System.Type refType = reference.GetType();
 
                             if (objType.IsAssignableFrom(refType))
