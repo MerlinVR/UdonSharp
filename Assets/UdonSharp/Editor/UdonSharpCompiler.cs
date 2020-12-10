@@ -62,6 +62,39 @@ namespace UdonSharp.Compiler
             isEditorBuild = editorBuild;
         }
 
+        void CheckProgramAssetCollisions(UdonSharpProgramAsset[] programs)
+        {
+            EditorUtility.DisplayProgressBar("UdonSharp Compile", "Validating Program Assets...", 0f);
+
+            Dictionary<MonoScript, List<UdonSharpProgramAsset>> scriptToAssetMap = new Dictionary<MonoScript, List<UdonSharpProgramAsset>>();
+
+            foreach (UdonSharpProgramAsset programAsset in programs)
+            {
+                if (programAsset == null || programAsset.sourceCsScript == null)
+                    continue;
+
+                // Add program asset to map to check if there are any duplicate program assets that point to the same script
+                List<UdonSharpProgramAsset> programAssetList;
+                if (!scriptToAssetMap.TryGetValue(programAsset.sourceCsScript, out programAssetList))
+                {
+                    programAssetList = new List<UdonSharpProgramAsset>();
+                    scriptToAssetMap.Add(programAsset.sourceCsScript, programAssetList);
+                }
+
+                programAssetList.Add(programAsset);
+            }
+            
+            foreach (var scriptAssetMapping in scriptToAssetMap)
+            {
+                if (scriptAssetMapping.Value.Count > 1)
+                {
+                    Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] Script {Path.GetFileName(AssetDatabase.GetAssetPath(scriptAssetMapping.Key))} is referenced by {scriptAssetMapping.Value.Count} UdonSharpProgramAssets, scripts should only be referenced by 1 program asset. This will cause issues.\n" +
+                        "Referenced program assets:\n" +
+                        string.Join(",\n", scriptAssetMapping.Value.Select(e => AssetDatabase.GetAssetPath(e))));
+                }
+            }
+        }
+
         public void Compile()
         {
             Profiler.BeginSample("UdonSharp Compile");
@@ -73,8 +106,8 @@ namespace UdonSharp.Compiler
 
             try
             {
-                EditorUtility.DisplayProgressBar("UdonSharp Compile", "Parsing Syntax Trees...", 0f);
-                
+                EditorUtility.DisplayProgressBar("UdonSharp Compile", "Initializing...", 0f);
+
                 UdonSharpProgramAsset[] allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
                 List<(UdonSharpProgramAsset, string)> programAssetsAndPaths = new List<(UdonSharpProgramAsset, string)>();
 
@@ -85,6 +118,10 @@ namespace UdonSharp.Compiler
 
                     programAssetsAndPaths.Add((programAsset, AssetDatabase.GetAssetPath(programAsset.sourceCsScript)));
                 }
+
+                CheckProgramAssetCollisions(allPrograms);
+
+                EditorUtility.DisplayProgressBar("UdonSharp Compile", "Parsing Syntax Trees...", 0f);
 
                 UdonSharpProgramAsset[] programAssetsToCompile = modules.Select(e => e.programAsset).Where(e => e != null && e.sourceCsScript != null).ToArray();
 
