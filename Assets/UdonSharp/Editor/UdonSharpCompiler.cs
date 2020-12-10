@@ -121,9 +121,9 @@ namespace UdonSharp.Compiler
 
                 CheckProgramAssetCollisions(allPrograms);
 
-                EditorUtility.DisplayProgressBar("UdonSharp Compile", "Parsing Syntax Trees...", 0f);
-
                 UdonSharpProgramAsset[] programAssetsToCompile = modules.Select(e => e.programAsset).Where(e => e != null && e.sourceCsScript != null).ToArray();
+                
+                EditorUtility.DisplayProgressBar("UdonSharp Compile", "Executing pre-build events...", 0f);
 
                 try
                 {
@@ -133,6 +133,8 @@ namespace UdonSharp.Compiler
                 {
                     Debug.LogError($"Exception thrown by pre compile listener\n{e}");
                 }
+
+                EditorUtility.DisplayProgressBar("UdonSharp Compile", "Parsing Syntax Trees...", 0f);
 
                 object syntaxTreeLock = new object();
                 List<(UdonSharpProgramAsset, Microsoft.CodeAnalysis.SyntaxTree)> programsAndSyntaxTrees = new List<(UdonSharpProgramAsset, Microsoft.CodeAnalysis.SyntaxTree)>();
@@ -296,6 +298,8 @@ namespace UdonSharp.Compiler
                         UdonSharpEditorCache.Instance.ClearSourceHash(module.programAsset);
                     }
                 }
+                
+                EditorUtility.DisplayProgressBar("UdonSharp Compile", "Executing post-build events...", 1f);
 
                 try
                 {
