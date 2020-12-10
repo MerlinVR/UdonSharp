@@ -544,12 +544,18 @@ namespace UdonSharp
 
             return type;
         }
-
-        // Doesn't work in a multi threaded context, todo: consider making this a concurrent collection or making one for each thread.
-        //private static Dictionary<System.Type, System.Type> userTypeToUdonTypeCache = new Dictionary<System.Type, System.Type>();
+        
+        [ThreadStatic]
+        private static Dictionary<System.Type, System.Type> userTypeToUdonTypeCache;
 
         public static System.Type UserTypeToUdonType(System.Type type)
         {
+            if (userTypeToUdonTypeCache == null)
+                userTypeToUdonTypeCache = new Dictionary<Type, Type>();
+
+            if (userTypeToUdonTypeCache.TryGetValue(type, out System.Type foundType))
+                return foundType;
+            
             System.Type udonType = null;
 
             if (IsUserDefinedType(type))
@@ -575,6 +581,8 @@ namespace UdonSharp
                 udonType = type;
 
             udonType = RemapBaseType(udonType);
+            
+            userTypeToUdonTypeCache.Add(type, udonType);
 
             return udonType;
         }
