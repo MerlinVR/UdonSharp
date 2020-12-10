@@ -519,6 +519,8 @@ namespace UdonSharp.Compiler
             return namespaceStr + nestedTypeStr + type.Name;
         }
 
+        private static List<MetadataReference> metadataReferences;
+
         private int RunFieldInitalizers(CompilationModule[] compiledModules)
         {
             CompilationModule[] modulesToInitialize = compiledModules.Where(e => e.fieldsWithInitializers.Count > 0).ToArray();
@@ -616,32 +618,36 @@ namespace UdonSharp.Compiler
                 initializerTrees[moduleIdx] = syntaxTree;
             }
 
-            var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
-            var references = new List<MetadataReference>();
-            for (int i = 0; i < assemblies.Length; i++)
+            if (metadataReferences == null)
             {
-                if (!assemblies[i].IsDynamic && assemblies[i].Location.Length > 0)
+                var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
+                metadataReferences = new List<MetadataReference>();
+
+                for (int i = 0; i < assemblies.Length; i++)
                 {
-                    PortableExecutableReference executableReference = null;
-
-                    try
+                    if (!assemblies[i].IsDynamic && assemblies[i].Location.Length > 0)
                     {
-                        executableReference = MetadataReference.CreateFromFile(assemblies[i].Location);
-                    }
-                    catch (System.Exception e)
-                    {
-                        Debug.LogError($"Unable to locate assembly {assemblies[i].Location} Exception: {e}");
-                    }
+                        PortableExecutableReference executableReference = null;
 
-                    if (executableReference != null)
-                        references.Add(executableReference);
+                        try
+                        {
+                            executableReference = MetadataReference.CreateFromFile(assemblies[i].Location);
+                        }
+                        catch (System.Exception e)
+                        {
+                            Debug.LogError($"Unable to locate assembly {assemblies[i].Location} Exception: {e}");
+                        }
+
+                        if (executableReference != null)
+                            metadataReferences.Add(executableReference);
+                    }
                 }
             }
 
             CSharpCompilation compilation = CSharpCompilation.Create(
                 $"UdonSharpInitAssembly{initAssemblyCounter++}",
                 syntaxTrees: initializerTrees,
-                references: references,
+                references: metadataReferences,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
             using (var memoryStream = new MemoryStream())
