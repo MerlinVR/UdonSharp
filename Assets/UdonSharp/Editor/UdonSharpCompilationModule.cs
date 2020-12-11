@@ -73,8 +73,6 @@ namespace UdonSharp.Compiler
 
         public CompileTaskResult Compile(List<ClassDefinition> classDefinitions, Microsoft.CodeAnalysis.SyntaxTree syntaxTree, string sourceCode, bool isEditorBuild)
         {
-            programAsset.compileErrors.Clear();
-
             CompileTaskResult result = new CompileTaskResult();
             result.programAsset = programAsset;
 

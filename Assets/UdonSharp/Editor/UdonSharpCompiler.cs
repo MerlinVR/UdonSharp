@@ -117,6 +117,8 @@ namespace UdonSharp.Compiler
                         continue;
 
                     programAssetsAndPaths.Add((programAsset, AssetDatabase.GetAssetPath(programAsset.sourceCsScript)));
+
+                    programAsset.compileErrors.Clear(); // Clear compile errors to keep them from stacking if not resolved
                 }
 
                 CheckProgramAssetCollisions(allPrograms);
