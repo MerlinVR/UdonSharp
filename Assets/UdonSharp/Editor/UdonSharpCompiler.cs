@@ -683,7 +683,17 @@ namespace UdonSharp.Compiler
 
                         System.Type cls = assembly.GetType($"FieldInitialzers.Initializer{moduleIdx}");
                         MethodInfo methodInfo = cls.GetMethod("DoInit", BindingFlags.Public | BindingFlags.Static);
-                        methodInfo.Invoke(null, new object[] { program, typeof(UdonSharpCompiler).GetMethod("SetHeapField", BindingFlags.NonPublic | BindingFlags.Static) });
+
+                        try
+                        {
+                            methodInfo.Invoke(null, new object[] { program, typeof(UdonSharpCompiler).GetMethod("SetHeapField", BindingFlags.NonPublic | BindingFlags.Static) });
+                        }
+                        catch (System.Exception e)
+                        {
+                            UdonSharpUtils.LogBuildError($"Exception encountered in field initializer: {e}", AssetDatabase.GetAssetPath(module.programAsset.sourceCsScript), 0, 0);
+                            initializerErrorCount++;
+                            break;
+                        }
 
                         foreach (var fieldDeclarationSyntax in module.fieldsWithInitializers)
                         {
