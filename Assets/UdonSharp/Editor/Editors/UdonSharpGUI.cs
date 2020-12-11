@@ -446,6 +446,8 @@ namespace UdonSharpEditor
 
                 if (chosenFilePath.Length > 0)
                 {
+                    chosenFilePath = UdonSharpSettings.SanitizeScriptFilePath(chosenFilePath);
+
                     string fileContents = UdonSharpSettings.GetProgramTemplateString(Path.GetFileNameWithoutExtension(chosenFilePath));
 
                     File.WriteAllText(chosenFilePath, fileContents, System.Text.Encoding.UTF8);

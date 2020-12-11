@@ -295,7 +295,11 @@ namespace UdonSharp
         [PublicAPI]
         public System.Type GetClass()
         {
-            return sourceCsScript?.GetClass();
+            // Needs to be an explicit null check because of Unity's object equality operator overloads
+            if (sourceCsScript != null)
+                return sourceCsScript.GetClass();
+
+            return null;
         }
 
         static UdonEditorInterface editorInterfaceInstance;

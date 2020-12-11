@@ -74,6 +74,7 @@ namespace UdonSharpEditor
 
             if (chosenFilePath.Length > 0)
             {
+                chosenFilePath = UdonSharpSettings.SanitizeScriptFilePath(chosenFilePath);
                 string chosenFileName = Path.GetFileNameWithoutExtension(chosenFilePath).Replace(" ", "").Replace("#", "Sharp");
                 string assetFilePath = Path.Combine(Path.GetDirectoryName(chosenFilePath), $"{chosenFileName}.asset");
 

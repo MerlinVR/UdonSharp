@@ -1,5 +1,6 @@
 ﻿
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UdonSharpEditor;
 using UnityEditor;
@@ -98,16 +99,36 @@ public class <TemplateClassName> : UdonSharpBehaviour
             return new SerializedObject(GetOrCreateSettings());
         }
 
+        static string SanitizeName(string name)
+        {
+            return name.Replace(" ", "")
+                        .Replace("#", "Sharp")
+                        .Replace("(", "")
+                        .Replace(")", "")
+                        .Replace("*", "")
+                        .Replace("<", "")
+                        .Replace(">", "")
+                        .Replace("-", "_")
+                        .Replace("!", "")
+                        .Replace("$", "")
+                        .Replace("@", "")
+                        .Replace("+", "");
+        }
+
+        // Unity does not like having scripts with different names from their classes and will start breaking things weirdly, so enforce it by default. 
+        // If people really want to rename the asset afterwards they can, but there will be a compile warning that they can't get rid of without fixing the names.
+        internal static string SanitizeScriptFilePath(string file)
+        {
+            string fileName = SanitizeName(Path.GetFileNameWithoutExtension(file));
+
+            string filePath = Path.GetDirectoryName(file);
+
+            return $"{filePath}/{fileName}{Path.GetExtension(file)}";
+        }
+
         public static string GetProgramTemplateString(string scriptName)
         {
-            scriptName = scriptName.Replace(" ", "")
-                                   .Replace("#", "Sharp")
-                                   .Replace("(", "")
-                                   .Replace(")", "")
-                                   .Replace("*", "")
-                                   .Replace("<", "")
-                                   .Replace(">", "")
-                                   .Replace("-", "_");
+            scriptName = SanitizeName(scriptName);
 
             UdonSharpSettings settings = GetSettings();
 
