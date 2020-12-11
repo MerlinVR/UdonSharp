@@ -557,10 +557,54 @@ namespace UdonSharpEditor
             UdonSharpGUI.DrawPublicVariables(behaviour, udonSharpProgramAsset, ref dirty);
         }
 
-        // Force repaint for variable update in play mode
         public override bool RequiresConstantRepaint()
         {
-            return Application.isPlaying;
+            // Force repaint for variable update in play mode
+            bool requiresConstantRepaintDefaultReturnValue = Application.isPlaying;
+
+            if (PrefabUtility.IsPartOfPrefabAsset(target))
+                return requiresConstantRepaintDefaultReturnValue;
+
+            UdonBehaviour behaviour = target as UdonBehaviour;
+
+            if (behaviour.programSource == null ||
+                !(behaviour.programSource is UdonSharpProgramAsset udonSharpProgram) ||
+                udonSharpProgram.sourceCsScript == null)
+                return requiresConstantRepaintDefaultReturnValue;
+
+            System.Type customEditorType = null;
+            System.Type inspectedType = udonSharpProgram.sourceCsScript.GetClass();
+            if (inspectedType != null)
+                customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(inspectedType);
+
+            if (customEditorType == null)
+                return requiresConstantRepaintDefaultReturnValue;
+
+            MethodInfo requiresConstantRepaintMethod = customEditorType.GetMethod("RequiresConstantRepaint", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { }, null);
+
+            if (requiresConstantRepaintMethod == null)
+                return requiresConstantRepaintDefaultReturnValue;
+
+            udonSharpProgram.UpdateProgram();
+
+            if (baseEditor != null && baseEditor.GetType() != customEditorType)
+            {
+                DestroyImmediate(baseEditor);
+                baseEditor = null;
+            }
+
+            UdonSharpBehaviour inspectorTarget = UdonSharpEditorUtility.GetProxyBehaviour(behaviour, ProxySerializationPolicy.All);
+            inspectorTarget.enabled = false;
+
+            Editor.CreateCachedEditorWithContext(inspectorTarget, this, customEditorType, ref baseEditor);
+
+            baseEditor.serializedObject.Update();
+
+            bool requiresConstantRepaintReturnValue = (bool)requiresConstantRepaintMethod.Invoke(baseEditor, null);
+
+            UdonSharpEditorUtility.CopyProxyToUdon(inspectorTarget, ProxySerializationPolicy.All);
+
+            return requiresConstantRepaintReturnValue;
         }
     }
 }
