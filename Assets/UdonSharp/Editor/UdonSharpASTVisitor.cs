@@ -1792,6 +1792,8 @@ namespace UdonSharp.Compiler
 
             SymbolDefinition arraySymbol = null;
 
+            bool isTransformIterator = false;
+
             using (ExpressionCaptureScope arrayCaptureScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 Visit(node.Expression);
@@ -1806,13 +1808,21 @@ namespace UdonSharp.Compiler
                         arraySymbol = charArrayMethodCapture.Invoke(new SymbolDefinition[] { });
                     }
                 }
-
-                if (!arraySymbol.symbolCsType.IsArray)
+                else if (arraySymbol.symbolCsType == typeof(Transform))
+                {
+                    isTransformIterator = true;
+                }
+                else if (!arraySymbol.symbolCsType.IsArray)
                     throw new System.Exception("foreach loop must iterate an array type");
             }
 
             if (node.Type.IsVar)
-                valueSymbol = visitorContext.topTable.CreateNamedSymbol(node.Identifier.Text, arraySymbol.userCsType.GetElementType(), SymbolDeclTypeFlags.Local);
+            {
+                if (!isTransformIterator)
+                    valueSymbol = visitorContext.topTable.CreateNamedSymbol(node.Identifier.Text, arraySymbol.userCsType.GetElementType(), SymbolDeclTypeFlags.Local);
+                else
+                    valueSymbol = visitorContext.topTable.CreateNamedSymbol(node.Identifier.Text, typeof(Transform), SymbolDeclTypeFlags.Local);
+            }
             else
                 valueSymbol = visitorContext.topTable.CreateNamedSymbol(node.Identifier.Text, valueSymbolType, SymbolDeclTypeFlags.Local);
 
@@ -1827,7 +1837,12 @@ namespace UdonSharp.Compiler
             using (ExpressionCaptureScope lengthGetterScope = new ExpressionCaptureScope(visitorContext, null))
             {
                 lengthGetterScope.SetToLocalSymbol(arraySymbol);
-                lengthGetterScope.ResolveAccessToken("Length");
+
+                if (!isTransformIterator)
+                    lengthGetterScope.ResolveAccessToken("Length");
+                else
+                    lengthGetterScope.ResolveAccessToken("childCount");
+
                 arrayLengthSymbol = lengthGetterScope.ExecuteGet();
             }
 
@@ -1846,19 +1861,39 @@ namespace UdonSharp.Compiler
             visitorContext.uasmBuilder.AddPush(conditionSymbol);
             visitorContext.uasmBuilder.AddJumpIfFalse(loopExitLabel);
 
-            using (ExpressionCaptureScope indexAccessExecuteScope = new ExpressionCaptureScope(visitorContext, null))
+            if (!isTransformIterator)
             {
-                indexAccessExecuteScope.SetToLocalSymbol(arraySymbol);
-                using (SymbolDefinition.COWValue arrayIndex = indexSymbol.GetCOWValue(visitorContext))
+                using (ExpressionCaptureScope indexAccessExecuteScope = new ExpressionCaptureScope(visitorContext, null))
                 {
-                    indexAccessExecuteScope.HandleArrayIndexerAccess(arrayIndex, valueSymbol);
-                }
+                    indexAccessExecuteScope.SetToLocalSymbol(arraySymbol);
+                    using (SymbolDefinition.COWValue arrayIndex = indexSymbol.GetCOWValue(visitorContext))
+                    {
+                        indexAccessExecuteScope.HandleArrayIndexerAccess(arrayIndex, valueSymbol);
+                    }
 
-                // Copy elision should make this a no-op unless conversion is required
-                using (ExpressionCaptureScope valueSetScope = new ExpressionCaptureScope(visitorContext, null))
+                    // Copy elision should make this a no-op unless conversion is required
+                    using (ExpressionCaptureScope valueSetScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        valueSetScope.SetToLocalSymbol(valueSymbol);
+                        valueSetScope.ExecuteSet(indexAccessExecuteScope.ExecuteGet());
+                    }
+                }
+            }
+            else
+            {
+                using (ExpressionCaptureScope indexAccessExecuteScope = new ExpressionCaptureScope(visitorContext, null, valueSymbol))
                 {
-                    valueSetScope.SetToLocalSymbol(valueSymbol);
-                    valueSetScope.ExecuteSet(indexAccessExecuteScope.ExecuteGet());
+                    indexAccessExecuteScope.SetToLocalSymbol(arraySymbol);
+                    indexAccessExecuteScope.ResolveAccessToken("GetChild");
+
+                    SymbolDefinition resultChild = indexAccessExecuteScope.Invoke(new SymbolDefinition[] { indexSymbol });
+
+                    // Copy elision should make this a no-op unless conversion is required
+                    using (ExpressionCaptureScope valueSetScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        valueSetScope.SetToLocalSymbol(valueSymbol);
+                        valueSetScope.ExecuteSet(resultChild);
+                    }
                 }
             }
 

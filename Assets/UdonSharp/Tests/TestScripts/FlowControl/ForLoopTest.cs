@@ -32,6 +32,19 @@ namespace UdonSharp.Tests
 
             tester.TestAssertion("Foreach loop", counter == 15);
 
+            counter = 0;
+            foreach (var child in transform)
+            {
+                ++counter;
+            }
+
+            foreach (Transform child in transform)
+            {
+                ++counter;
+            }
+
+            tester.TestAssertion("Foreach child Transform loop", counter == 6);
+
             string helloStr = "hello!";
             string builtStr = "";
 
