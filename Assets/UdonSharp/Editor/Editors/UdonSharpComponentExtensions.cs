@@ -145,6 +145,7 @@ namespace UdonSharpEditor
             UdonSharpProgramAsset programAsset = UdonSharpProgramAsset.GetProgramAssetForClass(type);
 
             udonBehaviour.programSource = programAsset;
+            udonBehaviour.AllowCollisionOwnershipTransfer = false;
 
             SerializedObject componentAsset = new SerializedObject(udonBehaviour);
             SerializedProperty serializedProgramAssetProperty = componentAsset.FindProperty("serializedProgramAsset");
