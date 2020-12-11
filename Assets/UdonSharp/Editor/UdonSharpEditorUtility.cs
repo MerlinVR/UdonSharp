@@ -168,8 +168,8 @@ namespace UdonSharpEditor
                     if (programAsset && programAsset.sourceCsScript != null && !_programAssetLookup.ContainsKey(programAsset.sourceCsScript))
                     {
                         _programAssetLookup.Add(programAsset.sourceCsScript, programAsset);
-                        if (programAsset.sourceCsScript.GetClass() != null)
-                            _programAssetTypeLookup.Add(programAsset.sourceCsScript.GetClass(), programAsset);
+                        if (programAsset.GetClass() != null)
+                            _programAssetTypeLookup.Add(programAsset.GetClass(), programAsset);
                     }
                 }
             }
@@ -346,7 +346,7 @@ namespace UdonSharpEditor
             if (!IsUdonSharpBehaviour(udonBehaviour))
                 return null;
 
-            return ((UdonSharpProgramAsset)udonBehaviour.programSource).sourceCsScript.GetClass();
+            return ((UdonSharpProgramAsset)udonBehaviour.programSource).GetClass();
         }
 
         static FieldInfo _skipEventsField = null;
@@ -389,7 +389,7 @@ namespace UdonSharpEditor
                 return proxyBehaviour;
 
             // We've failed to find an existing proxy behaviour so we need to create one
-            System.Type scriptType = udonSharpProgram.sourceCsScript.GetClass();
+            System.Type scriptType = udonSharpProgram.GetClass();
 
             if (scriptType == null)
                 return null;

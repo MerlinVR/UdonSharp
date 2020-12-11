@@ -441,15 +441,11 @@ namespace UdonSharpEditor
             UdonSharpProgramAsset programAsset = (UdonSharpProgramAsset)behaviour.programSource;
             programAsset.UpdateProgram();
 
-            MonoScript sourceScript = programAsset.sourceCsScript;
-
             System.Type customEditorType = null;
-            if (sourceScript)
-            {
-                System.Type inspectedType = sourceScript.GetClass();
-                if (inspectedType != null)
-                    customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(inspectedType);
-            }
+            System.Type inspectedType = programAsset.GetClass();
+
+            if (inspectedType != null)
+                customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(inspectedType);
 
             if (customEditorType != null && !PrefabUtility.IsPartOfPrefabAsset(target))
             {
@@ -503,7 +499,7 @@ namespace UdonSharpEditor
                 return;
 
             System.Type customEditorType = null;
-            System.Type inspectedType = udonSharpProgram.sourceCsScript.GetClass();
+            System.Type inspectedType = udonSharpProgram.GetClass();
             if (inspectedType != null)
                 customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(inspectedType);
 
@@ -573,7 +569,7 @@ namespace UdonSharpEditor
                 return requiresConstantRepaintDefaultReturnValue;
 
             System.Type customEditorType = null;
-            System.Type inspectedType = udonSharpProgram.sourceCsScript.GetClass();
+            System.Type inspectedType = udonSharpProgram.GetClass();
             if (inspectedType != null)
                 customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(inspectedType);
 
