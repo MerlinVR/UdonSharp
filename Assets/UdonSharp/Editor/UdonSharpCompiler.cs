@@ -378,6 +378,12 @@ namespace UdonSharp.Compiler
                 if (bindResult.compileErrors.Count == 0)
                 {
                     classDefinitions.Add(bindResult.classDefinition);
+
+                    if (bindResult.sourceScript.GetClass() == null && 
+                        bindResult.classDefinition.userClassType.Name != Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(bindResult.sourceScript)))
+                    {
+                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] {AssetDatabase.GetAssetPath(bindResult.sourceScript)}: Class name does not match file name, Unity requires that both names match exactly for the editor to work properly.", bindResult.sourceScript);
+                    }
                 }
                 else
                 {
