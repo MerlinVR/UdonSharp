@@ -113,8 +113,14 @@ namespace UdonSharp.Compiler
 
                 foreach (UdonSharpProgramAsset programAsset in allPrograms)
                 {
-                    if (programAsset == null || programAsset.sourceCsScript == null)
+                    if (programAsset == null)
                         continue;
+
+                    if (programAsset.sourceCsScript == null)
+                    {
+                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] Program asset '{AssetDatabase.GetAssetPath(programAsset)}' is missing a source C# script");
+                        continue;
+                    }
 
                     programAssetsAndPaths.Add((programAsset, AssetDatabase.GetAssetPath(programAsset.sourceCsScript)));
 
