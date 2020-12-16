@@ -53,11 +53,11 @@ namespace UdonSharp.Serialization
         {
             VerifySerializationSanity();
 
-            //if (targetObject == null)
-            //{
-            //    Debug.LogError($"Field of type '{typeof(T[]).Name}' does not exist any longer, allow Unity to compile assemblies to fix this");
-            //    return;
-            //}
+            if (targetObject == null)
+            {
+                Debug.LogError($"Field of type '{typeof(T[]).Name}' does not exist any longer, compile U# scripts then allow Unity to compile assemblies to fix this"); 
+                return;
+            }
 
             if (sourceObject == null)
             {
@@ -93,12 +93,12 @@ namespace UdonSharp.Serialization
         {
             VerifySerializationSanity();
 
-            //if (sourceObject == null)
-            //{
-            //    Debug.LogError($"Field of type '{typeof(T[]).Name}' does not exist any longer, allow Unity to compile assemblies to fix this");
-            //    targetObject = null;
-            //    return;
-            //}
+            if (sourceObject == null)
+            {
+                Debug.LogError($"Field of type '{typeof(T[]).Name}' does not exist any longer, compile U# scripts then allow Unity to compile assemblies to fix this");
+                targetObject = null;
+                return;
+            }
 
             if (sourceObject.Value == null)
             {
