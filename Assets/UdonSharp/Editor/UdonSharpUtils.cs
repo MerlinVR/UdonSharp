@@ -550,6 +550,9 @@ namespace UdonSharp
 
         public static System.Type UserTypeToUdonType(System.Type type)
         {
+            if (type == null)
+                return null;
+
             if (userTypeToUdonTypeCache == null)
                 userTypeToUdonTypeCache = new Dictionary<Type, Type>();
 
