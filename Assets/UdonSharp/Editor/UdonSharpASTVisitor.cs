@@ -806,23 +806,23 @@ namespace UdonSharp.Compiler
                         break;
                     case SyntaxKind.BitwiseNotExpression:
                     case SyntaxKind.TildeToken:
-                        throw new System.NotSupportedException("Udon does not support BitwiseNot at the moment (https://vrchat.canny.io/vrchat-udon-closed-alpha-feedback/p/bitwisenot-for-integer-built-in-types)");
+                        //throw new System.NotSupportedException("Udon does not support BitwiseNot at the moment (https://vrchat.canny.io/vrchat-udon-closed-alpha-feedback/p/bitwisenot-for-integer-built-in-types)");
+                        break;
                     default:
                         throw new System.NotImplementedException($"Handling for prefix token {node.OperatorToken.Kind()} is not implemented");
                 }
                 
                 using (ExpressionCaptureScope operatorMethodCapture = new ExpressionCaptureScope(visitorContext, null, requestedDestination))
                 {
-                    operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
-
                     BuiltinOperatorType operatorType = SyntaxKindToBuiltinOperator(node.OperatorToken.Kind());
 
                     SymbolDefinition resultSymbol = null;
 
                     if (operatorType == BuiltinOperatorType.UnaryNegation ||
-                        operatorType == BuiltinOperatorType.UnaryMinus || 
-                        operatorType == BuiltinOperatorType.BitwiseNot)
+                        operatorType == BuiltinOperatorType.UnaryMinus)
                     {
+                        operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
+
                         SymbolDefinition operandResult = operandCapture.ExecuteGet();
 
                         if (operatorType == BuiltinOperatorType.UnaryNegation &&
@@ -842,8 +842,80 @@ namespace UdonSharp.Compiler
                         if (topScope != null)
                             topScope.SetToLocalSymbol(resultSymbol);
                     }
+                    else if (operatorType == BuiltinOperatorType.BitwiseNot) // udon-workaround: 12/21/2020 It has been a year, we are still missing bitwise not.
+                    {
+                        try
+                        {
+                            System.Type operandType = operandCapture.GetReturnType();
+
+                            if (!UdonSharpUtils.IsIntegerType(operandType)) throw new System.NotSupportedException();
+
+                            object maxIntVal = operandType.GetField("MaxValue").GetValue(null);
+                            SymbolDefinition maxValSymbol = visitorContext.topTable.CreateConstSymbol(operandType, maxIntVal);
+
+                            SymbolDefinition operandValue = operandCapture.ExecuteGet();
+
+                            operatorMethodCapture.SetToMethods(GetOperators(operandType, BuiltinOperatorType.LogicalXor));
+                            resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandValue, maxValSymbol });
+
+                            if (UdonSharpUtils.IsSignedType(operandType)) // Signed types need handling for negating the sign
+                            {
+                                using (ExpressionCaptureScope negativeCheck = new ExpressionCaptureScope(visitorContext, null))
+                                {
+                                    negativeCheck.SetToMethods(GetOperators(operandType, BuiltinOperatorType.LessThan));
+
+                                    SymbolDefinition isNegative = negativeCheck.Invoke(new SymbolDefinition[] { operandValue, visitorContext.topTable.CreateConstSymbol(operandType, System.Convert.ChangeType(0, operandType)) });
+
+                                    JumpLabel elseJump = visitorContext.labelTable.GetNewJumpLabel("bitwiseNegateElse");
+                                    JumpLabel exitJump = visitorContext.labelTable.GetNewJumpLabel("bitwiseNegateExit");
+
+                                    visitorContext.uasmBuilder.AddJumpIfFalse(elseJump, isNegative);
+
+                                    using (ExpressionCaptureScope ANDScope = new ExpressionCaptureScope(visitorContext, null, resultSymbol))
+                                    {
+                                        ANDScope.SetToMethods(GetOperators(operandType, BuiltinOperatorType.LogicalAnd));
+                                        resultSymbol = ANDScope.Invoke(new SymbolDefinition[] { resultSymbol, maxValSymbol });
+                                    }
+
+                                    visitorContext.uasmBuilder.AddJump(exitJump);
+
+                                    visitorContext.uasmBuilder.AddJumpLabel(elseJump);
+
+                                    long bitOr = 0;
+
+                                    if (operandType == typeof(sbyte))
+                                        bitOr = 1 << 7;
+                                    else if (operandType == typeof(short))
+                                        bitOr = 1 << 15;
+                                    else if (operandType == typeof(int))
+                                        bitOr = 1 << 31;
+                                    else if (operandType == typeof(long))
+                                        bitOr = 1 << 63;
+                                    else
+                                        throw new System.Exception();
+
+                                    using (ExpressionCaptureScope ORScope = new ExpressionCaptureScope(visitorContext, null, resultSymbol))
+                                    {
+                                        ORScope.SetToMethods(GetOperators(operandType, BuiltinOperatorType.LogicalOr));
+                                        resultSymbol = ORScope.Invoke(new SymbolDefinition[] { resultSymbol, visitorContext.topTable.CreateConstSymbol(operandType, System.Convert.ChangeType(bitOr, operandType)) });
+                                    }
+
+                                    visitorContext.uasmBuilder.AddJumpLabel(exitJump);
+                                }
+                            }
+                        }
+                        catch (System.Exception)
+                        {
+                            throw new System.ArgumentException($"Operator '{node.OperatorToken.Text}' cannot be applied to operand of type '{UdonSharpUtils.PrettifyTypeName(operandCapture.GetReturnType())}'");
+                        }
+
+                        if (topScope != null)
+                            topScope.SetToLocalSymbol(resultSymbol);
+                    }
                     else
                     {
+                        operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
+
                         SymbolDefinition valueConstant = visitorContext.topTable.CreateConstSymbol(operandCapture.GetReturnType(), System.Convert.ChangeType(1, operandCapture.GetReturnType()));
 
                         try
@@ -1171,6 +1243,7 @@ namespace UdonSharp.Compiler
                 case SyntaxKind.BarEqualsToken:
                     return BuiltinOperatorType.LogicalOr;
                 case SyntaxKind.BitwiseNotExpression:
+                case SyntaxKind.TildeToken:
                     return BuiltinOperatorType.BitwiseNot;
                 case SyntaxKind.ExclusiveOrExpression:
                 case SyntaxKind.ExclusiveOrAssignmentExpression:
