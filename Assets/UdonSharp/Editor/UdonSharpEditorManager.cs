@@ -25,6 +25,7 @@ namespace UdonSharpEditor
             EditorSceneManager.sceneOpened += OnSceneOpened;
             EditorApplication.update += OnEditorUpdate;
             EditorApplication.playModeStateChanged += OnChangePlayMode;
+            AssemblyReloadEvents.beforeAssemblyReload += BeforeAssemblyReloadCleanup;
             AssemblyReloadEvents.afterAssemblyReload += RunPostAssemblyBuildRefresh;
         }
 
@@ -56,6 +57,14 @@ namespace UdonSharpEditor
             InjectUnityEventInterceptors();
         }
 
+        const string HARMONY_ID = "UdonSharp.Editor.EventPatch";
+
+        private static void BeforeAssemblyReloadCleanup()
+        {
+            Harmony harmony = new Harmony(HARMONY_ID);
+            harmony.UnpatchAll(HARMONY_ID);
+        }
+
         static void InjectUnityEventInterceptors()
         {
             List<System.Type> udonSharpBehaviourTypes = new List<Type>();
@@ -68,10 +77,9 @@ namespace UdonSharpEditor
                         udonSharpBehaviourTypes.Add(type);
                 }
             }
-
-            const string harmonyID = "UdonSharp.Editor.EventPatch";
-            Harmony harmony = new Harmony(harmonyID);
-            harmony.UnpatchAll(harmonyID);
+            
+            Harmony harmony = new Harmony(HARMONY_ID);
+            harmony.UnpatchAll(HARMONY_ID);
 
             MethodInfo injectedEvent = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.EventInterceptor), BindingFlags.Static | BindingFlags.Public);
             HarmonyMethod injectedMethod = new HarmonyMethod(injectedEvent);
