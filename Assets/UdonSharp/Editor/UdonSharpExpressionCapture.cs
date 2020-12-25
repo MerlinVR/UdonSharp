@@ -1607,7 +1607,7 @@ namespace UdonSharp.Compiler
 
         private void PopRecursiveStack(SymbolDefinition[] popSymbols)
         {
-            if (popSymbols.Length == 0)
+            if (popSymbols == null || popSymbols.Length == 0)
                 return;
 
             visitorContext.uasmBuilder.AppendCommentedLine("", "");
@@ -1918,15 +1918,13 @@ namespace UdonSharp.Compiler
             
             SymbolDefinition[] symbolsToPush = null;
             SymbolDefinition stackSizeSymbol = null;
-            if (visitorContext.isRecursiveMethod)
+
+            // We are calling directly into our type, so we need to handle parameter values since we may be messing with our own local variables
+            if (visitorContext.isRecursiveMethod && accessSymbol.userCsType == visitorContext.behaviourUserType)
             {
                 symbolsToPush = BuildSymbolPushList(captureExternUserMethod.parameters.Select(e => e.paramSymbol), false);
                 PushRecursiveStack(symbolsToPush, out stackSizeSymbol);
-            }
 
-            // We are calling directly into our type, so we need to handle COW values since we may be messing with local variables
-            if (visitorContext.isRecursiveMethod && accessSymbol.userCsType == visitorContext.behaviourUserType)
-            {
                 SymbolDefinition.COWValue[] paramCOWValues = new SymbolDefinition.COWValue[invokeParams.Length];
                 for (int i = 0; i < invokeParams.Length; ++i)
                     paramCOWValues[i] = invokeParams[i].GetCOWValue(visitorContext);
@@ -1986,13 +1984,18 @@ namespace UdonSharp.Compiler
             if (visitorContext.isRecursiveMethod)
             {
                 HashSet<SymbolDefinition> newCOWSymbolsToPush = new HashSet<SymbolDefinition>(BuildSymbolPushList(null));
-                newCOWSymbolsToPush.ExceptWith(symbolsToPush);
+
+                if (symbolsToPush != null)
+                    newCOWSymbolsToPush.ExceptWith(symbolsToPush);
 
                 cowSymbolPush = newCOWSymbolsToPush.ToArray();
 
-                PushRecursiveStack(cowSymbolPush, out SymbolDefinition _, false);
+                PushRecursiveStack(cowSymbolPush, out SymbolDefinition stackSizeCheck2, stackSizeSymbol == null);
 
-                stackSizeSymbol.symbolDefaultValue = symbolsToPush.Length + cowSymbolPush.Length;
+                if (stackSizeSymbol != null)
+                    stackSizeSymbol.symbolDefaultValue = symbolsToPush.Length + cowSymbolPush.Length;
+                else
+                    stackSizeCheck2.symbolDefaultValue = cowSymbolPush.Length;
             }
 
             using (ExpressionCaptureScope externInvokeScope = new ExpressionCaptureScope(visitorContext, null))

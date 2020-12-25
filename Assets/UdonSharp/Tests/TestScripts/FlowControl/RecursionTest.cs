@@ -203,6 +203,7 @@ namespace UdonSharp.Tests
                 CountChildrenExternalCount(child);
         }
 
+        [RecursiveMethod] // Just here to test calling out to other types from recursive methods
         public void ExecuteTests()
         {
             tester.TestAssertion("Basic recursion 4!", Factorial(4) == 24);
