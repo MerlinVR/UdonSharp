@@ -485,6 +485,11 @@ namespace UdonSharp
                    IsUserJaggedArray(type);
         }
 
+        public static bool IsUdonWorkaroundType(System.Type type)
+        {
+            return type == typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer) || type == typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer);
+        }
+
         public static System.Type GetRootElementType(System.Type type)
         {
             while (type.IsArray)

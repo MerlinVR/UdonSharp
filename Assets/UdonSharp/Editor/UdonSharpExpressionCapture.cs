@@ -768,7 +768,7 @@ namespace UdonSharp.Compiler
                 targetType = targetType.GetElementType();
 
             // Special case for passing through user defined classes if they match
-            if (sourceSymbol.IsUserDefinedType() && 
+            if ((sourceSymbol.IsUserDefinedType() || UdonSharpUtils.IsUdonWorkaroundType(sourceSymbol.userCsType)) && 
                 (targetType.IsAssignableFrom(sourceSymbol.userCsType) || (targetType.IsArray && targetType == sourceSymbol.userCsType)))
                 return sourceSymbol;
             

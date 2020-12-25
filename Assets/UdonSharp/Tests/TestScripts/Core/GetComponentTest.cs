@@ -2,6 +2,9 @@
 using UdonSharp;
 using UdonSharp.Examples.Utilities;
 using UnityEngine;
+using VRC.SDK3.Video.Components;
+using VRC.SDK3.Video.Components.AVPro;
+using VRC.SDK3.Video.Components.Base;
 using VRC.SDKBase;
 using VRC.Udon;
 
@@ -18,6 +21,10 @@ namespace UdonSharp.Tests
         Transform[] transforms;
 
         Transform transformIn = null;
+
+        VRCUnityVideoPlayer videoPlayer;
+        VRCAVProVideoPlayer avProVideoPlayer;
+        BaseVRCVideoPlayer baseVideoPlayer;
 
         public void ExecuteTests()
         {
@@ -66,6 +73,13 @@ namespace UdonSharp.Tests
 #endif
 
             tester.TestAssertion("Correct number of UdonBehaviours on gameobject", modObject.GetComponents(typeof(UdonBehaviour)).Length == 4);
+
+            videoPlayer = (VRCUnityVideoPlayer)GetComponent(typeof(VRCUnityVideoPlayer));
+            avProVideoPlayer = (VRCAVProVideoPlayer)GetComponent(typeof(VRCAVProVideoPlayer));
+            baseVideoPlayer = (BaseVRCVideoPlayer)GetComponent(typeof(BaseVRCVideoPlayer));
+
+            VRCStation station;
+            station = (VRCStation)GetComponent(typeof(VRCStation));
 
             //Debug.Log(getBehaviour.GetUdonTypeID());
             //Debug.Log(getBehaviour.GetUdonTypeName());
