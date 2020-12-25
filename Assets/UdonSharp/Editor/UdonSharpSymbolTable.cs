@@ -20,6 +20,7 @@ namespace UdonSharp.Compiler
         Reflection = 128, // Metadata information for type checking and other editor time info
         Readonly = 256, // Symbols marked as either const or readonly by the user, treat them the same for now. 
         MethodParameter = 512, // Symbols used for passing around method parameters
+        NeedsRecursivePush = 1024, // Internal symbols used for tracking flow control and such which need to be pushed to the recursive stack when a method is recursive. An example of this is the int counter for a foreach loop and the size of the array the foreach is iterating.
     }
 
     [Serializable]
@@ -164,6 +165,8 @@ namespace UdonSharp.Compiler
                 this.visitorContext = visitorContext;
 
                 tableCreationScope = visitorContext.topTable;
+                
+                tableCreationScope.AddSymbolCOW(this);
             }
 
             public void AddRef(COWValue holder)
@@ -304,6 +307,10 @@ namespace UdonSharp.Compiler
 
         private List<(SymbolTable, Dictionary<string, int>)> initialSymbolCounters = new List<(SymbolTable, Dictionary<string, int>)>();
 
+        private List<SymbolDefinition.COWValueInternal> scopeCOWValues = new List<SymbolDefinition.COWValueInternal>();
+        
+        int expressionScopeDepth = 0;
+
         public SymbolTable GetGlobalSymbolTable()
         {
             SymbolTable currentTable = this;
@@ -350,6 +357,35 @@ namespace UdonSharp.Compiler
             IsTableReadOnly = true;
             
             ValidateParentTableCounters();
+
+            Debug.Assert(expressionScopeDepth == 0, "Symbol table scope depth must be 0");
+            Debug.Assert(scopeCOWValues.Count == 0, "Symbol table COW values must be empty");
+        }
+
+        public void EnterExpressionScope()
+        {
+            ++expressionScopeDepth;
+        }
+
+        public void ExitExpressionScope()
+        {
+            --expressionScopeDepth;
+
+            if (expressionScopeDepth == 0)
+                scopeCOWValues.Clear();
+
+            Debug.Assert(expressionScopeDepth >= 0, "Expression scope cannot be negative");
+        }
+
+        public IEnumerable<SymbolDefinition> GetOpenCOWSymbols()
+        {
+            return scopeCOWValues.Where(e => e.symbol != null).Select(e => e.symbol);
+        }
+
+        internal void AddSymbolCOW(SymbolDefinition.COWValueInternal value)
+        {
+            if (expressionScopeDepth > 0)
+                scopeCOWValues.Add(value);
         }
 
         protected int IncrementUniqueNameCounter(string symbolName)
@@ -472,6 +508,51 @@ namespace UdonSharp.Compiler
             while (currentTable != null)
             {
                 foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => includeInternal ? true : !e.declarationType.HasFlag(SymbolDeclTypeFlags.Internal)));
+                currentTable = currentTable.parentSymbolTable;
+            }
+
+            return foundSymbols;
+        }
+
+        public List<SymbolDefinition> GetAllLocalSymbols()
+        {
+            List<SymbolDefinition> foundSymbols = new List<SymbolDefinition>();
+
+            SymbolTable currentTable = this;
+
+            while (currentTable != null && !currentTable.IsGlobalSymbolTable)
+            {
+                foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => !e.declarationType.HasFlag(SymbolDeclTypeFlags.Internal) && e.declarationType.HasFlag(SymbolDeclTypeFlags.Local)));
+                currentTable = currentTable.parentSymbolTable;
+            }
+
+            return foundSymbols;
+        }
+
+        public List<SymbolDefinition> GetAllRecursiveSymbols()
+        {
+            List<SymbolDefinition> foundSymbols = new List<SymbolDefinition>();
+
+            SymbolTable currentTable = this;
+
+            while (currentTable != null && !currentTable.IsGlobalSymbolTable)
+            {
+                foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => (!e.declarationType.HasFlag(SymbolDeclTypeFlags.Internal) || e.declarationType.HasFlag(SymbolDeclTypeFlags.NeedsRecursivePush)) && e.declarationType.HasFlag(SymbolDeclTypeFlags.Local)));
+                currentTable = currentTable.parentSymbolTable;
+            }
+
+            return foundSymbols;
+        }
+
+        public List<SymbolDefinition> GetCurrentMethodParameters()
+        {
+            List<SymbolDefinition> foundSymbols = new List<SymbolDefinition>();
+
+            SymbolTable currentTable = this;
+
+            while (currentTable != null && !currentTable.IsGlobalSymbolTable)
+            {
+                foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.MethodParameter)));
                 currentTable = currentTable.parentSymbolTable;
             }
 

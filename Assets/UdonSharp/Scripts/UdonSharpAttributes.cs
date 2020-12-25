@@ -42,5 +42,17 @@ namespace UdonSharp
         }
     }
 #endif
+
+    /// <summary>
+    /// Marks a method that can be called recursively in U#. 
+    /// This should be used on the methods that are being called recursively, you do not need to mark methods that are calling recursive methods with this.
+    /// This attribute has a performance overhead which makes the marked method perform slower and usually generate more garbage. So use it only on methods that **need** to be called recursively.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    public class RecursiveMethodAttribute : Attribute
+    {
+        public RecursiveMethodAttribute()
+        { }
+    }
 }
 

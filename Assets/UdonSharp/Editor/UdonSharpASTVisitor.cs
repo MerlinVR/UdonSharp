@@ -29,6 +29,10 @@ namespace UdonSharp.Compiler
         public JumpLabel returnLabel = null;
         public SymbolDefinition returnJumpTarget = null;
         public SymbolDefinition returnSymbol = null;
+        public bool isRecursiveMethod = false;
+        public int maxMethodFrameSize = 0; // The maximum size for a "stack frame" for a method. This is used to initialize the correct default size of the artificial stack so that we know we only need to double the size of it at most.
+        public SymbolDefinition artificalStackSymbol = null;
+        public SymbolDefinition stackAddressSymbol = null;
 #if UDON_BETA_SDK
         public bool requiresVRCReturn = false;
 #endif
@@ -288,6 +292,23 @@ namespace UdonSharp.Compiler
 
             Visit(node.BaseList);
 
+            bool hasRecursiveMethods = false;
+            foreach (MethodDefinition definition in visitorContext.definedMethods)
+            {
+                if (definition.declarationFlags.HasFlag(MethodDeclFlags.RecursiveMethod))
+                {
+                    hasRecursiveMethods = true;
+                    break;
+                }
+            }
+
+            if (hasRecursiveMethods)
+            {
+                visitorContext.artificalStackSymbol = visitorContext.topTable.CreateNamedSymbol("usharpValueStack", typeof(object[]), SymbolDeclTypeFlags.Internal);
+                visitorContext.stackAddressSymbol = visitorContext.topTable.CreateNamedSymbol("usharpStackAddress", typeof(int), SymbolDeclTypeFlags.Internal);
+                visitorContext.stackAddressSymbol.symbolDefaultValue = (int)0;
+            }
+
             visitorContext.topTable.CreateReflectionSymbol("udonTypeID", typeof(long), Internal.UdonSharpInternalUtility.GetTypeID(visitorContext.behaviourUserType));
             visitorContext.topTable.CreateReflectionSymbol("udonTypeName", typeof(string), Internal.UdonSharpInternalUtility.GetTypeName(visitorContext.behaviourUserType));
 
@@ -299,6 +320,9 @@ namespace UdonSharp.Compiler
             }
 
             visitorContext.uasmBuilder.AppendLine(".code_end", 0);
+
+            if (hasRecursiveMethods)
+                visitorContext.artificalStackSymbol.symbolDefaultValue = new object[visitorContext.maxMethodFrameSize];
         }
 
         public override void VisitBlock(BlockSyntax node)
@@ -607,7 +631,11 @@ namespace UdonSharp.Compiler
         {
             UpdateSyntaxNode(node);
 
+            visitorContext.topTable.EnterExpressionScope();
+
             HandleVariableDeclaration(node, SymbolDeclTypeFlags.Local, UdonSyncMode.NotSynced);
+
+            visitorContext.topTable.ExitExpressionScope();
         }
 
         public override void VisitConditionalAccessExpression(ConditionalAccessExpressionSyntax node)
@@ -655,6 +683,8 @@ namespace UdonSharp.Compiler
         public override void VisitAssignmentExpression(AssignmentExpressionSyntax node)
         {
             UpdateSyntaxNode(node);
+
+            visitorContext.topTable.EnterExpressionScope();
 
             bool isSimpleAssignment = node.OperatorToken.Kind() == SyntaxKind.SimpleAssignmentExpression || node.OperatorToken.Kind() == SyntaxKind.EqualsToken;
             ExpressionCaptureScope topScope = visitorContext.topCaptureScope;
@@ -759,6 +789,8 @@ namespace UdonSharp.Compiler
                     }
                 }
             }
+
+            visitorContext.topTable.ExitExpressionScope();
         }
 
         public override void VisitPrefixUnaryExpression(PrefixUnaryExpressionSyntax node)
@@ -999,6 +1031,8 @@ namespace UdonSharp.Compiler
 
             MethodDefinition definition = visitorContext.definedMethods.Where(e => e.originalMethodName == node.Identifier.ValueText).First();
 
+            visitorContext.isRecursiveMethod = definition.declarationFlags.HasFlag(MethodDeclFlags.RecursiveMethod);
+
             string functionName = node.Identifier.ValueText;
             bool isBuiltinEvent = visitorContext.resolverContext.ReplaceInternalEventName(ref functionName);
 
@@ -1135,6 +1169,7 @@ namespace UdonSharp.Compiler
             visitorContext.uasmBuilder.AppendLine("");
 
             visitorContext.returnLabel = null;
+            visitorContext.isRecursiveMethod = false;
         }
 
         public override void VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
@@ -1612,6 +1647,8 @@ namespace UdonSharp.Compiler
         {
             UpdateSyntaxNode(node);
 
+            visitorContext.topTable.EnterExpressionScope();
+
             if (visitorContext.returnSymbol != null)
             {
                 using (ExpressionCaptureScope returnCaptureScope = new ExpressionCaptureScope(visitorContext, null, visitorContext.returnSymbol))
@@ -1642,6 +1679,8 @@ namespace UdonSharp.Compiler
 
             visitorContext.uasmBuilder.AddReturnSequence(visitorContext.returnJumpTarget, "Explicit return sequence");
             //visitorContext.uasmBuilder.AddJumpToExit();
+
+            visitorContext.topTable.ExitExpressionScope();
         }
 
         public override void VisitBreakStatement(BreakStatementSyntax node)
@@ -1861,7 +1900,7 @@ namespace UdonSharp.Compiler
 
             SymbolDefinition valueSymbol = null;
 
-            SymbolDefinition indexSymbol = visitorContext.topTable.CreateUnnamedSymbol(typeof(int), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local);
+            SymbolDefinition indexSymbol = visitorContext.topTable.CreateUnnamedSymbol(typeof(int), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Local | SymbolDeclTypeFlags.NeedsRecursivePush);
 
             SymbolDefinition arraySymbol = null;
 
@@ -1917,6 +1956,7 @@ namespace UdonSharp.Compiler
                     lengthGetterScope.ResolveAccessToken("childCount");
 
                 arrayLengthSymbol = lengthGetterScope.ExecuteGet();
+                arrayLengthSymbol.declarationType |= SymbolDeclTypeFlags.NeedsRecursivePush;
             }
 
             JumpLabel loopExitLabel = visitorContext.labelTable.GetNewJumpLabel("foreachLoopExit");
@@ -2235,6 +2275,8 @@ namespace UdonSharp.Compiler
                 return;
             }
 
+            visitorContext.topTable.EnterExpressionScope();
+
             SymbolDefinition requestedDestination = visitorContext.requestedDestination;
 
             // Grab the external scope so that the method call can propagate its output upwards
@@ -2259,7 +2301,7 @@ namespace UdonSharp.Compiler
                 for (int i = 0; i < node.ArgumentList.Arguments.Count; i++)
                 {
                     ArgumentSyntax argument = node.ArgumentList.Arguments[i];
-                    SymbolDefinition argDestination = argDestinations != null ? argDestinations[i] : null;
+                    SymbolDefinition argDestination = argDestinations != null && !visitorContext.isRecursiveMethod ? argDestinations[i] : null;
 
                     using (ExpressionCaptureScope captureScope = new ExpressionCaptureScope(visitorContext, null, argDestination))
                     {
@@ -2283,12 +2325,16 @@ namespace UdonSharp.Compiler
 
                 invocationArgs.ForEach((arg) => arg.Dispose());
             }
+
+            visitorContext.topTable.ExitExpressionScope();
         }
 
         // Constructors
         public override void VisitObjectCreationExpression(ObjectCreationExpressionSyntax node)
         {
             UpdateSyntaxNode(node);
+
+            visitorContext.topTable.EnterExpressionScope();
 
             SymbolDefinition requestedDestination = visitorContext.requestedDestination;
 
@@ -2345,6 +2391,8 @@ namespace UdonSharp.Compiler
                     val.Dispose();
                 }
             }
+
+            visitorContext.topTable.ExitExpressionScope();
         }
 
         public override void VisitInterpolatedStringExpression(InterpolatedStringExpressionSyntax node)
