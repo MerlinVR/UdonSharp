@@ -379,7 +379,7 @@ namespace UdonSharp.Compiler
 
         public IEnumerable<SymbolDefinition> GetOpenCOWSymbols()
         {
-            return scopeCOWValues.Where(e => e.symbol != null).Select(e => e.symbol);
+            return scopeCOWValues.Where(e => e.symbol != null && e.referenceCount > 0).Select(e => e.symbol);
         }
 
         internal void AddSymbolCOW(SymbolDefinition.COWValueInternal value)

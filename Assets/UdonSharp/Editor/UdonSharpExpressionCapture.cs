@@ -1492,19 +1492,21 @@ namespace UdonSharp.Compiler
             return definitionSet.ToArray();
         }
 
-        private void PushRecursiveStack(SymbolDefinition[] pushSymbols, bool checkStackSize = true)
+        private void PushRecursiveStack(SymbolDefinition[] pushSymbols, out SymbolDefinition checkSizeSymbol, bool checkStackSize = true)
         {
+            checkSizeSymbol = null;
+
             if (pushSymbols.Length == 0)
                 return;
-
-            visitorContext.uasmBuilder.AppendCommentedLine("", "");
-            visitorContext.uasmBuilder.AppendCommentedLine("", "Stack size check");
 
             // Set max so we can init the stack properly as a constant
             visitorContext.maxMethodFrameSize = Mathf.Max(pushSymbols.Length, visitorContext.maxMethodFrameSize);
 
             if (checkStackSize)
             {
+                visitorContext.uasmBuilder.AppendCommentedLine("", "");
+                visitorContext.uasmBuilder.AppendCommentedLine("", "Stack size check");
+
                 // First check stack size, if it's too small, double the stack size and copy it over
                 SymbolDefinition stackSize;
 
@@ -1515,11 +1517,13 @@ namespace UdonSharp.Compiler
                     stackSize = stackSizeCapture.ExecuteGet();
                 }
 
+                checkSizeSymbol = visitorContext.topTable.CreateUnnamedSymbol(typeof(int), SymbolDeclTypeFlags.Internal);
+
                 SymbolDefinition targetStackSizeSymbol;
                 using (ExpressionCaptureScope targetSizeAddCapture = new ExpressionCaptureScope(visitorContext, null))
                 {
                     targetSizeAddCapture.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.Addition));
-                    targetStackSizeSymbol = targetSizeAddCapture.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(int), pushSymbols.Length), visitorContext.stackAddressSymbol });
+                    targetStackSizeSymbol = targetSizeAddCapture.Invoke(new SymbolDefinition[] { checkSizeSymbol, visitorContext.stackAddressSymbol });
                 }
 
                 SymbolDefinition isGreaterThanCondition;
@@ -1770,7 +1774,8 @@ namespace UdonSharp.Compiler
                 if (isPotentiallyRecursive && !shouldSkipRecursivePush)
                 {
                     symbolsToPush = BuildSymbolPushList(expandedParams);
-                    PushRecursiveStack(symbolsToPush);
+                    PushRecursiveStack(symbolsToPush, out SymbolDefinition sizeSymbol);
+                    sizeSymbol.symbolDefaultValue = symbolsToPush.Length;
                 }
 
                 foreach (SymbolDefinition invokeParam in expandedParams)
@@ -1821,10 +1826,11 @@ namespace UdonSharp.Compiler
             
             SymbolDefinition[] symbolsToPush = null;
 
+            SymbolDefinition stackSizeSymbol = null;
             if (visitorContext.isRecursiveMethod)
             {
                 symbolsToPush = BuildSymbolPushList(GetLocalMethodArgumentSymbols(), false);
-                PushRecursiveStack(symbolsToPush);
+                PushRecursiveStack(symbolsToPush, out stackSizeSymbol);
 
                 // Prevents situations where you call a method like void DoThing(string a, string b) with DoThing(b, a)
                 // Without COW values this would mean you copy b -> a, then you copy a -> b after you've already written over a so both parameters end with b's value
@@ -1867,8 +1873,10 @@ namespace UdonSharp.Compiler
                 newCOWSymbolsToPush.ExceptWith(symbolsToPush);
 
                 cowSymbolPush = newCOWSymbolsToPush.ToArray();
-                
-                PushRecursiveStack(cowSymbolPush);
+
+                PushRecursiveStack(cowSymbolPush, out SymbolDefinition _, false);
+
+                stackSizeSymbol.symbolDefaultValue = symbolsToPush.Length + cowSymbolPush.Length;
             }
 
             SymbolDefinition exitJumpLocation = visitorContext.topTable.CreateNamedSymbol("exitJumpLoc", typeof(uint), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Constant);
@@ -1909,10 +1917,11 @@ namespace UdonSharp.Compiler
                 throw new System.FieldAccessException("Cannot run extern invoke on non-user symbol");
             
             SymbolDefinition[] symbolsToPush = null;
+            SymbolDefinition stackSizeSymbol = null;
             if (visitorContext.isRecursiveMethod)
             {
                 symbolsToPush = BuildSymbolPushList(captureExternUserMethod.parameters.Select(e => e.paramSymbol), false);
-                PushRecursiveStack(symbolsToPush);
+                PushRecursiveStack(symbolsToPush, out stackSizeSymbol);
             }
 
             // We are calling directly into our type, so we need to handle COW values since we may be messing with local variables
@@ -1981,7 +1990,9 @@ namespace UdonSharp.Compiler
 
                 cowSymbolPush = newCOWSymbolsToPush.ToArray();
 
-                PushRecursiveStack(cowSymbolPush);
+                PushRecursiveStack(cowSymbolPush, out SymbolDefinition _, false);
+
+                stackSizeSymbol.symbolDefaultValue = symbolsToPush.Length + cowSymbolPush.Length;
             }
 
             using (ExpressionCaptureScope externInvokeScope = new ExpressionCaptureScope(visitorContext, null))
