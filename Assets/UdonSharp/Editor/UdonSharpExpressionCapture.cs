@@ -1876,7 +1876,10 @@ namespace UdonSharp.Compiler
 
                 PushRecursiveStack(cowSymbolPush, out SymbolDefinition _, false);
 
-                stackSizeSymbol.symbolDefaultValue = symbolsToPush.Length + cowSymbolPush.Length;
+                int symbolCount = symbolsToPush.Length + cowSymbolPush.Length;
+                stackSizeSymbol.symbolDefaultValue = symbolCount;
+
+                visitorContext.maxMethodFrameSize = Mathf.Max(symbolCount, visitorContext.maxMethodFrameSize);
             }
 
             SymbolDefinition exitJumpLocation = visitorContext.topTable.CreateNamedSymbol("exitJumpLoc", typeof(uint), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Constant);
@@ -1993,7 +1996,12 @@ namespace UdonSharp.Compiler
                 PushRecursiveStack(cowSymbolPush, out SymbolDefinition stackSizeCheck2, stackSizeSymbol == null);
 
                 if (stackSizeSymbol != null)
-                    stackSizeSymbol.symbolDefaultValue = symbolsToPush.Length + cowSymbolPush.Length;
+                {
+                    int symbolCount = symbolsToPush.Length + cowSymbolPush.Length;
+                    stackSizeSymbol.symbolDefaultValue = symbolCount;
+
+                    visitorContext.maxMethodFrameSize = Mathf.Max(symbolCount, visitorContext.maxMethodFrameSize);
+                }
                 else
                     stackSizeCheck2.symbolDefaultValue = cowSymbolPush.Length;
             }
