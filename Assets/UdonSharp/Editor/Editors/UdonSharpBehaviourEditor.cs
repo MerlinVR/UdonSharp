@@ -11,6 +11,12 @@ using UnityEngine;
 using VRC.Udon;
 using VRC.Udon.Editor;
 
+#if ODIN_INSPECTOR_3
+using UdonSharpEditor;
+using Sirenix.OdinInspector.Editor;
+[assembly: DefaultUdonSharpBehaviourEditor(typeof(OdinInspectorHandler), "Odin Inspector")]
+#endif
+
 /// <summary>
 /// Example use of how to register a default inspector
 /// </summary>
@@ -47,6 +53,18 @@ namespace UdonSharpEditor
             base.OnInspectorGUI();
         }
     }
+
+#if ODIN_INSPECTOR_3
+    internal class OdinInspectorHandler : OdinEditor
+    {
+        public override void OnInspectorGUI()
+        {
+            if (UdonSharpGUI.DrawDefaultUdonSharpBehaviourHeader(target)) return;
+
+            DrawTree();
+        }
+    }
+#endif
 
     [CustomEditor(typeof(UdonSharpBehaviour), true)]
     internal class UdonSharpBehaviourEditor : Editor
@@ -140,11 +158,11 @@ namespace UdonSharpEditor
         /// <summary>
         /// Handles removing the reference to the default UdonBehaviourEditor and injecting our own custom editor UdonBehaviourOverrideEditor
         /// </summary>
-        static void OverrideUdonBehaviourDrawer() 
+        public static void OverrideUdonBehaviourDrawer() 
         {
             if (customEditorField == null)
             {
-                Assembly editorAssembly = AppDomain.CurrentDomain.GetAssemblies().First(e => e.GetName().Name == "UnityEditor");
+                Assembly editorAssembly = typeof(UnityEditor.Editor).Assembly;
 
                 System.Type editorAttributesClass = editorAssembly.GetType("UnityEditor.CustomEditorAttributes");
                 customEditorField = editorAttributesClass.GetField("kSCustomEditors", BindingFlags.NonPublic | BindingFlags.Static);

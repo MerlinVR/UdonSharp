@@ -27,7 +27,8 @@
         "VRCSDKBase.dll",
         "System.Collections.Immutable.dll",
         "VRCSDKBase-Editor.dll",
-        "0Harmony.dll"
+        "0Harmony.dll",
+        "Sirenix.OdinInspector.Editor.dll"
     ],
     "autoReferenced": true,
     "defineConstraints": []

@@ -192,6 +192,26 @@ namespace UdonSharpEditor
             HarmonyMethod preBuildHarmonyMethod = new HarmonyMethod(preBuildMethod);
 
             harmony.Patch(buildAssetbundlesMethod, preBuildHarmonyMethod, postBuildHarmonyMethod);
+
+#if ODIN_INSPECTOR_3
+            try
+            {
+                Assembly odinEditorAssembly = UdonSharpUtils.GetLoadedEditorAssemblies().FirstOrDefault(assembly => assembly.GetName().Name == "Sirenix.OdinInspector.Editor");
+
+                System.Type editorUtilityType = odinEditorAssembly.GetType("Sirenix.OdinInspector.Editor.CustomEditorUtility");
+
+                MethodInfo resetCustomEditorsMethod = editorUtilityType.GetMethod("ResetCustomEditors");
+
+                MethodInfo odinInspectorOverrideMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.OdinInspectorOverride), BindingFlags.Public | BindingFlags.Static);
+                HarmonyMethod odinInspectorOverrideHarmonyMethod = new HarmonyMethod(odinInspectorOverrideMethod);
+
+                harmony.Patch(resetCustomEditorsMethod, null, odinInspectorOverrideHarmonyMethod);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Failed to patch Odin inspector fix for U#\nException: {e}");
+            }
+#endif
         }
 
         static class InjectedMethods
@@ -335,6 +355,13 @@ namespace UdonSharpEditor
                 CreateProxyBehaviours(GetAllUdonBehaviours());
                 _skipSceneOpen = false;
             }
+
+#if ODIN_INSPECTOR_3
+            public static void OdinInspectorOverride()
+            {
+                UdonBehaviourDrawerOverride.OverrideUdonBehaviourDrawer();
+            }
+#endif
         }
 
         static void OnChangePlayMode(PlayModeStateChange state)
