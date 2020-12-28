@@ -68,7 +68,10 @@ namespace UdonSharp.Editors
             }
             else
             {
-                rowLabelStyle.normal.textColor = itemMetadata.rowColor;
+                if (args.selected)
+                    rowLabelStyle.normal.textColor = Color.white;
+                else
+                    rowLabelStyle.normal.textColor = itemMetadata.rowColor;
 
                 if (itemMetadata.isType)
                 {
