@@ -1492,9 +1492,10 @@ namespace UdonSharp.Compiler
             return definitionSet.ToArray();
         }
 
-        private void PushRecursiveStack(SymbolDefinition[] pushSymbols, out SymbolDefinition checkSizeSymbol, bool checkStackSize = true)
+        private void PushRecursiveStack(SymbolDefinition[] pushSymbols, ref SymbolDefinition checkSizeSymbol, bool checkStackSize = true)
         {
-            checkSizeSymbol = null;
+            if (checkSizeSymbol == null)
+                checkSizeSymbol = visitorContext.topTable.CreateUnnamedSymbol(typeof(int), SymbolDeclTypeFlags.Internal);
 
             if (pushSymbols.Length == 0)
                 return;
@@ -1516,8 +1517,6 @@ namespace UdonSharp.Compiler
                     stackSizeCapture.ResolveAccessToken("Length");
                     stackSize = stackSizeCapture.ExecuteGet();
                 }
-
-                checkSizeSymbol = visitorContext.topTable.CreateUnnamedSymbol(typeof(int), SymbolDeclTypeFlags.Internal);
 
                 SymbolDefinition targetStackSizeSymbol;
                 using (ExpressionCaptureScope targetSizeAddCapture = new ExpressionCaptureScope(visitorContext, null))
@@ -1774,7 +1773,8 @@ namespace UdonSharp.Compiler
                 if (isPotentiallyRecursive && !shouldSkipRecursivePush)
                 {
                     symbolsToPush = BuildSymbolPushList(expandedParams);
-                    PushRecursiveStack(symbolsToPush, out SymbolDefinition sizeSymbol);
+                    SymbolDefinition sizeSymbol = null;
+                    PushRecursiveStack(symbolsToPush, ref sizeSymbol);
                     sizeSymbol.symbolDefaultValue = symbolsToPush.Length;
                 }
 
@@ -1830,7 +1830,7 @@ namespace UdonSharp.Compiler
             if (visitorContext.isRecursiveMethod)
             {
                 symbolsToPush = BuildSymbolPushList(GetLocalMethodArgumentSymbols(), false);
-                PushRecursiveStack(symbolsToPush, out stackSizeSymbol);
+                PushRecursiveStack(symbolsToPush, ref stackSizeSymbol);
 
                 // Prevents situations where you call a method like void DoThing(string a, string b) with DoThing(b, a)
                 // Without COW values this would mean you copy b -> a, then you copy a -> b after you've already written over a so both parameters end with b's value
@@ -1873,8 +1873,8 @@ namespace UdonSharp.Compiler
                 newCOWSymbolsToPush.ExceptWith(symbolsToPush);
 
                 cowSymbolPush = newCOWSymbolsToPush.ToArray();
-
-                PushRecursiveStack(cowSymbolPush, out SymbolDefinition _, false);
+                
+                PushRecursiveStack(cowSymbolPush, ref stackSizeSymbol, false);
 
                 int symbolCount = symbolsToPush.Length + cowSymbolPush.Length;
                 stackSizeSymbol.symbolDefaultValue = symbolCount;
@@ -1926,7 +1926,7 @@ namespace UdonSharp.Compiler
             if (visitorContext.isRecursiveMethod && accessSymbol.userCsType == visitorContext.behaviourUserType)
             {
                 symbolsToPush = BuildSymbolPushList(captureExternUserMethod.parameters.Select(e => e.paramSymbol), false);
-                PushRecursiveStack(symbolsToPush, out stackSizeSymbol);
+                PushRecursiveStack(symbolsToPush, ref stackSizeSymbol);
 
                 SymbolDefinition.COWValue[] paramCOWValues = new SymbolDefinition.COWValue[invokeParams.Length];
                 for (int i = 0; i < invokeParams.Length; ++i)
@@ -1993,17 +1993,12 @@ namespace UdonSharp.Compiler
 
                 cowSymbolPush = newCOWSymbolsToPush.ToArray();
 
-                PushRecursiveStack(cowSymbolPush, out SymbolDefinition stackSizeCheck2, stackSizeSymbol == null);
+                PushRecursiveStack(cowSymbolPush, ref stackSizeSymbol);
 
-                if (stackSizeSymbol != null)
-                {
-                    int symbolCount = symbolsToPush.Length + cowSymbolPush.Length;
-                    stackSizeSymbol.symbolDefaultValue = symbolCount;
+                int symbolCount = (symbolsToPush?.Length ?? 0) + cowSymbolPush.Length;
+                stackSizeSymbol.symbolDefaultValue = symbolCount;
 
-                    visitorContext.maxMethodFrameSize = Mathf.Max(symbolCount, visitorContext.maxMethodFrameSize);
-                }
-                else
-                    stackSizeCheck2.symbolDefaultValue = cowSymbolPush.Length;
+                visitorContext.maxMethodFrameSize = Mathf.Max(symbolCount, visitorContext.maxMethodFrameSize);
             }
 
             using (ExpressionCaptureScope externInvokeScope = new ExpressionCaptureScope(visitorContext, null))

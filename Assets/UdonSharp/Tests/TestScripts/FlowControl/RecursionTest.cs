@@ -176,11 +176,6 @@ namespace UdonSharp.Tests
             return string.Concat(a, CombineStringsNested(count - 1, CombineStringsNested(count - 1, b, a), CombineStringsNested(count - 1, a, b)), CombineStringsNested(count - 1, CombineStringsNested(count - 1, a, b), CombineStringsNested(count - 1, b, a)), "c");
         }
 
-        //public void Start()
-        //{
-        //    ExecuteTests();
-        //}
-
         [RecursiveMethod]
         int CountChildren(Transform transformToCount)
         {
@@ -201,6 +196,38 @@ namespace UdonSharp.Tests
 
             foreach (Transform child in transformToCount)
                 CountChildrenExternalCount(child);
+        }
+
+        int customEventCounter = 4;
+
+        [RecursiveMethod]
+        public void CustomEventExternRecursion()
+        {
+            int originalCounter = customEventCounter;
+
+            RecursionTest self = this;
+
+            if (customEventCounter == 1)
+                return;
+
+            customEventCounter -= 1;
+            self.SendCustomEvent(nameof(CustomEventExternRecursion));
+
+            customEventCounter = originalCounter * customEventCounter;
+        }
+
+        [RecursiveMethod]
+        public void CustomEventRecursion()
+        {
+            int originalCounter = customEventCounter;
+            
+            if (customEventCounter == 1)
+                return;
+
+            customEventCounter -= 1;
+            SendCustomEvent(nameof(CustomEventRecursion));
+
+            customEventCounter = originalCounter * customEventCounter;
         }
 
         [RecursiveMethod] // Just here to test calling out to other types from recursive methods
@@ -241,6 +268,15 @@ namespace UdonSharp.Tests
             CountChildrenExternalCount(transform);
 
             tester.TestAssertion("Count children recursively foreach external counter", externChildCount == 20);
+
+            customEventCounter = 4;
+            CustomEventExternRecursion();
+
+            tester.TestAssertion("SendCustomEvent extern recursion", customEventCounter == 24);
+
+            customEventCounter = 4;
+            CustomEventRecursion();
+            tester.TestAssertion("SendCustomEvent recursion", customEventCounter == 24);
         }
     }
 }
