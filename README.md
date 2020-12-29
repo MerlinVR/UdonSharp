@@ -16,7 +16,7 @@ This compiler is in an early state and I have no prior experience making compile
 - Extern method overload resolution with support for default arguments and `params` argument lists
 - Implicit and explicit type conversions
 - Arrays and array indexers
-- All builtin arithmetic operators that Udon exposes (BitwiseNot is not implemented on Udon's side yet and I don't feel like making a special condition for it)
+- All builtin arithmetic operators
 - Conditional short circuiting `(true || CheckIfTrue())` will not execute CheckIfTrue()
 - `typeof()`
 - Extern methods with out or ref parameters (such as many variants of `Physics.Raycast()`)
@@ -26,13 +26,13 @@ This compiler is in an early state and I have no prior experience making compile
 - Field initilizers
 - Jagged arrays
 - Referencing other custom classes, accessing fields, and calling methods on them
+- Recursive method calls are supported via the `[RecursiveMethod]` attribute
 
 ## Differences from regular Unity C# to note
 - For the best experience making UdonSharp scripts, make your scripts inherit from `UdonSharpBehaviour` instead of `MonoBehaviour`
 - `Instantiate()` uses a method named `VRCInstantiate()` currently since VRC handles instantiate differently.
 - If you need to call `GetComponent<UdonBehaviour>()` you will need to use `(UdonBehaviour)GetComponent(typeof(UdonBehaviour))` at the moment since the generic get component is not exposed for UdonBehaviour yet. GetComponent<T>() works for other Unity component types though.
 - Udon currently only supports array `[]` collections and by extension UdonSharp only supports arrays at the moment. It looks like they might support `List<T>` at some point, but it is not there yet. 
-- User defined methods currently cannot be recursive. They will technically compile, but will likely break because all invocations of a function currently share the same "stack" variables. Support for this is planned as an optional attribute since implementing recursion with Udon's primitives makes it very performance heavy.
 - Field initilizers are evaluated at compile time, if you have any init logic that depends on other objects in the scene you should use Start for this.
 - Use the `UdonSynced` attribute on fields that you want to sync.  
 - Numeric casts are checked for overflow due to UdonVM limitations
@@ -41,12 +41,12 @@ This compiler is in an early state and I have no prior experience making compile
 ## Udon bugs that affect U#
 - Mutating methods on structs do not modify the struct (this can be seen on things like calling Normalize() on a Vector3) https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/raysetorigin-and-raysetdirection-not-working
 - Instantiated objects will lose their UdonBehaviours when instantiated from a prefab and cannot be interacted with/triggered https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/interactive-objects-break-after-being-clonedinstanciated-on-live-worlds
-- Calling Destroy() on an object in game and then using a null check to check if it's valid will throw exceptions in game https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/null-check-on-gameobject-will-throw-exception-if-the-gameobj-is-destroyed
+- Calling Destroy() on an object in game and then using a null check to check if it's valid will throw exceptions when it shouldn't https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/null-check-on-gameobject-will-throw-exception-if-the-gameobj-is-destroyed
 
 ## Setup
 
 ### Requirements
-- Unity 2018.4.20f1 or greater
+- Unity 2018.4.20f1
 - [VRCSDK3 + UdonSDK](https://vrchat.com/home/download)
 - The latest [release](https://github.com/Merlin-san/UdonSharp/releases/latest) of UdonSharp
 
