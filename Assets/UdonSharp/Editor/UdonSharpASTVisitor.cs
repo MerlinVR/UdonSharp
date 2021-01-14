@@ -15,6 +15,7 @@ namespace UdonSharp.Compiler
         public LabelTable labelTable;
         public AssemblyBuilder uasmBuilder;
         public System.Type behaviourUserType;
+        public int behaviourExecutionOrder = 0;
         public List<ClassDefinition> externClassDefinitions;
         public Dictionary<string, FieldDefinition> localFieldDefinitions;
 #if UDON_BETA_SDK
@@ -248,8 +249,7 @@ namespace UdonSharp.Compiler
 
                 visitorContext.behaviourUserType = selfTypeCaptureScope.captureType;
             }
-
-#if UDON_BETA_SDK
+            
             // Behaviour sync mode attribute handling
             if (node.AttributeLists != null)
             {
@@ -268,6 +268,21 @@ namespace UdonSharp.Compiler
                             captureType = attributeTypeScope.captureType;
                         }
 
+                        if (captureType != null && captureType == typeof(DefaultExecutionOrder))
+                        {
+                            if (attribute.ArgumentList != null &&
+                                attribute.ArgumentList.Arguments != null &&
+                                attribute.ArgumentList.Arguments.Count == 1)
+                            {
+                                visitorContext.behaviourExecutionOrder = int.Parse(attribute.ArgumentList.Arguments[0].Expression.ToString());
+                            }
+                            else
+                            {
+                                throw new System.ArgumentException("Execution order attribute must have an integer argument");
+                            }
+                        }
+
+#if UDON_BETA_SDK
                         if (captureType != null && captureType == typeof(UdonBehaviourSyncModeAttribute))
                         {
                             if (attribute.ArgumentList != null && 
@@ -285,10 +300,10 @@ namespace UdonSharp.Compiler
                                 }
                             }
                         }
+#endif
                     }
                 }
             }
-#endif
 
             Visit(node.BaseList);
 
@@ -313,6 +328,9 @@ namespace UdonSharp.Compiler
             visitorContext.topTable.CreateReflectionSymbol("udonTypeName", typeof(string), Internal.UdonSharpInternalUtility.GetTypeName(visitorContext.behaviourUserType));
 
             visitorContext.uasmBuilder.AppendLine(".code_start", 0);
+
+            if (visitorContext.behaviourExecutionOrder != 0)
+                visitorContext.uasmBuilder.AppendLine($".update_order {visitorContext.behaviourExecutionOrder}", 0);
 
             foreach (MemberDeclarationSyntax member in node.Members)
             {

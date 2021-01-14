@@ -13,6 +13,7 @@ using UdonSharpEditor;
 namespace UdonSharp.Tests
 {
     [AddComponentMenu("Udon Sharp/Test Lib/Integration Test Runner")]
+    [DefaultExecutionOrder(-10)]
     public class IntegrationTestRunner : UdonSharpBehaviour
     {
         public bool runTestOnStart = true;
