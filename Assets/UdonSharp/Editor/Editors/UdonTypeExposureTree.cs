@@ -586,6 +586,9 @@ namespace UdonSharp.Editors
 
                         foreach (FieldInfo field in type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
                         {
+                            if (field.DeclaringType?.FullName == null) // Fix szome weird types in Odin that don't have a name for their declaring type
+                                continue;
+
                             if (resolver.IsValidUdonMethod(resolver.GetUdonFieldAccessorName(field, FieldAccessorType.Get, false)))
                             {
                                 System.Type returnType = field.FieldType;
