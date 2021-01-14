@@ -25,8 +25,8 @@
         "VRC.Udon.ClientBindings.dll",
         "VRCSDK3.dll",
         "VRCSDKBase.dll",
-        "System.Collections.Immutable.dll",
         "VRCSDKBase-Editor.dll",
+        "System.Collections.Immutable.dll",
         "0Harmony.dll",
         "Sirenix.OdinInspector.Editor.dll"
     ],

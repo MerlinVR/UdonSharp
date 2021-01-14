@@ -2,6 +2,7 @@
 using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -1196,7 +1197,7 @@ namespace UdonSharpEditor
 
             IUdonSymbolTable symbolTable = program.SymbolTable;
 
-            string[] exportedSymbolNames = symbolTable.GetExportedSymbols();
+            ImmutableArray<string> exportedSymbolNames = symbolTable.GetExportedSymbols();
 
             EditorGUI.BeginChangeCheck();
 

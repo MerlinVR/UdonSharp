@@ -1,6 +1,7 @@
 ﻿
 using JetBrains.Annotations;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -71,7 +72,7 @@ namespace UdonSharpEditor
             if (uSharpProgram == null || assemblyProgram == null)
                 return null;
 
-            string[] symbols = uSharpProgram.SymbolTable.GetSymbols();
+            ImmutableArray<string> symbols = uSharpProgram.SymbolTable.GetSymbols();
 
             foreach (string symbol in symbols)
             {

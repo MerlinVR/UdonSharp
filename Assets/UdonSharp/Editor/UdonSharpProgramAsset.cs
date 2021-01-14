@@ -1,6 +1,7 @@
 ﻿using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Reflection;
 using UdonSharp.Compiler;
@@ -136,7 +137,7 @@ namespace UdonSharp
 
             if (currentBehaviour != null && !shouldUseRuntimeValue && program != null)
             {
-                string[] exportedSymbolNames = program.SymbolTable.GetExportedSymbols();
+                ImmutableArray<string> exportedSymbolNames = program.SymbolTable.GetExportedSymbols();
 
                 foreach (string exportedSymbolName in exportedSymbolNames)
                 {
