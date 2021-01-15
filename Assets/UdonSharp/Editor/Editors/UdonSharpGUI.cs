@@ -989,7 +989,7 @@ namespace UdonSharpEditor
             }
             else if (declaredType == typeof(AnimationCurve))
             {
-                return EditorGUILayout.CurveField(fieldLabel, (AnimationCurve)value);
+                return EditorGUILayout.CurveField(fieldLabel, (AnimationCurve)value ?? new AnimationCurve());
             }
             else if (declaredType == typeof(char))
             {
