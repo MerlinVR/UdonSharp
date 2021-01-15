@@ -64,18 +64,32 @@ namespace UdonSharp.Tests
             testList.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
             {
                 SerializedProperty testSuiteProperty = testList.serializedProperty.GetArrayElementAtIndex(index);
+                IntegrationTestSuite testSuite = (IntegrationTestSuite)testSuiteProperty.objectReferenceValue;
 
-                Rect testFieldRect = new Rect(rect.x, rect.y + 2, rect.width, EditorGUIUtility.singleLineHeight);
+                Rect testFieldRect = new Rect(rect.x, rect.y + 2, rect.width - 20, EditorGUIUtility.singleLineHeight);
+                Rect checkBoxRect = new Rect(rect.x + rect.width - 15, rect.y + 2, 20, EditorGUIUtility.singleLineHeight);
+
                 EditorGUI.PropertyField(testFieldRect, testSuiteProperty, label: new GUIContent());
+
+                if (testSuite)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    bool newEnabledState = EditorGUI.Toggle(checkBoxRect, testSuite.runSuiteTests);
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(testSuite, "Changed test suite enabled");
+
+                        testSuite.runSuiteTests = newEnabledState;
+                    }
+                }
 
                 EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
 
-                Rect progressBarRect = new Rect(testFieldRect.x, testFieldRect.y + testFieldRect.height + 2, testFieldRect.width, 23f);
+                Rect progressBarRect = new Rect(testFieldRect.x, testFieldRect.y + testFieldRect.height + 2, testFieldRect.width + 20, 23f);
 
                 if (EditorApplication.isPlaying)
                 {
-                    IntegrationTestSuite testSuite = (IntegrationTestSuite)testSuiteProperty.objectReferenceValue;
-
                     if (testSuite != null)
                     {
                         if (testSuite.runSuiteTests)
