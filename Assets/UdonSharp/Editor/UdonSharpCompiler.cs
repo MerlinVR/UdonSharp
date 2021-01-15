@@ -154,7 +154,9 @@ namespace UdonSharp.Compiler
                 {
                     string programSource = UdonSharpUtils.ReadFileTextSync(currentProgram.Item2);
 
+#pragma warning disable CS1701 // Warning about System.Collections.Immutable versions potentially not matching
                     Microsoft.CodeAnalysis.SyntaxTree programSyntaxTree = CSharpSyntaxTree.ParseText(programSource, CSharpParseOptions.Default.WithDocumentationMode(DocumentationMode.None).WithPreprocessorSymbols(defines));
+#pragma warning restore CS1701
 
                     lock (syntaxTreeLock)
                     {
@@ -658,11 +660,13 @@ namespace UdonSharp.Compiler
                 }
             }
 
+#pragma warning disable CS1701 // Warning about System.Collections.Immutable versions potentially not matching
             CSharpCompilation compilation = CSharpCompilation.Create(
                 $"UdonSharpInitAssembly{initAssemblyCounter++}",
                 syntaxTrees: initializerTrees,
                 references: metadataReferences,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+#pragma warning restore CS1701
 
             using (var memoryStream = new MemoryStream())
             {
