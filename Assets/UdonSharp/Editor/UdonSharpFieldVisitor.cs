@@ -18,6 +18,15 @@ namespace UdonSharp.Compiler
             visitorContext.externClassDefinitions = classDefinitions;
         }
 
+        public override void VisitCompilationUnit(CompilationUnitSyntax node)
+        {
+            visitorContext.pauseDebugInfoWrite = true;
+
+            base.VisitCompilationUnit(node);
+
+            visitorContext.pauseDebugInfoWrite = false;
+        }
+
         public override void VisitFieldDeclaration(FieldDeclarationSyntax node)
         {
             UpdateSyntaxNode(node);
