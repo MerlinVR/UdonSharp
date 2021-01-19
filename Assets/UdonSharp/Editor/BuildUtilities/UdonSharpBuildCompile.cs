@@ -21,7 +21,7 @@ namespace UdonSharp
 
             if (UdonSharpProgramAsset.AnyUdonSharpScriptHasError())
             {
-                Debug.LogError("[UdonSharp] Failed to compile UdonSharp scripts for build, check error log for details.");
+                Debug.LogError("[<color=#FF00FF>UdonSharp</color>] Failed to compile UdonSharp scripts for build, check error log for details.");
                 UdonSharpUtils.ShowEditorNotification("Failed to compile UdonSharp scripts for build, check error log for details.");
                 return false;
             }
