@@ -16,6 +16,7 @@ namespace UdonSharpEditor
         public int MaxSerializationDepth { get; private set; } = int.MaxValue;
         
         internal static readonly ProxySerializationPolicy AllWithCreateUndo = new ProxySerializationPolicy() { ChildProxyMode = ChildProxyCreateMode.CreateWithUndo };
+        internal static readonly ProxySerializationPolicy AllWithCreate = new ProxySerializationPolicy() { ChildProxyMode = ChildProxyCreateMode.Create };
 
         [PublicAPI]
         public static readonly ProxySerializationPolicy Default = new ProxySerializationPolicy() { ChildProxyMode = ChildProxyCreateMode.Null, MaxSerializationDepth = 1 };

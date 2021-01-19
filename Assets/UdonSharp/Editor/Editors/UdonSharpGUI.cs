@@ -1502,7 +1502,7 @@ namespace UdonSharpEditor
                 EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
                 if (GUILayout.Button("Convert to UdonBehaviour", GUILayout.Height(25)))
                 {
-                    UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(new[] { behaviour }, true, true);
+                    UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(new[] { behaviour }, true, true, true);
                     EditorGUI.EndDisabledGroup();
 
                     return true;
@@ -1547,7 +1547,7 @@ namespace UdonSharpEditor
                 EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
                 if (GUILayout.Button("Convert to UdonBehaviour", GUILayout.Height(25)))
                 {
-                    UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(Array.ConvertAll(targets, e => e as UdonSharpBehaviour).Where(e => e != null && !UdonSharpEditorUtility.IsProxyBehaviour(e)).ToArray(), true, true);
+                    UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(Array.ConvertAll(targets, e => e as UdonSharpBehaviour).Where(e => e != null && !UdonSharpEditorUtility.IsProxyBehaviour(e)).ToArray(), true, true, true);
                     EditorGUI.EndDisabledGroup();
 
                     return true;
