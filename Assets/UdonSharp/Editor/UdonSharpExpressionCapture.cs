@@ -1644,6 +1644,18 @@ namespace UdonSharp.Compiler
             visitorContext.uasmBuilder.AppendCommentedLine("", "");
         }
 
+        private static readonly HashSet<System.Type> _brokenGetComponentTypes = new HashSet<System.Type>()
+        {
+            typeof(VRC.SDKBase.VRC_AvatarPedestal), typeof(VRC.SDK3.Components.VRCAvatarPedestal),
+            typeof(VRC.SDKBase.VRC_Pickup), typeof(VRC.SDK3.Components.VRCPickup),
+            typeof(VRC.SDKBase.VRC_PortalMarker), typeof(VRC.SDK3.Components.VRCPortalMarker),
+            //typeof(VRC.SDKBase.VRC_MirrorReflection), typeof(VRC.SDK3.Components.VRCMirrorReflection),
+            typeof(VRC.SDKBase.VRCStation),typeof(VRC.SDK3.Components.VRCStation),
+            typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer),
+            typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer),
+            typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer),
+        };
+
         private SymbolDefinition InvokeExtern(SymbolDefinition[] invokeParams)
         {
             // We use void as a placeholder for a null constant value getting passed in, if null is passed in and the target type is a reference type then we assume they are compatible
@@ -1699,6 +1711,10 @@ namespace UdonSharp.Compiler
             SymbolDefinition[] expandedParams = GetExpandedInvokeParams(targetMethod, invokeParams);
             bool isGetComponent = targetMethod.Name.StartsWith("GetComponent") && genericTypeArguments != null;
             bool isUserTypeGetComponent = isGetComponent && genericTypeArguments.First().IsSubclassOf(typeof(UdonSharpBehaviour));
+
+            if (isGetComponent && _brokenGetComponentTypes.Contains(genericTypeArguments.First()))
+                throw new System.Exception($"{targetMethod.Name}<T>() is currently broken in Udon for SDK3 components (<b><i> https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/getcomponentst-functions-are-not-defined-internally-for-vrcsdk3-components </i></b>)\n" +
+                    $"Until this is fixed by VRC, try using: <b>((T){targetMethod.Name}(typeof(T)))</b> instead of <b>{targetMethod.Name}<T>()</b>");
 
             // Now make the needed symbol definitions and run the invoke
             if (!targetMethod.IsStatic && !(targetMethod is ConstructorInfo)/* && targetMethod.Name != "Instantiate"*/) // Constructors don't take an instance argument, but are still classified as an instance method
