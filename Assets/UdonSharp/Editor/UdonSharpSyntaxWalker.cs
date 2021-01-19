@@ -267,10 +267,10 @@ namespace UdonSharp.Compiler
             using (ExpressionCaptureScope namespaceCapture = new ExpressionCaptureScope(visitorContext, null))
             {
                 if (node.StaticKeyword.IsKind(SyntaxKind.StaticKeyword))
-                    throw new System.NotSupportedException("UdonSharp does not yet support static using statements");
+                    throw new System.NotSupportedException("UdonSharp does not yet support static using directives");
 
-                if (node.Alias.IsKind(SyntaxKind.AliasKeyword))
-                    throw new System.NotSupportedException("UdonSharp does not yet support namespace aliases");
+                if (node.Alias != null)
+                    throw new System.NotSupportedException("UdonSharp does not yet support namespace alias directives");
 
                 Visit(node.Name);
 
