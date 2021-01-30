@@ -852,8 +852,8 @@ namespace UdonSharp.Compiler
                 {
                     SymbolDefinition symbolDefinition = currentTable.symbolDefinitions[i];
 
-                    if (!symbolDefinition.declarationType.HasFlag(SymbolDeclTypeFlags.Internal) &&
-                        (!currentTable.IsGlobalSymbolTable || !symbolDefinition.declarationType.HasFlag(SymbolDeclTypeFlags.MethodParameter)) && // Method parameters are declared globally, but only valid in their current local scope
+                    if ((symbolDefinition.declarationType & SymbolDeclTypeFlags.Internal) == 0 &&
+                        (!currentTable.IsGlobalSymbolTable || (symbolDefinition.declarationType & SymbolDeclTypeFlags.MethodParameter) == 0) && // Method parameters are declared globally, but only valid in their current local scope
                         symbolDefinition.symbolOriginalName == symbolName)
                     {
                         return symbolDefinition;
