@@ -503,12 +503,15 @@ namespace UdonSharp
 
         private static Dictionary<System.Type, System.Type> GetInheritedTypeMap()
         {
+            if (inheritedTypeMap != null)
+                return inheritedTypeMap;
+            
             lock (inheritedTypeMapLock)
             {
                 if (inheritedTypeMap != null)
                     return inheritedTypeMap;
-
-                inheritedTypeMap = new Dictionary<System.Type, System.Type>();
+                
+                Dictionary<System.Type, System.Type> typeMap = new Dictionary<System.Type, System.Type>();
 
                 IEnumerable<System.Type> typeList = System.AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == "VRCSDK3").GetTypes().Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
 
@@ -516,12 +519,14 @@ namespace UdonSharp
                 {
                     if (childType.BaseType != null && childType.BaseType.Namespace.StartsWith("VRC.SDKBase"))
                     {
-                        inheritedTypeMap.Add(childType.BaseType, childType);
+                        typeMap.Add(childType.BaseType, childType);
                     }
                 }
 
-                inheritedTypeMap.Add(typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
-                inheritedTypeMap.Add(typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
+                typeMap.Add(typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
+                typeMap.Add(typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
+
+                inheritedTypeMap = typeMap;
             }
 
             return inheritedTypeMap;

@@ -50,7 +50,7 @@ namespace UdonSharp.Compiler
             if (debugSpans.Count == 0)
                 debugSpans.Add(new DebugLineSpan());
 
-            int nodeSpanStart = node.Span.Start;
+            int nodeSpanStart = node.SpanStart;
 
             if (nodeSpanStart < mostRecentSpanStart || nodeSpanStart >= sourceText.Length)
                 return;
@@ -60,12 +60,12 @@ namespace UdonSharp.Compiler
             DebugLineSpan lastLineSpan = debugSpans.Last();
 
             lastLineSpan.endInstruction = assemblyBuilder.programCounter - 1;
-            lastLineSpan.endSourceChar = node.SpanStart;
+            lastLineSpan.endSourceChar = nodeSpanStart;
             //lastLineSpan.spanCodeSection = sourceText.Substring(lastLineSpan.startSourceChar, lastLineSpan.endSourceChar - lastLineSpan.startSourceChar);
 
             DebugLineSpan nextLineSpan = new DebugLineSpan();
             nextLineSpan.startInstruction = assemblyBuilder.programCounter;
-            nextLineSpan.startSourceChar = node.SpanStart;
+            nextLineSpan.startSourceChar = nodeSpanStart;
 
             debugSpans.Add(nextLineSpan);
 

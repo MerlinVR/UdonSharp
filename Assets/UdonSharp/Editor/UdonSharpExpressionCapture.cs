@@ -2337,12 +2337,18 @@ namespace UdonSharp.Compiler
             return true;
         }
 
+        private static readonly PropertyInfo[] _componentProperties =
+            typeof(Component).GetProperties(BindingFlags.Instance | BindingFlags.Public);
+        
+        private static readonly PropertyInfo[] _udonEventReceiverProperties =
+            typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
         private bool HandleLocalUdonBehaviourPropertyLookup(string localUdonPropertyName)
         {
-            PropertyInfo[] foundProperties = typeof(Component).GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(e => e.Name == localUdonPropertyName).ToArray();
+            PropertyInfo[] foundProperties = _componentProperties.Where(e => e.Name == localUdonPropertyName).ToArray();
             
             if (localUdonPropertyName == "enabled")
-                foundProperties = typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(e => e.Name == localUdonPropertyName).ToArray();
+                foundProperties = _udonEventReceiverProperties.Where(e => e.Name == localUdonPropertyName).ToArray();
 
             if (foundProperties.Length == 0)
                 return false;
@@ -2586,6 +2592,9 @@ namespace UdonSharp.Compiler
             return true;
         }
 
+        private static readonly MethodInfo[] _objectMethods =
+            typeof(object).GetMethods(BindingFlags.Public | BindingFlags.Instance);
+        
         private bool HandleMemberMethodLookup(string methodToken)
         {
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
@@ -2603,7 +2612,7 @@ namespace UdonSharp.Compiler
             List<MethodInfo> foundMethodInfos = new List<MethodInfo>(returnType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == methodToken));
 
             if (returnType != typeof(object))
-                foundMethodInfos.AddRange(typeof(object).GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == methodToken));
+                foundMethodInfos.AddRange(_objectMethods.Where(e => e.Name == methodToken));
 
             if (foundMethodInfos.Count == 0)
                 return false;

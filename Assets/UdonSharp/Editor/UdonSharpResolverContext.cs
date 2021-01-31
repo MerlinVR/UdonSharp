@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 using UnityEngine;
 using VRC.Udon.Editor;
 using VRC.Udon.Graph;
@@ -427,18 +428,18 @@ namespace UdonSharp
             }
 
             string paramStr = "";
-
+            
             if (methodParams.Length > 0)
             {
-                paramStr += "_"; // Arg separator
-
+                paramStr = "_"; // Arg separator
+            
                 foreach (ParameterInfo parameterInfo in methodParams)
                 {
                     paramStr += $"_{GetUdonTypeName(parameterInfo.ParameterType, true)}";
                 }
             }
             else if (externMethod is ConstructorInfo)
-                paramStr += "__";
+                paramStr = "__";
 
             string returnStr = "";
 
