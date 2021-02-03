@@ -18,7 +18,7 @@ namespace UdonSharp.Tests
         {
             DestroyImmediate(refObject);
 
-            tester.TestAssertion("Object Destroy Null Check", refObject == null);
+            tester.TestAssertion("Object Destroy Null Check", !Utilities.IsValid(refObject));
         }
     }
 }
