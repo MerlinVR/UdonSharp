@@ -23,6 +23,12 @@ namespace UdonSharp.Tests
         [System.NonSerialized]
         public int testVal = 0;
 
+        public VRCStation[] stations;
+        public VRC.SDK3.Components.VRCStation[] stationsSDK3;
+
+        public VRC.SDK3.Video.Components.VRCUnityVideoPlayer[] unityVideoPlayerArray;
+        public VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer[] baseVideoPlayerArray;
+
         public void SetTestVal(int newTestVal)
         {
             testVal = newTestVal;
@@ -74,6 +80,12 @@ namespace UdonSharp.Tests
             userTypeJaggedArray[1][0] = null;
 
             tester.TestAssertion("User type jagged array", userTypeJaggedArray[0][0] == this && userTypeJaggedArray[0][1] == this && userTypeJaggedArray[1][0] == null);
+
+            tester.TestAssertion("Base VRCStation array", stations[0] != null && stations[1] != null);
+            tester.TestAssertion("VRCSDK3 VRCStation array", stationsSDK3[0] != null && stationsSDK3[1] != null && stationsSDK3[2] != null);
+
+            tester.TestAssertion("Unity VideoPlayer array", unityVideoPlayerArray[0] != null && unityVideoPlayerArray[1] != null);
+            tester.TestAssertion("Base VRCStation array", baseVideoPlayerArray[0] != null && baseVideoPlayerArray[1] != null);
         }
     }
 }

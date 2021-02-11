@@ -3,6 +3,7 @@
 using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -404,7 +405,7 @@ namespace UdonSharpEditor
 
                 EditorGUILayout.Space();
 
-                editorState.showProgramUasm = EditorGUILayout.Foldout(editorState.showProgramUasm, "Compiled C# Udon Assembly");
+                editorState.showProgramUasm = EditorGUILayout.Foldout(editorState.showProgramUasm, "Compiled C# Udon Assembly", true);
                 if (editorState.showProgramUasm)
                 {
                     programAsset.DrawAssemblyText();
@@ -412,7 +413,7 @@ namespace UdonSharpEditor
 
                 if (programAsset.GetRealProgram() != null)
                 {
-                    editorState.showProgramDisassembly = EditorGUILayout.Foldout(editorState.showProgramDisassembly, "Program Disassembly");
+                    editorState.showProgramDisassembly = EditorGUILayout.Foldout(editorState.showProgramDisassembly, "Program Disassembly", true);
                     if (editorState.showProgramDisassembly)
                         programAsset.DrawProgramDisassembly();
                 }
@@ -447,6 +448,8 @@ namespace UdonSharpEditor
 
                 if (chosenFilePath.Length > 0)
                 {
+                    chosenFilePath = UdonSharpSettings.SanitizeScriptFilePath(chosenFilePath);
+
                     string fileContents = UdonSharpSettings.GetProgramTemplateString(Path.GetFileNameWithoutExtension(chosenFilePath));
 
                     File.WriteAllText(chosenFilePath, fileContents, System.Text.Encoding.UTF8);
@@ -593,8 +596,8 @@ namespace UdonSharpEditor
             {
                 UdonBehaviour targetBehaviour = objectFieldValue as UdonBehaviour;
                 UdonSharpProgramAsset targetProgramAsset = targetBehaviour?.programSource as UdonSharpProgramAsset;
-                if (targetProgramAsset?.sourceCsScript?.GetClass() != null)
-                    variableType = targetProgramAsset.sourceCsScript.GetClass();
+                if (targetProgramAsset?.GetClass() != null)
+                    variableType = targetProgramAsset.GetClass();
 
                 labelText = $"{objectFieldValue.name} ({variableType.Name})";
             }
@@ -987,7 +990,7 @@ namespace UdonSharpEditor
             }
             else if (declaredType == typeof(AnimationCurve))
             {
-                return EditorGUILayout.CurveField(fieldLabel, (AnimationCurve)value);
+                return EditorGUILayout.CurveField(fieldLabel, (AnimationCurve)value ?? new AnimationCurve());
             }
             else if (declaredType == typeof(char))
             {
@@ -1195,7 +1198,7 @@ namespace UdonSharpEditor
 
             IUdonSymbolTable symbolTable = program.SymbolTable;
 
-            string[] exportedSymbolNames = symbolTable.GetExportedSymbols();
+            ImmutableArray<string> exportedSymbolNames = symbolTable.GetExportedSymbols();
 
             EditorGUI.BeginChangeCheck();
 
@@ -1378,13 +1381,15 @@ namespace UdonSharpEditor
             if (behaviour.GetComponent<Collider>() != null)
             {
                 newCollisionTransfer = EditorGUILayout.Toggle(ownershipTransferOnCollisionContent, behaviour.AllowCollisionOwnershipTransfer);
+
+                if (newCollisionTransfer)
+                    EditorGUILayout.HelpBox("Collision transfer is currently bugged and can cause network spam that lags your world, use at your own risk.", MessageType.Warning);
             }
             else if(newCollisionTransfer)
             {
                 newCollisionTransfer = false;
 
-                if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
-                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                GUI.changed = true;
             }
             EditorGUI.EndDisabledGroup();
 
@@ -1498,7 +1503,7 @@ namespace UdonSharpEditor
                 EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
                 if (GUILayout.Button("Convert to UdonBehaviour", GUILayout.Height(25)))
                 {
-                    UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(new[] { behaviour }, true, true);
+                    UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(new[] { behaviour }, true, true, true);
                     EditorGUI.EndDisabledGroup();
 
                     return true;
@@ -1543,7 +1548,7 @@ namespace UdonSharpEditor
                 EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
                 if (GUILayout.Button("Convert to UdonBehaviour", GUILayout.Height(25)))
                 {
-                    UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(Array.ConvertAll(targets, e => e as UdonSharpBehaviour).Where(e => e != null && !UdonSharpEditorUtility.IsProxyBehaviour(e)).ToArray(), true, true);
+                    UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(Array.ConvertAll(targets, e => e as UdonSharpBehaviour).Where(e => e != null && !UdonSharpEditorUtility.IsProxyBehaviour(e)).ToArray(), true, true, true);
                     EditorGUI.EndDisabledGroup();
 
                     return true;

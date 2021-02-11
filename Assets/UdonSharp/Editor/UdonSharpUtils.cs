@@ -202,6 +202,10 @@ namespace UdonSharp
             if (IsNumericImplicitCastValid(targetType, assignee))
                 return true;
 
+            // We use void as a placeholder for a null constant value getting passed in, if null is passed in and the target type is a reference type then we assume they are compatible
+            if (assignee == typeof(void) && !targetType.IsValueType)
+                return true;
+
             // Handle user-defined implicit conversion operators defined on both sides
             // Roughly follows https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/conversions#processing-of-user-defined-implicit-conversions
 
@@ -482,6 +486,11 @@ namespace UdonSharp
                    IsUserJaggedArray(type);
         }
 
+        public static bool IsUdonWorkaroundType(System.Type type)
+        {
+            return type == typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer) || type == typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer);
+        }
+
         public static System.Type GetRootElementType(System.Type type)
         {
             while (type.IsArray)
@@ -495,12 +504,15 @@ namespace UdonSharp
 
         private static Dictionary<System.Type, System.Type> GetInheritedTypeMap()
         {
+            if (inheritedTypeMap != null)
+                return inheritedTypeMap;
+            
             lock (inheritedTypeMapLock)
             {
                 if (inheritedTypeMap != null)
                     return inheritedTypeMap;
-
-                inheritedTypeMap = new Dictionary<System.Type, System.Type>();
+                
+                Dictionary<System.Type, System.Type> typeMap = new Dictionary<System.Type, System.Type>();
 
                 IEnumerable<System.Type> typeList = System.AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == "VRCSDK3").GetTypes().Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
 
@@ -508,12 +520,14 @@ namespace UdonSharp
                 {
                     if (childType.BaseType != null && childType.BaseType.Namespace.StartsWith("VRC.SDKBase"))
                     {
-                        inheritedTypeMap.Add(childType.BaseType, childType);
+                        typeMap.Add(childType.BaseType, childType);
                     }
                 }
 
-                inheritedTypeMap.Add(typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
-                inheritedTypeMap.Add(typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
+                typeMap.Add(typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
+                typeMap.Add(typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
+
+                inheritedTypeMap = typeMap;
             }
 
             return inheritedTypeMap;
@@ -541,12 +555,21 @@ namespace UdonSharp
 
             return type;
         }
-
-        // Doesn't work in a multi threaded context, todo: consider making this a concurrent collection or making one for each thread.
-        //private static Dictionary<System.Type, System.Type> userTypeToUdonTypeCache = new Dictionary<System.Type, System.Type>();
+        
+        [ThreadStatic]
+        private static Dictionary<System.Type, System.Type> userTypeToUdonTypeCache;
 
         public static System.Type UserTypeToUdonType(System.Type type)
         {
+            if (type == null)
+                return null;
+
+            if (userTypeToUdonTypeCache == null)
+                userTypeToUdonTypeCache = new Dictionary<Type, Type>();
+
+            if (userTypeToUdonTypeCache.TryGetValue(type, out System.Type foundType))
+                return foundType;
+            
             System.Type udonType = null;
 
             if (IsUserDefinedType(type))
@@ -572,6 +595,8 @@ namespace UdonSharp
                 udonType = type;
 
             udonType = RemapBaseType(udonType);
+            
+            userTypeToUdonTypeCache.Add(type, udonType);
 
             return udonType;
         }

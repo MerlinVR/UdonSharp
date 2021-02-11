@@ -32,6 +32,19 @@ namespace UdonSharp.Tests
 
             tester.TestAssertion("Foreach loop", counter == 15);
 
+            counter = 0;
+            foreach (var child in transform)
+            {
+                ++counter;
+            }
+
+            foreach (Transform child in transform)
+            {
+                ++counter;
+            }
+
+            tester.TestAssertion("Foreach child Transform loop", counter == 6);
+
             string helloStr = "hello!";
             string builtStr = "";
 
@@ -41,6 +54,22 @@ namespace UdonSharp.Tests
             }
 
             tester.TestAssertion("Foreach string loop", builtStr == helloStr);
+
+            GameObject[] gameObjects = new GameObject[2000];
+            int gameObjectLen = gameObjects.Length;
+
+            for (int i = 0; i < gameObjects.Length; ++i)
+            {
+                gameObjects[i] = gameObject;
+            }
+
+            System.DateTime startTime = System.DateTime.UtcNow;
+            for (int i = 0; i < gameObjects.Length; ++i)
+            {
+                gameObjects[i] = gameObject;
+            }
+
+            tester.TestAssertion("Array indexer performance", (System.DateTime.UtcNow - startTime).TotalSeconds < 1f);
         }
     }
 }

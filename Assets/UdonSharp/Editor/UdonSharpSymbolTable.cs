@@ -14,12 +14,14 @@ namespace UdonSharp.Compiler
         Private = 2, // Declared by the user as a private variable on a class
         Local = 4, // Declared by the user as a variable local to a specific scope
         Internal = 8, // Generated as an intermediate variable that stores intermediate calculations
-        Constant = 16, // Used to represent a constant value that does not change. This can either be statically defined constants 
+        Constant = 16, // Used to represent a constant value set by the compiler that does not change after compile time. Variables with const/readonly use the Readonly flag.
         Array = 32, // If this symbol is an array type
         This = 64, // defines one of the 3 builtin `this` assignments for UdonBehaviour, GameObject, and Transform
         Reflection = 128, // Metadata information for type checking and other editor time info
         Readonly = 256, // Symbols marked as either const or readonly by the user, treat them the same for now. 
-        BuiltinVar = 512,
+        MethodParameter = 512, // Symbols used for passing around method parameters
+        NeedsRecursivePush = 1024, // Internal symbols used for tracking flow control and such which need to be pushed to the recursive stack when a method is recursive. An example of this is the int counter for a foreach loop and the size of the array the foreach is iterating.
+        BuiltinVar = 2048,
     }
 
     [Serializable]
@@ -164,6 +166,8 @@ namespace UdonSharp.Compiler
                 this.visitorContext = visitorContext;
 
                 tableCreationScope = visitorContext.topTable;
+                
+                tableCreationScope.AddSymbolCOW(this);
             }
 
             public void AddRef(COWValue holder)
@@ -304,6 +308,10 @@ namespace UdonSharp.Compiler
 
         private List<(SymbolTable, Dictionary<string, int>)> initialSymbolCounters = new List<(SymbolTable, Dictionary<string, int>)>();
 
+        private List<SymbolDefinition.COWValueInternal> scopeCOWValues = new List<SymbolDefinition.COWValueInternal>();
+        
+        int expressionScopeDepth = 0;
+
         public SymbolTable GetGlobalSymbolTable()
         {
             SymbolTable currentTable = this;
@@ -350,6 +358,35 @@ namespace UdonSharp.Compiler
             IsTableReadOnly = true;
             
             ValidateParentTableCounters();
+
+            Debug.Assert(expressionScopeDepth == 0, "Symbol table scope depth must be 0");
+            Debug.Assert(scopeCOWValues.Count == 0, "Symbol table COW values must be empty");
+        }
+
+        public void EnterExpressionScope()
+        {
+            ++expressionScopeDepth;
+        }
+
+        public void ExitExpressionScope()
+        {
+            --expressionScopeDepth;
+
+            if (expressionScopeDepth == 0)
+                scopeCOWValues.Clear();
+
+            Debug.Assert(expressionScopeDepth >= 0, "Expression scope cannot be negative");
+        }
+
+        public IEnumerable<SymbolDefinition> GetOpenCOWSymbols()
+        {
+            return scopeCOWValues.Where(e => e.symbol != null && e.referenceCount > 0 && !e.symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) && !e.symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Readonly)).Select(e => e.symbol);
+        }
+
+        internal void AddSymbolCOW(SymbolDefinition.COWValueInternal value)
+        {
+            if (expressionScopeDepth > 0)
+                scopeCOWValues.Add(value);
         }
 
         protected int IncrementUniqueNameCounter(string symbolName)
@@ -472,6 +509,51 @@ namespace UdonSharp.Compiler
             while (currentTable != null)
             {
                 foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => includeInternal ? true : !e.declarationType.HasFlag(SymbolDeclTypeFlags.Internal)));
+                currentTable = currentTable.parentSymbolTable;
+            }
+
+            return foundSymbols;
+        }
+
+        public List<SymbolDefinition> GetAllLocalSymbols()
+        {
+            List<SymbolDefinition> foundSymbols = new List<SymbolDefinition>();
+
+            SymbolTable currentTable = this;
+
+            while (currentTable != null && !currentTable.IsGlobalSymbolTable)
+            {
+                foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => !e.declarationType.HasFlag(SymbolDeclTypeFlags.Internal) && e.declarationType.HasFlag(SymbolDeclTypeFlags.Local)));
+                currentTable = currentTable.parentSymbolTable;
+            }
+
+            return foundSymbols;
+        }
+
+        public List<SymbolDefinition> GetAllRecursiveSymbols()
+        {
+            List<SymbolDefinition> foundSymbols = new List<SymbolDefinition>();
+
+            SymbolTable currentTable = this;
+
+            while (currentTable != null && !currentTable.IsGlobalSymbolTable)
+            {
+                foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => (!e.declarationType.HasFlag(SymbolDeclTypeFlags.Internal) || e.declarationType.HasFlag(SymbolDeclTypeFlags.NeedsRecursivePush)) && e.declarationType.HasFlag(SymbolDeclTypeFlags.Local)));
+                currentTable = currentTable.parentSymbolTable;
+            }
+
+            return foundSymbols;
+        }
+
+        public List<SymbolDefinition> GetCurrentMethodParameters()
+        {
+            List<SymbolDefinition> foundSymbols = new List<SymbolDefinition>();
+
+            SymbolTable currentTable = this;
+
+            while (currentTable != null && !currentTable.IsGlobalSymbolTable)
+            {
+                foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.MethodParameter)));
                 currentTable = currentTable.parentSymbolTable;
             }
 
@@ -658,6 +740,10 @@ namespace UdonSharp.Compiler
                 uniqueSymbolName = $"const_{uniqueSymbolName}";
                 hasGlobalDeclaration = true;
             }
+            if (declType.HasFlag(SymbolDeclTypeFlags.MethodParameter))
+            {
+                uniqueSymbolName = $"mp_{uniqueSymbolName}";
+            }
             if (declType.HasFlag(SymbolDeclTypeFlags.This))
             {
                 uniqueSymbolName = $"this_{uniqueSymbolName}";
@@ -691,6 +777,7 @@ namespace UdonSharp.Compiler
                 throw new System.ArgumentException($"Could not locate Udon type for system type {resolvedSymbolType.FullName}");
             
             udonTypeName = udonTypeName.Replace("VRCUdonCommonInterfacesIUdonEventReceiver", "VRCUdonUdonBehaviour");
+            //udonTypeName = udonTypeName.Replace("VRCUdonUdonBehaviourArray", "VRCUdonCommonInterfacesIUdonEventReceiverArray");
 
             SymbolDefinition symbolDefinition = new SymbolDefinition();
             symbolDefinition.declarationType = declType;
@@ -763,12 +850,12 @@ namespace UdonSharp.Compiler
 
             while (currentTable != null)
             {
-                //foreach (SymbolDefinition symbolDefinition in currentTable.symbolDefinitions)
                 for (int i = currentTable.symbolDefinitions.Count - 1; i >= 0; --i)
                 {
                     SymbolDefinition symbolDefinition = currentTable.symbolDefinitions[i];
 
-                    if (!symbolDefinition.declarationType.HasFlag(SymbolDeclTypeFlags.Internal) &&
+                    if ((symbolDefinition.declarationType & SymbolDeclTypeFlags.Internal) == 0 &&
+                        (!currentTable.IsGlobalSymbolTable || (symbolDefinition.declarationType & SymbolDeclTypeFlags.MethodParameter) == 0) && // Method parameters are declared globally, but only valid in their current local scope
                         symbolDefinition.symbolOriginalName == symbolName)
                     {
                         return symbolDefinition;

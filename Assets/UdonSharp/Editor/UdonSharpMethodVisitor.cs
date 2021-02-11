@@ -26,6 +26,29 @@ namespace UdonSharp.Compiler
             "GetUdonTypeName",
         };
 
+        bool HasRecursiveMethodAttribute(MethodDeclarationSyntax node)
+        {
+            if (node.AttributeLists != null)
+            {
+                foreach (AttributeListSyntax attributeList in node.AttributeLists)
+                {
+                    foreach (AttributeSyntax attribute in attributeList.Attributes)
+                    {
+                        using (ExpressionCaptureScope attributeTypeCapture = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            attributeTypeCapture.isAttributeCaptureScope = true;
+                            Visit(attribute.Name);
+
+                            if (attributeTypeCapture.captureType == typeof(RecursiveMethodAttribute))
+                                return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
         public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
             UpdateSyntaxNode(node);
@@ -33,6 +56,9 @@ namespace UdonSharp.Compiler
             MethodDefinition methodDefinition = new MethodDefinition();
 
             methodDefinition.declarationFlags = node.Modifiers.HasModifier("public") ? MethodDeclFlags.Public : MethodDeclFlags.Private;
+            if (HasRecursiveMethodAttribute(node))
+                methodDefinition.declarationFlags |= MethodDeclFlags.RecursiveMethod;
+
             methodDefinition.methodUdonEntryPoint = visitorContext.labelTable.GetNewJumpLabel("udonMethodEntryPoint");
             methodDefinition.methodUserCallStart = visitorContext.labelTable.GetNewJumpLabel("userMethodCallEntry");
             methodDefinition.methodReturnPoint = visitorContext.labelTable.GetNewJumpLabel("methodReturnPoint");
@@ -82,7 +108,7 @@ namespace UdonSharp.Compiler
 
                     paramDef.type = paramTypeCapture.captureType;
                     paramDef.symbolName = parameter.Identifier.ValueText;
-                    paramDef.paramSymbol = visitorContext.topTable.CreateNamedSymbol(parameter.Identifier.ValueText, paramDef.type, SymbolDeclTypeFlags.Local);
+                    paramDef.paramSymbol = visitorContext.topTable.CreateNamedSymbol(parameter.Identifier.ValueText, paramDef.type, SymbolDeclTypeFlags.Local | SymbolDeclTypeFlags.MethodParameter);
                 }
 
                 methodDefinition.parameters[i] = paramDef;

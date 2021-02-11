@@ -27,6 +27,7 @@ namespace UdonSharpEditor
             EditorSceneManager.sceneOpened += OnSceneOpened;
             EditorApplication.update += OnEditorUpdate;
             EditorApplication.playModeStateChanged += OnChangePlayMode;
+            AssemblyReloadEvents.beforeAssemblyReload += BeforeAssemblyReloadCleanup;
             AssemblyReloadEvents.afterAssemblyReload += RunPostAssemblyBuildRefresh;
         }
 
@@ -58,6 +59,14 @@ namespace UdonSharpEditor
             InjectUnityEventInterceptors();
         }
 
+        const string HARMONY_ID = "UdonSharp.Editor.EventPatch";
+
+        private static void BeforeAssemblyReloadCleanup()
+        {
+            Harmony harmony = new Harmony(HARMONY_ID);
+            harmony.UnpatchAll(HARMONY_ID);
+        }
+
         static void InjectUnityEventInterceptors()
         {
             List<System.Type> udonSharpBehaviourTypes = new List<Type>();
@@ -70,10 +79,9 @@ namespace UdonSharpEditor
                         udonSharpBehaviourTypes.Add(type);
                 }
             }
-
-            const string harmonyID = "UdonSharp.Editor.EventPatch";
-            Harmony harmony = new Harmony(harmonyID);
-            harmony.UnpatchAll(harmonyID);
+            
+            Harmony harmony = new Harmony(HARMONY_ID);
+            harmony.UnpatchAll(HARMONY_ID);
 
             MethodInfo injectedEvent = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.EventInterceptor), BindingFlags.Static | BindingFlags.Public);
             HarmonyMethod injectedMethod = new HarmonyMethod(injectedEvent);
@@ -186,6 +194,26 @@ namespace UdonSharpEditor
             HarmonyMethod preBuildHarmonyMethod = new HarmonyMethod(preBuildMethod);
 
             harmony.Patch(buildAssetbundlesMethod, preBuildHarmonyMethod, postBuildHarmonyMethod);
+
+#if ODIN_INSPECTOR_3
+            try
+            {
+                Assembly odinEditorAssembly = UdonSharpUtils.GetLoadedEditorAssemblies().FirstOrDefault(assembly => assembly.GetName().Name == "Sirenix.OdinInspector.Editor");
+
+                System.Type editorUtilityType = odinEditorAssembly.GetType("Sirenix.OdinInspector.Editor.CustomEditorUtility");
+
+                MethodInfo resetCustomEditorsMethod = editorUtilityType.GetMethod("ResetCustomEditors");
+
+                MethodInfo odinInspectorOverrideMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.OdinInspectorOverride), BindingFlags.Public | BindingFlags.Static);
+                HarmonyMethod odinInspectorOverrideHarmonyMethod = new HarmonyMethod(odinInspectorOverrideMethod);
+
+                harmony.Patch(resetCustomEditorsMethod, null, odinInspectorOverrideHarmonyMethod);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Failed to patch Odin inspector fix for U#\nException: {e}");
+            }
+#endif
         }
 
         static class InjectedMethods
@@ -245,6 +273,9 @@ namespace UdonSharpEditor
                     {
                         foreach (UnityEngine.Object reference in references)
                         {
+                            if (reference == null)
+                                continue;
+
                             System.Type refType = reference.GetType();
 
                             if (objType.IsAssignableFrom(refType))
@@ -283,23 +314,31 @@ namespace UdonSharpEditor
                         validator = validationDelegate;
                     else if (property != null)
                     {
-                        if (getFieldInfoFunc == null)
+                        // Just in case, we don't want to blow up default Unity UI stuff if something goes wrong here.
+                        try
                         {
-                            Assembly editorAssembly = AppDomain.CurrentDomain.GetAssemblies().First(e => e.GetName().Name == "UnityEditor");
+                            if (getFieldInfoFunc == null)
+                            {
+                                Assembly editorAssembly = AppDomain.CurrentDomain.GetAssemblies().First(e => e.GetName().Name == "UnityEditor");
 
-                            System.Type scriptAttributeUtilityType = editorAssembly.GetType("UnityEditor.ScriptAttributeUtility");
+                                System.Type scriptAttributeUtilityType = editorAssembly.GetType("UnityEditor.ScriptAttributeUtility");
 
-                            MethodInfo fieldInfoMethod = scriptAttributeUtilityType.GetMethod("GetFieldInfoFromProperty", BindingFlags.NonPublic | BindingFlags.Static);
+                                MethodInfo fieldInfoMethod = scriptAttributeUtilityType.GetMethod("GetFieldInfoFromProperty", BindingFlags.NonPublic | BindingFlags.Static);
 
-                            getFieldInfoFunc = (GetFieldInfoDelegate)Delegate.CreateDelegate(typeof(GetFieldInfoDelegate), fieldInfoMethod);
+                                getFieldInfoFunc = (GetFieldInfoDelegate)Delegate.CreateDelegate(typeof(GetFieldInfoDelegate), fieldInfoMethod);
+                            }
+
+                            getFieldInfoFunc(property, out System.Type fieldType);
+
+                            if (fieldType != null && (fieldType == typeof(UdonSharpBehaviour) || fieldType.IsSubclassOf(typeof(UdonSharpBehaviour))))
+                            {
+                                objType = fieldType;
+                                validator = validationDelegate;
+                            }
                         }
-
-                        getFieldInfoFunc(property, out System.Type fieldType);
-
-                        if (fieldType != null && (fieldType == typeof(UdonSharpBehaviour) || fieldType.IsSubclassOf(typeof(UdonSharpBehaviour))))
+                        catch (Exception)
                         {
-                            objType = fieldType;
-                            validator = validationDelegate;
+                            validator = null;
                         }
                     }
                 }
@@ -318,6 +357,13 @@ namespace UdonSharpEditor
                 CreateProxyBehaviours(GetAllUdonBehaviours());
                 _skipSceneOpen = false;
             }
+
+#if ODIN_INSPECTOR_3
+            public static void OdinInspectorOverride()
+            {
+                UdonBehaviourDrawerOverride.OverrideUdonBehaviourDrawer();
+            }
+#endif
         }
 
         static void OnChangePlayMode(PlayModeStateChange state)
@@ -521,7 +567,7 @@ namespace UdonSharpEditor
             if (behaviourProgramAsset is UdonSharpProgramAsset behaviourUSharpAsset && 
                 expectedType != typeof(UdonBehaviour)) // Leave references to UdonBehaviours intact to prevent breaks on old behaviours, this may be removed in 1.0 to enforce the correct division in types in C# land
             {
-                System.Type symbolUSharpType = behaviourUSharpAsset.sourceCsScript?.GetClass();
+                System.Type symbolUSharpType = behaviourUSharpAsset.GetClass();
 
                 if (symbolUSharpType != null &&
                     symbolUSharpType != expectedType &&
@@ -559,6 +605,8 @@ namespace UdonSharpEditor
             if (rootArray == null)
                 return true;
 
+            System.Type arrayStorageType = UdonSharpUtils.UserTypeToUdonType(rootArrayType);
+
             if (arrayDimensionCount == currentDepth)
             {
                 System.Type elementType = rootArrayType.GetElementType();
@@ -587,15 +635,15 @@ namespace UdonSharpEditor
                             array.SetValue(null, i);
                     }
                 }
-                else if (rootArray.GetType() != rootArrayType)
+                else if (rootArray.GetType() != arrayStorageType)
                 {
-                    System.Type targetElementType = rootArrayType.GetElementType();
+                    System.Type targetElementType = arrayStorageType.GetElementType();
 
                     if (!targetElementType.IsArray /*&& (rootArray.GetType().GetElementType() == null || !rootArray.GetType().GetElementType().IsArray)*/)
                     {
                         Array rootArrayArr = (Array)rootArray;
                         int arrayLen = rootArrayArr.Length;
-                        Array newArray = (Array)Activator.CreateInstance(rootArrayType, new object[] { arrayLen });
+                        Array newArray = (Array)Activator.CreateInstance(arrayStorageType, new object[] { arrayLen });
                         rootArray = newArray;
                         modifiedArray = true;
 

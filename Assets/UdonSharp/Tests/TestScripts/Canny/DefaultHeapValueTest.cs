@@ -27,6 +27,9 @@ namespace UdonSharp.Tests
 
         [HideInInspector]
         public string[] defaultPublicArr;
+        
+        [HideInInspector]
+        public UdonSharpBehaviour[] emptyUdonBehaviourArray;
 
         [SerializeField]
         public readonly string readonlyStr = "aaa";
@@ -37,6 +40,7 @@ namespace UdonSharp.Tests
         void TestPublicArray()
         {
             tester.TestAssertion("Default Public Array Initialized", defaultPublicArr != null && defaultPublicArr.Length == 0);
+            tester.TestAssertion("Default UdonSharpBehaviour Public Array Initialized", emptyUdonBehaviourArray != null && emptyUdonBehaviourArray.Length == 0);
         }
 
         [HideInInspector]

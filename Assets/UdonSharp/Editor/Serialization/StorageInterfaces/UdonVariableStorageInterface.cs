@@ -35,6 +35,21 @@ namespace UdonSharp.Serialization
             }
         }
 
+        private static void SetVarInternal<T>(UdonBehaviour behaviour, string variableKey, T value)
+        {
+            if (!behaviour.publicVariables.TrySetVariableValue<T>(variableKey, value))
+            {
+                UdonVariable<T> varVal = new UdonVariable<T>(variableKey, value);
+                if (!behaviour.publicVariables.TryAddVariable(varVal))
+                {
+                    if (!behaviour.publicVariables.RemoveVariable(variableKey) || !behaviour.publicVariables.TryAddVariable(varVal)) // Fallback in case the value already exists for some reason
+                        Debug.LogError($"Could not write variable '{variableKey}' to public variables on UdonBehaviour");
+                    else
+                        Debug.LogWarning($"Storage for variable '{variableKey}' of type '{typeof(T)}' did not match, updated storage type");
+                }
+            }
+        }
+
         private static void SetVariable<T>(UdonBehaviour behaviour, string variableKey, T value)
         {
             System.Type type = typeof(T);
@@ -50,31 +65,13 @@ namespace UdonSharp.Serialization
                                      type == typeof(UdonBehaviour));
 
                 if (isRemoveType)
-                {
                     behaviour.publicVariables.RemoveVariable(variableKey);
-                }
                 else
-                {
-                    if (!behaviour.publicVariables.TrySetVariableValue<T>(variableKey, value))
-                    {
-                        UdonVariable<T> varVal = new UdonVariable<T>(variableKey, value);
-                        if (!behaviour.publicVariables.TryAddVariable(varVal))
-                        {
-                            Debug.LogError($"Could not write variable '{variableKey}' to public variables on UdonBehaviour");
-                        }
-                    }
-                }
+                    SetVarInternal<T>(behaviour, variableKey, value);
             }
             else
             {
-                if (!behaviour.publicVariables.TrySetVariableValue<T>(variableKey, value))
-                {
-                    UdonVariable<T> varVal = new UdonVariable<T>(variableKey, value);
-                    if (!behaviour.publicVariables.TryAddVariable(varVal))
-                    {
-                        Debug.LogError($"Could not write variable '{variableKey}' to public variables on UdonBehaviour");
-                    }
-                }
+                SetVarInternal<T>(behaviour, variableKey, value);
             }
         }
 
@@ -83,6 +80,11 @@ namespace UdonSharp.Serialization
             T output;
             if (behaviour.publicVariables.TryGetVariableValue<T>(variableKey, out output))
                 return output;
+
+            // The type no longer matches exactly, but is trivially convertible
+            // This will usually flow into a reassignment of the public variable type in SetVarInternal() when the value gets copied back to Udon
+            if (behaviour.publicVariables.TryGetVariableValue(variableKey, out object outputObj) && !outputObj.IsUnityObjectNull() && outputObj is T)
+                return (T)outputObj;
 
             // Try to get the default value if there's no custom value specified
             if (behaviour.programSource != null && behaviour.programSource is UdonSharpProgramAsset udonSharpProgramAsset)

@@ -52,7 +52,7 @@ namespace UdonSharp.Tests
             string testPrefixText = assertion ? "[<color=#008000>Pass</color>]: " : "[<color=#FF0000>Fail</color>]: ";
 
             if (!assertion || printPassedTests || forcePrintPassedTests)
-                Debug.Log(whitespaceStr + whitespaceStr + testPrefixText + testName);
+                Debug.Log(whitespaceStr + whitespaceStr + "[<color=#00AF54>Test</color>] " + testPrefixText + testName);
 
             ++testTotalCount;
             if (assertion) ++testSuccessCount;

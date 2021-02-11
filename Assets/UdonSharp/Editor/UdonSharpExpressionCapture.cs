@@ -42,6 +42,7 @@ namespace UdonSharp.Compiler
         public ExpressionCaptureArchetype captureArchetype { get; private set; } = ExpressionCaptureArchetype.Unknown;
 
         public bool isAttributeCaptureScope { get; set; } = false;
+        public bool shouldSkipRecursivePush { get; set; } = false;
 
         // Only the parameters corresponding with the current captureArchetype are guaranteed to be valid
         public string captureNamespace { get; private set; } = "";
@@ -486,24 +487,70 @@ namespace UdonSharp.Compiler
                 SymbolDefinition arraySymbol = accessValue.symbol;
                 System.Type elementType = null;
 
+                System.Type arraySymbolType = arraySymbol.symbolCsType;
+
                 string getIndexerUdonName;
-                if (arraySymbol.symbolCsType == typeof(string))
+                if (arraySymbolType == typeof(string))
                 {
-                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "get_Chars").First());
+                    // udon-workaround: This is where support for Udon's string indexer would go, IF IT HAD ONE
+                    //getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "get_Chars").First());
+                    
                     elementType = typeof(char);
+
+                    SymbolDefinition substringStrSymbol;
+                    using (ExpressionCaptureScope substringScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        substringScope.SetToLocalSymbol(arraySymbol);
+                        substringScope.ResolveAccessToken(nameof(string.Substring));
+
+                        substringStrSymbol = substringScope.Invoke(new SymbolDefinition[] { arrayIndexerIndexValue.symbol, visitorContext.topTable.CreateConstSymbol(typeof(int), 1) });
+                    }
+
+                    SymbolDefinition subStrCharArrSymbol;
+
+                    using (ExpressionCaptureScope charArrScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        charArrScope.SetToLocalSymbol(substringStrSymbol);
+                        charArrScope.ResolveAccessToken(nameof(string.ToCharArray));
+
+                        subStrCharArrSymbol = charArrScope.Invoke(new SymbolDefinition[] { });
+                    }
+
+                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(typeof(char[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
+                    visitorContext.uasmBuilder.AddPush(subStrCharArrSymbol);
+                    visitorContext.uasmBuilder.AddPush(visitorContext.topTable.CreateConstSymbol(typeof(int), 0)); // 0 index
+                }
+                else if (arraySymbolType == typeof(Vector2) ||
+                         arraySymbolType == typeof(Vector3) ||
+                         arraySymbolType == typeof(Vector4) ||
+                         arraySymbolType == typeof(Matrix4x4))
+                {
+                    elementType = typeof(float);
+
+                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbolType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "get_Item" && e.GetParameters().Length == 1));
+
+                    visitorContext.uasmBuilder.AddPush(arraySymbol);
+                    visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
                 }
                 else
                 {
-                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Get").First());
+                    // udon-workaround: VRC scans UnityEngine.Object arrays in their respective methods, so those methods are useless since they get disproportionately expensive the larger the array is.
+                    // Instead use the object[] indexer for these objects since it does not get scanned
+                    if (arraySymbolType.GetElementType() == typeof(UnityEngine.Object) || arraySymbolType.GetElementType().IsSubclassOf(typeof(UnityEngine.Object)))
+                        getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(typeof(object[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
+                    else
+                        getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbolType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
+
                     elementType = arraySymbol.userCsType.GetElementType();
+
+                    visitorContext.uasmBuilder.AddPush(arraySymbol);
+                    visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
                 }
 
                 arrayBacktraceValue = accessValue;
 
                 outSymbol = AllocateOutputSymbol(elementType);
 
-                visitorContext.uasmBuilder.AddPush(arraySymbol);
-                visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
                 visitorContext.uasmBuilder.AddPush(outSymbol);
                 visitorContext.uasmBuilder.AddExternCall(getIndexerUdonName);
             }
@@ -599,7 +646,25 @@ namespace UdonSharp.Compiler
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
             {
                 SymbolDefinition arraySymbol = accessValue.symbol;
-                string setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "Set").First());
+                string setIndexerUdonName;
+                System.Type arraySymbolType = arraySymbol.symbolCsType;
+
+                if (arraySymbolType == typeof(Vector2) ||
+                    arraySymbolType == typeof(Vector3) ||
+                    arraySymbolType == typeof(Vector4) ||
+                    arraySymbolType == typeof(Matrix4x4))
+                {
+                    setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "set_Item" && e.GetParameters().Length == 2));
+                }
+                else
+                {
+                    // udon-workaround: VRC scans UnityEngine.Object arrays in their respective methods, so those methods are useless since they get disproportionately expensive the larger the array is.
+                    // Instead use the object[] indexer for these objects since it does not get scanned
+                    if (arraySymbolType.GetElementType() == typeof(UnityEngine.Object) || arraySymbolType.GetElementType().IsSubclassOf(typeof(UnityEngine.Object)))
+                        setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(typeof(object[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Set"));
+                    else
+                        setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbolType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Set"));
+                }
 
                 visitorContext.uasmBuilder.AddPush(arraySymbol);
                 visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
@@ -650,6 +715,52 @@ namespace UdonSharp.Compiler
             return requestedDestination;
         }
 
+        /// <summary>
+        /// Creates a const object array that is populated with each value of an enum which can be used for integer casts
+        /// </summary>
+        /// <param name="enumType"></param>
+        /// <returns></returns>
+        SymbolDefinition GetEnumArrayForType(System.Type enumType)
+        {
+            if (visitorContext.enumCastSymbols == null) // Lazy init since this will relatively never be used
+                visitorContext.enumCastSymbols = new Dictionary<System.Type, SymbolDefinition>();
+
+            SymbolDefinition enumArraySymbol;
+            if (visitorContext.enumCastSymbols.TryGetValue(enumType, out enumArraySymbol))
+                return enumArraySymbol;
+
+            int maxEnumVal = 0;
+            foreach (var enumVal in System.Enum.GetValues(enumType))
+                maxEnumVal = (int)enumVal > maxEnumVal ? (int)enumVal : maxEnumVal;
+
+            // After a survey of what enums are exposed by Udon, it doesn't seem like anything goes above this limit. The only things I see that go past this are some System.Reflection enums which are unlikely to ever be exposed.
+            if (maxEnumVal > 2048)
+                throw new System.NotSupportedException($"Cannot cast integer to enum {enumType.Name} because target enum has too many potential states({maxEnumVal}) to contain in an UdonBehaviour reasonably");
+
+            // Find the most significant bit of this enum so we can generate all combinations <= it
+            int mostSignificantBit = 0;
+            int currentEnumVal = maxEnumVal;
+
+            while (currentEnumVal > 0)
+            {
+                currentEnumVal >>= 1;
+                ++mostSignificantBit;
+            }
+
+            int enumValCount = (1 << mostSignificantBit) - 1;
+
+            object[] enumConstArr = new object[enumValCount];
+
+            for (int i = 0; i < enumConstArr.Length; ++i)
+                enumConstArr[i] = System.Enum.ToObject(enumType, i);
+
+            enumArraySymbol = visitorContext.topTable.CreateConstSymbol(typeof(object[]), enumConstArr);
+
+            visitorContext.enumCastSymbols.Add(enumType, enumArraySymbol);
+
+            return enumArraySymbol;
+        }
+
         // There's probably a better place for this function...
         public SymbolDefinition CastSymbolToType(SymbolDefinition sourceSymbol, System.Type targetType, bool isExplicit, bool needsNewSymbol = false, SymbolDefinition requestedDestination = null)
         {
@@ -657,7 +768,7 @@ namespace UdonSharp.Compiler
                 targetType = targetType.GetElementType();
 
             // Special case for passing through user defined classes if they match
-            if (sourceSymbol.IsUserDefinedType() && 
+            if ((sourceSymbol.IsUserDefinedType() || UdonSharpUtils.IsUdonWorkaroundType(sourceSymbol.userCsType)) && 
                 (targetType.IsAssignableFrom(sourceSymbol.userCsType) || (targetType.IsArray && targetType == sourceSymbol.userCsType)))
                 return sourceSymbol;
             
@@ -790,6 +901,25 @@ namespace UdonSharp.Compiler
                     return castOutput;
                 }
 
+                // udon-workaround: Int to enum cast
+                if (UdonSharpUtils.IsIntegerType(sourceSymbol.symbolCsType) && targetType.IsEnum)
+                {
+                    SymbolDefinition enumArraySymbol = GetEnumArrayForType(targetType);
+
+                    SymbolDefinition indexSymbol = CastSymbolToType(sourceSymbol, typeof(int), true);
+                    
+                    SymbolDefinition castOutput = requestedDestination != null ? requestedDestination : visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
+
+                    string objArrayGetMethod = visitorContext.resolverContext.GetUdonMethodName(typeof(object[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
+
+                    visitorContext.uasmBuilder.AddPush(enumArraySymbol);
+                    visitorContext.uasmBuilder.AddPush(indexSymbol);
+                    visitorContext.uasmBuilder.AddPush(castOutput);
+                    visitorContext.uasmBuilder.AddExternCall(objArrayGetMethod);
+
+                    return castOutput;
+                }
+
                 // All other casts have failed, just try to straight assign it to a new symbol
                 if (needsNewSymbol)
                 {
@@ -849,8 +979,22 @@ namespace UdonSharp.Compiler
                     }
                     else
                     {
-                        SymbolDefinition paramsArraySymbol = visitorContext.topTable.CreateConstSymbol(methodParams[i].ParameterType,
+                        SymbolDefinition paramsArraySymbol;
+
+                        //if (!visitorContext.isRecursiveMethod)
+                        {
+                            paramsArraySymbol = visitorContext.topTable.CreateConstSymbol(methodParams[i].ParameterType,
                                         System.Activator.CreateInstance(methodParams[i].ParameterType, new object[] { paramCount }));
+                        }
+                        //else // This isn't needed currently
+                        //{
+                        //    paramsArraySymbol = visitorContext.topTable.CreateUnnamedSymbol(methodParams[i].ParameterType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.NeedsRecursivePush);
+                        //    using (ExpressionCaptureScope paramsArrayConstructScope = new ExpressionCaptureScope(visitorContext, null, paramsArraySymbol))
+                        //    {
+                        //        paramsArrayConstructScope.SetToMethods(methodParams[i].ParameterType.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
+                        //        paramsArraySymbol = paramsArrayConstructScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(int), paramCount) } );
+                        //    }
+                        //}
 
                         for (int j = i; j < invokeParams.Length; ++j)
                         {
@@ -1329,38 +1473,248 @@ namespace UdonSharp.Compiler
             }
         }
 
+        SymbolDefinition[] BuildSymbolPushList(IEnumerable<SymbolDefinition> extraParamsToPush, bool includeRecursiveSymbols = true)
+        {
+            HashSet<SymbolDefinition> definitionSet;
+            if (includeRecursiveSymbols)
+            {
+                definitionSet = new HashSet<SymbolDefinition>(visitorContext.topTable.GetAllRecursiveSymbols());
+                definitionSet.UnionWith(visitorContext.topTable.GetOpenCOWSymbols());
+            }
+            else
+            {
+                definitionSet = new HashSet<SymbolDefinition>();
+            }
+
+            if (extraParamsToPush != null)
+                definitionSet.UnionWith(extraParamsToPush);
+
+            return definitionSet.ToArray();
+        }
+
+        private void PushRecursiveStack(SymbolDefinition[] pushSymbols, ref SymbolDefinition checkSizeSymbol, bool checkStackSize = true)
+        {
+            if (checkSizeSymbol == null)
+                checkSizeSymbol = visitorContext.topTable.CreateUnnamedSymbol(typeof(int), SymbolDeclTypeFlags.Internal);
+
+            if (pushSymbols.Length == 0)
+                return;
+
+            // Set max so we can init the stack properly as a constant
+            visitorContext.maxMethodFrameSize = Mathf.Max(pushSymbols.Length, visitorContext.maxMethodFrameSize);
+
+            if (checkStackSize)
+            {
+                visitorContext.uasmBuilder.AppendCommentedLine("", "");
+                visitorContext.uasmBuilder.AppendCommentedLine("", "Stack size check");
+
+                // First check stack size, if it's too small, double the stack size and copy it over
+                SymbolDefinition stackSize;
+
+                using (ExpressionCaptureScope stackSizeCapture = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    stackSizeCapture.SetToLocalSymbol(visitorContext.artificalStackSymbol);
+                    stackSizeCapture.ResolveAccessToken("Length");
+                    stackSize = stackSizeCapture.ExecuteGet();
+                }
+
+                SymbolDefinition targetStackSizeSymbol;
+                using (ExpressionCaptureScope targetSizeAddCapture = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    targetSizeAddCapture.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.Addition));
+                    targetStackSizeSymbol = targetSizeAddCapture.Invoke(new SymbolDefinition[] { checkSizeSymbol, visitorContext.stackAddressSymbol });
+                }
+
+                SymbolDefinition isGreaterThanCondition;
+                using (ExpressionCaptureScope greaterThanCompare = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    greaterThanCompare.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.GreaterThanOrEqual));
+                    isGreaterThanCondition = greaterThanCompare.Invoke(new SymbolDefinition[] { targetStackSizeSymbol, stackSize });
+                }
+
+                JumpLabel skipResizeLabel = visitorContext.labelTable.GetNewJumpLabel("resizeRecusiveStackSkip");
+
+                visitorContext.uasmBuilder.AddJumpIfFalse(skipResizeLabel, isGreaterThanCondition);
+
+                // Handle the resize & copy
+                SymbolDefinition newStackSizeSymbol;
+                using (ExpressionCaptureScope stackDoubleScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    stackDoubleScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.Multiplication));
+                    newStackSizeSymbol = stackDoubleScope.Invoke(new SymbolDefinition[] { stackSize, visitorContext.topTable.CreateConstSymbol(typeof(int), 2) });
+                }
+
+                // Construct new stack
+                SymbolDefinition newStackSymbol;
+                using (ExpressionCaptureScope stackCreationScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    stackCreationScope.SetToMethods(typeof(object[]).GetConstructors(BindingFlags.Public | BindingFlags.Instance));
+                    newStackSymbol = stackCreationScope.Invoke(new SymbolDefinition[] { newStackSizeSymbol });
+                }
+
+                object[] myArr = new object[4];
+
+                // Copy old stack to new one
+                using (ExpressionCaptureScope copyScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    copyScope.SetToLocalSymbol(visitorContext.artificalStackSymbol);
+                    copyScope.ResolveAccessToken("CopyTo");
+                    copyScope.Invoke(new SymbolDefinition[] { newStackSymbol, visitorContext.topTable.CreateConstSymbol(typeof(int), 0) });
+                }
+
+                // Now finally copy over the old stack reference
+                visitorContext.uasmBuilder.AddCopy(visitorContext.artificalStackSymbol, newStackSymbol);
+
+                visitorContext.uasmBuilder.AddJumpLabel(skipResizeLabel);
+            }
+
+            visitorContext.uasmBuilder.AppendCommentedLine("", "");
+            visitorContext.uasmBuilder.AppendCommentedLine("", "Start push recursive fields");
+
+            // Now we start pushing to the stack
+            for (int i = 0; i < pushSymbols.Length; ++i)
+            {
+                using (ExpressionCaptureScope symbolSetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    symbolSetScope.SetToLocalSymbol(visitorContext.artificalStackSymbol);
+                    SymbolDefinition.COWValue indexerCOW = visitorContext.stackAddressSymbol.GetCOWValue(visitorContext);
+
+                    symbolSetScope.HandleArrayIndexerAccess(indexerCOW);
+                    symbolSetScope.ExecuteSet(pushSymbols[i]);
+
+                    indexerCOW.Dispose();
+                }
+
+                // Increment address
+                using (ExpressionCaptureScope incrementAddressScope = new ExpressionCaptureScope(visitorContext, null, visitorContext.stackAddressSymbol))
+                {
+                    incrementAddressScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.Addition));
+                    SymbolDefinition incrementedVal = incrementAddressScope.Invoke(new SymbolDefinition[] { visitorContext.stackAddressSymbol, visitorContext.topTable.CreateConstSymbol(typeof(int), 1) });
+
+                    // This should be a NOP always, but is here in case the optimized direct call breaks
+                    if (incrementedVal != visitorContext.stackAddressSymbol)
+                    {
+                        Debug.LogWarning($"Copy elision failed on symbol '{pushSymbols[i].ToString()}' during recursion handling");
+                        visitorContext.uasmBuilder.AddCopy(visitorContext.stackAddressSymbol, incrementedVal);
+                    }
+                }
+            }
+
+            visitorContext.uasmBuilder.AppendCommentedLine("", "End push recursive fields");
+            visitorContext.uasmBuilder.AppendCommentedLine("", "");
+        }
+
+        private void PopRecursiveStack(SymbolDefinition[] popSymbols)
+        {
+            if (popSymbols == null || popSymbols.Length == 0)
+                return;
+
+            visitorContext.uasmBuilder.AppendCommentedLine("", "");
+            visitorContext.uasmBuilder.AppendCommentedLine("", "Start pop recursive fields");
+
+            // Pop symbols off the stack in reverse order
+            for (int i = popSymbols.Length - 1; i >= 0; --i)
+            {
+                // Decrement address
+                using (ExpressionCaptureScope decrementAddressScope = new ExpressionCaptureScope(visitorContext, null, visitorContext.stackAddressSymbol))
+                {
+                    decrementAddressScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(int), BuiltinOperatorType.Subtraction));
+                    SymbolDefinition incrementedVal = decrementAddressScope.Invoke(new SymbolDefinition[] { visitorContext.stackAddressSymbol, visitorContext.topTable.CreateConstSymbol(typeof(int), 1) });
+
+                    // This should be a NOP always, but is here in case the optimized direct call breaks
+                    if (incrementedVal != visitorContext.stackAddressSymbol)
+                    {
+                        Debug.LogWarning($"Copy elision failed on symbol '{popSymbols[i].ToString()}' during recursion handling");
+                        visitorContext.uasmBuilder.AddCopy(visitorContext.stackAddressSymbol, incrementedVal);
+                    }
+                }
+
+                SymbolDefinition.COWValue paramCOWVal = popSymbols[i].GetCOWValue(visitorContext);
+
+                // Manually write this out to allow copy elision on non-compatible types
+                visitorContext.uasmBuilder.AddPush(visitorContext.artificalStackSymbol);
+                visitorContext.uasmBuilder.AddPush(visitorContext.stackAddressSymbol);
+                visitorContext.uasmBuilder.AddPush(paramCOWVal.symbol);
+                visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(typeof(object[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get")));
+
+                paramCOWVal.Dispose();
+            }
+
+            visitorContext.uasmBuilder.AppendCommentedLine("", "End pop recursive fields");
+            visitorContext.uasmBuilder.AppendCommentedLine("", "");
+        }
+
+        private static readonly HashSet<System.Type> _brokenGetComponentTypes = new HashSet<System.Type>()
+        {
+            typeof(VRC.SDKBase.VRC_AvatarPedestal), typeof(VRC.SDK3.Components.VRCAvatarPedestal),
+            typeof(VRC.SDKBase.VRC_Pickup), typeof(VRC.SDK3.Components.VRCPickup),
+            typeof(VRC.SDKBase.VRC_PortalMarker), typeof(VRC.SDK3.Components.VRCPortalMarker),
+            //typeof(VRC.SDKBase.VRC_MirrorReflection), typeof(VRC.SDK3.Components.VRCMirrorReflection),
+            typeof(VRC.SDKBase.VRCStation),typeof(VRC.SDK3.Components.VRCStation),
+            typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer),
+            typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer),
+            typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer),
+        };
+
         private SymbolDefinition InvokeExtern(SymbolDefinition[] invokeParams)
         {
+            // We use void as a placeholder for a null constant value getting passed in, if null is passed in and the target type is a reference type then we assume they are compatible
+            List<System.Type> typeList = invokeParams.Select(e =>
+            {
+                if (e.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) &&
+                    e.symbolCsType == typeof(object) &&
+                    e.symbolDefaultValue == null)
+                    return typeof(void);
+
+                return e.symbolCsType;
+            }).ToList();
+
             // Find valid overrides
-            MethodBase targetMethod = visitorContext.resolverContext.FindBestOverloadFunction(captureMethods, invokeParams.Select(e => e.symbolCsType).ToList());
+            MethodBase targetMethod = visitorContext.resolverContext.FindBestOverloadFunction(captureMethods, typeList);
 
             if (targetMethod == null)
             {
-                targetMethod = visitorContext.resolverContext.FindBestOverloadFunction(captureMethods, invokeParams.Select(e => e.symbolCsType).ToList(), false);
-                if (targetMethod != null)
+                targetMethod = visitorContext.resolverContext.FindBestOverloadFunction(captureMethods, typeList, false);
+
+                if (targetMethod != null &&
+                    targetMethod.ReflectedType == typeof(VRC.Udon.UdonBehaviour) &&
+                    targetMethod.Name.StartsWith("GetComponent") &&
+                    ((MethodInfo)targetMethod).ReturnType.IsGenericParameter)
                 {
-                    throw new System.Exception($"Method is not exposed to Udon: {targetMethod}, Udon signature: {visitorContext.resolverContext.GetUdonMethodName(targetMethod, false)}");
-                }
-
-                string udonFilteredMethods = "";
-
-                udonFilteredMethods = string.Join("\n", captureMethods
-                    .Select(e => new System.Tuple<MethodBase, string>(e, visitorContext.resolverContext.GetUdonMethodName(e, false)))
-                    .Where(e => !visitorContext.resolverContext.IsValidUdonMethod(e.Item2))
-                    .Select(e => e.Item1));
-
-                if (udonFilteredMethods.Length > 0)
-                {
-                    throw new System.Exception($"Could not find valid method that exists in Udon.\nList of applicable methods that do not exist:\n{udonFilteredMethods}");
+                    // Uhh just skip the else stuff, this fixes GetComponent(s) on UdonBehaviour variables.
                 }
                 else
                 {
-                    throw new System.Exception("Could not find valid method for given parameters!");
+                    if (targetMethod != null)
+                    {
+                        throw new System.Exception($"Method is not exposed to Udon: {targetMethod}, Udon signature: {visitorContext.resolverContext.GetUdonMethodName(targetMethod, false)}");
+                    }
+
+                    string udonFilteredMethods = "";
+
+                    udonFilteredMethods = string.Join("\n", captureMethods
+                        .Select(e => new System.Tuple<MethodBase, string>(e, visitorContext.resolverContext.GetUdonMethodName(e, false)))
+                        .Where(e => !visitorContext.resolverContext.IsValidUdonMethod(e.Item2))
+                        .Select(e => e.Item1));
+
+                    if (udonFilteredMethods.Length > 0)
+                    {
+                        throw new System.Exception($"Could not find valid method that exists in Udon.\nList of applicable methods that do not exist:\n{udonFilteredMethods}");
+                    }
+                    else
+                    {
+                        throw new System.Exception("Could not find valid method for given parameters!");
+                    }
                 }
             }
 
             SymbolDefinition[] expandedParams = GetExpandedInvokeParams(targetMethod, invokeParams);
-            bool isUserTypeGetComponent = targetMethod.Name.StartsWith("GetComponent") && genericTypeArguments != null && genericTypeArguments.First().IsSubclassOf(typeof(UdonSharpBehaviour));
+            bool isGetComponent = targetMethod.Name.StartsWith("GetComponent") && genericTypeArguments != null;
+            bool isUserTypeGetComponent = isGetComponent && genericTypeArguments.First().IsSubclassOf(typeof(UdonSharpBehaviour));
+
+            if (isGetComponent && _brokenGetComponentTypes.Contains(genericTypeArguments.First()))
+                throw new System.Exception($"{targetMethod.Name}<T>() is currently broken in Udon for SDK3 components (<b><i> https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/getcomponentst-functions-are-not-defined-internally-for-vrcsdk3-components </i></b>)\n" +
+                    $"Until this is fixed by VRC, try using: <b>((T){targetMethod.Name}(typeof(T)))</b> instead of <b>{targetMethod.Name}<T>()</b>");
 
             // Now make the needed symbol definitions and run the invoke
             if (!targetMethod.IsStatic && !(targetMethod is ConstructorInfo)/* && targetMethod.Name != "Instantiate"*/) // Constructors don't take an instance argument, but are still classified as an instance method
@@ -1375,11 +1729,28 @@ namespace UdonSharp.Compiler
                         visitorContext.uasmBuilder.AddPush(transformComponentGetScope.ExecuteGet());
                     }
                 }
-                else
+                else if (isGetComponent && !isUserTypeGetComponent)
                 {
+                    // udon-workaround: Works around a bug in Udon's GetComponent methods that require a variable with the **StrongBox** type of Transform or GameObject, instead of the actual variable type
+                    // This means that if the strongbox of the variable for the object we're getting changes, then GetComponent will start failing
+
+                    MethodInfo getTransformMethod = typeof(Component).GetProperty("transform", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
+
+                    SymbolDefinition outputTransformComponent = visitorContext.topTable.CreateUnnamedSymbol(typeof(Transform), SymbolDeclTypeFlags.Internal);
+
+                    visitorContext.uasmBuilder.AddPush(accessSymbol);
+                    visitorContext.uasmBuilder.AddPush(outputTransformComponent);
+                    visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(getTransformMethod), "GetComponent strongbox mismatch fix");
+
+                    visitorContext.uasmBuilder.AddPush(outputTransformComponent);
+                }
+                else
+                { 
                     visitorContext.uasmBuilder.AddPush(accessSymbol);
                 }
             }
+
+            bool isPotentiallyRecursive = false;
 
             if (accessSymbol != null && (typeof(UdonSharpBehaviour).IsAssignableFrom(accessSymbol.symbolCsType) || typeof(VRC.Udon.UdonBehaviour).IsAssignableFrom(accessSymbol.symbolCsType)))
             {
@@ -1390,6 +1761,7 @@ namespace UdonSharp.Compiler
                     case "SendCustomNetworkEvent":
                         // We might be recursing back into the same UdonBehavior, assume any non-local fields might be modified.
                         visitorContext.topTable.DirtyEverything(true);
+                        isPotentiallyRecursive = visitorContext.isRecursiveMethod;
                         break;
                     default:
                         break;
@@ -1413,6 +1785,15 @@ namespace UdonSharp.Compiler
             }
             else
             {
+                SymbolDefinition[] symbolsToPush = null;
+                if (isPotentiallyRecursive && !shouldSkipRecursivePush)
+                {
+                    symbolsToPush = BuildSymbolPushList(expandedParams);
+                    SymbolDefinition sizeSymbol = null;
+                    PushRecursiveStack(symbolsToPush, ref sizeSymbol);
+                    sizeSymbol.symbolDefaultValue = symbolsToPush.Length;
+                }
+
                 foreach (SymbolDefinition invokeParam in expandedParams)
                     visitorContext.uasmBuilder.AddPush(invokeParam);
 
@@ -1436,6 +1817,9 @@ namespace UdonSharp.Compiler
                 }
 
                 visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(targetMethod, true, genericTypeArguments));
+
+                if (isPotentiallyRecursive && !shouldSkipRecursivePush)
+                    PopRecursiveStack(symbolsToPush);
             }
 
             return returnSymbol;
@@ -1455,19 +1839,64 @@ namespace UdonSharp.Compiler
         {
             if (invokeParams.Length != captureLocalMethod.parameters.Length)
                 throw new System.NotSupportedException("UdonSharp custom methods currently do not support default arguments or params arguments");
+            
+            SymbolDefinition[] symbolsToPush = null;
 
-            for (int i = 0; i < captureLocalMethod.parameters.Length; ++i)
+            SymbolDefinition stackSizeSymbol = null;
+            if (visitorContext.isRecursiveMethod)
             {
-                using (ExpressionCaptureScope argAssignmentScope = new ExpressionCaptureScope(visitorContext, null))
+                symbolsToPush = BuildSymbolPushList(GetLocalMethodArgumentSymbols(), false);
+                PushRecursiveStack(symbolsToPush, ref stackSizeSymbol);
+
+                // Prevents situations where you call a method like void DoThing(string a, string b) with DoThing(b, a)
+                // Without COW values this would mean you copy b -> a, then you copy a -> b after you've already written over a so both parameters end with b's value
+                SymbolDefinition.COWValue[] paramCOWValues = new SymbolDefinition.COWValue[invokeParams.Length];
+                for (int i = 0; i < invokeParams.Length; ++i)
+                    paramCOWValues[i] = invokeParams[i].GetCOWValue(visitorContext);
+
+                for (int i = 0; i < captureLocalMethod.parameters.Length; ++i)
                 {
-                    argAssignmentScope.SetToLocalSymbol(captureLocalMethod.parameters[i].paramSymbol);
-                    argAssignmentScope.ExecuteSet(invokeParams[i]);
+                    using (ExpressionCaptureScope argAssignmentScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        argAssignmentScope.SetToLocalSymbol(captureLocalMethod.parameters[i].paramSymbol);
+                        argAssignmentScope.ExecuteSet(paramCOWValues[i].symbol);
+                    }
+                }
+
+                foreach (SymbolDefinition.COWValue cow in paramCOWValues)
+                    cow.Dispose();
+            }
+            else
+            {
+                for (int i = 0; i < captureLocalMethod.parameters.Length; ++i)
+                {
+                    using (ExpressionCaptureScope argAssignmentScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        argAssignmentScope.SetToLocalSymbol(captureLocalMethod.parameters[i].paramSymbol);
+                        argAssignmentScope.ExecuteSet(invokeParams[i]);
+                    }
                 }
             }
 
             // Capture any COW'd values here in case they're modified during the function.
             // TODO: Keep local variables as-is?
             visitorContext.topTable.DirtyEverything(true);
+
+            SymbolDefinition[] cowSymbolPush = null;
+            if (visitorContext.isRecursiveMethod)
+            {
+                HashSet<SymbolDefinition> newCOWSymbolsToPush = new HashSet<SymbolDefinition>(BuildSymbolPushList(null));
+                newCOWSymbolsToPush.ExceptWith(symbolsToPush);
+
+                cowSymbolPush = newCOWSymbolsToPush.ToArray();
+                
+                PushRecursiveStack(cowSymbolPush, ref stackSizeSymbol, false);
+
+                int symbolCount = symbolsToPush.Length + cowSymbolPush.Length;
+                stackSizeSymbol.symbolDefaultValue = symbolCount;
+
+                visitorContext.maxMethodFrameSize = Mathf.Max(symbolCount, visitorContext.maxMethodFrameSize);
+            }
 
             SymbolDefinition exitJumpLocation = visitorContext.topTable.CreateNamedSymbol("exitJumpLoc", typeof(uint), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Constant);
 
@@ -1480,7 +1909,22 @@ namespace UdonSharp.Compiler
             visitorContext.uasmBuilder.AddJumpLabel(exitLabel);
             exitJumpLocation.symbolDefaultValue = exitLabel.resolvedAddress;
 
-            return captureLocalMethod.returnSymbol;
+            SymbolDefinition returnSymbol = captureLocalMethod.returnSymbol;
+
+            if (visitorContext.isRecursiveMethod)
+            {
+                if (returnSymbol != null)
+                {
+                    SymbolDefinition returnCopy = visitorContext.topTable.CreateUnnamedSymbol(returnSymbol.userCsType, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.NeedsRecursivePush);
+                    visitorContext.uasmBuilder.AddCopy(returnCopy, returnSymbol);
+                    returnSymbol = returnCopy;
+                }
+
+                PopRecursiveStack(cowSymbolPush);
+                PopRecursiveStack(symbolsToPush);
+            }
+
+            return returnSymbol;
         }
 
         private SymbolDefinition InvokeUserExtern(SymbolDefinition[] invokeParams)
@@ -1490,28 +1934,92 @@ namespace UdonSharp.Compiler
 
             if (!accessSymbol.IsUserDefinedBehaviour())
                 throw new System.FieldAccessException("Cannot run extern invoke on non-user symbol");
+            
+            SymbolDefinition[] symbolsToPush = null;
+            SymbolDefinition stackSizeSymbol = null;
 
-            for (int i = 0; i < captureExternUserMethod.parameters.Length; ++i)
+            // We are calling directly into our type, so we need to handle parameter values since we may be messing with our own local variables
+            if (visitorContext.isRecursiveMethod && accessSymbol.userCsType == visitorContext.behaviourUserType)
             {
-                SymbolDefinition convertedArg = CastSymbolToType(invokeParams[i], captureExternUserMethod.parameters[i].type, false);
+                symbolsToPush = BuildSymbolPushList(captureExternUserMethod.parameters.Select(e => e.paramSymbol), false);
+                PushRecursiveStack(symbolsToPush, ref stackSizeSymbol);
 
-                using (ExpressionCaptureScope argAssignmentScope = new ExpressionCaptureScope(visitorContext, null))
+                SymbolDefinition.COWValue[] paramCOWValues = new SymbolDefinition.COWValue[invokeParams.Length];
+                for (int i = 0; i < invokeParams.Length; ++i)
+                    paramCOWValues[i] = invokeParams[i].GetCOWValue(visitorContext);
+
+                List<SymbolDefinition> parameterDefinitions = visitorContext.topTable.GetCurrentMethodParameters();
+                SymbolDefinition[] mappedSymbols = new SymbolDefinition[invokeParams.Length];
+
+                for (int i = 0; i < mappedSymbols.Length; ++i)
                 {
-                    argAssignmentScope.SetToLocalSymbol(accessSymbol);
-                    argAssignmentScope.ResolveAccessToken("SetProgramVariable");
+                    mappedSymbols[i] = parameterDefinitions.FirstOrDefault(e => e.symbolUniqueName == captureExternUserMethod.parameters[i].paramSymbol.symbolUniqueName);
+                }
 
-                    argAssignmentScope.Invoke(new SymbolDefinition[] {
+                for (int i = 0; i < captureExternUserMethod.parameters.Length; ++i)
+                {
+                    mappedSymbols[i]?.MarkDirty();
+
+                    SymbolDefinition convertedArg = CastSymbolToType(paramCOWValues[i].symbol, captureExternUserMethod.parameters[i].type, false);
+
+                    using (ExpressionCaptureScope argAssignmentScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        argAssignmentScope.SetToLocalSymbol(accessSymbol);
+                        argAssignmentScope.ResolveAccessToken("SetProgramVariable");
+
+                        argAssignmentScope.Invoke(new SymbolDefinition[] {
                         visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserMethod.parameters[i].paramSymbol.symbolUniqueName),
                         convertedArg
                     });
+                    }
+                }
+
+                foreach (SymbolDefinition.COWValue cow in paramCOWValues)
+                    cow.Dispose();
+            }
+            else
+            {
+                for (int i = 0; i < captureExternUserMethod.parameters.Length; ++i)
+                {
+                    SymbolDefinition convertedArg = CastSymbolToType(invokeParams[i], captureExternUserMethod.parameters[i].type, false);
+
+                    using (ExpressionCaptureScope argAssignmentScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        argAssignmentScope.SetToLocalSymbol(accessSymbol);
+                        argAssignmentScope.ResolveAccessToken("SetProgramVariable");
+
+                        argAssignmentScope.Invoke(new SymbolDefinition[] {
+                        visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserMethod.parameters[i].paramSymbol.symbolUniqueName),
+                        convertedArg
+                    });
+                    }
                 }
             }
 
             // We might recurse back into this UdonBehavior and change locals, so capture any COW'd values here
             visitorContext.topTable.DirtyEverything(true);
 
+            SymbolDefinition[] cowSymbolPush = null;
+            if (visitorContext.isRecursiveMethod)
+            {
+                HashSet<SymbolDefinition> newCOWSymbolsToPush = new HashSet<SymbolDefinition>(BuildSymbolPushList(null));
+
+                if (symbolsToPush != null)
+                    newCOWSymbolsToPush.ExceptWith(symbolsToPush);
+
+                cowSymbolPush = newCOWSymbolsToPush.ToArray();
+
+                PushRecursiveStack(cowSymbolPush, ref stackSizeSymbol);
+
+                int symbolCount = (symbolsToPush?.Length ?? 0) + cowSymbolPush.Length;
+                stackSizeSymbol.symbolDefaultValue = symbolCount;
+
+                visitorContext.maxMethodFrameSize = Mathf.Max(symbolCount, visitorContext.maxMethodFrameSize);
+            }
+
             using (ExpressionCaptureScope externInvokeScope = new ExpressionCaptureScope(visitorContext, null))
             {
+                externInvokeScope.shouldSkipRecursivePush = true;
                 externInvokeScope.SetToLocalSymbol(accessSymbol);
                 externInvokeScope.ResolveAccessToken("SendCustomEvent");
                 externInvokeScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserMethod.uniqueMethodName) });
@@ -1527,12 +2035,19 @@ namespace UdonSharp.Compiler
                     getReturnScope.ResolveAccessToken("GetProgramVariable");
                     returnSymbol = getReturnScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(string), captureExternUserMethod.returnSymbol.symbolUniqueName) });
                     returnSymbol = CastSymbolToType(returnSymbol, captureExternUserMethod.returnSymbol.userCsType, true, true);
+                    returnSymbol.declarationType |= SymbolDeclTypeFlags.NeedsRecursivePush;
                 }
 
                 using (ExpressionCaptureScope propagateScope = new ExpressionCaptureScope(visitorContext, visitorContext.topCaptureScope))
                 {
                     propagateScope.SetToLocalSymbol(returnSymbol);
                 }
+            }
+
+            if (visitorContext.isRecursiveMethod)
+            {
+                PopRecursiveStack(cowSymbolPush);
+                PopRecursiveStack(symbolsToPush);
             }
 
             return returnSymbol;
@@ -1600,6 +2115,12 @@ namespace UdonSharp.Compiler
             else if (captureArchetype == ExpressionCaptureArchetype.ArrayIndexer)
             {
                 SymbolDefinition arraySymbol = accessValue.symbol;
+
+                if (arraySymbol.symbolCsType == typeof(Vector2) ||
+                    arraySymbol.symbolCsType == typeof(Vector3) ||
+                    arraySymbol.symbolCsType == typeof(Vector4) ||
+                    arraySymbol.symbolCsType == typeof(Matrix4x4))
+                    return typeof(float);
 
                 if (!arraySymbol.symbolCsType.IsArray)
                     throw new System.Exception("Type is not an array type");
@@ -1816,12 +2337,18 @@ namespace UdonSharp.Compiler
             return true;
         }
 
+        private static readonly PropertyInfo[] _componentProperties =
+            typeof(Component).GetProperties(BindingFlags.Instance | BindingFlags.Public);
+        
+        private static readonly PropertyInfo[] _udonEventReceiverProperties =
+            typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
         private bool HandleLocalUdonBehaviourPropertyLookup(string localUdonPropertyName)
         {
-            PropertyInfo[] foundProperties = typeof(Component).GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(e => e.Name == localUdonPropertyName).ToArray();
+            PropertyInfo[] foundProperties = _componentProperties.Where(e => e.Name == localUdonPropertyName).ToArray();
             
             if (localUdonPropertyName == "enabled")
-                foundProperties = typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(e => e.Name == localUdonPropertyName).ToArray();
+                foundProperties = _udonEventReceiverProperties.Where(e => e.Name == localUdonPropertyName).ToArray();
 
             if (foundProperties.Length == 0)
                 return false;
@@ -2065,6 +2592,9 @@ namespace UdonSharp.Compiler
             return true;
         }
 
+        private static readonly MethodInfo[] _objectMethods =
+            typeof(object).GetMethods(BindingFlags.Public | BindingFlags.Instance);
+        
         private bool HandleMemberMethodLookup(string methodToken)
         {
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
@@ -2082,7 +2612,7 @@ namespace UdonSharp.Compiler
             List<MethodInfo> foundMethodInfos = new List<MethodInfo>(returnType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == methodToken));
 
             if (returnType != typeof(object))
-                foundMethodInfos.AddRange(typeof(object).GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == methodToken));
+                foundMethodInfos.AddRange(_objectMethods.Where(e => e.Name == methodToken));
 
             if (foundMethodInfos.Count == 0)
                 return false;
@@ -2175,7 +2705,12 @@ namespace UdonSharp.Compiler
 
             System.Type returnType = GetReturnType(true);
 
-            if (!returnType.IsArray/* && returnType != typeof(string)*/) // Uncomment the check for string when VRC has added the actual indexer function to Udon. 
+            if (!returnType.IsArray && 
+                returnType != typeof(string) && // We have hacky handling for strings now
+                returnType != typeof(Vector2) &&
+                returnType != typeof(Vector3) &&
+                returnType != typeof(Vector4) &&
+                returnType != typeof(Matrix4x4))
                 throw new System.Exception("Can only run array indexers on array types");
 
             SymbolDefinition cowIndexerSymbol = indexerValue.symbol;

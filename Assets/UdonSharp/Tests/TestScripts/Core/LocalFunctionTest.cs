@@ -24,6 +24,19 @@ namespace UdonSharp.Tests
             TestObjectArrayArg();
             TestStringCopy();
             TestSetGetProgramVar();
+            
+            tester.TestAssertion("gameObject valid", gameObject.name == "LocalFunctionTests");
+            MethodPropertyAliasingTest(gameObject.transform.parent.gameObject);
+            tester.TestAssertion("gameObject valid 2", gameObject.name == "LocalFunctionTests");
+
+            tester.TestAssertion("Variable declaration after methods", heyImDeclaredAfter == 4f);
+        }
+
+        float heyImDeclaredAfter = 4f;
+
+        void MethodPropertyAliasingTest(GameObject gameObject)
+        {
+            tester.TestAssertion("gameObject param valid", gameObject.name == "LocalFunctions");
         }
 
         int GetCountAmount() => 4;

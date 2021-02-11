@@ -341,6 +341,11 @@ namespace UdonSharp
         {
             "Received Notification: <Notification from username:",
             "Received Message of type: notification content: {{\"id\":\"",
+            "Received Message of type: friend-update received at",
+            "Received Message of type: friend-active received at",
+            "Received Message of type: friend-online received at",
+            "Received Message of type: friend-offline received at",
+            "Received Message of type: friend-location received at",
             "[VRCFlowNetworkManager] Sending token from provider vrchat",
             "[USpeaker] uSpeak [",
             "Internal: JobTempAlloc has allocations",
@@ -348,6 +353,11 @@ namespace UdonSharp
             "PLAYLIST GET id=",
             "Checking server time received at ",
             "[RoomManager] Room metadata is unchanged, skipping update",
+            "[API] Requesting Get favorites {{\"",
+            "[API] Requesting Get auth/user/moderations {",
+            "[API] Fetching user",
+            "[API] Requesting Get worlds/local",
+            "[API] Piggy-backing Get request to",
         };
 
         static void HandleForwardedLog(string logMessage, LogFileState state, UdonSharpSettings settings)

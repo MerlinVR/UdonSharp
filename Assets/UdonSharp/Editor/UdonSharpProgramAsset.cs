@@ -3,6 +3,7 @@
 using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Reflection;
 using UdonSharp.Compiler;
@@ -91,9 +92,17 @@ namespace UdonSharp
                 MonoScript newSourceCsScript = (MonoScript)EditorGUILayout.ObjectField("Source Script", sourceCsScript, typeof(MonoScript), false);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(this, "Changed source C# script");
-                    sourceCsScript = newSourceCsScript;
-                    dirty = true;
+                    bool shouldReplace = true;
+
+                    if (sourceCsScript != null)
+                        shouldReplace = EditorUtility.DisplayDialog("Modifying script on program asset", "If you modify a script on a program asset while it is being used by objects in a scene it can cause issues. Are you sure you want to change the source script?", "Ok", "Cancel");
+
+                    if (shouldReplace)
+                    {
+                        Undo.RecordObject(this, "Changed source C# script");
+                        sourceCsScript = newSourceCsScript;
+                        dirty = true;
+                    }
                 }
 
                 EditorGUI.BeginDisabledGroup(true);
@@ -130,7 +139,7 @@ namespace UdonSharp
 
             if (currentBehaviour != null && !shouldUseRuntimeValue && program != null)
             {
-                string[] exportedSymbolNames = program.SymbolTable.GetExportedSymbols();
+                ImmutableArray<string> exportedSymbolNames = program.SymbolTable.GetExportedSymbols();
 
                 foreach (string exportedSymbolName in exportedSymbolNames)
                 {
@@ -297,7 +306,11 @@ namespace UdonSharp
         [PublicAPI]
         public System.Type GetClass()
         {
-            return sourceCsScript?.GetClass();
+            // Needs to be an explicit null check because of Unity's object equality operator overloads
+            if (sourceCsScript != null)
+                return sourceCsScript.GetClass();
+
+            return null;
         }
 
         static UdonEditorInterface editorInterfaceInstance;
