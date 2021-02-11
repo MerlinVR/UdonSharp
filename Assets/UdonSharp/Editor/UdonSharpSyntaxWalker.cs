@@ -1,4 +1,6 @@
 ﻿
+#define UDON_BETA_SDK
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
