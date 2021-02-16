@@ -22,9 +22,11 @@ namespace UdonSharp.Tests
             
             string joinedStr = string.Join(", ", new[] { "Hello", "test", "join" });
             string joinedStr2 = string.Join(", ", "Hello", "test", "join" );
+            string joinedStr3 = string.Join(", ", (object[])new GameObject[] { gameObject, gameObject });
 
             tester.TestAssertion("Param parameter without expanding", joinedStr == "Hello, test, join");
             tester.TestAssertion("Param parameter with expanding", joinedStr2 == "Hello, test, join");
+            tester.TestAssertion("Param parameter without expanding, object array", joinedStr3 == "MethodCalls (UnityEngine.GameObject), MethodCalls (UnityEngine.GameObject)");
 
             string formatStr = string.Format("{0}, {1}", this, this);
             tester.TestAssertion("FormatStr 1", formatStr == "MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour)");

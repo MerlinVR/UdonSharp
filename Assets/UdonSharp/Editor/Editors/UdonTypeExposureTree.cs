@@ -763,10 +763,10 @@ namespace UdonSharp.Editors
 
         Vector2 currentScrollPos = Vector2.zero;
 
-        [MenuItem("Window/Udon Sharp/Class Exposure Tree")]
+        [MenuItem("Udon Sharp/Class Exposure Tree")]
         static void Init()
         {
-            UdonTypeExposureTree window = GetWindow<UdonTypeExposureTree>(false, "Udon Type Exposure Tree");
+            GetWindow<UdonTypeExposureTree>(false, "Udon Type Exposure Tree");
         }
 
         private void OnEnable()
