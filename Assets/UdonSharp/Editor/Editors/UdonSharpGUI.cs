@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using UdonSharp;
 using UdonSharp.Compiler;
+using UdonSharp.Updater;
 using UnityEditor;
 using UnityEngine;
 using VRC.Udon;
@@ -281,8 +282,8 @@ namespace UdonSharpEditor
                 undoLabelStyle.stretchWidth = false;
                 undoLabelStyle.stretchHeight = false;
 
-                undoArrowLight = new GUIContent((Texture)EditorGUIUtility.Load("Assets/UdonSharp/Editor/Resources/UndoArrowLight.png"), "Reset to default value");
-                undoArrowDark = new GUIContent((Texture)EditorGUIUtility.Load("Assets/UdonSharp/Editor/Resources/UndoArrowBlack.png"), "Reset to default value");
+                undoArrowLight = new GUIContent((Texture)EditorGUIUtility.Load(Path.Combine(UdonSharpLocator.GetResourcesPath(), "UndoArrowLight.png")), "Reset to default value");
+                undoArrowDark = new GUIContent((Texture)EditorGUIUtility.Load(Path.Combine(UdonSharpLocator.GetResourcesPath(), "UndoArrowBlack.png")), "Reset to default value");
 
                 Texture2D clearColorLightTex = new Texture2D(1, 1);
                 clearColorLightTex.SetPixel(0, 0, new Color32(194, 194, 194, 255));

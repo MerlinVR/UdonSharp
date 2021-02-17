@@ -1,7 +1,8 @@
 {
     "name": "UdonSharp.Runtime",
     "references": [
-        "VRC.Udon.Serialization.OdinSerializer"
+        "VRC.Udon.Serialization.OdinSerializer",
+        "UdonSharp.Updater"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [],
