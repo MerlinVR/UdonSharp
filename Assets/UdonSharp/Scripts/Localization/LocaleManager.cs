@@ -1,8 +1,10 @@
 ﻿
 //#define UDONSHARP_LOC_DEBUG
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UdonSharp.Updater;
 using UnityEngine;
 
@@ -35,9 +37,28 @@ namespace UdonSharp.Localization
 
         public LocaleInstance(string locale)
         {
-            string udonSharpDir = UdonSharpLocator.GetInstallPath();
+            string localeDir = UdonSharpLocator.GetLocalizationPath();
 
 
+        }
+
+        static string LoadLocale(string path)
+        {
+            string filecontents = "";
+
+            if (!File.Exists(path))
+            {
+                throw new System.IO.FileNotFoundException($"Could not find locale file at {path}, make sure you have installed UdonSharp following the installation instructions.");
+            }
+
+            try
+            {
+
+            }
+            catch (Exception e)
+            {
+
+            }
         }
     }
 

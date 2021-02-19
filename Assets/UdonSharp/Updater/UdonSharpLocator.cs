@@ -66,6 +66,11 @@ namespace UdonSharp.Updater
         {
             return Path.Combine(GetInstallPath(), "Editor", "Resources");
         }
+
+        public static string GetLocalizationPath()
+        {
+            return Path.Combine(GetResourcesPath(), "Localization");
+        }
     }
 
 #if UNITY_EDITOR
@@ -75,10 +80,9 @@ namespace UdonSharp.Updater
         public override void OnInspectorGUI()
         {
             EditorGUILayout.HelpBox("Do not delete or move this file! This is used by UdonSharp to locate its installation directory, if you delete it U# will break!", MessageType.Error);
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField($"Path: {UdonSharpLocator.GetInstallPath()}");
-            EditorGUILayout.LabelField($"Resources Path: {UdonSharpLocator.GetResourcesPath()}");
+            EditorGUILayout.HelpBox($"Path: {UdonSharpLocator.GetInstallPath()}\n" +
+                $"Resources Path: {UdonSharpLocator.GetResourcesPath()}\n" +
+                $"Localization Path: {UdonSharpLocator.GetLocalizationPath()}", MessageType.Info);
         }
     }
 #endif
