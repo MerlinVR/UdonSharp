@@ -135,6 +135,9 @@ namespace UdonSharp
 #if UDON_BETA_SDK
         public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi requestedOwner) => true;
 #endif
+        public virtual void MidiNoteOn(int channel, int number, int velocity) { }
+        public virtual void MidiNoteOff(int channel, int number, int velocity) { }
+        public virtual void MidiControlChange(int channel, int number, int value) { }
 
         [Obsolete("The OnStationEntered() event is deprecated use the OnStationEntered(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
         public virtual void OnStationEntered() { }

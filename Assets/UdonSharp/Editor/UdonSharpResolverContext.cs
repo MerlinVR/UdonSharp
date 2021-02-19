@@ -150,7 +150,6 @@ namespace UdonSharp
             { "_onPlayerLeft", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerLeftPlayer") } },
             { "_onStationEntered", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onStationEnteredPlayer") } },
             { "_onStationExited", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onStationExitedPlayer") } },
-#if UDON_BETA_SDK || true
             { "_onOwnershipRequest", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onOwnershipRequestRequester"), new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onOwnershipRequestNewOwner") } },
             { "_onPlayerTriggerEnter", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerTriggerEnterPlayer") } },
             { "_onPlayerTriggerExit", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerTriggerExitPlayer") } },
@@ -160,7 +159,9 @@ namespace UdonSharp
             { "_onPlayerCollisionStay", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerCollisionStayPlayer") } },
             { "_onPlayerParticleCollision", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onPlayerParticleCollisionPlayer") } },
             { "_onVideoError", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDK3.Components.Video.VideoError), "onVideoErrorVideoError") } },
-#endif
+            { "_midiNoteOn", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(int), "midiNoteOnChannel"), new System.Tuple<System.Type, string>(typeof(int), "midiNoteOnNumber"), new System.Tuple<System.Type, string>(typeof(int), "midiNoteOnVelocity") } },
+            { "_midiNoteOff", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(int), "midiNoteOffChannel"), new System.Tuple<System.Type, string>(typeof(int), "midiNoteOffNumber"), new System.Tuple<System.Type, string>(typeof(int), "midiNoteOffVelocity") } },
+            { "_midiControlChange", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(int), "midiControlChangeChannel"), new System.Tuple<System.Type, string>(typeof(int), "midiControlChangeNumber"), new System.Tuple<System.Type, string>(typeof(int), "midiControlChangeValue") } },
         };
 
         public System.Tuple<System.Type, string>[] GetMethodCustomArgs(string methodName)
