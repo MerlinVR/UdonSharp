@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using UdonSharp;
 using UdonSharp.Compiler;
+using UdonSharp.Localization;
 using UdonSharp.Updater;
 using UnityEditor;
 using UnityEngine;
@@ -332,12 +333,12 @@ namespace UdonSharpEditor
 
             if (!udonBehaviour)
             {
-                if (GUILayout.Button("Compile Program"))
+                if (GUILayout.Button(Loc.Get(LocStr.UI_CompileProgram)))
                 {
                     programAsset.CompileCsProgram();
                 }
 
-                if (GUILayout.Button("Compile All UdonSharp Programs"))
+                if (GUILayout.Button(Loc.Get(LocStr.UI_CompileAllPrograms)))
                 {
                     UdonSharpProgramAsset.CompileAllCsPrograms(true);
                 }
@@ -348,14 +349,14 @@ namespace UdonSharpEditor
                 editorState.showExtraOptions = programAsset.showUtilityDropdown = EditorGUILayout.Foldout(editorState.showExtraOptions, "Utilities", true);
                 if (editorState.showExtraOptions)
                 {
-                    if (GUILayout.Button("Compile All UdonSharp Programs"))
+                    if (GUILayout.Button(Loc.Get(LocStr.UI_CompileAllPrograms)))
                     {
                         UdonSharpProgramAsset.CompileAllCsPrograms(true);
                     }
 
                     EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
 
-                    if (GUILayout.Button("Send Custom Event"))
+                    if (GUILayout.Button(Loc.Get(LocStr.UI_SendCustomEvent)))
                     {
                         if (udonBehaviour != null)
                         {
@@ -1285,7 +1286,7 @@ namespace UdonSharpEditor
             // Program source
             EditorGUI.BeginDisabledGroup(true);
             EditorGUI.BeginChangeCheck();
-            AbstractUdonProgramSource newProgramSource = (AbstractUdonProgramSource)EditorGUILayout.ObjectField("Program Source", behaviour.programSource, typeof(AbstractUdonProgramSource), false);
+            AbstractUdonProgramSource newProgramSource = (AbstractUdonProgramSource)EditorGUILayout.ObjectField(Loc.Get(LocStr.UI_ProgramSource), behaviour.programSource, typeof(AbstractUdonProgramSource), false);
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(behaviour, "Change program source");
@@ -1306,7 +1307,7 @@ namespace UdonSharpEditor
             {
                 EditorGUI.BeginDisabledGroup(true);
                 EditorGUI.indentLevel++;
-                EditorGUILayout.ObjectField("Program Script", ((UdonSharpProgramAsset)behaviour.programSource)?.sourceCsScript, typeof(MonoScript), false);
+                EditorGUILayout.ObjectField(Loc.Get(LocStr.UI_ProgramScript), ((UdonSharpProgramAsset)behaviour.programSource)?.sourceCsScript, typeof(MonoScript), false);
                 EditorGUI.indentLevel--;
                 EditorGUI.EndDisabledGroup();
             }
@@ -1443,7 +1444,7 @@ namespace UdonSharpEditor
                 }
 
                 EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
-                if (GUILayout.Button("Trigger Interact"/*, GUILayout.Height(22f)*/))
+                if (GUILayout.Button(Loc.Get(LocStr.UI_TriggerInteract)))
                 {
                     bool needsProxyCall = false;
 

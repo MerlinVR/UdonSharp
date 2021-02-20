@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Reflection;
 using UdonSharp.Compiler;
+using UdonSharp.Localization;
 using UdonSharpEditor;
 using UnityEditor;
 using UnityEngine;
@@ -87,7 +88,7 @@ namespace UdonSharp
             if (!udonBehaviour)
             {
                 EditorGUI.BeginChangeCheck();
-                MonoScript newSourceCsScript = (MonoScript)EditorGUILayout.ObjectField("Source Script", sourceCsScript, typeof(MonoScript), false);
+                MonoScript newSourceCsScript = (MonoScript)EditorGUILayout.ObjectField(Loc.Get(LocStr.UI_SourceScript), sourceCsScript, typeof(MonoScript), false);
                 if (EditorGUI.EndChangeCheck())
                 {
                     bool shouldReplace = true;

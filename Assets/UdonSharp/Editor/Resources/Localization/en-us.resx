@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- This file is a hack of a resx file, it is missing the ResX header information because we aren't actually treating this as a resx file, 
+     and are just using it as a plain xml file -->
+
+  <data name="UI_TestLocStr" xml:space="preserve">
+    <value>This is a test string.</value>
+  </data>
+  <data name="UI_CompileProgram" xml:space="preserve">
+    <value>Compile Program</value>
+  </data>
+  <data name="UI_CompileAllPrograms" xml:space="preserve">
+    <value>Compile All UdonSharp Programs</value>
+  </data>
+  <data name="UI_SendCustomEvent" xml:space="preserve">
+    <value>Send Custom Event</value>
+  </data>
+  <data name="UI_TriggerInteract" xml:space="preserve">
+    <value>Trigger Interact</value>
+  </data>
+  <data name="UI_ProgramSource" xml:space="preserve">
+    <value>Program Source</value>
+  </data>
+  <data name="UI_ProgramScript" xml:space="preserve">
+    <value>Program Script</value>
+  </data>
+  <data name="UI_SourceScript" xml:space="preserve">
+    <value>Source Script</value>
+  </data>
+</root>

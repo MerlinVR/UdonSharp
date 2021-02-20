@@ -1,11 +1,13 @@
 ﻿
-//#define UDONSHARP_LOC_DEBUG
+#define UDONSHARP_LOC_DEBUG
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Xml.Linq;
 using UdonSharp.Updater;
+using UnityEditor;
 using UnityEngine;
 
 namespace UdonSharp.Localization
@@ -25,7 +27,15 @@ namespace UdonSharp.Localization
     public enum LocStr
     {
         UI_TestLocStr,
+        UI_CompileProgram,
+        UI_CompileAllPrograms,
+        UI_SendCustomEvent,
+        UI_TriggerInteract,
+        UI_ProgramSource,
+        UI_ProgramScript,
+        UI_SourceScript,
 
+        Length,
     }
 
     /// <summary>
@@ -33,40 +43,165 @@ namespace UdonSharp.Localization
     /// </summary>
     internal class LocaleInstance
     {
-        Dictionary<LocStr, string> localizedStringLookup;
+        Dictionary<LocStr, string> localizedStringLookup = new Dictionary<LocStr, string>();
 
         public LocaleInstance(string locale)
         {
             string localeDir = UdonSharpLocator.GetLocalizationPath();
+            string fileContents = "";
 
+            try
+            {
+                fileContents = LoadLocale(Path.Combine(localeDir, locale.ToLowerInvariant() + ".resx"));
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Failed to load locale {locale}\nException: {e}");
+            }
 
+            XName nameAttributeID = XName.Get("name");
+            XName valueAttributeID = XName.Get("value");
+
+            using (StringReader strReader = new StringReader(fileContents))
+            {
+                XElement xml = XElement.Load(strReader, LoadOptions.PreserveWhitespace);
+
+                foreach (var element in xml.Elements())
+                {
+                    if (element.Name != "data")
+                        continue;
+
+                    string elementName = element.Attribute(nameAttributeID).Value;
+                    string elementValue = element.Element(valueAttributeID).Value;
+
+                    if (Enum.TryParse(elementName, out LocStr elementResult))
+                    {
+                        localizedStringLookup.Add(elementResult, elementValue);
+                    }
+                #if UDONSHARP_LOC_DEBUG
+                    else
+                    {
+                        Debug.LogWarning($"Could not find corresponding enum for key '{elementName}'");
+                    }
+                #endif
+                }
+            }
+
+#if UDONSHARP_LOC_DEBUG
+            for (int i = 0; i < (int)LocStr.Length; ++i)
+            {
+                if (!localizedStringLookup.ContainsKey((LocStr)i))
+                    Debug.LogWarning($"Did not find string for key '{(LocStr)i}'");
+            }
+#endif
         }
 
         static string LoadLocale(string path)
         {
-            string filecontents = "";
-
             if (!File.Exists(path))
-            {
                 throw new System.IO.FileNotFoundException($"Could not find locale file at {path}, make sure you have installed UdonSharp following the installation instructions.");
-            }
 
-            try
+            return ReadFileTextSync(path, 1f);
+        }
+
+        // Stolen from UdonSharpUtils because it's in a different assembly, todo: move it somewhere more accessible
+        static string ReadFileTextSync(string filePath, float timeoutSeconds)
+        {
+            bool sourceLoaded = false;
+
+            string fileText = "";
+
+            System.DateTime startTime = System.DateTime.Now;
+
+            while (true)
             {
+                System.IO.IOException exception = null;
 
+                try
+                {
+                    fileText = System.IO.File.ReadAllText(filePath);
+                    sourceLoaded = true;
+                }
+                catch (System.IO.IOException e)
+                {
+                    exception = e;
+
+                    if (e is System.IO.FileNotFoundException ||
+                        e is System.IO.DirectoryNotFoundException)
+                        throw e;
+                }
+
+                if (sourceLoaded)
+                    break;
+                else
+                    System.Threading.Thread.Sleep(20);
+
+                System.TimeSpan timeFromStart = System.DateTime.Now - startTime;
+
+                if (timeFromStart.TotalSeconds > timeoutSeconds)
+                {
+                    UnityEngine.Debug.LogError($"Timeout when attempting to read file {filePath}");
+                    if (exception != null)
+                        throw exception;
+                }
             }
-            catch (Exception e)
+
+            return fileText;
+        }
+
+        public string GetString(LocStr locStr)
+        {
+            if (localizedStringLookup.TryGetValue(locStr, out string foundStr))
             {
-
+                return foundStr;
             }
+
+            return "";
         }
     }
-
+    
+    /// <summary>
+    /// Localization manager
+    /// </summary>
     public static class Loc
     {
-        public static string Format(LocStr locKey, string format, params object[] parameters)
+        static LocaleInstance instance;
+
+        static Loc()
         {
-            throw new System.NotImplementedException();
+            ReloadLocalization();
+        }
+
+        internal static void ReloadLocalization()
+        {
+            instance = new LocaleInstance("en-us");
+        }
+
+        public static string Get(LocStr locKey)
+        {
+            return instance.GetString(locKey);
+        }
+
+        public static string Format(LocStr locKey, params object[] parameters)
+        {
+            return string.Format(instance.GetString(locKey), parameters);
         }
     }
+
+#if UDONSHARP_LOC_DEBUG
+    internal class LocalePostProcessor : AssetPostprocessor
+    {
+        static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        {
+            foreach (string str in importedAssets)
+            {
+                if (Path.GetExtension(str) == ".resx")
+                {
+                    Loc.ReloadLocalization();
+                    break;
+                }
+            }
+        }
+    }
+#endif
 }
