@@ -27,4 +27,7 @@
   <data name="UI_SourceScript" xml:space="preserve">
     <value>Source Script</value>
   </data>
+  <data name="UI_SerializedUdonProgramAsset" xml:space="preserve">
+    <value>Serialized Udon Program Asset</value>
+  </data>
 </root>

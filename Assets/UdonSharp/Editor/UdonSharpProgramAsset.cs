@@ -105,7 +105,7 @@ namespace UdonSharp
                 }
 
                 EditorGUI.BeginDisabledGroup(true);
-                EditorGUILayout.ObjectField("Serialized Udon Program Asset", serializedUdonProgramAsset, typeof(AbstractSerializedUdonProgramAsset), false);
+                EditorGUILayout.ObjectField(Loc.Get(LocStr.UI_SerializedUdonProgramAsset), serializedUdonProgramAsset, typeof(AbstractSerializedUdonProgramAsset), false);
                 EditorGUI.EndDisabledGroup();
 
                 if (sourceCsScript == null)

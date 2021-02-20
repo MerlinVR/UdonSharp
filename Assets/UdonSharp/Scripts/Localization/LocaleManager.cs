@@ -34,6 +34,7 @@ namespace UdonSharp.Localization
         UI_ProgramSource,
         UI_ProgramScript,
         UI_SourceScript,
+        UI_SerializedUdonProgramAsset,
 
         Length,
     }
