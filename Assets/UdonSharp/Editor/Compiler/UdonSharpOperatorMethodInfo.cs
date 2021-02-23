@@ -178,7 +178,7 @@ namespace UdonSharp
             }
         }
 
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object Invoke(object obj, BindingFlags invokeAttr, System.Reflection.Binder binder, object[] parameters, CultureInfo culture)
         {
             throw new NotImplementedException("This is a stub, invoke is not needed unless we want to do constant folding and such ourselves.");
         }
