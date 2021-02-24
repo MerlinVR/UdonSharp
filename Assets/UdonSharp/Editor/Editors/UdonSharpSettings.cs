@@ -153,6 +153,51 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
             return BuiltinScanningBlacklist;
         }
+
+        public static bool IsBlacklistedPath(string path)
+        {
+            string[] blackList = GetScannerBlacklist();
+
+            path = path.Replace('\\', '/');
+
+            foreach (string blacklistPath in blackList)
+            {
+                if (path.StartsWith(blacklistPath.Replace('\\', '/')))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static IEnumerable<string> FilterBlacklistedPaths(IEnumerable<string> paths)
+        {
+            return paths; // For now we want to just allow everything so we can be more certain that everything is parsed correctly
+
+            List<string> filteredPaths = new List<string>();
+            string[] blacklist = GetScannerBlacklist();
+            for (int i = 0; i < blacklist.Length; ++i)
+                blacklist[i] = blacklist[i].Replace('\\', '/');
+
+            foreach (string originalPath in paths)
+            {
+                string replacedOriginal = originalPath.Replace('\\', '/');
+
+                bool blackListed = false;
+                foreach (string blacklistPath in blacklist)
+                {
+                    if (replacedOriginal.StartsWith(blacklistPath))
+                    {
+                        blackListed = true;
+                        break;
+                    }
+                }
+
+                if (!blackListed)
+                    filteredPaths.Add(originalPath);
+            }
+
+            return filteredPaths;
+        }
     }
     
     public class UdonSharpSettingsProvider

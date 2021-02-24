@@ -108,6 +108,24 @@ namespace UdonSharp.Compiler
             {
                 EditorUtility.DisplayProgressBar("UdonSharp Compile", "Initializing...", 0f);
 
+                var allScripts = UdonSharpSettings.FilterBlacklistedPaths(Directory.GetFiles("Assets/", "*.cs", SearchOption.AllDirectories));
+
+                System.Diagnostics.Stopwatch parseTimer = new System.Diagnostics.Stopwatch();
+                parseTimer.Start();
+
+                string[] defines = UdonSharpUtils.GetProjectDefines(isEditorBuild);
+
+                Parallel.ForEach(allScripts, (currentProgram) =>
+                {
+                    string programSource = UdonSharpUtils.ReadFileTextSync(currentProgram);
+
+#pragma warning disable CS1701 // Warning about System.Collections.Immutable versions potentially not matching
+                    Microsoft.CodeAnalysis.SyntaxTree programSyntaxTree = CSharpSyntaxTree.ParseText(programSource, CSharpParseOptions.Default.WithDocumentationMode(DocumentationMode.None).WithPreprocessorSymbols(defines));
+#pragma warning restore CS1701
+                });
+
+                Debug.Log($"Parsed all .cs files in {parseTimer.Elapsed.TotalSeconds * 1000f}ms");
+
                 UdonSharpProgramAsset[] allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
                 List<(UdonSharpProgramAsset, string)> programAssetsAndPaths = new List<(UdonSharpProgramAsset, string)>();
 
@@ -147,8 +165,6 @@ namespace UdonSharp.Compiler
                 object syntaxTreeLock = new object();
                 List<(UdonSharpProgramAsset, Microsoft.CodeAnalysis.SyntaxTree)> programsAndSyntaxTrees = new List<(UdonSharpProgramAsset, Microsoft.CodeAnalysis.SyntaxTree)>();
                 Dictionary<UdonSharpProgramAsset, (string, Microsoft.CodeAnalysis.SyntaxTree)> syntaxTreeSourceLookup = new Dictionary<UdonSharpProgramAsset, (string, Microsoft.CodeAnalysis.SyntaxTree)>();
-
-                string[] defines = UdonSharpUtils.GetProjectDefines(isEditorBuild);
 
                 Parallel.ForEach(programAssetsAndPaths, (currentProgram) =>
                 {

@@ -229,7 +229,7 @@ namespace UdonSharp
                     return;
             }
 
-            UdonSharpCompiler2 compiler = new UdonSharpCompiler2(programs, editorBuild);
+            UdonSharpCompiler compiler = new UdonSharpCompiler(programs, editorBuild);
             compiler.Compile();
         }
 
