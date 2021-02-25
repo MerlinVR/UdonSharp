@@ -2792,6 +2792,7 @@ namespace UdonSharp.Compiler
             if (captureNamespace.Length > 0)
             {
                 unresolvedAccessChain = captureNamespace;
+                captureNamespace = "";
             }
 
             if (unresolvedAccessChain.Length > 0)
