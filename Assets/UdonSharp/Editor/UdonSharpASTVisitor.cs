@@ -1338,7 +1338,7 @@ namespace UdonSharp.Compiler
 
             JumpLabel rhsEnd = visitorContext.labelTable.GetNewJumpLabel("conditionalShortCircuitEnd");
 
-            SymbolDefinition resultValue = visitorContext.topTable.CreateUnnamedSymbol(typeof(bool), SymbolDeclTypeFlags.Internal);
+            SymbolDefinition resultValue = visitorContext.topTable.CreateUnnamedSymbol(typeof(bool), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.NeedsRecursivePush);
 
             using (ExpressionCaptureScope lhsCaptureScope = new ExpressionCaptureScope(visitorContext, null))
             {
