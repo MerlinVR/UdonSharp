@@ -1495,7 +1495,7 @@ namespace UdonSharp.Compiler
         private void PushRecursiveStack(SymbolDefinition[] pushSymbols, ref SymbolDefinition checkSizeSymbol, bool checkStackSize = true)
         {
             if (checkSizeSymbol == null)
-                checkSizeSymbol = visitorContext.topTable.CreateUnnamedSymbol(typeof(int), SymbolDeclTypeFlags.Internal);
+                checkSizeSymbol = visitorContext.topTable.CreateNamedSymbol("usharpStackReservation", typeof(int), SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.Constant);
 
             if (pushSymbols.Length == 0)
                 return;
