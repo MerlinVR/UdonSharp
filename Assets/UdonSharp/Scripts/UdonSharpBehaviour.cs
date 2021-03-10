@@ -132,9 +132,24 @@ namespace UdonSharp
         public virtual void OnPlayerCollisionExit(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerCollisionStay(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerParticleCollision(VRC.SDKBase.VRCPlayerApi player) { }
+        public virtual void OnPlayerRespawn(VRC.SDKBase.VRCPlayerApi player) { }
+
 #if UDON_BETA_SDK
         public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi requestedOwner) => true;
 #endif
+
+        public virtual void MidiNoteOn(int channel, int number, int velocity) { }
+        public virtual void MidiNoteOff(int channel, int number, int velocity) { }
+        public virtual void MidiControlChange(int channel, int number, int value) { }
+
+        public virtual void InputJump(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        public virtual void InputUse(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        public virtual void InputGrab(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        public virtual void InputDrop(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        public virtual void InputMoveHorizontal(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        public virtual void InputMoveVertical(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        public virtual void InputLookHorizontal(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        public virtual void InputLookVertical(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
 
         [Obsolete("The OnStationEntered() event is deprecated use the OnStationEntered(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
         public virtual void OnStationEntered() { }
