@@ -1351,6 +1351,7 @@ namespace UdonSharpEditor
 
             UdonBehaviour[] behavioursOnObject = behaviour.GetComponents<UdonBehaviour>();
 
+            // Sanity checking for mixed sync modes
             if (behavioursOnObject.Length > 1)
             {
                 bool hasContinuousSync = false;
@@ -1373,6 +1374,7 @@ namespace UdonSharpEditor
                 }
             }
 
+            // Dropdown for the sync settings
             if (programAsset.behaviourSyncMode != BehaviourSyncMode.NoVariableSync)
             {
                 bool allowsSyncConfig = programAsset.behaviourSyncMode == BehaviourSyncMode.Any;
@@ -1394,8 +1396,23 @@ namespace UdonSharpEditor
                 }
 
                 EditorGUI.EndDisabledGroup();
+
+                bool newReliableState = behaviour.Reliable;
+
+                // Handle auto setting of sync mode if the component has just been created
+                if (programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous && behaviour.Reliable)
+                    newReliableState = false;
+                else if (programAsset.behaviourSyncMode == BehaviourSyncMode.Manual && !behaviour.Reliable)
+                    newReliableState = true;
+
+                if (newReliableState != behaviour.Reliable)
+                {
+                    Undo.RecordObject(behaviour, "Update sync mode");
+                    behaviour.Reliable = newReliableState;
+                }
             }
 
+            // Position sync upgrade warnings & collision transfer handling
 #pragma warning disable CS0618 // Type or member is obsolete
             EditorGUI.BeginChangeCheck();
             bool newCollisionTransfer = behaviour.AllowCollisionOwnershipTransfer;

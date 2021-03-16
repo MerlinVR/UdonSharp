@@ -146,8 +146,11 @@ namespace UdonSharpEditor
 
             udonBehaviour.programSource = programAsset;
 #pragma warning disable CS0618 // Type or member is obsolete
+            udonBehaviour.SynchronizePosition = false;
             udonBehaviour.AllowCollisionOwnershipTransfer = false;
 #pragma warning restore CS0618 // Type or member is obsolete
+
+            udonBehaviour.Reliable = programAsset.behaviourSyncMode == BehaviourSyncMode.Manual;
 
             SerializedObject componentAsset = new SerializedObject(udonBehaviour);
             SerializedProperty serializedProgramAssetProperty = componentAsset.FindProperty("serializedProgramAsset");
