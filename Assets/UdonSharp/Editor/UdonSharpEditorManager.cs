@@ -515,14 +515,13 @@ namespace UdonSharpEditor
                     continue;
 
                 if (behaviour.Reliable == true &&
-                    programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous)
+                    (programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous) ||
+                     programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
                 {
                     behaviour.Reliable = false;
                     modificationCount++;
                 }
-                else if (behaviour.Reliable == false &&
-                         (programAsset.behaviourSyncMode == BehaviourSyncMode.Manual ||
-                          programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync))
+                else if (behaviour.Reliable == false && programAsset.behaviourSyncMode == BehaviourSyncMode.Manual)
                 {
                     behaviour.Reliable = true;
                     modificationCount++;

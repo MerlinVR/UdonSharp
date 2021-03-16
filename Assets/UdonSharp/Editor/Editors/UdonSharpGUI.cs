@@ -1347,6 +1347,31 @@ namespace UdonSharpEditor
         {
             UdonSharpProgramAsset programAsset = (UdonSharpProgramAsset)behaviour.programSource;
 
+            EditorGUI.BeginDisabledGroup(Application.isPlaying);
+
+            if (behaviour.Reliable)
+            {
+                UdonBehaviour[] behavioursOnObject = behaviour.GetComponents<UdonBehaviour>();
+
+                if (behavioursOnObject.Length > 1)
+                {
+                    bool hasContinuousSync = false;
+
+                    foreach (UdonBehaviour otherBehaviour in behavioursOnObject)
+                    {
+                        if (!otherBehaviour.Reliable)
+                        {
+                            hasContinuousSync = true;
+                            break;
+                        }
+                    }
+
+                    if (hasContinuousSync)
+                        EditorGUILayout.HelpBox("Another UdonBehaviour on this Game Object has Continuous sync enabled while this behaviour is using Manual sync. This will cause this behaviour to use Continuous sync. " +
+                            "You cannot mix sync modes when using multiple UdonBehaviours on one GameObject.", MessageType.Error);
+                }
+            }
+
             if (programAsset.behaviourSyncMode != BehaviourSyncMode.NoVariableSync)
             {
                 bool allowsSyncConfig = programAsset.behaviourSyncMode == BehaviourSyncMode.Any;
@@ -1369,6 +1394,50 @@ namespace UdonSharpEditor
 
                 EditorGUI.EndDisabledGroup();
             }
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            EditorGUI.BeginChangeCheck();
+            bool newCollisionTransfer = behaviour.AllowCollisionOwnershipTransfer;
+            if (behaviour.GetComponent<Collider>() != null)
+            {
+                newCollisionTransfer = EditorGUILayout.Toggle(ownershipTransferOnCollisionContent, behaviour.AllowCollisionOwnershipTransfer);
+
+                if (newCollisionTransfer)
+                    EditorGUILayout.HelpBox("Collision transfer is currently bugged and can cause network spam that lags your world, use at your own risk.", MessageType.Warning);
+            }
+            else if (newCollisionTransfer)
+            {
+                newCollisionTransfer = false;
+
+                GUI.changed = true;
+            }
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(behaviour, "Changed ownership transfer");
+                behaviour.AllowCollisionOwnershipTransfer = newCollisionTransfer;
+            }
+
+            // For now we'll do a warning, later on we may add a validation pass that just converts everything automatically
+            if (behaviour.SynchronizePosition)
+            {
+                EditorGUILayout.HelpBox("This behaviour has sync position enabled on it, sync position is deprecated and you should now use the VRC Object Sync script.", MessageType.Warning);
+                if (GUILayout.Button("Switch to VRC Object Sync"))
+                {
+                    var objectSync = Undo.AddComponent<VRC.SDK3.Components.VRCObjectSync>(behaviour.gameObject);
+                    while (UnityEditorInternal.ComponentUtility.MoveComponentUp(objectSync)) { }
+
+                    Undo.RecordObject(objectSync, "Object sync collision transfer");
+                    objectSync.AllowCollisionOwnershipTransfer = newCollisionTransfer;
+
+                    Undo.RecordObject(behaviour, "Convert to VRC Object Sync");
+                    behaviour.SynchronizePosition = false;
+                    behaviour.AllowCollisionOwnershipTransfer = false;
+                }
+            }
+#pragma warning restore CS0618 // Type or member is obsolete
+
+            EditorGUI.EndDisabledGroup();
         }
 
         /// <summary>
