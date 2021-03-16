@@ -1349,27 +1349,23 @@ namespace UdonSharpEditor
 
             EditorGUI.BeginDisabledGroup(Application.isPlaying);
 
-            if (behaviour.Reliable)
+            UdonBehaviour[] behavioursOnObject = behaviour.GetComponents<UdonBehaviour>();
+
+            if (behavioursOnObject.Length > 1)
             {
-                UdonBehaviour[] behavioursOnObject = behaviour.GetComponents<UdonBehaviour>();
+                bool hasContinuousSync = false;
+                bool hasReliableSync = false;
 
-                if (behavioursOnObject.Length > 1)
+                foreach (UdonBehaviour otherBehaviour in behavioursOnObject)
                 {
-                    bool hasContinuousSync = false;
-
-                    foreach (UdonBehaviour otherBehaviour in behavioursOnObject)
-                    {
-                        if (!otherBehaviour.Reliable)
-                        {
-                            hasContinuousSync = true;
-                            break;
-                        }
-                    }
-
-                    if (hasContinuousSync)
-                        EditorGUILayout.HelpBox("Another UdonBehaviour on this Game Object has Continuous sync enabled while this behaviour is using Manual sync. This will cause this behaviour to use Continuous sync. " +
-                            "You cannot mix sync modes when using multiple UdonBehaviours on one GameObject.", MessageType.Error);
+                    if (otherBehaviour.Reliable)
+                        hasReliableSync = true;
+                    else
+                        hasContinuousSync = true;
                 }
+
+                if (hasContinuousSync && hasReliableSync)
+                    EditorGUILayout.HelpBox("You are mixing sync methods between UdonBehaviours on the same game object, this will cause all behaviours to use the sync method of the last component on the game object.", MessageType.Error);
             }
 
             if (programAsset.behaviourSyncMode != BehaviourSyncMode.NoVariableSync)
