@@ -230,6 +230,23 @@ namespace UdonSharp.Tests
             customEventCounter = originalCounter * customEventCounter;
         }
 
+        /// <summary>
+        /// Tests if the temp value from the lhs of the short circuit gets stomped by the recursive call which causes the final expression to evaluate an inaccurate value
+        /// </summary>
+        [RecursiveMethod]
+        bool ShortCircuitRecursion(bool a, int count, bool useValue)
+        {
+            if (count == 0)
+                a = false;
+
+            bool result = a == false || !ShortCircuitRecursion(a, count - 1, false);
+
+            if (useValue)
+                return result;
+
+            return true;
+        }
+
         [RecursiveMethod] // Just here to test calling out to other types from recursive methods
         public void ExecuteTests()
         {
@@ -277,6 +294,8 @@ namespace UdonSharp.Tests
             customEventCounter = 4;
             CustomEventRecursion();
             tester.TestAssertion("SendCustomEvent recursion", customEventCounter == 24);
+
+            tester.TestAssertion("Recursive short circuit operators", ShortCircuitRecursion(true, 2, true) == false);
         }
     }
 }
