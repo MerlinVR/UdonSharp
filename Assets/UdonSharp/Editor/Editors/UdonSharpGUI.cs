@@ -1383,7 +1383,9 @@ namespace UdonSharpEditor
 
                 Rect syncMethodRect = EditorGUILayout.GetControlRect();
                 int id = GUIUtility.GetControlID("DropdownButton".GetHashCode(), FocusType.Keyboard, syncMethodRect);
-                Rect dropdownRect = EditorGUI.PrefixLabel(syncMethodRect, id, new GUIContent("Synchronization Method"));
+                GUIContent dropdownContent = allowsSyncConfig ? new GUIContent("Synchronization Method") : new GUIContent("Synchronization Method", "This sync mode is currently set by the UdonBehaviourSyncMode attribute on the script");
+
+                Rect dropdownRect = EditorGUI.PrefixLabel(syncMethodRect, id, dropdownContent);
 
                 if (dropdownButtonMethod == null)
                     dropdownButtonMethod = typeof(EditorGUI).GetMethod("DropdownButton", BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(int), typeof(Rect), typeof(GUIContent), typeof(GUIStyle) }, null);
