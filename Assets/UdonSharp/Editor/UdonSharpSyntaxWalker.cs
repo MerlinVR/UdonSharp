@@ -1,6 +1,4 @@
 ﻿
-#define UDON_BETA_SDK
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -220,6 +218,44 @@ namespace UdonSharp.Compiler
                     throw new System.Exception($"User type {node.Identifier.ValueText} could not be found");
             }
 
+            if (node.AttributeLists != null)
+            {
+                foreach (AttributeListSyntax attributeList in node.AttributeLists)
+                {
+                    foreach (AttributeSyntax attribute in attributeList.Attributes)
+                    {
+                        System.Type captureType = null;
+
+                        using (ExpressionCaptureScope attributeTypeScope = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            attributeTypeScope.isAttributeCaptureScope = true;
+
+                            Visit(attribute.Name);
+
+                            captureType = attributeTypeScope.captureType;
+                        }
+
+                        if (captureType != null && captureType == typeof(UdonBehaviourSyncModeAttribute))
+                        {
+                            if (attribute.ArgumentList != null &&
+                                attribute.ArgumentList.Arguments != null &&
+                                attribute.ArgumentList.Arguments.Count == 1)
+                            {
+                                using (ExpressionCaptureScope attributeCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+                                {
+                                    Visit(attribute.ArgumentList.Arguments[0].Expression);
+
+                                    if (!attributeCaptureScope.IsEnum())
+                                        throw new System.Exception("Invalid attribute argument provided for behaviour sync");
+
+                                    visitorContext.behaviourSyncMode = (BehaviourSyncMode)attributeCaptureScope.GetEnumValue();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             if (syntaxWalkerDepth == UdonSharpSyntaxWalkerDepth.ClassDefinitions || 
                 syntaxWalkerDepth == UdonSharpSyntaxWalkerDepth.ClassMemberBodies)
                 base.VisitClassDeclaration(node);
@@ -411,7 +447,9 @@ namespace UdonSharp.Compiler
             if (syncMode == UdonSyncMode.NotSynced)
                 return;
 
-#if UDON_BETA_SDK
+            if (visitorContext.behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
+                throw new System.Exception($"Cannot sync variable because behaviour is set to NoVariableSync, change the behaviour sync mode to sync variables");
+
             if (!VRC.Udon.UdonNetworkTypes.CanSync(typeToSync))
                 throw new System.NotSupportedException($"Udon does not currently support syncing of the type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
             else if (syncMode == UdonSyncMode.Linear && !VRC.Udon.UdonNetworkTypes.CanSyncLinear(typeToSync))
@@ -420,14 +458,9 @@ namespace UdonSharp.Compiler
                 throw new System.NotSupportedException($"Udon does not support smooth interpolation of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
 
             if (visitorContext.behaviourSyncMode == BehaviourSyncMode.Manual && syncMode != UdonSyncMode.None)
-                throw new System.NotSupportedException($"Udon does not support variable tweening when the behaviour is in Manual sync mode");
-#else
-            if (!UdonSharpUtils.IsUdonSyncedType(typeToSync))
-                throw new System.NotSupportedException($"Udon does not currently support syncing of the type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
-            
-            if (syncMode != UdonSyncMode.None && (typeToSync == typeof(string) || typeToSync == typeof(char)))
-                throw new System.NotSupportedException($"Udon does not support tweening the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
-#endif
+                    throw new System.NotSupportedException($"Udon does not support variable tweening when the behaviour is in Manual sync mode");
+            else if (visitorContext.behaviourSyncMode == BehaviourSyncMode.Continuous && typeToSync.IsArray)
+                throw new System.NotSupportedException($"Syncing of array type {UdonSharpUtils.PrettifyTypeName(typeToSync.GetElementType())}[] is only supported in manual sync mode");
         }
     }
 }

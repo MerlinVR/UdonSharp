@@ -1,5 +1,4 @@
-﻿#define UDON_BETA_SDK
-
+﻿
 using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
@@ -18,7 +17,6 @@ using VRC.Udon.Common.Interfaces;
 namespace UdonSharpEditor
 {
     #region Beta SDK sync mode menu editor
-#if UDON_BETA_SDK
     internal class SyncModeMenu : EditorWindow
     {
         static SyncModeMenu menu;
@@ -229,7 +227,6 @@ namespace UdonSharpEditor
             showAsDropDownMethod.Invoke(this, new object[] { controlRect, size, popupLocationArray });
         }
     }
-#endif
     #endregion
 
     public static class UdonSharpGUI
@@ -1343,66 +1340,35 @@ namespace UdonSharpEditor
 
         static readonly GUIContent ownershipTransferOnCollisionContent = new GUIContent("Allow Ownership Transfer on Collision",
                                                                                         "Transfer ownership on collision, requires a Collision component on the same game object");
-
-#if UDON_BETA_SDK
+        
         static MethodInfo dropdownButtonMethod;
-#endif
 
         internal static void DrawSyncSettings(UdonBehaviour behaviour)
         {
-#if UDON_BETA_SDK
             UdonSharpProgramAsset programAsset = (UdonSharpProgramAsset)behaviour.programSource;
 
-            bool allowsSyncConfig = programAsset.behaviourSyncMode == BehaviourSyncMode.Any;
-
-            EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying || !allowsSyncConfig);
-
-            Rect syncMethodRect = EditorGUILayout.GetControlRect();
-            int id = GUIUtility.GetControlID("DropdownButton".GetHashCode(), FocusType.Keyboard, syncMethodRect);
-            Rect dropdownRect = EditorGUI.PrefixLabel(syncMethodRect, id, new GUIContent("Synchronization Method"));
-
-            if (dropdownButtonMethod == null)
-                dropdownButtonMethod = typeof(EditorGUI).GetMethod("DropdownButton", BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(int), typeof(Rect), typeof(GUIContent), typeof(GUIStyle) }, null);
-
-            if ((bool)dropdownButtonMethod.Invoke(null, new object[] { id, dropdownRect, new GUIContent(behaviour.Reliable ? "Manual" : "Continuous"), EditorStyles.miniPullDown }))
+            if (programAsset.behaviourSyncMode != BehaviourSyncMode.NoVariableSync)
             {
-                SyncModeMenu.Show(syncMethodRect, new UdonBehaviour[] { behaviour });
+                bool allowsSyncConfig = programAsset.behaviourSyncMode == BehaviourSyncMode.Any;
 
-                GUIUtility.ExitGUI();
+                EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying || !allowsSyncConfig);
+
+                Rect syncMethodRect = EditorGUILayout.GetControlRect();
+                int id = GUIUtility.GetControlID("DropdownButton".GetHashCode(), FocusType.Keyboard, syncMethodRect);
+                Rect dropdownRect = EditorGUI.PrefixLabel(syncMethodRect, id, new GUIContent("Synchronization Method"));
+
+                if (dropdownButtonMethod == null)
+                    dropdownButtonMethod = typeof(EditorGUI).GetMethod("DropdownButton", BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(int), typeof(Rect), typeof(GUIContent), typeof(GUIStyle) }, null);
+
+                if ((bool)dropdownButtonMethod.Invoke(null, new object[] { id, dropdownRect, new GUIContent(behaviour.Reliable ? "Manual" : "Continuous"), EditorStyles.miniPullDown }))
+                {
+                    SyncModeMenu.Show(syncMethodRect, new UdonBehaviour[] { behaviour });
+
+                    GUIUtility.ExitGUI();
+                }
+
+                EditorGUI.EndDisabledGroup();
             }
-
-            EditorGUI.EndDisabledGroup();
-#else
-            EditorGUI.BeginChangeCheck();
-
-            EditorGUI.BeginDisabledGroup(Application.isPlaying);
-            bool newSyncPos = EditorGUILayout.Toggle("Synchronize Position", behaviour.SynchronizePosition);
-            bool newCollisionTransfer = behaviour.AllowCollisionOwnershipTransfer;
-            if (behaviour.GetComponent<Collider>() != null)
-            {
-                newCollisionTransfer = EditorGUILayout.Toggle(ownershipTransferOnCollisionContent, behaviour.AllowCollisionOwnershipTransfer);
-
-                if (newCollisionTransfer)
-                    EditorGUILayout.HelpBox("Collision transfer is currently bugged and can cause network spam that lags your world, use at your own risk.", MessageType.Warning);
-            }
-            else if(newCollisionTransfer)
-            {
-                newCollisionTransfer = false;
-
-                GUI.changed = true;
-            }
-            EditorGUI.EndDisabledGroup();
-
-            if (EditorGUI.EndChangeCheck())
-            {
-                Undo.RecordObject(behaviour, "Change sync setting");
-                behaviour.SynchronizePosition = newSyncPos;
-                behaviour.AllowCollisionOwnershipTransfer = newCollisionTransfer;
-
-                if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
-                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
-            }
-#endif
         }
 
         /// <summary>

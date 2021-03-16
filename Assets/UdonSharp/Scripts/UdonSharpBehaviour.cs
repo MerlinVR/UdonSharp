@@ -1,5 +1,4 @@
-﻿#define UDON_BETA_SDK
-
+﻿
 using System;
 using System.Linq;
 using System.Reflection;
@@ -66,10 +65,8 @@ namespace UdonSharp
         {
             return Instantiate(original);
         }
-
-#if UDON_BETA_SDK
+        
         public void RequestSerialization() { }
-#endif
 
         // Stubs for builtin UdonSharp methods to get type info
         private static long GetUdonTypeID(System.Type type)
@@ -135,11 +132,9 @@ namespace UdonSharp
         public virtual void OnPlayerCollisionStay(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerParticleCollision(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerRespawn(VRC.SDKBase.VRCPlayerApi player) { }
-
-#if UDON_BETA_SDK
+        
         public virtual void OnPostSerialization() { }
         public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi requestedOwner) => true;
-#endif
 
         public virtual void MidiNoteOn(int channel, int number, int velocity) { }
         public virtual void MidiNoteOff(int channel, int number, int velocity) { }

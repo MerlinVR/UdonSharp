@@ -1,5 +1,4 @@
-﻿#define UDON_BETA_SDK
-
+﻿
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
@@ -419,9 +418,7 @@ namespace UdonSharpEditor
 
             UpdateSerializedProgramAssets(allBehaviours);
             UpdatePublicVariables(allBehaviours);
-#if UDON_BETA_SDK
             UpdateSyncModes(allBehaviours);
-#endif
             CreateProxyBehaviours(allBehaviours);
         }
 
@@ -507,8 +504,7 @@ namespace UdonSharpEditor
                 }
             }
         }
-
-#if UDON_BETA_SDK
+        
         static void UpdateSyncModes(List<UdonBehaviour> udonBehaviours)
         {
             int modificationCount = 0;
@@ -525,7 +521,8 @@ namespace UdonSharpEditor
                     modificationCount++;
                 }
                 else if (behaviour.Reliable == false &&
-                         programAsset.behaviourSyncMode == BehaviourSyncMode.Manual)
+                         (programAsset.behaviourSyncMode == BehaviourSyncMode.Manual ||
+                          programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync))
                 {
                     behaviour.Reliable = true;
                     modificationCount++;
@@ -535,7 +532,6 @@ namespace UdonSharpEditor
             if (modificationCount > 0)
                 EditorSceneManager.MarkAllScenesDirty();
         }
-#endif
 
         static bool UdonSharpBehaviourTypeMatches(object symbolValue, System.Type expectedType, string behaviourName, string variableName)
         {

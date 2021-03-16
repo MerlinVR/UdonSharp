@@ -1,5 +1,4 @@
-﻿#define UDON_BETA_SDK
-
+﻿
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -20,9 +19,7 @@ namespace UdonSharp.Compiler
         public int behaviourExecutionOrder = 0;
         public List<ClassDefinition> externClassDefinitions;
         public Dictionary<string, FieldDefinition> localFieldDefinitions;
-#if UDON_BETA_SDK
         public BehaviourSyncMode behaviourSyncMode = BehaviourSyncMode.Any;
-#endif
 
         public Stack<ExpressionCaptureScope> expressionCaptureStack = new Stack<ExpressionCaptureScope>();
         
@@ -36,9 +33,8 @@ namespace UdonSharp.Compiler
         public int maxMethodFrameSize = 0; // The maximum size for a "stack frame" for a method. This is used to initialize the correct default size of the artificial stack so that we know we only need to double the size of it at most.
         public SymbolDefinition artificalStackSymbol = null;
         public SymbolDefinition stackAddressSymbol = null;
-#if UDON_BETA_SDK
         public bool requiresVRCReturn = false;
-#endif
+
         public Stack<JumpLabel> continueLabelStack = new Stack<JumpLabel>();
         public Stack<JumpLabel> breakLabelStack = new Stack<JumpLabel>();
 
@@ -283,8 +279,7 @@ namespace UdonSharp.Compiler
                                 throw new System.ArgumentException("Execution order attribute must have an integer argument");
                             }
                         }
-
-#if UDON_BETA_SDK
+                        
                         if (captureType != null && captureType == typeof(UdonBehaviourSyncModeAttribute))
                         {
                             if (attribute.ArgumentList != null && 
@@ -302,7 +297,6 @@ namespace UdonSharp.Compiler
                                 }
                             }
                         }
-#endif
                     }
                 }
             }
@@ -1088,9 +1082,7 @@ namespace UdonSharp.Compiler
             JumpLabel returnLabel = visitorContext.labelTable.GetNewJumpLabel("return");
             visitorContext.returnLabel = returnLabel;
             visitorContext.returnSymbol = definition.returnSymbol;
-#if UDON_BETA_SDK
             visitorContext.requiresVRCReturn = functionName == "_onOwnershipRequest" ? true : false;
-#endif
 
             visitorContext.uasmBuilder.AddJumpLabel(definition.methodUdonEntryPoint);
             
@@ -1160,8 +1152,7 @@ namespace UdonSharp.Compiler
                             returnSetterScope.SetToLocalSymbol(visitorContext.returnSymbol);
                             returnSetterScope.ExecuteSet(returnValue);
                         }
-
-#if UDON_BETA_SDK
+                        
                         if (visitorContext.requiresVRCReturn)
                         {
                             SymbolTable globalSymbolTable = visitorContext.topTable.GetGlobalSymbolTable();
@@ -1176,7 +1167,6 @@ namespace UdonSharp.Compiler
                                 returnValueSetMethod.ExecuteSet(returnValue);
                             }
                         }
-#endif
                     }
                 }
             }
@@ -1688,8 +1678,7 @@ namespace UdonSharp.Compiler
                         returnOutSetter.SetToLocalSymbol(visitorContext.returnSymbol);
                         returnOutSetter.ExecuteSet(returnSymbol);
                     }
-
-#if UDON_BETA_SDK
+                    
                     if (visitorContext.requiresVRCReturn)
                     {
                         SymbolTable globalSymbolTable = visitorContext.topTable.GetGlobalSymbolTable();
@@ -1704,7 +1693,6 @@ namespace UdonSharp.Compiler
                             returnValueSetMethod.ExecuteSet(returnSymbol);
                         }
                     }
-#endif
                 }
             }
 

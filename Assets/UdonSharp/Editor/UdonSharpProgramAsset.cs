@@ -1,5 +1,4 @@
-﻿#define UDON_BETA_SDK
-
+﻿
 using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
@@ -29,11 +28,9 @@ namespace UdonSharp
 
         [NonSerialized, OdinSerialize]
         public Dictionary<string, FieldDefinition> fieldDefinitions;
-
-#if UDON_BETA_SDK
+        
         [HideInInspector]
         public BehaviourSyncMode behaviourSyncMode = BehaviourSyncMode.Any;
-#endif
 
         [HideInInspector]
         public string behaviourIDHeapVarName;
