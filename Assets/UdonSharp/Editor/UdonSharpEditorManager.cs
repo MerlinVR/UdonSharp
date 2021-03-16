@@ -509,10 +509,14 @@ namespace UdonSharpEditor
         {
             int modificationCount = 0;
 
+            HashSet<GameObject> behaviourGameObjects = new HashSet<GameObject>();
+
             foreach (UdonBehaviour behaviour in udonBehaviours)
             {
                 if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset programAsset))
                     continue;
+
+                behaviourGameObjects.Add(behaviour.gameObject);
 
                 if (behaviour.Reliable == true &&
                     (programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous) ||
@@ -525,6 +529,29 @@ namespace UdonSharpEditor
                 {
                     behaviour.Reliable = true;
                     modificationCount++;
+                }
+            }
+
+            // Validation for mixed sync modes which can break sync on things
+            foreach (GameObject gameObject in behaviourGameObjects)
+            {
+                UdonBehaviour[] objectBehaviours = gameObject.GetComponents<UdonBehaviour>();
+
+                if (objectBehaviours.Length > 1)
+                {
+                    bool hasManual = false;
+                    bool hasContinuous = false;
+
+                    foreach (UdonBehaviour objectBehaviour in objectBehaviours)
+                    {
+                        if (objectBehaviour.Reliable)
+                            hasManual = true;
+                        else
+                            hasContinuous = true;
+                    }
+
+                    if (hasManual && hasContinuous)
+                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] UdonBehaviours on GameObject '{gameObject.name}' have conflicting synchronization methods, this can cause sync to work unexpectedly.", gameObject);
                 }
             }
 
