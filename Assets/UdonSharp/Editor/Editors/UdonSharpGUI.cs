@@ -1365,7 +1365,12 @@ namespace UdonSharpEditor
                 }
 
                 if (hasContinuousSync && hasReliableSync)
-                    EditorGUILayout.HelpBox("You are mixing sync methods between UdonBehaviours on the same game object, this will cause all behaviours to use the sync method of the last component on the game object.", MessageType.Error);
+                {
+                    if (programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
+                        EditorGUILayout.HelpBox("NoVariableSync mode uses Continuous sync mode internally. You are mixing sync methods between UdonBehaviours on the same game object, this will cause all behaviours to use the sync method of the last component on the game object.", MessageType.Error);
+                    else
+                        EditorGUILayout.HelpBox("You are mixing sync methods between UdonBehaviours on the same game object, this will cause all behaviours to use the sync method of the last component on the game object.", MessageType.Error);
+                }
             }
 
             if (programAsset.behaviourSyncMode != BehaviourSyncMode.NoVariableSync)
