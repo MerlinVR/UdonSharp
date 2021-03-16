@@ -10,6 +10,7 @@ namespace UdonSharp.Examples.Utilities
     /// This class allows anyone to toggle a gameobject for everyone in the world. 
     /// This script assumes that the object it is on will not have other things transferring ownership of it.
     /// </summary>
+    [UdonBehaviourSyncMode(BehaviourSyncMode.Continuous)]
     public class GlobalToggleObject : UdonSharpBehaviour 
     {
         public GameObject toggleObject;
