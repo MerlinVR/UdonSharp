@@ -1414,6 +1414,19 @@ namespace UdonSharpEditor
                 }
             }
 
+            // Validate that we don't have a VRC Object Sync on continuous synced objects since it is not valid
+            if (behaviour.Reliable)
+            {
+                var objSync = behaviour.GetComponent<VRC.SDK3.Components.VRCObjectSync>();
+
+#pragma warning disable CS0618 // Type or member is obsolete
+                if (behaviour.SynchronizePosition)
+#pragma warning restore CS0618 // Type or member is obsolete
+                    EditorGUILayout.HelpBox("Manual sync cannot be used on GameObjects with Position Sync", MessageType.Error);
+                else if (objSync)
+                    EditorGUILayout.HelpBox("Manual sync cannot be used on GameObjects with VRC Object Sync", MessageType.Error);
+            }
+
             // Position sync upgrade warnings & collision transfer handling
 #pragma warning disable CS0618 // Type or member is obsolete
             EditorGUI.BeginChangeCheck();
@@ -1441,18 +1454,43 @@ namespace UdonSharpEditor
             // For now we'll do a warning, later on we may add a validation pass that just converts everything automatically
             if (behaviour.SynchronizePosition)
             {
-                EditorGUILayout.HelpBox("This behaviour has sync position enabled on it, sync position is deprecated and you should now use the VRC Object Sync script.", MessageType.Warning);
-                if (GUILayout.Button("Switch to VRC Object Sync"))
+                var objectSync = behaviour.GetComponent<VRC.SDK3.Components.VRCObjectSync>();
+
+                if (objectSync)
                 {
-                    var objectSync = Undo.AddComponent<VRC.SDK3.Components.VRCObjectSync>(behaviour.gameObject);
-                    while (UnityEditorInternal.ComponentUtility.MoveComponentUp(objectSync)) { }
+                    if (behaviour.AllowCollisionOwnershipTransfer && !objectSync.AllowCollisionOwnershipTransfer)
+                    {
+                        Undo.RecordObject(behaviour, "Object sync owner transfer");
+                        objectSync.AllowCollisionOwnershipTransfer = true;
+                    }
 
-                    Undo.RecordObject(objectSync, "Object sync collision transfer");
-                    objectSync.AllowCollisionOwnershipTransfer = newCollisionTransfer;
-
-                    Undo.RecordObject(behaviour, "Convert to VRC Object Sync");
+                    Undo.RecordObject(behaviour, "Change sync position");
                     behaviour.SynchronizePosition = false;
-                    behaviour.AllowCollisionOwnershipTransfer = false;
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("This behaviour has sync position enabled on it, sync position is deprecated and you should now use the VRC Object Sync script.", MessageType.Warning);
+                    if (GUILayout.Button("Switch to VRC Object Sync"))
+                    {
+                        var newObjSync = Undo.AddComponent<VRC.SDK3.Components.VRCObjectSync>(behaviour.gameObject);
+                        while (UnityEditorInternal.ComponentUtility.MoveComponentUp(newObjSync)) { }
+
+                        UdonBehaviour[] behaviours = behaviour.GetComponents<UdonBehaviour>();
+
+                        bool usesCollisionTransfer = false;
+
+                        foreach (UdonBehaviour otherBehaviour in behaviours)
+                        {
+                            usesCollisionTransfer |= otherBehaviour.AllowCollisionOwnershipTransfer;
+
+                            Undo.RecordObject(behaviour, "Convert to VRC Object Sync");
+                            behaviour.SynchronizePosition = false;
+                            behaviour.AllowCollisionOwnershipTransfer = false;
+                        }
+
+                        Undo.RecordObject(newObjSync, "Object sync collision transfer");
+                        newObjSync.AllowCollisionOwnershipTransfer = newCollisionTransfer;
+                    }
                 }
             }
 #pragma warning restore CS0618 // Type or member is obsolete
