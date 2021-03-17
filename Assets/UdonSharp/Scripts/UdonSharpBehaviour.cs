@@ -106,7 +106,7 @@ namespace UdonSharp
         // Method stubs for auto completion
         public virtual void Interact() { }
         public virtual void OnDrop() { }
-        public virtual void OnOwnershipTransferred() { }
+        public virtual void OnOwnershipTransferred(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPickup() { }
         public virtual void OnPickupUseDown() { }
         public virtual void OnPickupUseUp() { }
@@ -154,6 +154,9 @@ namespace UdonSharp
 
         [Obsolete("The OnStationExited() event is deprecated use the OnStationExited(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
         public virtual void OnStationExited() { }
+
+        [Obsolete("The OnOwnershipTransferred() event is deprecated use the OnOwnershipTransferred(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
+        public virtual void OnOwnershipTransferred() { }
 
 #if UNITY_EDITOR
         // Used for tracking serialization data in editor

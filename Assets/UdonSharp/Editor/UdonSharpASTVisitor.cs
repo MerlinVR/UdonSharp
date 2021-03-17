@@ -1094,7 +1094,7 @@ namespace UdonSharp.Compiler
                 System.Tuple<System.Type, string>[] customEventArgs = visitorContext.resolverContext.GetMethodCustomArgs(functionName);
                 if (customEventArgs != null)
                 {
-                    if (definition.parameters.Length == 0 && (functionName == "_onStationEntered" || functionName == "_onStationExited"))
+                    if (definition.parameters.Length == 0 && (functionName == "_onStationEntered" || functionName == "_onStationExited" || functionName == "_onOwnershipTransferred"))
                     {
                         // It's the old version of the station entered events
                     }
