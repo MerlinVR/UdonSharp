@@ -532,31 +532,43 @@ namespace UdonSharpEditor
                 }
             }
 
+            if (modificationCount > 0)
+                EditorSceneManager.MarkAllScenesDirty();
+
             // Validation for mixed sync modes which can break sync on things
             foreach (GameObject gameObject in behaviourGameObjects)
             {
                 UdonBehaviour[] objectBehaviours = gameObject.GetComponents<UdonBehaviour>();
 
-                if (objectBehaviours.Length > 1)
+                bool hasManual = false;
+                bool hasContinuous = false;
+                bool hasUdonPositionSync = false;
+
+                foreach (UdonBehaviour objectBehaviour in objectBehaviours)
                 {
-                    bool hasManual = false;
-                    bool hasContinuous = false;
+                    if (objectBehaviour.Reliable)
+                        hasManual = true;
+                    else
+                        hasContinuous = true;
 
-                    foreach (UdonBehaviour objectBehaviour in objectBehaviours)
-                    {
-                        if (objectBehaviour.Reliable)
-                            hasManual = true;
-                        else
-                            hasContinuous = true;
-                    }
+#pragma warning disable CS0618 // Type or member is obsolete
+                    if (objectBehaviour.SynchronizePosition)
+                        hasUdonPositionSync = true;
+#pragma warning restore CS0618 // Type or member is obsolete
+                }
 
-                    if (hasManual && hasContinuous)
+                if (hasManual)
+                {
+                    if (hasContinuous)
                         Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] UdonBehaviours on GameObject '{gameObject.name}' have conflicting synchronization methods, this can cause sync to work unexpectedly.", gameObject);
+
+                    if (gameObject.GetComponent<VRC.SDK3.Components.VRCObjectSync>())
+                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] UdonBehaviours on GameObject '{gameObject.name}' are using manual sync while VRCObjectSync is on the GameObject, this can cause sync to work unexpectedly.", gameObject);
+
+                    if (hasUdonPositionSync)
+                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] UdonBehaviours on GameObject '{gameObject.name}' are using manual sync while position sync is enabled on an UdonBehaviour on the GameObject, this can cause sync to work unexpectedly.", gameObject);
                 }
             }
-
-            if (modificationCount > 0)
-                EditorSceneManager.MarkAllScenesDirty();
         }
 
         static bool UdonSharpBehaviourTypeMatches(object symbolValue, System.Type expectedType, string behaviourName, string variableName)
