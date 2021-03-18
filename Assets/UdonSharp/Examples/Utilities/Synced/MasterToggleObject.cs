@@ -7,7 +7,7 @@ namespace UdonSharp.Examples.Utilities
     /// <summary>
     /// Allows the master and only the master to toggle a game object globally
     /// </summary>
-    [UdonBehaviourSyncMode(BehaviourSyncMode.Continuous)]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
     public class MasterToggleObject : UdonSharpBehaviour 
     {
         public GameObject toggleObject;
@@ -18,6 +18,15 @@ namespace UdonSharp.Examples.Utilities
         private void Start()
         {
             isObjectEnabled = toggleObject.activeSelf;
+        }
+
+        // Prevents people who are not the master from taking ownership
+        public override bool OnOwnershipRequest(VRCPlayerApi requestingPlayer, VRCPlayerApi requestedOwner)
+        {
+            if (!requestedOwner.isMaster)
+                return false;
+
+            return true;
         }
 
         public override void OnDeserialization()
@@ -34,6 +43,8 @@ namespace UdonSharp.Examples.Utilities
 
             isObjectEnabled = !isObjectEnabled;
             toggleObject.SetActive(isObjectEnabled);
+
+            RequestSerialization();
         }
     }
 }
