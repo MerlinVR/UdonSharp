@@ -450,7 +450,8 @@ namespace UdonSharp.Compiler
             if (visitorContext.behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
                 throw new System.Exception($"Cannot sync variable because behaviour is set to NoVariableSync, change the behaviour sync mode to sync variables");
 
-            if (!VRC.Udon.UdonNetworkTypes.CanSync(typeToSync))
+            if (!VRC.Udon.UdonNetworkTypes.CanSync(typeToSync) && 
+                typeToSync != typeof(uint) && typeToSync != typeof(uint[])) // Workaround for the uint types missing from the syncable type list >_>
                 throw new System.NotSupportedException($"Udon does not currently support syncing of the type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
             else if (syncMode == UdonSyncMode.Linear && !VRC.Udon.UdonNetworkTypes.CanSyncLinear(typeToSync))
                 throw new System.NotSupportedException($"Udon does not support linear interpolation of the synced type '{UdonSharpUtils.PrettifyTypeName(typeToSync)}'");
