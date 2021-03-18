@@ -60,6 +60,9 @@ namespace UdonSharp
 
         public void SendCustomNetworkEvent(NetworkEventTarget target, string eventName) { }
 
+        public void SendCustomEventDelayed(string eventName, float delaySeconds, VRC.Udon.Common.Enums.EventTiming eventTiming) { }
+        public void SendCustomEventDelayed(string eventName, int delayFrames, VRC.Udon.Common.Enums.EventTiming eventTiming) { }
+
         public static GameObject VRCInstantiate(GameObject original)
         {
             return Instantiate(original);

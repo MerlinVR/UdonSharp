@@ -30,6 +30,8 @@ namespace UdonSharp.Tests
             tester.TestAssertion("gameObject valid 2", gameObject.name == "LocalFunctionTests");
 
             tester.TestAssertion("Variable declaration after methods", heyImDeclaredAfter == 4f);
+
+            TestDelayed();
         }
 
         float heyImDeclaredAfter = 4f;
@@ -158,6 +160,19 @@ namespace UdonSharp.Tests
 
             tester.TestAssertion("SetProgramVariable local", programVar == 5);
             tester.TestAssertion("GetProgramVariable local", (int)GetProgramVariable("programVar") == 5);
+        }
+
+        public void PrintThingDelayed()
+        {
+            //Debug.Log("I printed delayed");
+        }
+
+        void TestDelayed()
+        {
+            SendCustomEventDelayed(nameof(PrintThingDelayed), 4f, VRC.Udon.Common.Enums.EventTiming.Update);
+
+            LocalFunctionTest myself = this;
+            myself.SendCustomEventDelayed(nameof(PrintThingDelayed), 5f, VRC.Udon.Common.Enums.EventTiming.Update);
         }
     }
 }
