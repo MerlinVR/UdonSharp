@@ -25,6 +25,7 @@ namespace UdonSharp
     public class UdonSharpProgramAsset : UdonAssemblyProgramAsset
     {
         public MonoScript sourceCsScript;
+        public bool isV1Root = false;
 
         [NonSerialized, OdinSerialize]
         public Dictionary<string, FieldDefinition> fieldDefinitions;

@@ -38,8 +38,12 @@ public class <TemplateClassName> : UdonSharpBehaviour
         {
             "Assets/Udon/Editor/",
             "Assets/Udon/Serialization/",
+            "Assets/Udon/ProgramSources/",
+            "Assets/Udon/WrapperModules/",
             "Assets/VRChat Examples/",
             "Assets/VRCSDK/Dependencies/",
+            "Assets/VRCSDK/SDK3/",
+            "Assets/VRCSDK/Sample Assets/",
             "Assets/UdonSharp/Editor/",
             // Common 3rd party editor assets
             "Assets/AmplifyShaderEditor/",
@@ -171,7 +175,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         public static IEnumerable<string> FilterBlacklistedPaths(IEnumerable<string> paths)
         {
-            return paths; // For now we want to just allow everything so we can be more certain that everything is parsed correctly
+            //return paths; // For now we want to just allow everything so we can be more certain that everything is parsed correctly
 
             List<string> filteredPaths = new List<string>();
             string[] blacklist = GetScannerBlacklist();
@@ -193,7 +197,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 }
 
                 if (!blackListed)
-                    filteredPaths.Add(originalPath);
+                    filteredPaths.Add(replacedOriginal);
             }
 
             return filteredPaths;
