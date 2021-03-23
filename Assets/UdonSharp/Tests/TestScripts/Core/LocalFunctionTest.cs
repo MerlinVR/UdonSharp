@@ -164,16 +164,25 @@ namespace UdonSharp.Tests
 
         public void PrintThingDelayed()
         {
-            //Debug.Log("I printed delayed");
+            //Debug.Log("I printed delayed frame: " + Time.frameCount);
+        }
+
+        public void PrintThingDelayedLate()
+        {
+            //Debug.Log("I printed delayed LateUpdate frame: " + Time.frameCount);
         }
 
         void TestDelayed()
         {
+            SendCustomEventDelayedSeconds(nameof(PrintThingDelayed), 4f);
             SendCustomEventDelayedSeconds(nameof(PrintThingDelayed), 4f, VRC.Udon.Common.Enums.EventTiming.Update);
+            SendCustomEventDelayedSeconds(nameof(PrintThingDelayedLate), 4f, VRC.Udon.Common.Enums.EventTiming.LateUpdate);
 
             LocalFunctionTest myself = this;
-            myself.SendCustomEventDelayedSeconds(nameof(PrintThingDelayed), 5f, VRC.Udon.Common.Enums.EventTiming.Update);
-            myself.SendCustomEventDelayedFrames(nameof(PrintThingDelayed), 1, VRC.Udon.Common.Enums.EventTiming.Update);
+            myself.SendCustomEventDelayedSeconds(nameof(PrintThingDelayed), 5f);
+            myself.SendCustomEventDelayedFrames(nameof(PrintThingDelayed), 0);
+            myself.SendCustomEventDelayedFrames(nameof(PrintThingDelayed), 1);
+            myself.SendCustomEventDelayedFrames(nameof(PrintThingDelayedLate), 1, VRC.Udon.Common.Enums.EventTiming.LateUpdate);
         }
     }
 }
