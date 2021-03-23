@@ -169,10 +169,11 @@ namespace UdonSharp.Tests
 
         void TestDelayed()
         {
-            SendCustomEventDelayed(nameof(PrintThingDelayed), 4f, VRC.Udon.Common.Enums.EventTiming.Update);
+            SendCustomEventDelayedSeconds(nameof(PrintThingDelayed), 4f, VRC.Udon.Common.Enums.EventTiming.Update);
 
             LocalFunctionTest myself = this;
-            myself.SendCustomEventDelayed(nameof(PrintThingDelayed), 5f, VRC.Udon.Common.Enums.EventTiming.Update);
+            myself.SendCustomEventDelayedSeconds(nameof(PrintThingDelayed), 5f, VRC.Udon.Common.Enums.EventTiming.Update);
+            myself.SendCustomEventDelayedFrames(nameof(PrintThingDelayed), 1, VRC.Udon.Common.Enums.EventTiming.Update);
         }
     }
 }
