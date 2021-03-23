@@ -183,6 +183,9 @@ namespace UdonSharp.Tests
             myself.SendCustomEventDelayedFrames(nameof(PrintThingDelayed), 0);
             myself.SendCustomEventDelayedFrames(nameof(PrintThingDelayed), 1);
             myself.SendCustomEventDelayedFrames(nameof(PrintThingDelayedLate), 1, VRC.Udon.Common.Enums.EventTiming.LateUpdate);
+
+            UdonBehaviour myselfUdon = (UdonBehaviour)(Component)myself;
+            myselfUdon.SendCustomEventDelayedFrames(nameof(PrintThingDelayed), 10);
         }
     }
 }
