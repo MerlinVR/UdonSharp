@@ -60,6 +60,22 @@ namespace UdonSharp
 
         public void SendCustomNetworkEvent(NetworkEventTarget target, string eventName) { }
 
+        /// <summary>
+        /// Executes target event after delaySeconds. If 0.0 delaySeconds is specified, will execute the following frame
+        /// </summary>
+        /// <param name="eventName"></param>
+        /// <param name="delaySeconds"></param>
+        /// <param name="eventTiming"></param>
+        public void SendCustomEventDelayedSeconds(string eventName, float delaySeconds, VRC.Udon.Common.Enums.EventTiming eventTiming = VRC.Udon.Common.Enums.EventTiming.Update) { }
+
+        /// <summary>
+        /// Executes target event after delayFrames have passed. If 0 frames is specified, will execute the following frame. In effect 0 frame delay and 1 fame delay are the same on this method.
+        /// </summary>
+        /// <param name="eventName"></param>
+        /// <param name="delayFrames"></param>
+        /// <param name="eventTiming"></param>
+        public void SendCustomEventDelayedFrames(string eventName, int delayFrames, VRC.Udon.Common.Enums.EventTiming eventTiming = VRC.Udon.Common.Enums.EventTiming.Update) { }
+
         public static GameObject VRCInstantiate(GameObject original)
         {
             return Instantiate(original);
