@@ -211,7 +211,7 @@ namespace UdonSharp
                                         {
                                             string fullFileContents = reader.ReadToEnd();
 
-                                            const string SEARCH_STR = "[VRCFlowManagerVRC] User Authenticated: ";
+                                            const string SEARCH_STR = "[Behaviour] User Authenticated: ";
                                             int userIdx = fullFileContents.IndexOf(SEARCH_STR);
                                             if (userIdx != -1)
                                             {
@@ -347,17 +347,17 @@ namespace UdonSharp
             "Received Message of type: friend-offline received at",
             "Received Message of type: friend-location received at",
             "[VRCFlowNetworkManager] Sending token from provider vrchat",
-            "[USpeaker] uSpeak [",
+            "[Always] uSpeak:",
             "Internal: JobTempAlloc has allocations",
             "To Debug, enable the define: TLA_DEBUG_STACK_LEAK in ThreadsafeLinearAllocator.cpp.",
             "PLAYLIST GET id=",
             "Checking server time received at ",
             "[RoomManager] Room metadata is unchanged, skipping update",
-            "[API] Requesting Get favorites {{\"",
-            "[API] Requesting Get auth/user/moderations {",
-            "[API] Fetching user",
-            "[API] Requesting Get worlds/local",
-            "[API] Piggy-backing Get request to",
+            "Setting Custom Properties for Local Player: avatarEyeHeight",
+            "HTTPFormUseage:UrlEncoded",
+            // Big catch-alls for random irrelevant VRC stuff
+            "[API] ",
+            "[Behaviour] ",
         };
 
         static void HandleForwardedLog(string logMessage, LogFileState state, UdonSharpSettings settings)
