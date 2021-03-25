@@ -495,8 +495,11 @@ namespace UdonSharpEditor
                 UdonSharpProgramAsset programAsset = behaviour.programSource as UdonSharpProgramAsset;
                 if (programAsset == null)
                     continue;
-                
-                if (_serializedAssetField.GetValue(behaviour) == null)
+
+                AbstractSerializedUdonProgramAsset serializedProgramAsset = _serializedAssetField.GetValue(behaviour) as AbstractSerializedUdonProgramAsset;
+
+                if (serializedProgramAsset == null || 
+                    serializedProgramAsset != programAsset.SerializedProgramAsset)
                 {
                     SerializedObject serializedBehaviour = new SerializedObject(behaviour);
                     SerializedProperty serializedProgramProperty = serializedBehaviour.FindProperty("serializedProgramAsset");
