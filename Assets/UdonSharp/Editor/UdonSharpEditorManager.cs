@@ -22,6 +22,8 @@ namespace UdonSharpEditor
     {
         static UdonSharpEditorManager()
         {
+            RuntimeLogWatcher.InitLogWatcher();
+
             EditorSceneManager.sceneOpened += OnSceneOpened;
             EditorApplication.update += OnEditorUpdate;
             EditorApplication.playModeStateChanged += OnChangePlayMode;
@@ -79,7 +81,9 @@ namespace UdonSharpEditor
             }
             
             Harmony harmony = new Harmony(HARMONY_ID);
-            harmony.UnpatchAll(HARMONY_ID);
+
+            using (var patchScope = new UdonSharpUtils.UdonSharpAssemblyLoadStripScope())
+                harmony.UnpatchAll(HARMONY_ID);
 
             MethodInfo injectedEvent = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.EventInterceptor), BindingFlags.Static | BindingFlags.Public);
             HarmonyMethod injectedMethod = new HarmonyMethod(injectedEvent);
@@ -90,13 +94,16 @@ namespace UdonSharpEditor
 
                 MethodInfo eventInfo = behaviourType.GetMethods(eventBindingFlags).FirstOrDefault(e => e.Name == eventName && e.ReturnType == typeof(void));
 
-                try
+                using (var loadScope = new UdonSharpUtils.UdonSharpAssemblyLoadStripScope())
                 {
-                    if (eventInfo != null) harmony.Patch(eventInfo, injectedMethod);
-                }
-                catch (System.Exception)
-                {
-                    Debug.LogWarning($"Failed to patch event {eventInfo} on {behaviourType}");
+                    try
+                    {
+                        if (eventInfo != null) harmony.Patch(eventInfo, injectedMethod);
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogWarning($"Failed to patch event {eventInfo} on {behaviourType}\nException:\n{e}");
+                    }
                 }
             }
 

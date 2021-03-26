@@ -11,7 +11,6 @@ using VRC.Udon.Common.Interfaces;
 
 namespace UdonSharp
 {
-    [InitializeOnLoad]
     public static class RuntimeLogWatcher
     {
         class LogFileState
@@ -30,7 +29,7 @@ namespace UdonSharp
         static Dictionary<string, LogFileState> logFileStates = new Dictionary<string, LogFileState>();
         static HashSet<string> modifiedLogPaths = new HashSet<string>();
 
-        static RuntimeLogWatcher()
+        public static void InitLogWatcher()
         {
             EditorApplication.update += OnEditorUpdate;
             Application.logMessageReceived += OnLog;
@@ -149,7 +148,7 @@ namespace UdonSharp
 
         static void OnLog(string logStr, string stackTrace, LogType type)
         {
-            if (type == LogType.Error)
+            if (type == LogType.Error || type == LogType.Exception)
             {
                 debugOutputQueue.Enqueue(logStr);
             }
@@ -404,6 +403,12 @@ namespace UdonSharp
 
         static void HandleLogError(string errorStr, string logPrefix, string prePrefix)
         {
+            if (errorStr.StartsWith("ExecutionEngineException: String conversion error: Illegal byte sequence encounted in the input.")) // Nice typo Mono
+            {
+                Debug.LogError("[<color=#FF00FF>UdonSharp</color>] ExecutionEngineException detected! This means you have hit a bug in Mono. To fix this, move your project to a path without any unicode characters.");
+                return;
+            }
+
             UdonSharpEditorCache.DebugInfoType debugType;
             if (errorStr.StartsWith("[<color=yellow>UdonBehaviour</color>] An exception occurred during Udon execution, this UdonBehaviour will be halted.")) // Editor
             {

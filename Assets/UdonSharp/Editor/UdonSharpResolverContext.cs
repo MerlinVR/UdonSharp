@@ -293,13 +293,20 @@ namespace UdonSharp
                             if (loadedAssemblyCache == null)
                             {
                                 loadedAssemblyCache = System.AppDomain.CurrentDomain.GetAssemblies()
-                                    .OrderBy(e =>
-                                        e.GetName().Name.Contains("UnityEngine") ||
-                                        e.GetName().Name.Contains("System") ||
-                                        e.GetName().Name.Contains("VRC") ||
-                                        e.GetName().Name.Contains("Udon") ||
-                                        e.GetName().Name.Contains("Assembly-CSharp") ||
-                                        e.GetName().Name.Contains("mscorlib")).Reverse().ToList();
+                                    .OrderBy(e => {
+                                        if (e.IsDynamic || string.IsNullOrEmpty(e.Location) || e.Location.StartsWith("data"))
+                                            return false;
+
+                                        string assemblyName = e.GetName().Name;
+
+                                    return
+                                        assemblyName.Contains("UnityEngine") ||
+                                        assemblyName.Contains("System") ||
+                                        assemblyName.Contains("VRC") ||
+                                        assemblyName.Contains("Udon") ||
+                                        assemblyName.Contains("Assembly-CSharp") ||
+                                        assemblyName.Contains("mscorlib");
+                                    }).Reverse().ToList();
                             }
                         }
                     }
