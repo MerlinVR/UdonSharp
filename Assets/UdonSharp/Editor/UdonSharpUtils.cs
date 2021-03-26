@@ -754,7 +754,7 @@ namespace UdonSharp
 
                 AssemblyLoadEventHandler handler = info.GetValue(AppDomain.CurrentDomain) as AssemblyLoadEventHandler;
 
-                originalDelegates = handler.GetInvocationList();
+                originalDelegates = handler?.GetInvocationList();
 
                 if (originalDelegates != null)
                 {
@@ -769,13 +769,8 @@ namespace UdonSharp
             {
                 if (originalDelegates != null)
                 {
-                    FieldInfo info = AppDomain.CurrentDomain.GetType().GetField("AssemblyLoad", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance);
-                    AssemblyLoadEventHandler handler = info.GetValue(AppDomain.CurrentDomain) as AssemblyLoadEventHandler;
-
                     foreach (Delegate del in originalDelegates)
-                        handler += (AssemblyLoadEventHandler)del;
-                    
-                    info.SetValue(AppDomain.CurrentDomain, handler);
+                        AppDomain.CurrentDomain.AssemblyLoad += (AssemblyLoadEventHandler)del;
                 }
             }
         }
