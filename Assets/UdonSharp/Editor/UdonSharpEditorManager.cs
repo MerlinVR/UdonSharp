@@ -94,131 +94,131 @@ namespace UdonSharpEditor
 
                 MethodInfo eventInfo = behaviourType.GetMethods(eventBindingFlags).FirstOrDefault(e => e.Name == eventName && e.ReturnType == typeof(void));
 
-                using (var loadScope = new UdonSharpUtils.UdonSharpAssemblyLoadStripScope())
+                try
                 {
-                    try
-                    {
-                        if (eventInfo != null) harmony.Patch(eventInfo, injectedMethod);
-                    }
-                    catch (System.Exception e)
-                    {
-                        Debug.LogWarning($"Failed to patch event {eventInfo} on {behaviourType}\nException:\n{e}");
-                    }
+                    if (eventInfo != null) harmony.Patch(eventInfo, injectedMethod);
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"Failed to patch event {eventInfo} on {behaviourType}\nException:\n{e}");
                 }
             }
 
-            foreach (System.Type udonSharpBehaviourType in udonSharpBehaviourTypes)
+            using (var loadScope = new UdonSharpUtils.UdonSharpAssemblyLoadStripScope())
             {
-                // Trigger events
-                InjectEvent(udonSharpBehaviourType, "OnTriggerEnter");
-                InjectEvent(udonSharpBehaviourType, "OnTriggerExit");
-                InjectEvent(udonSharpBehaviourType, "OnTriggerStay");
-                InjectEvent(udonSharpBehaviourType, "OnTriggerEnter2D");
-                InjectEvent(udonSharpBehaviourType, "OnTriggerExit2D");
-                InjectEvent(udonSharpBehaviourType, "OnTriggerStay2D");
+                foreach (System.Type udonSharpBehaviourType in udonSharpBehaviourTypes)
+                {
+                    // Trigger events
+                    InjectEvent(udonSharpBehaviourType, "OnTriggerEnter");
+                    InjectEvent(udonSharpBehaviourType, "OnTriggerExit");
+                    InjectEvent(udonSharpBehaviourType, "OnTriggerStay");
+                    InjectEvent(udonSharpBehaviourType, "OnTriggerEnter2D");
+                    InjectEvent(udonSharpBehaviourType, "OnTriggerExit2D");
+                    InjectEvent(udonSharpBehaviourType, "OnTriggerStay2D");
 
-                // Collision events
-                InjectEvent(udonSharpBehaviourType, "OnCollisionEnter");
-                InjectEvent(udonSharpBehaviourType, "OnCollisionExit");
-                InjectEvent(udonSharpBehaviourType, "OnCollisionStay");
-                InjectEvent(udonSharpBehaviourType, "OnCollisionEnter2D");
-                InjectEvent(udonSharpBehaviourType, "OnCollisionExit2D");
-                InjectEvent(udonSharpBehaviourType, "OnCollisionStay2D");
+                    // Collision events
+                    InjectEvent(udonSharpBehaviourType, "OnCollisionEnter");
+                    InjectEvent(udonSharpBehaviourType, "OnCollisionExit");
+                    InjectEvent(udonSharpBehaviourType, "OnCollisionStay");
+                    InjectEvent(udonSharpBehaviourType, "OnCollisionEnter2D");
+                    InjectEvent(udonSharpBehaviourType, "OnCollisionExit2D");
+                    InjectEvent(udonSharpBehaviourType, "OnCollisionStay2D");
 
-                // Controller
-                InjectEvent(udonSharpBehaviourType, "OnControllerColliderHit");
+                    // Controller
+                    InjectEvent(udonSharpBehaviourType, "OnControllerColliderHit");
 
-                // Animator events
-                InjectEvent(udonSharpBehaviourType, "OnAnimatorIK");
-                InjectEvent(udonSharpBehaviourType, "OnAnimatorMove");
+                    // Animator events
+                    InjectEvent(udonSharpBehaviourType, "OnAnimatorIK");
+                    InjectEvent(udonSharpBehaviourType, "OnAnimatorMove");
 
-                // Mouse events
-                InjectEvent(udonSharpBehaviourType, "OnMouseDown");
-                InjectEvent(udonSharpBehaviourType, "OnMouseDrag");
-                InjectEvent(udonSharpBehaviourType, "OnMouseEnter");
-                InjectEvent(udonSharpBehaviourType, "OnMouseExit");
-                InjectEvent(udonSharpBehaviourType, "OnMouseOver");
-                InjectEvent(udonSharpBehaviourType, "OnMouseUp");
-                InjectEvent(udonSharpBehaviourType, "OnMouseUpAsButton");
+                    // Mouse events
+                    InjectEvent(udonSharpBehaviourType, "OnMouseDown");
+                    InjectEvent(udonSharpBehaviourType, "OnMouseDrag");
+                    InjectEvent(udonSharpBehaviourType, "OnMouseEnter");
+                    InjectEvent(udonSharpBehaviourType, "OnMouseExit");
+                    InjectEvent(udonSharpBehaviourType, "OnMouseOver");
+                    InjectEvent(udonSharpBehaviourType, "OnMouseUp");
+                    InjectEvent(udonSharpBehaviourType, "OnMouseUpAsButton");
 
-                // Particle events
-                InjectEvent(udonSharpBehaviourType, "OnParticleCollision");
-                InjectEvent(udonSharpBehaviourType, "OnParticleSystemStopped");
-                InjectEvent(udonSharpBehaviourType, "OnParticleTrigger");
-                InjectEvent(udonSharpBehaviourType, "OnParticleUpdateJobScheduled");
+                    // Particle events
+                    InjectEvent(udonSharpBehaviourType, "OnParticleCollision");
+                    InjectEvent(udonSharpBehaviourType, "OnParticleSystemStopped");
+                    InjectEvent(udonSharpBehaviourType, "OnParticleTrigger");
+                    InjectEvent(udonSharpBehaviourType, "OnParticleUpdateJobScheduled");
 
-                // Rendering events
-                InjectEvent(udonSharpBehaviourType, "OnPostRender");
-                InjectEvent(udonSharpBehaviourType, "OnPreCull");
-                InjectEvent(udonSharpBehaviourType, "OnPreRender");
-                InjectEvent(udonSharpBehaviourType, "OnRenderImage");
-                InjectEvent(udonSharpBehaviourType, "OnRenderObject");
-                InjectEvent(udonSharpBehaviourType, "OnWillRenderObject");
+                    // Rendering events
+                    InjectEvent(udonSharpBehaviourType, "OnPostRender");
+                    InjectEvent(udonSharpBehaviourType, "OnPreCull");
+                    InjectEvent(udonSharpBehaviourType, "OnPreRender");
+                    InjectEvent(udonSharpBehaviourType, "OnRenderImage");
+                    InjectEvent(udonSharpBehaviourType, "OnRenderObject");
+                    InjectEvent(udonSharpBehaviourType, "OnWillRenderObject");
 
-                // Joint events
-                InjectEvent(udonSharpBehaviourType, "OnJointBreak");
-                InjectEvent(udonSharpBehaviourType, "OnJointBreak2D");
+                    // Joint events
+                    InjectEvent(udonSharpBehaviourType, "OnJointBreak");
+                    InjectEvent(udonSharpBehaviourType, "OnJointBreak2D");
 
-                // Audio
-                InjectEvent(udonSharpBehaviourType, "OnAudioFilterRead");
-                
-                // Transforms
-                InjectEvent(udonSharpBehaviourType, "OnTransformChildrenChanged");
-                InjectEvent(udonSharpBehaviourType, "OnTransformParentChanged");
+                    // Audio
+                    InjectEvent(udonSharpBehaviourType, "OnAudioFilterRead");
 
-                // Object state, OnDisable and OnDestroy will get called regardless of the enabled state of the component, include OnEnable for consistency
-                InjectEvent(udonSharpBehaviourType, "OnEnable");
-                InjectEvent(udonSharpBehaviourType, "OnDisable");
-                InjectEvent(udonSharpBehaviourType, "OnDestroy");
-            }
+                    // Transforms
+                    InjectEvent(udonSharpBehaviourType, "OnTransformChildrenChanged");
+                    InjectEvent(udonSharpBehaviourType, "OnTransformParentChanged");
 
-            // Add method for checking if events need to be skipped
-            InjectedMethods.shouldSkipEventsMethod = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), typeof(UdonSharpBehaviour).GetMethod("ShouldSkipEvents", BindingFlags.Static | BindingFlags.NonPublic));
+                    // Object state, OnDisable and OnDestroy will get called regardless of the enabled state of the component, include OnEnable for consistency
+                    InjectEvent(udonSharpBehaviourType, "OnEnable");
+                    InjectEvent(udonSharpBehaviourType, "OnDisable");
+                    InjectEvent(udonSharpBehaviourType, "OnDestroy");
+                }
 
-            // Patch GUI object field drawer
-            MethodInfo doObjectFieldMethod = typeof(EditorGUI).GetMethods(BindingFlags.Static | BindingFlags.NonPublic).FirstOrDefault(e => e.Name == "DoObjectField" && e.GetParameters().Length == 9);
+                // Add method for checking if events need to be skipped
+                InjectedMethods.shouldSkipEventsMethod = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), typeof(UdonSharpBehaviour).GetMethod("ShouldSkipEvents", BindingFlags.Static | BindingFlags.NonPublic));
 
-            HarmonyMethod objectFieldProxy = new HarmonyMethod(typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.DoObjectFieldProxy)));
-            harmony.Patch(doObjectFieldMethod, objectFieldProxy);
+                // Patch GUI object field drawer
+                MethodInfo doObjectFieldMethod = typeof(EditorGUI).GetMethods(BindingFlags.Static | BindingFlags.NonPublic).FirstOrDefault(e => e.Name == "DoObjectField" && e.GetParameters().Length == 9);
 
-            System.Type validatorDelegateType = typeof(EditorGUI).GetNestedType("ObjectFieldValidator", BindingFlags.Static | BindingFlags.NonPublic);
-            InjectedMethods.validationDelegate = Delegate.CreateDelegate(validatorDelegateType, typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.ValidateObjectReference)));
+                HarmonyMethod objectFieldProxy = new HarmonyMethod(typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.DoObjectFieldProxy)));
+                harmony.Patch(doObjectFieldMethod, objectFieldProxy);
 
-            InjectedMethods.objectValidatorMethod = typeof(EditorGUI).GetMethod("ValidateObjectReferenceValue", BindingFlags.NonPublic | BindingFlags.Static);
+                System.Type validatorDelegateType = typeof(EditorGUI).GetNestedType("ObjectFieldValidator", BindingFlags.Static | BindingFlags.NonPublic);
+                InjectedMethods.validationDelegate = Delegate.CreateDelegate(validatorDelegateType, typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.ValidateObjectReference)));
 
-            MethodInfo crossSceneRefCheckMethod = typeof(EditorGUI).GetMethod("CheckForCrossSceneReferencing", BindingFlags.NonPublic | BindingFlags.Static);
-            InjectedMethods.crossSceneRefCheckMethod = (Func<UnityEngine.Object, UnityEngine.Object, bool>)Delegate.CreateDelegate(typeof(Func<UnityEngine.Object, UnityEngine.Object, bool>), crossSceneRefCheckMethod);
+                InjectedMethods.objectValidatorMethod = typeof(EditorGUI).GetMethod("ValidateObjectReferenceValue", BindingFlags.NonPublic | BindingFlags.Static);
 
-            // Patch post BuildAssetBundles fixup function
-            MethodInfo buildAssetbundlesMethod = typeof(BuildPipeline).GetMethods(BindingFlags.NonPublic | BindingFlags.Static).First(e => e.Name == "BuildAssetBundles" && e.GetParameters().Length == 5);
+                MethodInfo crossSceneRefCheckMethod = typeof(EditorGUI).GetMethod("CheckForCrossSceneReferencing", BindingFlags.NonPublic | BindingFlags.Static);
+                InjectedMethods.crossSceneRefCheckMethod = (Func<UnityEngine.Object, UnityEngine.Object, bool>)Delegate.CreateDelegate(typeof(Func<UnityEngine.Object, UnityEngine.Object, bool>), crossSceneRefCheckMethod);
 
-            MethodInfo postBuildMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.PostBuildAssetBundles), BindingFlags.Public | BindingFlags.Static);
-            HarmonyMethod postBuildHarmonyMethod = new HarmonyMethod(postBuildMethod);
+                // Patch post BuildAssetBundles fixup function
+                MethodInfo buildAssetbundlesMethod = typeof(BuildPipeline).GetMethods(BindingFlags.NonPublic | BindingFlags.Static).First(e => e.Name == "BuildAssetBundles" && e.GetParameters().Length == 5);
 
-            MethodInfo preBuildMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.PreBuildAssetBundles), BindingFlags.Public | BindingFlags.Static);
-            HarmonyMethod preBuildHarmonyMethod = new HarmonyMethod(preBuildMethod);
+                MethodInfo postBuildMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.PostBuildAssetBundles), BindingFlags.Public | BindingFlags.Static);
+                HarmonyMethod postBuildHarmonyMethod = new HarmonyMethod(postBuildMethod);
 
-            harmony.Patch(buildAssetbundlesMethod, preBuildHarmonyMethod, postBuildHarmonyMethod);
+                MethodInfo preBuildMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.PreBuildAssetBundles), BindingFlags.Public | BindingFlags.Static);
+                HarmonyMethod preBuildHarmonyMethod = new HarmonyMethod(preBuildMethod);
+
+                harmony.Patch(buildAssetbundlesMethod, preBuildHarmonyMethod, postBuildHarmonyMethod);
 
 #if ODIN_INSPECTOR_3
-            try
-            {
-                Assembly odinEditorAssembly = UdonSharpUtils.GetLoadedEditorAssemblies().FirstOrDefault(assembly => assembly.GetName().Name == "Sirenix.OdinInspector.Editor");
+                try
+                {
+                    Assembly odinEditorAssembly = UdonSharpUtils.GetLoadedEditorAssemblies().FirstOrDefault(assembly => assembly.GetName().Name == "Sirenix.OdinInspector.Editor");
 
-                System.Type editorUtilityType = odinEditorAssembly.GetType("Sirenix.OdinInspector.Editor.CustomEditorUtility");
+                    System.Type editorUtilityType = odinEditorAssembly.GetType("Sirenix.OdinInspector.Editor.CustomEditorUtility");
 
-                MethodInfo resetCustomEditorsMethod = editorUtilityType.GetMethod("ResetCustomEditors");
+                    MethodInfo resetCustomEditorsMethod = editorUtilityType.GetMethod("ResetCustomEditors");
 
-                MethodInfo odinInspectorOverrideMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.OdinInspectorOverride), BindingFlags.Public | BindingFlags.Static);
-                HarmonyMethod odinInspectorOverrideHarmonyMethod = new HarmonyMethod(odinInspectorOverrideMethod);
+                    MethodInfo odinInspectorOverrideMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.OdinInspectorOverride), BindingFlags.Public | BindingFlags.Static);
+                    HarmonyMethod odinInspectorOverrideHarmonyMethod = new HarmonyMethod(odinInspectorOverrideMethod);
 
-                harmony.Patch(resetCustomEditorsMethod, null, odinInspectorOverrideHarmonyMethod);
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"Failed to patch Odin inspector fix for U#\nException: {e}");
-            }
+                    harmony.Patch(resetCustomEditorsMethod, null, odinInspectorOverrideHarmonyMethod);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"Failed to patch Odin inspector fix for U#\nException: {e}");
+                }
 #endif
+            }
         }
 
         static class InjectedMethods
