@@ -758,10 +758,8 @@ namespace UdonSharp
 
                 if (originalDelegates != null)
                 {
-                    foreach (Delegate del in handler.GetInvocationList())
-                        handler -= (AssemblyLoadEventHandler)del;
-
-                    info.SetValue(AppDomain.CurrentDomain, handler);
+                    foreach (Delegate del in originalDelegates)
+                        AppDomain.CurrentDomain.AssemblyLoad -= (AssemblyLoadEventHandler)del;
                 }
             }
 
