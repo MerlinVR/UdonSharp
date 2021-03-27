@@ -405,7 +405,7 @@ namespace UdonSharp
         {
             if (errorStr.StartsWith("ExecutionEngineException: String conversion error: Illegal byte sequence encounted in the input.")) // Nice typo Mono
             {
-                Debug.LogError("[<color=#FF00FF>UdonSharp</color>] ExecutionEngineException detected! This means you have hit a bug in Mono. To fix this, move your project to a path without any unicode characters.");
+                Debug.LogError("ExecutionEngineException detected! This means you have hit a bug in Mono. To fix this, move your project to a path without any unicode characters.");
                 return;
             }
 

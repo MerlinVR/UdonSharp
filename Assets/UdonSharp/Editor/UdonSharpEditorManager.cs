@@ -199,6 +199,13 @@ namespace UdonSharpEditor
 
                 harmony.Patch(buildAssetbundlesMethod, preBuildHarmonyMethod, postBuildHarmonyMethod);
 
+                // Patch a workaround for errors in Unity's APIUpdaterHelper when in a Japanese locale
+                MethodInfo findTypeInLoadedAssemblies = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.Scripting.Compilers.APIUpdaterHelper").GetMethod("FindTypeInLoadedAssemblies", BindingFlags.Static | BindingFlags.NonPublic);
+                MethodInfo injectedFindType = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.FindTypeInLoadedAssembliesPrefix), BindingFlags.Public | BindingFlags.Static);
+                HarmonyMethod injectedFindTypeHarmonyMethod = new HarmonyMethod(injectedFindType);
+
+                harmony.Patch(findTypeInLoadedAssemblies, injectedFindTypeHarmonyMethod);
+                
 #if ODIN_INSPECTOR_3
                 try
                 {
@@ -361,6 +368,40 @@ namespace UdonSharpEditor
             {
                 CreateProxyBehaviours(GetAllUdonBehaviours());
                 _skipSceneOpen = false;
+            }
+
+            public static bool FindTypeInLoadedAssembliesPrefix(Func<System.Type, bool> predicate, ref System.Type __result)
+            {
+                __result = AppDomain.CurrentDomain.GetAssemblies()
+                    .Where(assembly => !assembly.IsDynamic && !string.IsNullOrEmpty(assembly.Location) && !assembly.Location.StartsWith("data") && !IsIgnoredAssembly(assembly.GetName()))
+                    .SelectMany(GetValidTypesIn)
+                    .FirstOrDefault(predicate);
+
+                return false;
+            }
+
+            static IEnumerable<System.Type> GetValidTypesIn(System.Reflection.Assembly assembly)
+            {
+                Type[] types;
+
+                try
+                {
+                    types = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException e)
+                {
+                    types = e.Types;
+                }
+
+                return types.Where(e => e != null);
+            }
+
+            static string[] _ignoredAssemblies = { "^UnityScript$", "^System\\..*", "^mscorlib$" };
+
+            static bool IsIgnoredAssembly(AssemblyName assemblyName)
+            {
+                string name = assemblyName.Name;
+                return _ignoredAssemblies.Any(candidate => System.Text.RegularExpressions.Regex.IsMatch(name, candidate));
             }
 
 #if ODIN_INSPECTOR_3
