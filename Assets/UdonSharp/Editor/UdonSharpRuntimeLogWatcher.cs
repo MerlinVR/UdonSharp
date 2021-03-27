@@ -100,7 +100,7 @@ namespace UdonSharp
                     program.Heap == null ||
                     program.SymbolTable == null)
                 {
-                    Debug.LogWarning($"Could not load program for '{programAsset}', exceptions for this script will not be handled until scripts have been reloaded");
+                    //Debug.LogWarning($"Could not load program for '{programAsset}', exceptions for this script will not be handled until scripts have been reloaded");
                     continue;
                 }
 
