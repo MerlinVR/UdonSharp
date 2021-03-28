@@ -479,13 +479,7 @@ namespace UdonSharp
             if (debugInfo == null)
                 return;
 
-            int debugSpanIdx = System.Array.BinarySearch(debugInfo.DebugLineSpans.Select(e => e.endInstruction).ToArray(), programCounter);
-            if (debugSpanIdx < 0)
-                debugSpanIdx = ~debugSpanIdx;
-
-            debugSpanIdx = Mathf.Clamp(debugSpanIdx, 0, debugInfo.DebugLineSpans.Length - 1);
-
-            ClassDebugInfo.DebugLineSpan debugLineSpan = debugInfo.DebugLineSpans[debugSpanIdx];
+            ClassDebugInfo.DebugLineSpan debugLineSpan = debugInfo.GetLineFromProgramCounter(programCounter);
 
             UdonSharpUtils.LogRuntimeError($"{logPrefix}\n{errorMessage}", prePrefix != null ? $"[<color=#575ff2>{prePrefix}</color>]" : "", assetInfo.Item1, debugLineSpan.line, debugLineSpan.lineChar);
         }
