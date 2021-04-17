@@ -717,5 +717,37 @@ namespace UdonSharp
 
             return (Assembly[])getLoadedAssembliesProp.GetValue(null);
         }
+
+        /// <summary>
+        /// Used to prevent Odin's DefaultSerializationBinder from getting a callback to register an assembly in specific cases where it will explode due to https://github.com/mono/mono/issues/20968
+        /// </summary>
+        internal class UdonSharpAssemblyLoadStripScope : IDisposable
+        {
+            Delegate[] originalDelegates;
+
+            public UdonSharpAssemblyLoadStripScope()
+            {
+                FieldInfo info = AppDomain.CurrentDomain.GetType().GetField("AssemblyLoad", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance);
+
+                AssemblyLoadEventHandler handler = info.GetValue(AppDomain.CurrentDomain) as AssemblyLoadEventHandler;
+
+                originalDelegates = handler?.GetInvocationList();
+
+                if (originalDelegates != null)
+                {
+                    foreach (Delegate del in originalDelegates)
+                        AppDomain.CurrentDomain.AssemblyLoad -= (AssemblyLoadEventHandler)del;
+                }
+            }
+
+            public void Dispose()
+            {
+                if (originalDelegates != null)
+                {
+                    foreach (Delegate del in originalDelegates)
+                        AppDomain.CurrentDomain.AssemblyLoad += (AssemblyLoadEventHandler)del;
+                }
+            }
+        }
     }
 }

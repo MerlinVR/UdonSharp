@@ -1,5 +1,6 @@
 ﻿
 
+using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,7 +38,7 @@ namespace UdonSharp.Compiler
         private List<DebugLineSpan> debugSpans;
         private bool includeInlineCode;
 
-        public ClassDebugInfo(string source, bool includeInlineCodeIn)
+        internal ClassDebugInfo(string source, bool includeInlineCodeIn)
         {
             sourceText = source;
             mostRecentSpanStart = 0;
@@ -45,7 +46,7 @@ namespace UdonSharp.Compiler
             includeInlineCode = includeInlineCodeIn;
         }
 
-        public void UpdateSyntaxNode(SyntaxNode node)
+        internal void UpdateSyntaxNode(SyntaxNode node)
         {
             if (debugSpans.Count == 0)
                 debugSpans.Add(new DebugLineSpan());
@@ -102,7 +103,7 @@ namespace UdonSharp.Compiler
             }
         }
 
-        public void FinalizeDebugInfo()
+        internal void FinalizeDebugInfo()
         {
             serializedDebugSpans = new DebugLineSpan[debugSpans.Count];
 
@@ -138,6 +139,25 @@ namespace UdonSharp.Compiler
                 serializedDebugSpans[i].line = lineCount;
                 serializedDebugSpans[i].lineChar = lineChar;
             }
+        }
+
+        /// <summary>
+        /// Gets the debug line span from a given program counter
+        /// </summary>
+        /// <param name="programCounter"></param>
+        /// <returns></returns>
+        [PublicAPI]
+        public DebugLineSpan GetLineFromProgramCounter(int programCounter)
+        {
+            int debugSpanIdx = System.Array.BinarySearch(DebugLineSpans.Select(e => e.endInstruction).ToArray(), programCounter);
+            if (debugSpanIdx < 0)
+                debugSpanIdx = ~debugSpanIdx;
+
+            debugSpanIdx = UnityEngine.Mathf.Clamp(debugSpanIdx, 0, DebugLineSpans.Length - 1);
+
+            ClassDebugInfo.DebugLineSpan debugLineSpan = DebugLineSpans[debugSpanIdx];
+
+            return debugLineSpan;
         }
     }
 }

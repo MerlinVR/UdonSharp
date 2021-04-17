@@ -86,6 +86,19 @@ namespace UdonSharp.Tests
 
             tester.TestAssertion("Unity VideoPlayer array", unityVideoPlayerArray[0] != null && unityVideoPlayerArray[1] != null);
             tester.TestAssertion("Base VRCStation array", baseVideoPlayerArray[0] != null && baseVideoPlayerArray[1] != null);
+
+            // Test implicit array rank conversions
+            float[] myFloatArr = new float[20U];
+            tester.TestAssertion("Array size implicit conversion 1", myFloatArr.Length == 20);
+
+            uint arrSize = 4;
+            myFloatArr = new float[arrSize];
+            tester.TestAssertion("Array size implicit conversion 2", myFloatArr.Length == 4);
+
+            byte arrSize2 = 30;
+            myFloatArr = new float[arrSize2];
+
+            tester.TestAssertion("Array size implicit conversion 3", myFloatArr.Length == 30);
         }
     }
 }

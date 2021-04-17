@@ -472,10 +472,26 @@ namespace UdonSharp.Compiler
                 }
                 else
                 {
+                    SymbolDefinition capturedRank;
+
                     using (ExpressionCaptureScope rankCapture = new ExpressionCaptureScope(visitorContext, null))
                     {
                         Visit(node.Type.RankSpecifiers[0]);
-                        arrayRankSymbol = rankCapture.ExecuteGet();
+                        capturedRank = rankCapture.ExecuteGet();
+                    }
+
+                    if (capturedRank.symbolCsType == typeof(int))
+                    {
+                        arrayRankSymbol = capturedRank;
+                    }
+                    else
+                    {
+                        using (ExpressionCaptureScope convertScope = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            arrayRankSymbol = visitorContext.topTable.CreateUnnamedSymbol(typeof(int), SymbolDeclTypeFlags.Internal);
+                            convertScope.SetToLocalSymbol(arrayRankSymbol);
+                            convertScope.ExecuteSet(capturedRank, true);
+                        }
                     }
                 }
 

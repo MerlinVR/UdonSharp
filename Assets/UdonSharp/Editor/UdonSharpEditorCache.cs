@@ -1,4 +1,5 @@
 ﻿
+using JetBrains.Annotations;
 using System.Collections.Generic;
 using System.IO;
 using UdonSharp.Compiler;
@@ -13,7 +14,7 @@ namespace UdonSharp
     /// Handles cache data for U# that gets saved to the Library. All data this uses is intermediate generated data that is not required and can be regenerated from the source files.
     /// </summary>
     [InitializeOnLoad]
-    internal class UdonSharpEditorCache
+    public class UdonSharpEditorCache
     {
         #region Instance and serialization management
         [System.Serializable]
@@ -31,7 +32,7 @@ namespace UdonSharp
         public static UdonSharpEditorCache Instance => GetInstance();
 
         static UdonSharpEditorCache _instance;
-        static object instanceLock = new object();
+        static readonly object instanceLock = new object();
 
         private static UdonSharpEditorCache GetInstance()
         {
@@ -298,6 +299,13 @@ namespace UdonSharp
 
         Dictionary<UdonSharpProgramAsset, Dictionary<DebugInfoType, ClassDebugInfo>> _classDebugInfoLookup = new Dictionary<UdonSharpProgramAsset, Dictionary<DebugInfoType, ClassDebugInfo>>();
 
+        /// <summary>
+        /// Gets the debug info for a given program asset. If debug info type for Client is specified when there is no client debug info, will fall back to Editor debug info.
+        /// </summary>
+        /// <param name="sourceProgram"></param>
+        /// <param name="debugInfoType"></param>
+        /// <returns></returns>
+        [PublicAPI]
         public ClassDebugInfo GetDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType)
         {
             if (!_classDebugInfoLookup.TryGetValue(sourceProgram, out var debugInfo))
@@ -392,6 +400,12 @@ namespace UdonSharp
             }
         }
 
+        /// <summary>
+        /// Gets the uasm string for the last build of the given program asset
+        /// </summary>
+        /// <param name="programAsset"></param>
+        /// <returns></returns>
+        [PublicAPI]
         public string GetUASMStr(UdonSharpProgramAsset programAsset)
         {
             if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string guid, out long _))

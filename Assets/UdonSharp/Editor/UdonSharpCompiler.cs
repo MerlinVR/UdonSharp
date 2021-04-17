@@ -2,10 +2,12 @@
 using System.CodeDom.Compiler;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
@@ -690,9 +692,10 @@ namespace UdonSharp.Compiler
                 }
                 else
                 {
-                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    Assembly assembly;
 
-                    Assembly assembly = Assembly.Load(memoryStream.ToArray());
+                    using (var loadScope = new UdonSharpUtils.UdonSharpAssemblyLoadStripScope())
+                        assembly = Assembly.Load(memoryStream.ToArray());
 
                     for (int moduleIdx = 0; moduleIdx < modulesToInitialize.Length; ++moduleIdx)
                     {
