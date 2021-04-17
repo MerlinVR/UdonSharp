@@ -7,15 +7,18 @@ using UnityEngine;
 
 namespace UdonSharp.Compiler.Binder
 {
-    internal class BinderSyntaxVisitor : CSharpSyntaxVisitor<BoundExpression>
+    internal class BinderSyntaxVisitor : CSharpSyntaxVisitor<BoundNode>
     {
-        public BinderSyntaxVisitor()
+        BindModule owningModule;
+
+        public BinderSyntaxVisitor(BindModule owningModule)
         {
+            this.owningModule = owningModule;
         }
 
-        public override BoundExpression DefaultVisit(SyntaxNode node)
+        public override BoundNode DefaultVisit(SyntaxNode node)
         {
-            throw new System.NotSupportedException($"UdonSharp does not currently support node type {node.Kind().ToString()}");
+            throw new System.NotSupportedException($"UdonSharp does not currently support node type {node.Kind()}");
         }
         
 

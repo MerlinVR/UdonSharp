@@ -14,7 +14,7 @@ namespace UdonSharp.Compiler
     /// <summary>
     /// Handles compiling a class into Udon assembly
     /// </summary>
-    public class CompilationModule
+    public class UdonSharpCompilationModule
     {
         public UdonSharpProgramAsset programAsset { get; private set; }
         UdonSharpSettings settings;
@@ -29,7 +29,7 @@ namespace UdonSharp.Compiler
 
         public int ErrorCount { get; private set; } = 0;
 
-        public CompilationModule(UdonSharpProgramAsset sourceAsset)
+        public UdonSharpCompilationModule(UdonSharpProgramAsset sourceAsset)
         {
             programAsset = sourceAsset;
             resolver = new ResolverContext();

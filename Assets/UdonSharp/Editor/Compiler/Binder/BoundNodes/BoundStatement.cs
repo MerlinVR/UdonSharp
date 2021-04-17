@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace UdonSharp.Compiler.Binder
 {
-    internal class BoundType : BoundExpression
+    internal abstract class BoundStatement : BoundNode
     {
 
     }

@@ -50,11 +50,11 @@ namespace UdonSharp
             }
 #endif
 
-            MethodInfo eventmethod = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == eventName && e.GetParameters().Length == 0).FirstOrDefault();
+            MethodInfo eventMethod = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(e => e.Name == eventName && e.GetParameters().Length == 0);
 
-            if (eventmethod != null)
+            if (eventMethod != null)
             {
-                eventmethod.Invoke(this, new object[] { });
+                eventMethod.Invoke(this, new object[] { });
             }
         }
 

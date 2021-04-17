@@ -5,8 +5,8 @@ using UnityEngine;
 
 namespace UdonSharp.Compiler.Binder
 {
-    internal class BoundBlock : BoundExpression
+    internal class BoundBlock : BoundStatement
     {
-        public List<BoundExpression> BodyExpressions { get; } = new List<BoundExpression>();
+        public List<BoundNode> BodyContents { get; } = new List<BoundNode>();
     }
 }

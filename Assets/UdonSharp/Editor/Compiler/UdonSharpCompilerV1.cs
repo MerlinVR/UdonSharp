@@ -24,6 +24,7 @@ namespace UdonSharp.Compiler
             timer.Start();
 
             var rootProgramPaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Where(e => e.isV1Root).Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
+            //var rootProgramPaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
             HashSet<string> allSourcePaths = new HashSet<string>(GetAllFilteredSourcePaths());
 
             var syntaxTrees = LoadSyntaxTrees(allSourcePaths);
@@ -92,9 +93,9 @@ namespace UdonSharp.Compiler
 
                 int udonSharpBehaviourCount = 0;
 
-                foreach (VariableDeclarationSyntax classDecl in tree.GetRoot().DescendantNodes().OfType<VariableDeclarationSyntax>())
+                foreach (ClassDeclarationSyntax classDecl in tree.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>())
                 {
-                    if (model.GetTypeInfo(classDecl.Type).Type is INamedTypeSymbol classType && classType.IsUdonSharpBehaviour())
+                    if (model.GetDeclaredSymbol(classDecl) is INamedTypeSymbol classType && classType.IsUdonSharpBehaviour())
                     {
                         rootUdonSharpTypes.Add(classType);
                         udonSharpBehaviourCount++;
@@ -104,7 +105,14 @@ namespace UdonSharp.Compiler
 
             IEnumerable<INamedTypeSymbol> uniqueRootSymbols = rootUdonSharpTypes.Distinct();
 
+            CompilationContext compilationContext = new CompilationContext(compilation);
 
+            foreach (INamedTypeSymbol rootTypeSymbol in uniqueRootSymbols)
+            {
+                BindModule typeBinder = new BindModule(compilationContext, compilationContext.GetTypeSymbol(rootTypeSymbol));
+
+                typeBinder.Bind();
+            }
 
             Debug.Log($"Ran compile in {timer.Elapsed.TotalSeconds * 1000.0:F3}ms");
         }
@@ -172,7 +180,7 @@ namespace UdonSharp.Compiler
 
                 for (int i = 0; i < assemblies.Length; i++)
                 {
-                    if (!assemblies[i].IsDynamic && assemblies[i].Location.Length > 0)
+                    if (!assemblies[i].IsDynamic && assemblies[i].Location.Length > 0 && !assemblies[i].Location.StartsWith("data"))
                     {
                         System.Reflection.Assembly assembly = assemblies[i];
 

@@ -41,7 +41,7 @@ namespace UdonSharp.Compiler
             public List<CompileError> compileErrors = new List<CompileError>();
         }
 
-        private CompilationModule[] modules;
+        private UdonSharpCompilationModule[] modules;
         private bool isEditorBuild = true;
 
         public delegate void CompileCallback(UdonSharpProgramAsset[] compiledProgramAssets);
@@ -53,13 +53,13 @@ namespace UdonSharp.Compiler
 
         public UdonSharpCompiler(UdonSharpProgramAsset programAsset, bool editorBuild = true)
         {
-            modules = new CompilationModule[] { new CompilationModule(programAsset) };
+            modules = new UdonSharpCompilationModule[] { new UdonSharpCompilationModule(programAsset) };
             isEditorBuild = editorBuild;
         }
 
         public UdonSharpCompiler(UdonSharpProgramAsset[] programAssets, bool editorBuild = true)
         {
-            modules = programAssets.Where(e => e.sourceCsScript != null).Select(e => new CompilationModule(e)).ToArray();
+            modules = programAssets.Where(e => e.sourceCsScript != null).Select(e => new UdonSharpCompilationModule(e)).ToArray();
             isEditorBuild = editorBuild;
         }
 
@@ -104,12 +104,14 @@ namespace UdonSharp.Compiler
 
                 UdonSharpCompilerV1 compilerV1 = new UdonSharpCompilerV1();
                 compilerV1.Compile();
-
-                EditorUtility.ClearProgressBar();
             }
             catch (System.Exception e)
             {
                 Debug.LogError(e);
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
             }
 
             return;
@@ -219,7 +221,7 @@ namespace UdonSharp.Compiler
 
                     for (int i = 0; i < modules.Length; ++i)
                     {
-                        CompilationModule module = modules[i];
+                        UdonSharpCompilationModule module = modules[i];
                         var sourceTree = syntaxTreeSourceLookup[module.programAsset];
                     
                         EditorUtility.DisplayProgressBar("UdonSharp Compile",
@@ -231,7 +233,7 @@ namespace UdonSharp.Compiler
 #else
                     List<Task<CompileTaskResult>> compileTasks = new List<Task<CompileTaskResult>>();
 
-                    foreach (CompilationModule module in modules)
+                    foreach (UdonSharpCompilationModule module in modules)
                     {
                         var sourceTree = syntaxTreeSourceLookup[module.programAsset];
 
@@ -306,7 +308,7 @@ namespace UdonSharp.Compiler
 
                     if (totalErrorCount == 0)
                     {
-                        foreach (CompilationModule module in modules)
+                        foreach (UdonSharpCompilationModule module in modules)
                         {
                             module.programAsset.ApplyProgram();
                             UdonSharpEditorCache.Instance.UpdateSourceHash(module.programAsset, syntaxTreeSourceLookup[module.programAsset].Item1);
@@ -320,7 +322,7 @@ namespace UdonSharp.Compiler
 
                 if (totalErrorCount > 0)
                 {
-                    foreach (CompilationModule module in modules)
+                    foreach (UdonSharpCompilationModule module in modules)
                     {
                         UdonSharpEditorCache.Instance.ClearSourceHash(module.programAsset);
                     }
@@ -430,9 +432,9 @@ namespace UdonSharp.Compiler
 
         public int AssignHeapConstants()
         {
-            CompilationModule[] compiledModules = modules.Where(e => e.ErrorCount == 0).ToArray();
+            UdonSharpCompilationModule[] compiledModules = modules.Where(e => e.ErrorCount == 0).ToArray();
 
-            foreach (CompilationModule module in compiledModules)
+            foreach (UdonSharpCompilationModule module in compiledModules)
             {
                 IUdonProgram program = module.programAsset.GetRealProgram();
 
@@ -461,13 +463,13 @@ namespace UdonSharp.Compiler
 
             if (fieldInitializerErrorCount > 0)
             {
-                foreach (CompilationModule module in compiledModules)
+                foreach (UdonSharpCompilationModule module in compiledModules)
                 {
                     module.programAsset.compileErrors.Add("Initializer error on an UdonSharpBehaviour, see output log for details.");
                 }
             }
 
-            foreach (CompilationModule module in compiledModules)
+            foreach (UdonSharpCompilationModule module in compiledModules)
             {
                 IUdonProgram program = module.programAsset.GetRealProgram();
 
@@ -554,9 +556,9 @@ namespace UdonSharp.Compiler
 
         private static List<MetadataReference> metadataReferences;
 
-        private int RunFieldInitalizers(CompilationModule[] compiledModules)
+        private int RunFieldInitalizers(UdonSharpCompilationModule[] compiledModules)
         {
-            CompilationModule[] modulesToInitialize = compiledModules.Where(e => e.fieldsWithInitializers.Count > 0).ToArray();
+            UdonSharpCompilationModule[] modulesToInitialize = compiledModules.Where(e => e.fieldsWithInitializers.Count > 0).ToArray();
             
             // We don't need to run the costly compilation if the user hasn't defined any fields with initializers
             if (modulesToInitialize.Length == 0)
@@ -569,7 +571,7 @@ namespace UdonSharp.Compiler
 
             for (int moduleIdx = 0; moduleIdx < modulesToInitialize.Length; ++moduleIdx)
             {
-                CompilationModule module = modulesToInitialize[moduleIdx];
+                UdonSharpCompilationModule module = modulesToInitialize[moduleIdx];
 
                 CodeCompileUnit compileUnit = new CodeCompileUnit();
                 CodeNamespace ns = new CodeNamespace("FieldInitialzers");
@@ -713,7 +715,7 @@ namespace UdonSharp.Compiler
 
                     for (int moduleIdx = 0; moduleIdx < modulesToInitialize.Length; ++moduleIdx)
                     {
-                        CompilationModule module = modulesToInitialize[moduleIdx];
+                        UdonSharpCompilationModule module = modulesToInitialize[moduleIdx];
                         IUdonProgram program = module.programAsset.GetRealProgram();
 
                         System.Type cls = assembly.GetType($"FieldInitialzers.Initializer{moduleIdx}");

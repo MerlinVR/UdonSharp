@@ -13,7 +13,7 @@ namespace UdonSharp.Compiler.Symbols
         /// <summary>
         /// The symbol this is declared in, for instance if this is a field symbol, will point to the declaring class symbol, or if a local variable symbol, will point to a method symbol
         /// </summary>
-        public virtual Symbol ContainingSymbol { get { return null; } }
+        public virtual Symbol DeclaringSymbol { get { return null; } }
 
         /// <summary>
         /// Used to retrieve the non-generic-typed version of this symbol, for instance if you're getting a symbol for DoThing<int>(), will return DoThing<>()
@@ -23,7 +23,7 @@ namespace UdonSharp.Compiler.Symbols
         /// <summary>
         /// The source Roslyn-generated symbol for this U# symbol
         /// </summary>
-        public ISymbol RoslynSymbol { get; protected set; }
+        public virtual ISymbol RoslynSymbol { get; protected set; }
 
         /// <summary>
         /// If this symbol has had its body visited and types linked
@@ -34,6 +34,11 @@ namespace UdonSharp.Compiler.Symbols
         /// If this is a symbol pointing to an Udon extern
         /// </summary>
         public virtual bool IsExtern { get { return false; } }
+
+        /// <summary>
+        /// If this is a static symbol. This may return true on fields, properties, and methods. Classes will only return true on this if they are marked as a static class.
+        /// </summary>
+        public virtual bool IsStatic { get { return false; } }
 
         /// <summary>
         /// Gets direct dependencies of this symbol, this symbol must be resolved for the dependencies to be valid
