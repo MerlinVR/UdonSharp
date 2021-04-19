@@ -23,10 +23,7 @@ namespace UdonSharp.Examples.Utilities
         // Prevents people who are not the master from taking ownership
         public override bool OnOwnershipRequest(VRCPlayerApi requestingPlayer, VRCPlayerApi requestedOwner)
         {
-            if (!requestedOwner.isMaster)
-                return false;
-
-            return true;
+            return requestedOwner.isMaster;
         }
 
         public override void OnDeserialization()
