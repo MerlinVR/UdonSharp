@@ -149,7 +149,7 @@ namespace UdonSharp
         public virtual void OnPlayerParticleCollision(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerRespawn(VRC.SDKBase.VRCPlayerApi player) { }
         
-        public virtual void OnPostSerialization() { }
+        public virtual void OnPostSerialization(VRC.Udon.Common.SerializationResult result) { }
         public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi requestedOwner) => true;
 
         public virtual void MidiNoteOn(int channel, int number, int velocity) { }
