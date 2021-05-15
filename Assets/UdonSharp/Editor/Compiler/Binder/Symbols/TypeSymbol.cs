@@ -4,21 +4,20 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using UnityEngine;
-
+using UdonSharp.Compiler.Binder;
 
 namespace UdonSharp.Compiler.Symbols
 {
-    internal sealed class TypeSymbol : Symbol
+    internal abstract class TypeSymbol : Symbol
     {
         private static readonly object dictionaryLazyInitLock = new object();
         private ConcurrentDictionary<ISymbol, Symbol> typeSymbols;
 
-        public INamedTypeSymbol RoslynTypeSymbol { get { return (INamedTypeSymbol)RoslynSymbol; } }
+        public ITypeSymbol RoslynTypeSymbol { get { return (ITypeSymbol)RoslynSymbol; } }
 
-        public TypeSymbol(INamedTypeSymbol sourceSymbol)
+        public TypeSymbol(ITypeSymbol sourceSymbol, BindContext bindContext)
+            : base(sourceSymbol, bindContext)
         {
-            RoslynSymbol = sourceSymbol;
         }
 
         private void InitSymbolDict()
@@ -35,31 +34,15 @@ namespace UdonSharp.Compiler.Symbols
             }
         }
 
-        public FieldSymbol GetFieldSymbol(IFieldSymbol sourceSymbol)
+        public Symbol GetSymbol(ISymbol symbol, BindContext context)
         {
             InitSymbolDict();
-
-            Symbol fieldSymbol = typeSymbols.GetOrAdd(sourceSymbol, (key) => new FieldSymbol(this, sourceSymbol));
-
-            return (FieldSymbol)fieldSymbol;
+            return typeSymbols.GetOrAdd(symbol, (key) => CreateSymbol(symbol, context));
         }
 
-        public MethodSymbol GetMethodSymbol(IMethodSymbol sourceSymbol)
+        public T GetSymbol<T>(ISymbol symbol, BindContext context) where T : Symbol
         {
-            InitSymbolDict();
-
-            Symbol methodSymbol = typeSymbols.GetOrAdd(sourceSymbol, (key) => new MethodSymbol(this));
-
-            return (MethodSymbol)methodSymbol;
-        }
-
-        public PropertySymbol GetPropertySymbol(IPropertySymbol sourceSymbol)
-        {
-            InitSymbolDict();
-
-            Symbol propertySymbol = typeSymbols.GetOrAdd(sourceSymbol, (key) => new PropertySymbol(this));
-
-            return (PropertySymbol)propertySymbol;
+            return (T)GetSymbol(symbol, context);
         }
 
         private static readonly object directDependencyLock = new object();
@@ -83,9 +66,11 @@ namespace UdonSharp.Compiler.Symbols
             return lazyDirectDependencies;
         }
 
-        public override ImmutableArray<Symbol> GetDirectDependencies<T>()
-        {
-            return ImmutableArray.CreateRange<Symbol>(GetDirectDependencies().OfType<T>());
-        }
+        /// <summary>
+        /// Implemented by derived type symbols to create their own relevant symbol for the roslyn symbol
+        /// </summary>
+        /// <param name="roslynSymbol"></param>
+        /// <returns></returns>
+        protected abstract Symbol CreateSymbol(ISymbol roslynSymbol, BindContext context);
     }
 }

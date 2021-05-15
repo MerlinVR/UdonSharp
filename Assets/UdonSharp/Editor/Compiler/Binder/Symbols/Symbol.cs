@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using UdonSharp.Compiler.Binder;
 
 namespace UdonSharp.Compiler.Symbols
 {
@@ -13,7 +14,7 @@ namespace UdonSharp.Compiler.Symbols
         /// <summary>
         /// The symbol this is declared in, for instance if this is a field symbol, will point to the declaring class symbol, or if a local variable symbol, will point to a method symbol
         /// </summary>
-        public virtual Symbol DeclaringSymbol { get { return null; } }
+        public virtual Symbol ContainingType { get; protected set; }
 
         /// <summary>
         /// Used to retrieve the non-generic-typed version of this symbol, for instance if you're getting a symbol for DoThing<int>(), will return DoThing<>()
@@ -28,7 +29,7 @@ namespace UdonSharp.Compiler.Symbols
         /// <summary>
         /// If this symbol has had its body visited and types linked
         /// </summary>
-        public virtual bool IsResolved { get { return true; } }
+        public virtual bool IsBound { get { return true; } }
 
         /// <summary>
         /// If this is a symbol pointing to an Udon extern
@@ -52,12 +53,23 @@ namespace UdonSharp.Compiler.Symbols
         /// Will throw exception if this symbol has not been resolved
         /// </summary>
         /// <returns></returns>
-        public abstract ImmutableArray<Symbol> GetDirectDependencies<T>() where T : Symbol;
+        public ImmutableArray<Symbol> GetDirectDependencies<T>() where T : Symbol
+        {
+            return ImmutableArray.CreateRange<Symbol>(GetDirectDependencies().OfType<T>()); // Todo: cache
+        }
 
         ImmutableArray<Symbol> _lazyAllDependencies;
         readonly object dependencyFindLock = new object();
 
         private bool AllDependenciesResolved { get { return _lazyAllDependencies != null; } }
+        
+        protected Symbol(ISymbol sourceSymbol, BindContext bindContext)
+        {
+            RoslynSymbol = sourceSymbol;
+
+            if (sourceSymbol.ContainingType != null)
+                ContainingType = bindContext.GetSymbol(sourceSymbol.ContainingType);
+        }
 
         /// <summary>
         /// Tries to get the dependencies from the cached dependencies of a symbol. If they have not been cached, searches in place on this method to prevent deadlocks where two symbols may depend on eachother while they have not had their dependencies resolved
@@ -76,7 +88,7 @@ namespace UdonSharp.Compiler.Symbols
             {
                 Symbol currentSymbol = workingSet.Dequeue();
 
-                if (!currentSymbol.IsResolved)
+                if (!currentSymbol.IsBound)
                     throw new System.InvalidOperationException("Cannot gather dependencies from unresolved symbol");
 
                 if (currentSymbol == this || resolvedDependencies.Contains(currentSymbol))
@@ -131,5 +143,26 @@ namespace UdonSharp.Compiler.Symbols
         /// </summary>
         /// <returns></returns>
         public virtual ImmutableArray<Symbol> GetImplementations() => ImmutableArray<Symbol>.Empty;
+
+        public abstract void Bind(BindContext context);
+
+        // UdonSharp symbols will always have a Roslyn analogue symbol that refers to exactly the same data, the only difference is that UdonSharp symbols will annotate more information and track dependencies more explicitly
+        // So we just use the root symbol hash code and equals here
+        // This is not needed most of the time since you must retrieve the symbols from the Roslyn symbols in most contexts that matter for comparison. The retrieval mechanisms already guarantee that there is one UdonSharp symbol for a given Roslyn symbol
+        public override int GetHashCode()
+        {
+            return RoslynSymbol.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return RoslynSymbol.Equals(obj);
+        }
+
+        // This may get more descriptive info in the future
+        public override string ToString()
+        {
+            return RoslynSymbol.ToString();
+        }
     }
 }

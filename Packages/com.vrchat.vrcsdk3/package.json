@@ -1,0 +1,7 @@
+{
+	"name" : "com.vrchat.vrcsdk3",
+	"displayName" : "VRChat SDK3 - Worlds",
+	"version" : "2020.3.2",
+	"unity" : "2018.4",
+	"description" : "SDK 3 with Udon, our in-house node-based scripting language for awesome interactivity!"
+}

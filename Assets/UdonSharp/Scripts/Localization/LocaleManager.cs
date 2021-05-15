@@ -35,6 +35,11 @@ namespace UdonSharp.Localization
         UI_ProgramScript,
         UI_SourceScript,
         UI_SerializedUdonProgramAsset,
+        CE_UdonSharpBehaviourConstructorsNotSupported,
+        CE_PartialMethodsNotSupported,
+        CE_UdonSharpBehaviourGenericMethodsNotSupported,
+        CE_LocalMethodsNotSupported,
+        CE_NodeNotSupported,
 
         Length,
     }
@@ -79,12 +84,12 @@ namespace UdonSharp.Localization
                     {
                         localizedStringLookup.Add(elementResult, elementValue);
                     }
-                #if UDONSHARP_LOC_DEBUG
+#if UDONSHARP_LOC_DEBUG
                     else
                     {
                         Debug.LogWarning($"Could not find corresponding enum for key '{elementName}'");
                     }
-                #endif
+#endif
                 }
             }
 
@@ -160,7 +165,7 @@ namespace UdonSharp.Localization
             return "";
         }
     }
-    
+
     /// <summary>
     /// Localization manager
     /// </summary>

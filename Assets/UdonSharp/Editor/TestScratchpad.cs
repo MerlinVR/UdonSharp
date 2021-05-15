@@ -155,7 +155,7 @@ using UnityEditor;
 //    public const string MY_CONST = ""my constant value!"";
 //}
 
-public partial class BaseTest : MonoBehaviour
+public partial class BaseTest<T> : MonoBehaviour
 {
     //private Vector2 baseVector = new Vector2(1, 2);
 
@@ -163,6 +163,11 @@ public partial class BaseTest : MonoBehaviour
     //{
     //    Debug.Log(""hi"");
     //}
+
+    public void MyGeneric<V>(T val1, V val2)
+    {
+        
+    }
 
     int myInt;
 }
@@ -195,9 +200,10 @@ public partial class BaseTest : MonoBehaviour
 using UnityEngine;
 using System;
 
-public partial class BaseTest
+public partial class BaseTest<T>
 {
     public float myTestFloat;
+    public float[][][] myJaggedArray;
 }
 ";
 
@@ -229,6 +235,28 @@ public partial class BaseTest
 
         Debug.Log(modelClass0 == modelClass1);
         Debug.Log(modelClass0.Equals(modelClass1));
+
+        INamedTypeSymbol constructedType = modelClass0.Construct(modelClass0);
+
+        Debug.Log($"{constructedType} {constructedType.GetType()}");
+
+        IMethodSymbol genericMethod = constructedType.GetMembers().OfType<IMethodSymbol>().First();
+
+        Debug.Log(genericMethod);
+
+        IMethodSymbol constructedMethod = genericMethod.Construct(constructedType);
+
+        Debug.Log($"{constructedMethod}, {constructedMethod.GetType()}");
+
+        //IPropertySymbol genericProperty = constructedType.GetMembers().OfType<IPropertySymbol>().First();
+
+        Debug.Log(string.Join(", ", modelClass0.TypeArguments.Select(e => e.GetType())));
+        Debug.Log(string.Join(", ", constructedType.TypeArguments.Select(e => e.GetType())));
+
+        Debug.Log(modelClass0.TypeArguments.First().TypeKind);
+        Debug.Log(constructedType.TypeArguments.First().TypeKind);
+
+        Debug.Log(((IArrayTypeSymbol)modelClass0.GetMembers().OfType<IFieldSymbol>().First(e => e.Name == "myJaggedArray").Type).ElementType.GetType());
 
         return;
 

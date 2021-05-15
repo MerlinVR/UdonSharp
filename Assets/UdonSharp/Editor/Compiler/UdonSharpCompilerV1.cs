@@ -23,8 +23,8 @@ namespace UdonSharp.Compiler
             System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
             timer.Start();
 
-            var rootProgramPaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Where(e => e.isV1Root).Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
-            //var rootProgramPaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
+            //var rootProgramPaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Where(e => e.isV1Root).Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
+            var rootProgramPaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
             HashSet<string> allSourcePaths = new HashSet<string>(GetAllFilteredSourcePaths());
 
             var syntaxTrees = LoadSyntaxTrees(allSourcePaths);
@@ -106,12 +106,13 @@ namespace UdonSharp.Compiler
             IEnumerable<INamedTypeSymbol> uniqueRootSymbols = rootUdonSharpTypes.Distinct();
 
             CompilationContext compilationContext = new CompilationContext(compilation);
+            BindContext bindContext = new BindContext(compilationContext);
 
             foreach (INamedTypeSymbol rootTypeSymbol in uniqueRootSymbols)
             {
-                BindModule typeBinder = new BindModule(compilationContext, compilationContext.GetTypeSymbol(rootTypeSymbol));
+                TypeBindModule typeBinder = new TypeBindModule(compilationContext, bindContext.GetTypeSymbol(rootTypeSymbol));
 
-                typeBinder.Bind();
+                typeBinder.Bind(bindContext);
             }
 
             Debug.Log($"Ran compile in {timer.Elapsed.TotalSeconds * 1000.0:F3}ms");

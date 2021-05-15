@@ -15,6 +15,10 @@ namespace UdonSharp.Compiler.Binder
         /// When a expression is resolved, it means the direct dependencies for the expression have been found, but the full dependency tree will not necessarily be resolved until the end of the bind phase.
         /// </summary>
         public virtual bool IsResolved { get { return true; } }
+
+        protected BoundExpression(SyntaxNode node)
+            :base(node)
+        { }
     }
 
     internal class BoundConstantExpression : BoundExpression
@@ -22,7 +26,8 @@ namespace UdonSharp.Compiler.Binder
         IConstantValue _constantValue;
         public override IConstantValue ConstantValue { get { return _constantValue; } }
 
-        public BoundConstantExpression(IConstantValue constantValue)
+        public BoundConstantExpression(IConstantValue constantValue, SyntaxNode node)
+            :base(node)
         {
             _constantValue = constantValue;
         }

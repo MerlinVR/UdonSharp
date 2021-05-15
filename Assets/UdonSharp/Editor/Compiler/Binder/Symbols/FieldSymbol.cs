@@ -1,11 +1,8 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Collections;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using UnityEngine;
+using UdonSharp.Compiler.Binder;
 
 
 namespace UdonSharp.Compiler.Symbols
@@ -17,31 +14,25 @@ namespace UdonSharp.Compiler.Symbols
         public TypeSymbol Type { get; private set; }
         public ExpressionSyntax InitializerSyntax { get; private set; }
 
-        public FieldSymbol(TypeSymbol sourceType, IFieldSymbol sourceSymbol)
+        public FieldSymbol(IFieldSymbol sourceSymbol, BindContext bindContext)
+            :base(sourceSymbol, bindContext)
         {
-            base.RoslynSymbol = sourceSymbol;
-            this.sourceType = sourceType;
         }
 
         public new IFieldSymbol RoslynSymbol { get { return (IFieldSymbol)base.RoslynSymbol; } }
-        public override Symbol DeclaringSymbol => sourceType;
+        public override Symbol ContainingType => sourceType;
 
         public override ImmutableArray<Symbol> GetDirectDependencies()
         {
             throw new System.NotImplementedException();
         }
 
-        public override ImmutableArray<Symbol> GetDirectDependencies<T>()
-        {
-            throw new System.NotImplementedException();
-        }
-
         bool _resolved = false;
-        public override bool IsResolved => _resolved;
+        public override bool IsBound => _resolved;
 
-        public void Bind(BindModule module)
+        public override void Bind(BindContext context)
         {
-            Type = module.CompileContext.GetTypeSymbol((INamedTypeSymbol)RoslynSymbol.Type);
+            Type = context.GetTypeSymbol(RoslynSymbol.Type);
             InitializerSyntax = (RoslynSymbol.DeclaringSyntaxReferences.First().GetSyntax() as VariableDeclaratorSyntax)?.Initializer?.Value;
 
             _resolved = true;

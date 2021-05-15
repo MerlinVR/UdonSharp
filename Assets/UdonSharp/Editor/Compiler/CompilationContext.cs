@@ -10,8 +10,6 @@ namespace UdonSharp.Compiler
     {
         public CSharpCompilation RoslynCompilation { get; private set; }
 
-        private ConcurrentDictionary<INamedTypeSymbol, TypeSymbol> typeSymbolLookup = new ConcurrentDictionary<INamedTypeSymbol, TypeSymbol>();
-
         public CompilationContext(CSharpCompilation compilation)
         {
             RoslynCompilation = compilation;
@@ -22,9 +20,6 @@ namespace UdonSharp.Compiler
             return RoslynCompilation.GetSemanticModel(modelTree);
         }
 
-        public TypeSymbol GetTypeSymbol(INamedTypeSymbol sourceSymbol)
-        {
-            return typeSymbolLookup.GetOrAdd(sourceSymbol, (key) => new TypeSymbol(sourceSymbol));
-        }
+
     }
 }

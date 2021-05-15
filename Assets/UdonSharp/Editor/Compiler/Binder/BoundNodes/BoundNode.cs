@@ -10,7 +10,13 @@ namespace UdonSharp.Compiler.Binder
     /// </summary>
     internal abstract class BoundNode
     {
-        public virtual ISymbol Symbol { get { return null; } }
-        public virtual SyntaxNode SyntaxNode { get { return null; } }
+        public virtual SyntaxNode SyntaxNode { get; private set; }
+
+        private BoundNode() { }
+
+        protected BoundNode(SyntaxNode node)
+        {
+            SyntaxNode = node;
+        }
     }
 }
