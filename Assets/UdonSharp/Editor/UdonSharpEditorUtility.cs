@@ -719,6 +719,13 @@ namespace UdonSharpEditor
                     udonBehaviour = targetGameObject.AddComponent<UdonBehaviour>();
 
                 udonBehaviour.programSource = programAsset;
+#pragma warning disable CS0618 // Type or member is obsolete
+                udonBehaviour.SynchronizePosition = false;
+                udonBehaviour.AllowCollisionOwnershipTransfer = false;
+#pragma warning restore CS0618 // Type or member is obsolete
+
+                udonBehaviour.Reliable = programAsset.behaviourSyncMode == BehaviourSyncMode.Manual;
+                
 
                 //if (shouldUndo)
                 //    Undo.RegisterCompleteObjectUndo(targetObject, "Convert C# to U# behaviour");

@@ -14,6 +14,7 @@ namespace UdonSharp.Tests
 {
     [AddComponentMenu("Udon Sharp/Test Lib/Integration Test Runner")]
     [DefaultExecutionOrder(-10)]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
     public class IntegrationTestRunner : UdonSharpBehaviour
     {
         public bool runTestOnStart = true;

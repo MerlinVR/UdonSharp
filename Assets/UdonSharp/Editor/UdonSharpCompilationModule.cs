@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -157,9 +158,7 @@ namespace UdonSharp.Compiler
                 programAsset.behaviourIDHeapVarName = visitor.GetIDHeapVarName();
 
                 programAsset.fieldDefinitions = fieldVisitor.visitorContext.localFieldDefinitions;
-#if UDON_BETA_SDK
                 programAsset.behaviourSyncMode = visitor.visitorContext.behaviourSyncMode;
-#endif
 
                 if (debugInfo != null)
                     debugInfo.FinalizeDebugInfo();

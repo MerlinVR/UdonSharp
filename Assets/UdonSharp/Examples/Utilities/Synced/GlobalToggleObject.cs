@@ -10,31 +10,23 @@ namespace UdonSharp.Examples.Utilities
     /// This class allows anyone to toggle a gameobject for everyone in the world. 
     /// This script assumes that the object it is on will not have other things transferring ownership of it.
     /// </summary>
+    [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
     public class GlobalToggleObject : UdonSharpBehaviour 
     {
         public GameObject toggleObject;
 
         [UdonSynced]
-        bool isEnabledGlobal;
-        bool isEnabledLocal;
+        bool isEnabled;
 
         private void Start()
         {
-            isEnabledGlobal = isEnabledLocal = toggleObject.activeSelf;
+            isEnabled = toggleObject.activeSelf;
         }
 
         public override void OnDeserialization()
         {
             if (!Networking.IsOwner(gameObject))
-            {
-                toggleObject.SetActive(isEnabledGlobal);
-                isEnabledLocal = isEnabledGlobal;
-            }
-        }
-
-        public override void OnPreSerialization()
-        {
-            isEnabledGlobal = isEnabledLocal;
+                toggleObject.SetActive(isEnabled);
         }
 
         public override void Interact()
@@ -42,8 +34,10 @@ namespace UdonSharp.Examples.Utilities
             if (!Networking.IsOwner(gameObject))
                 Networking.SetOwner(Networking.LocalPlayer, gameObject);
 
-            isEnabledLocal = isEnabledGlobal = !isEnabledGlobal;
-            toggleObject.SetActive(isEnabledLocal);
+            isEnabled = !isEnabled;
+            toggleObject.SetActive(isEnabled);
+
+            RequestSerialization();
         }
     }
 }

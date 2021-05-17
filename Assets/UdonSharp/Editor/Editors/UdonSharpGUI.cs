@@ -17,7 +17,6 @@ using VRC.Udon.Common.Interfaces;
 namespace UdonSharpEditor
 {
     #region Beta SDK sync mode menu editor
-#if UDON_BETA_SDK
     internal class SyncModeMenu : EditorWindow
     {
         static SyncModeMenu menu;
@@ -228,7 +227,6 @@ namespace UdonSharpEditor
             showAsDropDownMethod.Invoke(this, new object[] { controlRect, size, popupLocationArray });
         }
     }
-#endif
     #endregion
 
     public static class UdonSharpGUI
@@ -1342,40 +1340,96 @@ namespace UdonSharpEditor
 
         static readonly GUIContent ownershipTransferOnCollisionContent = new GUIContent("Allow Ownership Transfer on Collision",
                                                                                         "Transfer ownership on collision, requires a Collision component on the same game object");
-
-#if UDON_BETA_SDK
+        
         static MethodInfo dropdownButtonMethod;
-#endif
 
         internal static void DrawSyncSettings(UdonBehaviour behaviour)
         {
-#if UDON_BETA_SDK
             UdonSharpProgramAsset programAsset = (UdonSharpProgramAsset)behaviour.programSource;
 
-            bool allowsSyncConfig = programAsset.behaviourSyncMode == BehaviourSyncMode.Any;
+            EditorGUI.BeginDisabledGroup(Application.isPlaying);
 
-            EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying || !allowsSyncConfig);
+            UdonBehaviour[] behavioursOnObject = behaviour.GetComponents<UdonBehaviour>();
 
-            Rect syncMethodRect = EditorGUILayout.GetControlRect();
-            int id = GUIUtility.GetControlID("DropdownButton".GetHashCode(), FocusType.Keyboard, syncMethodRect);
-            Rect dropdownRect = EditorGUI.PrefixLabel(syncMethodRect, id, new GUIContent("Synchronization Method"));
-
-            if (dropdownButtonMethod == null)
-                dropdownButtonMethod = typeof(EditorGUI).GetMethod("DropdownButton", BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(int), typeof(Rect), typeof(GUIContent), typeof(GUIStyle) }, null);
-
-            if ((bool)dropdownButtonMethod.Invoke(null, new object[] { id, dropdownRect, new GUIContent(behaviour.Reliable ? "Manual" : "Continuous"), EditorStyles.miniPullDown }))
+            // Sanity checking for mixed sync modes
+            if (behavioursOnObject.Length > 1)
             {
-                SyncModeMenu.Show(syncMethodRect, new UdonBehaviour[] { behaviour });
+                bool hasContinuousSync = false;
+                bool hasReliableSync = false;
 
-                GUIUtility.ExitGUI();
+                foreach (UdonBehaviour otherBehaviour in behavioursOnObject)
+                {
+                    if (otherBehaviour.Reliable)
+                        hasReliableSync = true;
+                    else
+                        hasContinuousSync = true;
+                }
+
+                if (hasContinuousSync && hasReliableSync)
+                {
+                    if (programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
+                        EditorGUILayout.HelpBox("NoVariableSync mode uses Continuous sync mode internally. You are mixing sync methods between UdonBehaviours on the same game object, this will cause all behaviours to use the sync method of the last component on the game object.", MessageType.Error);
+                    else
+                        EditorGUILayout.HelpBox("You are mixing sync methods between UdonBehaviours on the same game object, this will cause all behaviours to use the sync method of the last component on the game object.", MessageType.Error);
+                }
             }
 
-            EditorGUI.EndDisabledGroup();
-#else
-            EditorGUI.BeginChangeCheck();
+            // Dropdown for the sync settings
+            if (programAsset.behaviourSyncMode != BehaviourSyncMode.NoVariableSync)
+            {
+                bool allowsSyncConfig = programAsset.behaviourSyncMode == BehaviourSyncMode.Any;
 
-            EditorGUI.BeginDisabledGroup(Application.isPlaying);
-            bool newSyncPos = EditorGUILayout.Toggle("Synchronize Position", behaviour.SynchronizePosition);
+                EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying || !allowsSyncConfig);
+
+                Rect syncMethodRect = EditorGUILayout.GetControlRect();
+                int id = GUIUtility.GetControlID("DropdownButton".GetHashCode(), FocusType.Keyboard, syncMethodRect);
+                GUIContent dropdownContent = allowsSyncConfig ? new GUIContent("Synchronization Method") : new GUIContent("Synchronization Method", "This sync mode is currently set by the UdonBehaviourSyncMode attribute on the script");
+
+                Rect dropdownRect = EditorGUI.PrefixLabel(syncMethodRect, id, dropdownContent);
+
+                if (dropdownButtonMethod == null)
+                    dropdownButtonMethod = typeof(EditorGUI).GetMethod("DropdownButton", BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(int), typeof(Rect), typeof(GUIContent), typeof(GUIStyle) }, null);
+
+                if ((bool)dropdownButtonMethod.Invoke(null, new object[] { id, dropdownRect, new GUIContent(behaviour.Reliable ? "Manual" : "Continuous"), EditorStyles.miniPullDown }))
+                {
+                    SyncModeMenu.Show(syncMethodRect, new UdonBehaviour[] { behaviour });
+
+                    GUIUtility.ExitGUI();
+                }
+
+                EditorGUI.EndDisabledGroup();
+
+                bool newReliableState = behaviour.Reliable;
+
+                // Handle auto setting of sync mode if the component has just been created
+                if (programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous && behaviour.Reliable)
+                    newReliableState = false;
+                else if (programAsset.behaviourSyncMode == BehaviourSyncMode.Manual && !behaviour.Reliable)
+                    newReliableState = true;
+
+                if (newReliableState != behaviour.Reliable)
+                {
+                    Undo.RecordObject(behaviour, "Update sync mode");
+                    behaviour.Reliable = newReliableState;
+                }
+            }
+
+            // Validate that we don't have a VRC Object Sync on continuous synced objects since it is not valid
+            if (behaviour.Reliable)
+            {
+                var objSync = behaviour.GetComponent<VRC.SDK3.Components.VRCObjectSync>();
+
+#pragma warning disable CS0618 // Type or member is obsolete
+                if (behaviour.SynchronizePosition)
+#pragma warning restore CS0618 // Type or member is obsolete
+                    EditorGUILayout.HelpBox("Manual sync cannot be used on GameObjects with Position Sync", MessageType.Error);
+                else if (objSync)
+                    EditorGUILayout.HelpBox("Manual sync cannot be used on GameObjects with VRC Object Sync", MessageType.Error);
+            }
+
+            // Position sync upgrade warnings & collision transfer handling
+#pragma warning disable CS0618 // Type or member is obsolete
+            EditorGUI.BeginChangeCheck();
             bool newCollisionTransfer = behaviour.AllowCollisionOwnershipTransfer;
             if (behaviour.GetComponent<Collider>() != null)
             {
@@ -1384,24 +1438,64 @@ namespace UdonSharpEditor
                 if (newCollisionTransfer)
                     EditorGUILayout.HelpBox("Collision transfer is currently bugged and can cause network spam that lags your world, use at your own risk.", MessageType.Warning);
             }
-            else if(newCollisionTransfer)
+            else if (newCollisionTransfer)
             {
                 newCollisionTransfer = false;
 
                 GUI.changed = true;
             }
-            EditorGUI.EndDisabledGroup();
 
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(behaviour, "Change sync setting");
-                behaviour.SynchronizePosition = newSyncPos;
+                Undo.RecordObject(behaviour, "Changed ownership transfer");
                 behaviour.AllowCollisionOwnershipTransfer = newCollisionTransfer;
-
-                if (PrefabUtility.IsPartOfPrefabInstance(behaviour))
-                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
             }
-#endif
+
+            // For now we'll do a warning, later on we may add a validation pass that just converts everything automatically
+            if (behaviour.SynchronizePosition)
+            {
+                var objectSync = behaviour.GetComponent<VRC.SDK3.Components.VRCObjectSync>();
+
+                if (objectSync)
+                {
+                    if (behaviour.AllowCollisionOwnershipTransfer && !objectSync.AllowCollisionOwnershipTransfer)
+                    {
+                        Undo.RecordObject(behaviour, "Object sync owner transfer");
+                        objectSync.AllowCollisionOwnershipTransfer = true;
+                    }
+
+                    Undo.RecordObject(behaviour, "Change sync position");
+                    behaviour.SynchronizePosition = false;
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("This behaviour has sync position enabled on it, sync position is deprecated and you should now use the VRC Object Sync script.", MessageType.Warning);
+                    if (GUILayout.Button("Switch to VRC Object Sync"))
+                    {
+                        var newObjSync = Undo.AddComponent<VRC.SDK3.Components.VRCObjectSync>(behaviour.gameObject);
+                        while (UnityEditorInternal.ComponentUtility.MoveComponentUp(newObjSync)) { }
+
+                        UdonBehaviour[] behaviours = behaviour.GetComponents<UdonBehaviour>();
+
+                        bool usesCollisionTransfer = false;
+
+                        foreach (UdonBehaviour otherBehaviour in behaviours)
+                        {
+                            usesCollisionTransfer |= otherBehaviour.AllowCollisionOwnershipTransfer;
+
+                            Undo.RecordObject(behaviour, "Convert to VRC Object Sync");
+                            behaviour.SynchronizePosition = false;
+                            behaviour.AllowCollisionOwnershipTransfer = false;
+                        }
+
+                        Undo.RecordObject(newObjSync, "Object sync collision transfer");
+                        newObjSync.AllowCollisionOwnershipTransfer = newCollisionTransfer;
+                    }
+                }
+            }
+#pragma warning restore CS0618 // Type or member is obsolete
+
+            EditorGUI.EndDisabledGroup();
         }
 
         /// <summary>

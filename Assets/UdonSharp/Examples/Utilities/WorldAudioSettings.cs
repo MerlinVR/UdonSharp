@@ -10,6 +10,8 @@ namespace UdonSharp.Examples.Utilities
     /// Sets the default voice and avatar audio settings for players when they enter the world
     /// See https://docs.vrchat.com/docs/player-audio for more detailed documentation 
     /// </summary>
+    [AddComponentMenu("Udon Sharp/Utilities/World Audio Settings")]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
     public class WorldAudioSettings : UdonSharpBehaviour 
     {
         [Header("Player voice")]

@@ -1654,6 +1654,8 @@ namespace UdonSharp.Compiler
             typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer),
             typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer),
             typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer),
+            typeof(VRC.SDK3.Components.VRCObjectPool),
+            typeof(VRC.SDK3.Components.VRCObjectSync),
         };
 
         private SymbolDefinition InvokeExtern(SymbolDefinition[] invokeParams)

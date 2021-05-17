@@ -1,17 +1,33 @@
-﻿using System;
+﻿
+using JetBrains.Annotations;
+using System;
 
 namespace UdonSharp
 {
     // At the moment Udon syncing is in a very early state.
     // This is very liable to be changed with changes to Udon syncing in the future.
+    [PublicAPI]
     public enum UdonSyncMode
     {
+        /// <summary>
+        /// Not synced, this is the same as not adding the UdonSynced attribute
+        /// </summary>
         NotSynced,
-        None, // No interpolation
-        Linear, // Lerp
-        Smooth, // Some kind of smoothed syncing, no idea what curve they apply to it
+        /// <summary>
+        /// Synced with no interpolation, this is the same as just using `[UdonSynced]`
+        /// </summary>
+        None,
+        /// <summary>
+        /// Lerped sync
+        /// </summary>
+        Linear,
+        /// <summary>
+        /// Smoothed sync
+        /// </summary>
+        Smooth,
     }
 
+    [PublicAPI]
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
     public class UdonSyncedAttribute : Attribute
     {
@@ -22,15 +38,34 @@ namespace UdonSharp
             networkSyncType = networkSyncTypeIn;
         }
     }
-
-#if UDON_BETA_SDK
+    
+    /// <summary>
+    /// Used to enforce consistent sync modes per behaviour since Udon Behaviours are usually authored with a specific type of sync in mind
+    ///   and it's tedious to set and make sure the sync type is correct on each behaviour.
+    /// This also allows U# to verify that you're using types and variable tweening modes that are supported for the given sync mode
+    /// </summary>
+    [PublicAPI]
     public enum BehaviourSyncMode
     {
-        Any, // Nothing is enforced and the behaviours can be set to either sync type by the user. This is the default when no BehaviourSyncTypeAttribute is specified
+        /// <summary>
+        /// Nothing is enforced and the behaviours can be set to either sync type by the user. This is the default when no BehaviourSyncTypeAttribute is specified on a behaviour
+        /// </summary>
+        Any,
+        /// <summary>
+        /// Enforces no synced variables on the behaviour and hides the selection dropdown in the UI for the sync mode, SendCustomNetworkEvent() will still work on this behaviour
+        /// </summary>
+        NoVariableSync,
+        /// <summary>
+        /// Enforces continuous sync mode on the behaviour
+        /// </summary>
         Continuous,
+        /// <summary>
+        /// Enforces manual sync mode on the behaviour
+        /// </summary>
         Manual,
     }
 
+    [PublicAPI]
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public class UdonBehaviourSyncModeAttribute : Attribute
     {
@@ -41,13 +76,13 @@ namespace UdonSharp
             this.behaviourSyncMode = behaviourSyncMode;
         }
     }
-#endif
 
     /// <summary>
     /// Marks a method that can be called recursively in U#. 
     /// This should be used on the methods that are being called recursively, you do not need to mark methods that are calling recursive methods with this.
     /// This attribute has a performance overhead which makes the marked method perform slower and usually generate more garbage. So use it only on methods that **need** to be called recursively.
     /// </summary>
+    [PublicAPI]
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public class RecursiveMethodAttribute : Attribute
     {

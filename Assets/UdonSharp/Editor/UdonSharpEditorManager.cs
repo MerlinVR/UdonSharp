@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -465,9 +466,7 @@ namespace UdonSharpEditor
 
             UpdateSerializedProgramAssets(allBehaviours);
             UpdatePublicVariables(allBehaviours);
-#if UDON_BETA_SDK
             UpdateSyncModes(allBehaviours);
-#endif
             CreateProxyBehaviours(allBehaviours);
         }
 
@@ -556,25 +555,28 @@ namespace UdonSharpEditor
                 }
             }
         }
-
-#if UDON_BETA_SDK
+        
         static void UpdateSyncModes(List<UdonBehaviour> udonBehaviours)
         {
             int modificationCount = 0;
+
+            HashSet<GameObject> behaviourGameObjects = new HashSet<GameObject>();
 
             foreach (UdonBehaviour behaviour in udonBehaviours)
             {
                 if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset programAsset))
                     continue;
 
+                behaviourGameObjects.Add(behaviour.gameObject);
+
                 if (behaviour.Reliable == true &&
-                    programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous)
+                    (programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous) ||
+                     programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
                 {
                     behaviour.Reliable = false;
                     modificationCount++;
                 }
-                else if (behaviour.Reliable == false &&
-                         programAsset.behaviourSyncMode == BehaviourSyncMode.Manual)
+                else if (behaviour.Reliable == false && programAsset.behaviourSyncMode == BehaviourSyncMode.Manual)
                 {
                     behaviour.Reliable = true;
                     modificationCount++;
@@ -583,8 +585,42 @@ namespace UdonSharpEditor
 
             if (modificationCount > 0)
                 EditorSceneManager.MarkAllScenesDirty();
+
+            // Validation for mixed sync modes which can break sync on things
+            foreach (GameObject gameObject in behaviourGameObjects)
+            {
+                UdonBehaviour[] objectBehaviours = gameObject.GetComponents<UdonBehaviour>();
+
+                bool hasManual = false;
+                bool hasContinuous = false;
+                bool hasUdonPositionSync = false;
+
+                foreach (UdonBehaviour objectBehaviour in objectBehaviours)
+                {
+                    if (objectBehaviour.Reliable)
+                        hasManual = true;
+                    else
+                        hasContinuous = true;
+
+#pragma warning disable CS0618 // Type or member is obsolete
+                    if (objectBehaviour.SynchronizePosition)
+                        hasUdonPositionSync = true;
+#pragma warning restore CS0618 // Type or member is obsolete
+                }
+
+                if (hasManual)
+                {
+                    if (hasContinuous)
+                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] UdonBehaviours on GameObject '{gameObject.name}' have conflicting synchronization methods, this can cause sync to work unexpectedly.", gameObject);
+
+                    if (gameObject.GetComponent<VRC.SDK3.Components.VRCObjectSync>())
+                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] UdonBehaviours on GameObject '{gameObject.name}' are using manual sync while VRCObjectSync is on the GameObject, this can cause sync to work unexpectedly.", gameObject);
+
+                    if (hasUdonPositionSync)
+                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] UdonBehaviours on GameObject '{gameObject.name}' are using manual sync while position sync is enabled on an UdonBehaviour on the GameObject, this can cause sync to work unexpectedly.", gameObject);
+                }
+            }
         }
-#endif
 
         static bool UdonSharpBehaviourTypeMatches(object symbolValue, System.Type expectedType, string behaviourName, string variableName)
         {

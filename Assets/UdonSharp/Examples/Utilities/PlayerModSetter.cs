@@ -6,6 +6,7 @@ using VRC.SDKBase;
 namespace UdonSharp.Examples.Utilities
 {
     [AddComponentMenu("Udon Sharp/Utilities/Player Mod Setter")]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
     public class PlayerModSetter : UdonSharpBehaviour
     {
         public float jumpHeight = 3f;

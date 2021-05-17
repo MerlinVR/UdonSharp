@@ -7,6 +7,7 @@ using VRC.Udon;
 namespace UdonSharp.Tests
 {
     [AddComponentMenu("Udon Sharp/Test Lib/Integration Test Suite")]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
     public class IntegrationTestSuite : UdonSharpBehaviour
     {
         [System.NonSerialized]

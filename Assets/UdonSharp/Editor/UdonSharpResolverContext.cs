@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -171,6 +172,8 @@ namespace UdonSharp
             { "_inputMoveVertical", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(float), "inputMoveVerticalFloatValue"), new System.Tuple<System.Type, string>(typeof(VRC.Udon.Common.UdonInputEventArgs), "inputMoveVerticalArgs") } },
             { "_inputLookHorizontal", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(float), "inputLookHorizontalFloatValue"), new System.Tuple<System.Type, string>(typeof(VRC.Udon.Common.UdonInputEventArgs), "inputLookHorizontalArgs") } },
             { "_inputLookVertical", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(float), "inputLookVerticalFloatValue"), new System.Tuple<System.Type, string>(typeof(VRC.Udon.Common.UdonInputEventArgs), "inputLookVerticalArgs") } },
+            { "_onOwnershipTransferred", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.SDKBase.VRCPlayerApi), "onOwnershipTransferredPlayer") } },
+            { "_onPostSerialization", new System.Tuple<System.Type, string>[] { new System.Tuple<System.Type, string>(typeof(VRC.Udon.Common.SerializationResult), "onPostSerializationResult") } },
         };
 
         public System.Tuple<System.Type, string>[] GetMethodCustomArgs(string methodName)
