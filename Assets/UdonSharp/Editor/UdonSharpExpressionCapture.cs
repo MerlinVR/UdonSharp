@@ -677,6 +677,9 @@ namespace UdonSharp.Compiler
                 PropertyDefinition definition = captureLocalProperty;
                 SetterDefinition setter = definition.setter;
 
+                if (setter == null)
+                    throw new System.MemberAccessException($"Property or indexer '{definition.originalPropertyName}' cannot be assigned to -- it is read only or doesn't exist");
+
                 using (ExpressionCaptureScope argAssignmentScope = new ExpressionCaptureScope(visitorContext, null))
                 {
                     argAssignmentScope.SetToLocalSymbol(setter.paramSymbol);
@@ -696,6 +699,9 @@ namespace UdonSharp.Compiler
             {
                 PropertyDefinition definition = captureExternUserProperty;
                 SetterDefinition setter = definition.setter;
+
+                if (setter == null || setter.declarationFlags == PropertyDeclFlags.Private)
+                    throw new System.MemberAccessException($"Property or indexer '{definition.originalPropertyName}' cannot be assigned to -- it is read only or doesn't exist");
 
                 using (ExpressionCaptureScope argAssignmentScope = new ExpressionCaptureScope(visitorContext, null))
                 {
