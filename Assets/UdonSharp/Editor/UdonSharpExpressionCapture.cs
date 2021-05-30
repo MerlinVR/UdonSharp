@@ -255,8 +255,10 @@ namespace UdonSharp.Compiler
             captureEnum = childScope.captureEnum;
             arrayIndexerIndexValue = childScope.arrayIndexerIndexValue;
             captureLocalMethod = childScope.captureLocalMethod;
+            captureLocalProperty = childScope.captureLocalProperty;
             captureExternUserField = childScope.captureExternUserField;
             captureExternUserMethod = childScope.captureExternUserMethod;
+            captureExternUserProperty = childScope.captureExternUserProperty;
             unresolvedAccessChain = childScope.unresolvedAccessChain;
         }
 
