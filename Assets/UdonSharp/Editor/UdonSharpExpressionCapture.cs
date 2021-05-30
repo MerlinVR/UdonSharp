@@ -2860,6 +2860,8 @@ namespace UdonSharp.Compiler
         {
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
                 captureArchetype != ExpressionCaptureArchetype.Property &&
+                captureArchetype != ExpressionCaptureArchetype.LocalProperty &&
+                captureArchetype != ExpressionCaptureArchetype.ExternUserProperty &&
                 !IsField() &&
                 captureArchetype != ExpressionCaptureArchetype.ArrayIndexer)
             {
