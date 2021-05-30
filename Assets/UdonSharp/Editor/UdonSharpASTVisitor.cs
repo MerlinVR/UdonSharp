@@ -25,6 +25,8 @@ namespace UdonSharp.Compiler
         
         public List<MethodDefinition> definedMethods;
 
+        public List<PropertyDefinition> definedProperties;
+
         // Tracking labels for the current function and flow control
         public JumpLabel returnLabel = null;
         public SymbolDefinition returnJumpTarget = null;
@@ -118,11 +120,12 @@ namespace UdonSharp.Compiler
     /// </summary>
     public class ASTVisitor : UdonSharpSyntaxWalker
     {
-        public ASTVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable, List<MethodDefinition> methodDefinitions, List<ClassDefinition> externUserClassDefinitions, ClassDebugInfo debugInfo)
+        public ASTVisitor(ResolverContext resolver, SymbolTable rootTable, LabelTable labelTable, List<MethodDefinition> methodDefinitions, List<PropertyDefinition> propertyDefinitions, List<ClassDefinition> externUserClassDefinitions, ClassDebugInfo debugInfo)
             : base(resolver, rootTable, labelTable, debugInfo)
         {
             visitorContext.returnJumpTarget = rootTable.CreateNamedSymbol("returnTarget", typeof(uint), SymbolDeclTypeFlags.Internal);
             visitorContext.definedMethods = methodDefinitions;
+            visitorContext.definedProperties = propertyDefinitions;
             visitorContext.externClassDefinitions = externUserClassDefinitions;
         }
 
@@ -365,7 +368,230 @@ namespace UdonSharp.Compiler
         {
             UpdateSyntaxNode(node);
 
-            throw new System.NotSupportedException("User property declarations are not yet supported by UdonSharp");
+            System.Type propertyType = null;
+
+            using (ExpressionCaptureScope propertyTypeScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                Visit(node.Type);
+                propertyType = propertyTypeScope.captureType;
+            }
+
+            if (node.Modifiers.HasModifier("static"))
+                throw new System.NotSupportedException("UdonSharp does not currently support static user-defined property declarations");
+
+            PropertyDefinition definition = visitorContext.definedProperties.Where(e => e.originalPropertyName == node.Identifier.ValueText).First();
+
+            if (definition.getter != null)
+            {
+                var getter = definition.getter;
+
+                if ((node.Modifiers.HasModifier("public") && getter.declarationFlags == PropertyDeclFlags.None) || getter.declarationFlags == PropertyDeclFlags.Public)
+                {
+                    visitorContext.uasmBuilder.AppendLine($".export {getter.accessorName}", 1);
+                    visitorContext.uasmBuilder.AppendLine("");
+                }
+
+                visitorContext.uasmBuilder.AppendLine($"{getter.accessorName}:", 1);
+                visitorContext.uasmBuilder.AppendLine("");
+
+                Debug.Assert(visitorContext.returnLabel == null, "Return label must be null");
+                var returnLabel = visitorContext.labelTable.GetNewJumpLabel("return");
+                visitorContext.returnLabel = returnLabel;
+                visitorContext.returnSymbol = getter.returnSymbol;
+
+                visitorContext.uasmBuilder.AddJumpLabel(getter.entryPoint);
+
+                SymbolDefinition constEndAddrVal = visitorContext.topTable.CreateConstSymbol(typeof(uint), 0xFFFFFFFF);
+                visitorContext.uasmBuilder.AddPush(constEndAddrVal);
+                visitorContext.uasmBuilder.AddJumpLabel(getter.userCallStart);
+
+                if (!visitorContext.topTable.IsGlobalSymbolTable)
+                    throw new System.Exception("Parent symbol table for property table must be the global symbol table");
+
+                var getterNode = node.AccessorList?.Accessors.First(accessor => accessor.Keyword.Kind() == SyntaxKind.GetKeyword);
+                if (getterNode == null)
+                {
+                    using (ExpressionCaptureScope expressionBodyCapture = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        Visit(node.ExpressionBody);
+
+                        if (visitorContext.returnSymbol != null)
+                        {
+                            SymbolDefinition returnValue = expressionBodyCapture.ExecuteGet();
+
+                            using (ExpressionCaptureScope returnSetterScope = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                returnSetterScope.SetToLocalSymbol(visitorContext.returnSymbol);
+                                returnSetterScope.ExecuteSet(returnValue);
+                            }
+
+                            if (visitorContext.requiresVRCReturn)
+                            {
+                                SymbolTable globalSymbolTable = visitorContext.topTable.GetGlobalSymbolTable();
+                                SymbolDefinition autoAssignedEventSymbol = globalSymbolTable.FindUserDefinedSymbol("__returnValue");
+
+                                if (autoAssignedEventSymbol == null)
+                                    autoAssignedEventSymbol = globalSymbolTable.CreateNamedSymbol("__returnValue", typeof(System.Object), SymbolDeclTypeFlags.Private | SymbolDeclTypeFlags.BuiltinVar);
+
+                                using (ExpressionCaptureScope returnValueSetMethod = new ExpressionCaptureScope(visitorContext, null))
+                                {
+                                    returnValueSetMethod.SetToLocalSymbol(autoAssignedEventSymbol);
+                                    returnValueSetMethod.ExecuteSet(returnValue);
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (getterNode.Body != null)
+                {
+                    Visit(getterNode.Body);
+                }
+                else if (getterNode.ExpressionBody != null)
+                {
+                    using (ExpressionCaptureScope expressionBodyCapture = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        Visit(getterNode.ExpressionBody);
+
+                        if (visitorContext.returnSymbol != null)
+                        {
+                            SymbolDefinition returnValue = expressionBodyCapture.ExecuteGet();
+
+                            using (ExpressionCaptureScope returnSetterScope = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                returnSetterScope.SetToLocalSymbol(visitorContext.returnSymbol);
+                                returnSetterScope.ExecuteSet(returnValue);
+                            }
+
+                            if (visitorContext.requiresVRCReturn)
+                            {
+                                SymbolTable globalSymbolTable = visitorContext.topTable.GetGlobalSymbolTable();
+                                SymbolDefinition autoAssignedEventSymbol = globalSymbolTable.FindUserDefinedSymbol("__returnValue");
+
+                                if (autoAssignedEventSymbol == null)
+                                    autoAssignedEventSymbol = globalSymbolTable.CreateNamedSymbol("__returnValue", typeof(System.Object), SymbolDeclTypeFlags.Private | SymbolDeclTypeFlags.BuiltinVar);
+
+                                using (ExpressionCaptureScope returnValueSetMethod = new ExpressionCaptureScope(visitorContext, null))
+                                {
+                                    returnValueSetMethod.SetToLocalSymbol(autoAssignedEventSymbol);
+                                    returnValueSetMethod.ExecuteSet(returnValue);
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (getterNode.Body == null)
+                {
+                    SymbolTable backingField = new SymbolTable(visitorContext.resolverContext, visitorContext.topTable);
+                    backingField.symbolDefinitions.Add(getter.backingField.fieldSymbol);
+                    visitorContext.PushTable(backingField);
+
+                    SymbolDefinition returnValue = getter.backingField.fieldSymbol;
+                    
+                    using (ExpressionCaptureScope returnSetterScope = new ExpressionCaptureScope(visitorContext, null))
+                    {
+                        returnSetterScope.SetToLocalSymbol(visitorContext.returnSymbol);
+                        returnSetterScope.ExecuteSet(returnValue);
+                    }
+
+                    if (visitorContext.requiresVRCReturn)
+                    {
+                        SymbolTable globalSymbolTable = visitorContext.topTable.GetGlobalSymbolTable();
+                        SymbolDefinition autoAssignedEventSymbol = globalSymbolTable.FindUserDefinedSymbol("__returnValue");
+
+                        if (autoAssignedEventSymbol == null)
+                            autoAssignedEventSymbol = globalSymbolTable.CreateNamedSymbol("__returnValue", typeof(System.Object), SymbolDeclTypeFlags.Private | SymbolDeclTypeFlags.BuiltinVar);
+
+                        using (ExpressionCaptureScope returnValueSetMethod = new ExpressionCaptureScope(visitorContext, null))
+                        {
+                            returnValueSetMethod.SetToLocalSymbol(autoAssignedEventSymbol);
+                            returnValueSetMethod.ExecuteSet(returnValue);
+                        }
+                    }
+
+
+                    visitorContext.topTable.FlattenTableCountersToGlobal();
+                    visitorContext.PopTable();
+                }
+
+                visitorContext.topTable.FlattenTableCountersToGlobal();
+
+                visitorContext.uasmBuilder.AddJumpLabel(returnLabel);
+                visitorContext.uasmBuilder.AddJumpLabel(getter.returnPoint);
+                visitorContext.uasmBuilder.AddReturnSequence(visitorContext.returnJumpTarget, "Property epilogue");
+
+                visitorContext.uasmBuilder.AppendLine("");
+
+                visitorContext.returnLabel = null;
+            }
+
+            if (definition.setter != null)
+            {
+                var setter = definition.setter;
+
+                if ((node.Modifiers.HasModifier("public") && setter.declarationFlags == PropertyDeclFlags.None) || setter.declarationFlags == PropertyDeclFlags.Public)
+                {
+                    visitorContext.uasmBuilder.AppendLine($".export {setter.accessorName}", 1);
+                    visitorContext.uasmBuilder.AppendLine("");
+                }
+
+                visitorContext.uasmBuilder.AppendLine($"{setter.accessorName}:", 1);
+                visitorContext.uasmBuilder.AppendLine("");
+
+                Debug.Assert(visitorContext.returnLabel == null, "Return label must be null");
+                var returnLabel = visitorContext.labelTable.GetNewJumpLabel("return");
+                visitorContext.returnLabel = returnLabel;
+
+                visitorContext.uasmBuilder.AddJumpLabel(setter.entryPoint);
+
+                SymbolDefinition constEndAddrVal = visitorContext.topTable.CreateConstSymbol(typeof(uint), 0xFFFFFFFF);
+                visitorContext.uasmBuilder.AddPush(constEndAddrVal);
+                visitorContext.uasmBuilder.AddJumpLabel(setter.userCallStart);
+
+                if (!visitorContext.topTable.IsGlobalSymbolTable)
+                    throw new System.Exception("Parent symbol table for property table must be the global symbol table");
+
+                SymbolTable functionSymbolTable = new SymbolTable(visitorContext.resolverContext, visitorContext.topTable);
+                functionSymbolTable.symbolDefinitions.Add(setter.paramSymbol);
+
+                visitorContext.PushTable(functionSymbolTable);
+
+                var setterNode = node.AccessorList?.Accessors.First(accessor => accessor.Keyword.Kind() == SyntaxKind.SetKeyword);
+                if (setterNode.Body != null)
+                {
+                    Visit(setterNode.Body);
+                }
+                else if (setterNode.ExpressionBody != null)
+                {
+                    Visit(setterNode.ExpressionBody);
+                }
+                else
+                {
+                    SymbolTable backingField = new SymbolTable(visitorContext.resolverContext, visitorContext.topTable);
+                    backingField.symbolDefinitions.Add(setter.backingField.fieldSymbol);
+                    visitorContext.PushTable(backingField);
+
+                    // <Property>_k_BackingField = value;
+                    visitorContext.uasmBuilder.AddPush(setter.paramSymbol);
+                    visitorContext.uasmBuilder.AddPush(setter.backingField.fieldSymbol);
+                    visitorContext.uasmBuilder.AddCopy();
+
+                    visitorContext.topTable.FlattenTableCountersToGlobal();
+                    visitorContext.PopTable();
+                }
+
+                visitorContext.topTable.FlattenTableCountersToGlobal();
+                visitorContext.PopTable();
+
+                visitorContext.uasmBuilder.AddJumpLabel(returnLabel);
+                visitorContext.uasmBuilder.AddJumpLabel(setter.returnPoint);
+                visitorContext.uasmBuilder.AddReturnSequence(visitorContext.returnJumpTarget, "Property epilogue");
+
+                visitorContext.uasmBuilder.AppendLine("");
+
+                visitorContext.returnLabel = null;
+            }
+
+            // throw new System.NotSupportedException("User property declarations are not yet supported by UdonSharp");
         }
 
         public override void VisitBaseExpression(BaseExpressionSyntax node)

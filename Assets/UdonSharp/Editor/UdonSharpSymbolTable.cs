@@ -22,6 +22,7 @@ namespace UdonSharp.Compiler
         MethodParameter = 512, // Symbols used for passing around method parameters
         NeedsRecursivePush = 1024, // Internal symbols used for tracking flow control and such which need to be pushed to the recursive stack when a method is recursive. An example of this is the int counter for a foreach loop and the size of the array the foreach is iterating.
         BuiltinVar = 2048,
+        PropertyBackingField = 4096, // Internal symbols used as backing field for user-defined property
     }
 
     [Serializable]
@@ -748,6 +749,10 @@ namespace UdonSharp.Compiler
             {
                 uniqueSymbolName = $"this_{uniqueSymbolName}";
                 hasGlobalDeclaration = true;
+            }
+            if (declType.HasFlag(SymbolDeclTypeFlags.PropertyBackingField))
+            {
+                uniqueSymbolName = $"bf_{uniqueSymbolName}";
             }
             if (declType.HasFlag(SymbolDeclTypeFlags.Reflection))
             {

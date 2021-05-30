@@ -11,6 +11,7 @@ namespace UdonSharp.Compiler
     {
         public ClassDefinition classDefinition { get; private set; }
         private MethodVisitor methodVisitor;
+        private PropertyVisitor propertyVisitor;
 
         private int classCount = 0;
 
@@ -18,6 +19,7 @@ namespace UdonSharp.Compiler
             : base(UdonSharpSyntaxWalkerDepth.ClassDefinitions, resolver, rootTable, labelTable)
         {
             methodVisitor = new MethodVisitor(resolver, rootTable, labelTable);
+            propertyVisitor = new PropertyVisitor(resolver, rootTable, labelTable);
 
             classDefinition = new ClassDefinition();
         }
@@ -38,6 +40,19 @@ namespace UdonSharp.Compiler
             }
 
             classDefinition.methodDefinitions = methodVisitor.definedMethods;
+
+            try
+            {
+                propertyVisitor.Visit(node);
+            }
+            catch (System.Exception e)
+            {
+                visitorContext.currentNode = propertyVisitor.visitorContext.currentNode;
+
+                throw e;
+            }
+
+            classDefinition.propertyDefinitions = propertyVisitor.definedProperties;
 
             if (classCount == 0)
                 throw new System.Exception($"No UdonSharpBehaviour class found in script file, you must define an UdonSharpBehaviour class in a script referenced by an UdonSharpProgramAsset");
