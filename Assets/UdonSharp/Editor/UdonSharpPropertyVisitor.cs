@@ -37,6 +37,51 @@ namespace UdonSharp.Compiler
             BackingFieldDefinition backingField = new BackingFieldDefinition();
             backingField.backingFieldName = $"{node.Identifier.Text}_k_BackingField";
 
+            if (node.AttributeLists != null && node.AttributeLists.Any())
+            {
+                foreach (AttributeListSyntax attributes in node.AttributeLists)
+                {
+                    foreach (AttributeSyntax attribute in attributes.Attributes)
+                    {
+                        if (attributes.Target.Identifier.Kind() == SyntaxKind.FieldKeyword)
+                        {
+                            using (ExpressionCaptureScope attributeTypeCapture = new ExpressionCaptureScope(visitorContext, null))
+                            {
+                                attributeTypeCapture.isAttributeCaptureScope = true;
+                                Visit(attribute.Name);
+
+                                backingField.synced = true;
+
+                                if (attributeTypeCapture.captureType != typeof(UdonSyncedAttribute))
+                                    continue;
+
+                                if (attribute.ArgumentList == null || attribute.ArgumentList.Arguments == null || attribute.ArgumentList.Arguments.Count == 0)
+                                {
+                                    backingField.syncMode = UdonSyncMode.None;
+                                }
+                                else
+                                {
+                                    using (ExpressionCaptureScope attributeCaptureScope = new ExpressionCaptureScope(visitorContext, null))
+                                    {
+                                        Visit(attribute.ArgumentList.Arguments[0].Expression);
+
+                                        if (!attributeCaptureScope.IsEnum())
+                                            throw new Exception("Invalid attribute argument provided for sync");
+
+                                        backingField.syncMode = (UdonSyncMode) attributeCaptureScope.GetEnumValue();
+                                    }
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+
+                    if (backingField.synced)
+                        break;
+                }
+            }
+
             backingField.type = type;
             propertyDefinition.type = type;
             backingField.type = type;
@@ -103,7 +148,13 @@ namespace UdonSharp.Compiler
             }
 
             if (propertyDefinition.setter?.backingField != null || propertyDefinition.getter?.backingField != null)
+            {
                 backingField.fieldSymbol = visitorContext.topTable.CreateNamedSymbol("kBackingField", type, SymbolDeclTypeFlags.Internal | SymbolDeclTypeFlags.PropertyBackingField);
+                backingField.fieldSymbol.syncMode = backingField.syncMode;
+
+                if (backingField.synced)
+                    VerifySyncValidForType(backingField.type, backingField.fieldSymbol.syncMode);
+            }
 
             definedProperties.Add(propertyDefinition);
         }

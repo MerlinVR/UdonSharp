@@ -12,6 +12,8 @@ namespace UdonSharp.Compiler
     public class BackingFieldDefinition
     {
         public System.Type type;
+        public bool synced;
+        public UdonSyncMode syncMode;
         public string backingFieldName;
         public SymbolDefinition fieldSymbol;
     }
