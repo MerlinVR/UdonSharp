@@ -379,6 +379,9 @@ namespace UdonSharp.Compiler
             if (node.Modifiers.HasModifier("static"))
                 throw new System.NotSupportedException("UdonSharp does not currently support static user-defined property declarations");
 
+            if (node.Initializer != null)
+                throw new System.NotSupportedException("UdonSharp does not currently support initializers on properties.");
+
             PropertyDefinition definition = visitorContext.definedProperties.Where(e => e.originalPropertyName == node.Identifier.ValueText).First();
 
             if (definition.getter != null)
