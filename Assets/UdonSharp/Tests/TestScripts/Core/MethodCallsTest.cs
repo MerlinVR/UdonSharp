@@ -104,6 +104,21 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Transform detach parent (null parameter method finding)", transform.parent == null);
 
             transform.SetParent(currentParent);
+
+            selfUdon.DisableInteractive = true;
+
+            tester.TestAssertion("DisableInteractive true", selfUdon.DisableInteractive); 
+            
+            self.DisableInteractive = false;
+
+            tester.TestAssertion("DisableInteractive false", !self.DisableInteractive);
+
+            DisableInteractive = true;
+
+            tester.TestAssertion("DisableInteractive true 2", DisableInteractive);
+
+            DisableInteractive = false;
+            tester.TestAssertion("DisableInteractive false 2", !DisableInteractive);
         }
     }
 }

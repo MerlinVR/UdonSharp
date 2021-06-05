@@ -77,6 +77,11 @@ namespace UdonSharp
         /// <param name="eventTiming"></param>
         public void SendCustomEventDelayedFrames(string eventName, int delayFrames, VRC.Udon.Common.Enums.EventTiming eventTiming = VRC.Udon.Common.Enums.EventTiming.Update) { }
 
+        /// <summary>
+        /// Disables Interact events on this UdonBehaviour and disables the interact outline on the object this is attached to
+        /// </summary>
+        public bool DisableInteractive { get; set; }
+
         public static GameObject VRCInstantiate(GameObject original)
         {
             return Instantiate(original);

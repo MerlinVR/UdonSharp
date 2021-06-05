@@ -386,6 +386,9 @@ namespace UdonSharp.Compiler
             {
                 PropertyInfo property = typeof(Component).GetProperty(captureProperty.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
                 if (property == null)
+                    property = typeof(VRC.Udon.UdonBehaviour).GetProperty(captureProperty.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+
+                if (property == null)
                     return null;
 
                 return property.GetGetMethod();
@@ -402,10 +405,14 @@ namespace UdonSharp.Compiler
             if (captureProperty.ReflectedType == typeof(VRC.Udon.UdonBehaviour))
             {
                 PropertyInfo property = typeof(Component).GetProperty(captureProperty.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+
+                if (property == null)
+                    property = typeof(VRC.Udon.UdonBehaviour).GetProperty(captureProperty.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+
                 if (property == null)
                     return null;
 
-                return property.GetGetMethod();
+                return property.GetSetMethod();
             }
 
             return captureProperty.GetSetMethod();
@@ -2349,7 +2356,7 @@ namespace UdonSharp.Compiler
         {
             PropertyInfo[] foundProperties = _componentProperties.Where(e => e.Name == localUdonPropertyName).ToArray();
             
-            if (localUdonPropertyName == "enabled")
+            if (localUdonPropertyName == "enabled" || localUdonPropertyName == "DisableInteractive")
                 foundProperties = _udonEventReceiverProperties.Where(e => e.Name == localUdonPropertyName).ToArray();
 
             if (foundProperties.Length == 0)
