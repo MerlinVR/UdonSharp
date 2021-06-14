@@ -1208,7 +1208,7 @@ namespace UdonSharp.Compiler
                         operatorMethodCapture.SetToMethods(operatorMethods.ToArray());
 
                         SymbolDefinition valueConstant = visitorContext.topTable.CreateConstSymbol(operandCapture.GetReturnType(), System.Convert.ChangeType(1, operandCapture.GetReturnType()));
-
+                        
                         try
                         {
                             resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandCapture.ExecuteGet(), valueConstant });
@@ -1221,7 +1221,7 @@ namespace UdonSharp.Compiler
                         }
 
                         if (topScope != null)
-                            topScope.SetToLocalSymbol(operandCapture.ExecuteGet());
+                            topScope.SetToLocalSymbol(resultSymbol);
                     }
                 }
             }
@@ -1272,7 +1272,7 @@ namespace UdonSharp.Compiler
 
                         SymbolDefinition valueConstant = visitorContext.topTable.CreateConstSymbol(operandCapture.GetReturnType(), System.Convert.ChangeType(1, operandCapture.GetReturnType()));
 
-                        SymbolDefinition resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { operandCapture.ExecuteGet(), valueConstant });
+                        SymbolDefinition resultSymbol = operatorMethodCapture.Invoke(new SymbolDefinition[] { preIncrementStore, valueConstant });
 
                         operandCapture.ExecuteSet(resultSymbol, true);
                     }
