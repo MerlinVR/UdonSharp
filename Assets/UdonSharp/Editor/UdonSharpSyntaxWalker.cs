@@ -442,7 +442,7 @@ namespace UdonSharp.Compiler
             return newSymbols;
         }
 
-        private void VerifySyncValidForType(System.Type typeToSync, UdonSyncMode syncMode)
+        protected void VerifySyncValidForType(System.Type typeToSync, UdonSyncMode syncMode)
         {
             if (syncMode == UdonSyncMode.NotSynced)
                 return;
