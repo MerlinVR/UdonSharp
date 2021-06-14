@@ -479,7 +479,8 @@ namespace UdonSharp.Compiler
                 visitorContext.uasmBuilder.AddJumpLabel(exitLabel);
                 exitJumpLocation.symbolDefaultValue = exitLabel.resolvedAddress;
 
-                outSymbol = getter.returnSymbol;
+                outSymbol = AllocateOutputSymbol(getter.returnSymbol.userCsType);
+                visitorContext.uasmBuilder.AddCopy(outSymbol, getter.returnSymbol);
             }
             else if (captureArchetype == ExpressionCaptureArchetype.ExternUserProperty)
             {
