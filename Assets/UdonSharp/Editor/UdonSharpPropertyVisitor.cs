@@ -94,7 +94,7 @@ namespace UdonSharp.Compiler
                     if (isSetter)
                     {
                         SetterDefinition setter = new SetterDefinition();
-                        setter.accessorName = $"set_{node.Identifier.Text}";
+                        setter.accessorName = $"_set_{node.Identifier.Text}";
                         setter.entryPoint = visitorContext.labelTable.GetNewJumpLabel("udonMethodEntryPoint");
                         setter.userCallStart = visitorContext.labelTable.GetNewJumpLabel("userMethodCallEntry");
                         setter.returnPoint = visitorContext.labelTable.GetNewJumpLabel("methodReturnPoint");
@@ -108,7 +108,7 @@ namespace UdonSharp.Compiler
                     else
                     {
                         GetterDefinition getter = new GetterDefinition();
-                        getter.accessorName = $"get_{node.Identifier.Text}";
+                        getter.accessorName = $"_get_{node.Identifier.Text}";
                         getter.entryPoint = visitorContext.labelTable.GetNewJumpLabel("udonMethodEntryPoint");
                         getter.userCallStart = visitorContext.labelTable.GetNewJumpLabel("userMethodCallEntry");
                         getter.returnPoint = visitorContext.labelTable.GetNewJumpLabel("methodReturnPoint");
@@ -130,7 +130,7 @@ namespace UdonSharp.Compiler
             else
             {
                 GetterDefinition getter = new GetterDefinition();
-                getter.accessorName = $"get_{node.Identifier.Text}";
+                getter.accessorName = $"_get_{node.Identifier.Text}";
                 getter.entryPoint = visitorContext.labelTable.GetNewJumpLabel("udonMethodEntryPoint");
                 getter.userCallStart = visitorContext.labelTable.GetNewJumpLabel("userMethodCallEntry");
                 getter.returnPoint = visitorContext.labelTable.GetNewJumpLabel("methodReturnPoint");
