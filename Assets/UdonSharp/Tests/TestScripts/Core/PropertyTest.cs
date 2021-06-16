@@ -35,6 +35,19 @@ namespace UdonSharp.Tests
         int accessCounter = 0;
         public int MyAccessCounter {  set { /*Debug.Log("Setting access counter to " + value); */accessCounter = value; } get { /*Debug.Log("Access counter: " + accessCounter);*/ return accessCounter++; } }
 
+        [FieldChangeCallback(nameof(CallbackProperty))]
+        public float backingCallbackProperty;
+
+        public float CallbackProperty
+        {
+            set
+            {
+                Debug.Log($"Value current val: {backingCallbackProperty}, new val: {value}");
+                backingCallbackProperty = value;
+            }
+            get => backingCallbackProperty;
+        }
+
         public void ExecuteTests()
         {
             PropertyTest self = this;
@@ -104,6 +117,11 @@ namespace UdonSharp.Tests
             int additionResult = MyAccessCounter += 6;
 
             tester.TestAssertion("In place addition", accessCounter == 17 && additionResult == 17);
+
+            CallbackProperty = 4f;
+
+            SetProgramVariable(nameof(backingCallbackProperty), 10f);
+            //self.backingCallbackProperty = 20f;
         }
     }
 }

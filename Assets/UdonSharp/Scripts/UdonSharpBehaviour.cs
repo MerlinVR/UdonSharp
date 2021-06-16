@@ -35,6 +35,23 @@ namespace UdonSharp
             if (variableField != null)
             {
                 variableField.SetValue(this, value);
+
+                FieldChangeCallbackAttribute fieldChangeCallback = variableField.GetCustomAttribute<FieldChangeCallbackAttribute>();
+
+                if (fieldChangeCallback == null)
+                    return;
+
+                PropertyInfo targetProperty = variableField.DeclaringType.GetProperty(fieldChangeCallback.CallbackPropertyName, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+
+                if (targetProperty == null)
+                    return;
+
+                MethodInfo setMethod = targetProperty.GetSetMethod(true);
+
+                if (setMethod == null)
+                    return;
+
+                setMethod.Invoke(this, new object[] { variableField.GetValue(this) });
             }
         }
 
