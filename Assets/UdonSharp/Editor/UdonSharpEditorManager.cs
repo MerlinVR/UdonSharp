@@ -567,6 +567,8 @@ namespace UdonSharpEditor
                 if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset programAsset))
                     continue;
 
+                int originalModificationcount = modificationCount;
+
                 behaviourGameObjects.Add(behaviour.gameObject);
 
                 if (behaviour.Reliable == true &&
@@ -581,6 +583,9 @@ namespace UdonSharpEditor
                     behaviour.Reliable = true;
                     modificationCount++;
                 }
+
+                if (originalModificationcount != modificationCount)
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
             }
 
             if (modificationCount > 0)
@@ -818,6 +823,8 @@ namespace UdonSharpEditor
                 if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset programAsset))
                     continue;
 
+                int originalUpdateCount = updatedBehaviourVariables;
+
                 IUdonVariableTable publicVariables = behaviour.publicVariables;
 
                 Dictionary<string, FieldDefinition> fieldDefinitions = programAsset.fieldDefinitions;
@@ -964,12 +971,13 @@ namespace UdonSharpEditor
                         Debug.LogError($"Failed to update public variable {variableSymbol} on behaviour {behaviour}, exception {e}\n\nPlease report this error to Merlin!");
                     }
                 }
+
+                if (originalUpdateCount != updatedBehaviourVariables)
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
             }
 
             if (updatedBehaviourVariables > 0)
-            {
                 EditorSceneManager.MarkAllScenesDirty();
-            }
         }
 
         /// <summary>
