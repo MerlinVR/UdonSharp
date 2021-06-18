@@ -572,8 +572,8 @@ namespace UdonSharpEditor
                 behaviourGameObjects.Add(behaviour.gameObject);
 
                 if (behaviour.Reliable == true &&
-                    (programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous) ||
-                     programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
+                    (programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous ||
+                     programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync))
                 {
                     behaviour.Reliable = false;
                     modificationCount++;
