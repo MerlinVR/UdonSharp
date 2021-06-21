@@ -1230,11 +1230,14 @@ namespace Merlin
 
         void BuildMenuForObject(Object targetObject, SerializedProperty elementProperty, GenericMenu menu, int componentCount = 0)
         {
+#if UDONSHARP
+            bool isUdonSharpBehaviour = targetObject is UdonBehaviour udonBehaviour && UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour);
+#endif
+
             List<FunctionData> methodInfos = new List<FunctionData>();
             string contentPath = targetObject.GetType().Name + (componentCount > 0 ? string.Format("({0})", componentCount) : "")
 #if UDONSHARP
-                //+ ((targetObject is UdonSharpBehaviour udonSharpBehaviour && UdonSharpEditorUtility.IsProxyBehaviour(udonSharpBehaviour)) ? " <proxy>" : "")
-                + ((targetObject is UdonBehaviour udonBehaviour && UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour)) ? $" ({UdonSharpEditorUtility.GetUdonSharpBehaviourType(udonBehaviour)})" : "")
+                + (isUdonSharpBehaviour ? $" ({UdonSharpEditorUtility.GetUdonSharpBehaviourType((UdonBehaviour)targetObject)})" : "")
 #endif
                 + "/";
 
@@ -1251,6 +1254,11 @@ namespace Merlin
             System.Type[] eventArgs = dummyEvent.GetType().GetMethod("Invoke").GetParameters().Select(p => p.ParameterType).ToArray();
 
             bool dynamicBinding = false;
+            
+#if UDONSHARP
+            if (isUdonSharpBehaviour)
+                menu.AddSeparator("");
+#endif
 
             if (eventArgs.Length > 0)
             {
@@ -1285,6 +1293,15 @@ namespace Merlin
             {
                 AddFunctionToMenu(contentPath, elementProperty, method, menu, componentCount);
             }
+
+#if UDONSHARP
+            // Push SendCustomEvent up to the top level menu and create a separator since it is a very commonly used method on UdonBehaviours
+            if (isUdonSharpBehaviour)
+            {
+                FunctionData sendCustomEventMethod = methodInfos.First(e => e.targetMethod.Name == "SendCustomEvent");
+                AddFunctionToMenu($"UdonBehaviour{(componentCount > 0 ? string.Format("({0}) ", componentCount) : " ")}", elementProperty, sendCustomEventMethod, menu, componentCount);
+            }
+#endif
         }
 
         class ComponentTypeCount

@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -60,14 +61,33 @@ namespace UdonSharp
 
         public void SendCustomNetworkEvent(NetworkEventTarget target, string eventName) { }
 
+        /// <summary>
+        /// Executes target event after delaySeconds. If 0.0 delaySeconds is specified, will execute the following frame
+        /// </summary>
+        /// <param name="eventName"></param>
+        /// <param name="delaySeconds"></param>
+        /// <param name="eventTiming"></param>
+        public void SendCustomEventDelayedSeconds(string eventName, float delaySeconds, VRC.Udon.Common.Enums.EventTiming eventTiming = VRC.Udon.Common.Enums.EventTiming.Update) { }
+
+        /// <summary>
+        /// Executes target event after delayFrames have passed. If 0 frames is specified, will execute the following frame. In effect 0 frame delay and 1 fame delay are the same on this method.
+        /// </summary>
+        /// <param name="eventName"></param>
+        /// <param name="delayFrames"></param>
+        /// <param name="eventTiming"></param>
+        public void SendCustomEventDelayedFrames(string eventName, int delayFrames, VRC.Udon.Common.Enums.EventTiming eventTiming = VRC.Udon.Common.Enums.EventTiming.Update) { }
+
+        /// <summary>
+        /// Disables Interact events on this UdonBehaviour and disables the interact outline on the object this is attached to
+        /// </summary>
+        public bool DisableInteractive { get; set; }
+
         public static GameObject VRCInstantiate(GameObject original)
         {
             return Instantiate(original);
         }
-
-#if UDON_BETA_SDK
+        
         public void RequestSerialization() { }
-#endif
 
         // Stubs for builtin UdonSharp methods to get type info
         private static long GetUdonTypeID(System.Type type)
@@ -107,7 +127,7 @@ namespace UdonSharp
         // Method stubs for auto completion
         public virtual void Interact() { }
         public virtual void OnDrop() { }
-        public virtual void OnOwnershipTransferred() { }
+        public virtual void OnOwnershipTransferred(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPickup() { }
         public virtual void OnPickupUseDown() { }
         public virtual void OnPickupUseUp() { }
@@ -132,15 +152,32 @@ namespace UdonSharp
         public virtual void OnPlayerCollisionExit(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerCollisionStay(VRC.SDKBase.VRCPlayerApi player) { }
         public virtual void OnPlayerParticleCollision(VRC.SDKBase.VRCPlayerApi player) { }
-#if UDON_BETA_SDK
+        public virtual void OnPlayerRespawn(VRC.SDKBase.VRCPlayerApi player) { }
+        
+        public virtual void OnPostSerialization(VRC.Udon.Common.SerializationResult result) { }
         public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi requestedOwner) => true;
-#endif
+
+        public virtual void MidiNoteOn(int channel, int number, int velocity) { }
+        public virtual void MidiNoteOff(int channel, int number, int velocity) { }
+        public virtual void MidiControlChange(int channel, int number, int value) { }
+
+        public virtual void InputJump(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        public virtual void InputUse(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        public virtual void InputGrab(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        public virtual void InputDrop(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        public virtual void InputMoveHorizontal(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        public virtual void InputMoveVertical(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        public virtual void InputLookHorizontal(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        public virtual void InputLookVertical(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
 
         [Obsolete("The OnStationEntered() event is deprecated use the OnStationEntered(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
         public virtual void OnStationEntered() { }
 
         [Obsolete("The OnStationExited() event is deprecated use the OnStationExited(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
         public virtual void OnStationExited() { }
+
+        [Obsolete("The OnOwnershipTransferred() event is deprecated use the OnOwnershipTransferred(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
+        public virtual void OnOwnershipTransferred() { }
 
 #if UNITY_EDITOR
         // Used for tracking serialization data in editor

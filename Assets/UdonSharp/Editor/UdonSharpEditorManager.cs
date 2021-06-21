@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +23,8 @@ namespace UdonSharpEditor
     {
         static UdonSharpEditorManager()
         {
+            RuntimeLogWatcher.InitLogWatcher();
+
             EditorSceneManager.sceneOpened += OnSceneOpened;
             EditorApplication.update += OnEditorUpdate;
             EditorApplication.playModeStateChanged += OnChangePlayMode;
@@ -79,7 +82,9 @@ namespace UdonSharpEditor
             }
             
             Harmony harmony = new Harmony(HARMONY_ID);
-            harmony.UnpatchAll(HARMONY_ID);
+
+            using (var patchScope = new UdonSharpUtils.UdonSharpAssemblyLoadStripScope())
+                harmony.UnpatchAll(HARMONY_ID);
 
             MethodInfo injectedEvent = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.EventInterceptor), BindingFlags.Static | BindingFlags.Public);
             HarmonyMethod injectedMethod = new HarmonyMethod(injectedEvent);
@@ -94,124 +99,134 @@ namespace UdonSharpEditor
                 {
                     if (eventInfo != null) harmony.Patch(eventInfo, injectedMethod);
                 }
-                catch (System.Exception)
+                catch (System.Exception e)
                 {
-                    Debug.LogWarning($"Failed to patch event {eventInfo} on {behaviourType}");
+                    Debug.LogWarning($"Failed to patch event {eventInfo} on {behaviourType}\nException:\n{e}");
                 }
             }
 
-            foreach (System.Type udonSharpBehaviourType in udonSharpBehaviourTypes)
+            using (var loadScope = new UdonSharpUtils.UdonSharpAssemblyLoadStripScope())
             {
-                // Trigger events
-                InjectEvent(udonSharpBehaviourType, "OnTriggerEnter");
-                InjectEvent(udonSharpBehaviourType, "OnTriggerExit");
-                InjectEvent(udonSharpBehaviourType, "OnTriggerStay");
-                InjectEvent(udonSharpBehaviourType, "OnTriggerEnter2D");
-                InjectEvent(udonSharpBehaviourType, "OnTriggerExit2D");
-                InjectEvent(udonSharpBehaviourType, "OnTriggerStay2D");
+                foreach (System.Type udonSharpBehaviourType in udonSharpBehaviourTypes)
+                {
+                    // Trigger events
+                    InjectEvent(udonSharpBehaviourType, "OnTriggerEnter");
+                    InjectEvent(udonSharpBehaviourType, "OnTriggerExit");
+                    InjectEvent(udonSharpBehaviourType, "OnTriggerStay");
+                    InjectEvent(udonSharpBehaviourType, "OnTriggerEnter2D");
+                    InjectEvent(udonSharpBehaviourType, "OnTriggerExit2D");
+                    InjectEvent(udonSharpBehaviourType, "OnTriggerStay2D");
 
-                // Collision events
-                InjectEvent(udonSharpBehaviourType, "OnCollisionEnter");
-                InjectEvent(udonSharpBehaviourType, "OnCollisionExit");
-                InjectEvent(udonSharpBehaviourType, "OnCollisionStay");
-                InjectEvent(udonSharpBehaviourType, "OnCollisionEnter2D");
-                InjectEvent(udonSharpBehaviourType, "OnCollisionExit2D");
-                InjectEvent(udonSharpBehaviourType, "OnCollisionStay2D");
+                    // Collision events
+                    InjectEvent(udonSharpBehaviourType, "OnCollisionEnter");
+                    InjectEvent(udonSharpBehaviourType, "OnCollisionExit");
+                    InjectEvent(udonSharpBehaviourType, "OnCollisionStay");
+                    InjectEvent(udonSharpBehaviourType, "OnCollisionEnter2D");
+                    InjectEvent(udonSharpBehaviourType, "OnCollisionExit2D");
+                    InjectEvent(udonSharpBehaviourType, "OnCollisionStay2D");
 
-                // Controller
-                InjectEvent(udonSharpBehaviourType, "OnControllerColliderHit");
+                    // Controller
+                    InjectEvent(udonSharpBehaviourType, "OnControllerColliderHit");
 
-                // Animator events
-                InjectEvent(udonSharpBehaviourType, "OnAnimatorIK");
-                InjectEvent(udonSharpBehaviourType, "OnAnimatorMove");
+                    // Animator events
+                    InjectEvent(udonSharpBehaviourType, "OnAnimatorIK");
+                    InjectEvent(udonSharpBehaviourType, "OnAnimatorMove");
 
-                // Mouse events
-                InjectEvent(udonSharpBehaviourType, "OnMouseDown");
-                InjectEvent(udonSharpBehaviourType, "OnMouseDrag");
-                InjectEvent(udonSharpBehaviourType, "OnMouseEnter");
-                InjectEvent(udonSharpBehaviourType, "OnMouseExit");
-                InjectEvent(udonSharpBehaviourType, "OnMouseOver");
-                InjectEvent(udonSharpBehaviourType, "OnMouseUp");
-                InjectEvent(udonSharpBehaviourType, "OnMouseUpAsButton");
+                    // Mouse events
+                    InjectEvent(udonSharpBehaviourType, "OnMouseDown");
+                    InjectEvent(udonSharpBehaviourType, "OnMouseDrag");
+                    InjectEvent(udonSharpBehaviourType, "OnMouseEnter");
+                    InjectEvent(udonSharpBehaviourType, "OnMouseExit");
+                    InjectEvent(udonSharpBehaviourType, "OnMouseOver");
+                    InjectEvent(udonSharpBehaviourType, "OnMouseUp");
+                    InjectEvent(udonSharpBehaviourType, "OnMouseUpAsButton");
 
-                // Particle events
-                InjectEvent(udonSharpBehaviourType, "OnParticleCollision");
-                InjectEvent(udonSharpBehaviourType, "OnParticleSystemStopped");
-                InjectEvent(udonSharpBehaviourType, "OnParticleTrigger");
-                InjectEvent(udonSharpBehaviourType, "OnParticleUpdateJobScheduled");
+                    // Particle events
+                    InjectEvent(udonSharpBehaviourType, "OnParticleCollision");
+                    InjectEvent(udonSharpBehaviourType, "OnParticleSystemStopped");
+                    InjectEvent(udonSharpBehaviourType, "OnParticleTrigger");
+                    InjectEvent(udonSharpBehaviourType, "OnParticleUpdateJobScheduled");
 
-                // Rendering events
-                InjectEvent(udonSharpBehaviourType, "OnPostRender");
-                InjectEvent(udonSharpBehaviourType, "OnPreCull");
-                InjectEvent(udonSharpBehaviourType, "OnPreRender");
-                InjectEvent(udonSharpBehaviourType, "OnRenderImage");
-                InjectEvent(udonSharpBehaviourType, "OnRenderObject");
-                InjectEvent(udonSharpBehaviourType, "OnWillRenderObject");
+                    // Rendering events
+                    InjectEvent(udonSharpBehaviourType, "OnPostRender");
+                    InjectEvent(udonSharpBehaviourType, "OnPreCull");
+                    InjectEvent(udonSharpBehaviourType, "OnPreRender");
+                    InjectEvent(udonSharpBehaviourType, "OnRenderImage");
+                    InjectEvent(udonSharpBehaviourType, "OnRenderObject");
+                    InjectEvent(udonSharpBehaviourType, "OnWillRenderObject");
 
-                // Joint events
-                InjectEvent(udonSharpBehaviourType, "OnJointBreak");
-                InjectEvent(udonSharpBehaviourType, "OnJointBreak2D");
+                    // Joint events
+                    InjectEvent(udonSharpBehaviourType, "OnJointBreak");
+                    InjectEvent(udonSharpBehaviourType, "OnJointBreak2D");
 
-                // Audio
-                InjectEvent(udonSharpBehaviourType, "OnAudioFilterRead");
+                    // Audio
+                    InjectEvent(udonSharpBehaviourType, "OnAudioFilterRead");
+
+                    // Transforms
+                    InjectEvent(udonSharpBehaviourType, "OnTransformChildrenChanged");
+                    InjectEvent(udonSharpBehaviourType, "OnTransformParentChanged");
+
+                    // Object state, OnDisable and OnDestroy will get called regardless of the enabled state of the component, include OnEnable for consistency
+                    InjectEvent(udonSharpBehaviourType, "OnEnable");
+                    InjectEvent(udonSharpBehaviourType, "OnDisable");
+                    InjectEvent(udonSharpBehaviourType, "OnDestroy");
+                }
+
+                // Add method for checking if events need to be skipped
+                InjectedMethods.shouldSkipEventsMethod = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), typeof(UdonSharpBehaviour).GetMethod("ShouldSkipEvents", BindingFlags.Static | BindingFlags.NonPublic));
+
+                // Patch GUI object field drawer
+                MethodInfo doObjectFieldMethod = typeof(EditorGUI).GetMethods(BindingFlags.Static | BindingFlags.NonPublic).FirstOrDefault(e => e.Name == "DoObjectField" && e.GetParameters().Length == 9);
+
+                HarmonyMethod objectFieldProxy = new HarmonyMethod(typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.DoObjectFieldProxy)));
+                harmony.Patch(doObjectFieldMethod, objectFieldProxy);
+
+                System.Type validatorDelegateType = typeof(EditorGUI).GetNestedType("ObjectFieldValidator", BindingFlags.Static | BindingFlags.NonPublic);
+                InjectedMethods.validationDelegate = Delegate.CreateDelegate(validatorDelegateType, typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.ValidateObjectReference)));
+
+                InjectedMethods.objectValidatorMethod = typeof(EditorGUI).GetMethod("ValidateObjectReferenceValue", BindingFlags.NonPublic | BindingFlags.Static);
+
+                MethodInfo crossSceneRefCheckMethod = typeof(EditorGUI).GetMethod("CheckForCrossSceneReferencing", BindingFlags.NonPublic | BindingFlags.Static);
+                InjectedMethods.crossSceneRefCheckMethod = (Func<UnityEngine.Object, UnityEngine.Object, bool>)Delegate.CreateDelegate(typeof(Func<UnityEngine.Object, UnityEngine.Object, bool>), crossSceneRefCheckMethod);
+
+                // Patch post BuildAssetBundles fixup function
+                MethodInfo buildAssetbundlesMethod = typeof(BuildPipeline).GetMethods(BindingFlags.NonPublic | BindingFlags.Static).First(e => e.Name == "BuildAssetBundles" && e.GetParameters().Length == 5);
+
+                MethodInfo postBuildMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.PostBuildAssetBundles), BindingFlags.Public | BindingFlags.Static);
+                HarmonyMethod postBuildHarmonyMethod = new HarmonyMethod(postBuildMethod);
+
+                MethodInfo preBuildMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.PreBuildAssetBundles), BindingFlags.Public | BindingFlags.Static);
+                HarmonyMethod preBuildHarmonyMethod = new HarmonyMethod(preBuildMethod);
+
+                harmony.Patch(buildAssetbundlesMethod, preBuildHarmonyMethod, postBuildHarmonyMethod);
+
+                // Patch a workaround for errors in Unity's APIUpdaterHelper when in a Japanese locale
+                MethodInfo findTypeInLoadedAssemblies = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.Scripting.Compilers.APIUpdaterHelper").GetMethod("FindTypeInLoadedAssemblies", BindingFlags.Static | BindingFlags.NonPublic);
+                MethodInfo injectedFindType = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.FindTypeInLoadedAssembliesPrefix), BindingFlags.Public | BindingFlags.Static);
+                HarmonyMethod injectedFindTypeHarmonyMethod = new HarmonyMethod(injectedFindType);
+
+                harmony.Patch(findTypeInLoadedAssemblies, injectedFindTypeHarmonyMethod);
                 
-                // Transforms
-                InjectEvent(udonSharpBehaviourType, "OnTransformChildrenChanged");
-                InjectEvent(udonSharpBehaviourType, "OnTransformParentChanged");
-
-                // Object state, OnDisable and OnDestroy will get called regardless of the enabled state of the component, include OnEnable for consistency
-                InjectEvent(udonSharpBehaviourType, "OnEnable");
-                InjectEvent(udonSharpBehaviourType, "OnDisable");
-                InjectEvent(udonSharpBehaviourType, "OnDestroy");
-            }
-
-            // Add method for checking if events need to be skipped
-            InjectedMethods.shouldSkipEventsMethod = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), typeof(UdonSharpBehaviour).GetMethod("ShouldSkipEvents", BindingFlags.Static | BindingFlags.NonPublic));
-
-            // Patch GUI object field drawer
-            MethodInfo doObjectFieldMethod = typeof(EditorGUI).GetMethods(BindingFlags.Static | BindingFlags.NonPublic).FirstOrDefault(e => e.Name == "DoObjectField" && e.GetParameters().Length == 9);
-
-            HarmonyMethod objectFieldProxy = new HarmonyMethod(typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.DoObjectFieldProxy)));
-            harmony.Patch(doObjectFieldMethod, objectFieldProxy);
-
-            System.Type validatorDelegateType = typeof(EditorGUI).GetNestedType("ObjectFieldValidator", BindingFlags.Static | BindingFlags.NonPublic);
-            InjectedMethods.validationDelegate = Delegate.CreateDelegate(validatorDelegateType, typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.ValidateObjectReference)));
-
-            InjectedMethods.objectValidatorMethod = typeof(EditorGUI).GetMethod("ValidateObjectReferenceValue", BindingFlags.NonPublic | BindingFlags.Static);
-
-            MethodInfo crossSceneRefCheckMethod = typeof(EditorGUI).GetMethod("CheckForCrossSceneReferencing", BindingFlags.NonPublic | BindingFlags.Static);
-            InjectedMethods.crossSceneRefCheckMethod = (Func<UnityEngine.Object, UnityEngine.Object, bool>)Delegate.CreateDelegate(typeof(Func<UnityEngine.Object, UnityEngine.Object, bool>), crossSceneRefCheckMethod);
-
-            // Patch post BuildAssetBundles fixup function
-            MethodInfo buildAssetbundlesMethod = typeof(BuildPipeline).GetMethods(BindingFlags.NonPublic | BindingFlags.Static).First(e => e.Name == "BuildAssetBundles" && e.GetParameters().Length == 5);
-
-            MethodInfo postBuildMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.PostBuildAssetBundles), BindingFlags.Public | BindingFlags.Static);
-            HarmonyMethod postBuildHarmonyMethod = new HarmonyMethod(postBuildMethod);
-
-            MethodInfo preBuildMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.PreBuildAssetBundles), BindingFlags.Public | BindingFlags.Static);
-            HarmonyMethod preBuildHarmonyMethod = new HarmonyMethod(preBuildMethod);
-
-            harmony.Patch(buildAssetbundlesMethod, preBuildHarmonyMethod, postBuildHarmonyMethod);
-
 #if ODIN_INSPECTOR_3
-            try
-            {
-                Assembly odinEditorAssembly = UdonSharpUtils.GetLoadedEditorAssemblies().FirstOrDefault(assembly => assembly.GetName().Name == "Sirenix.OdinInspector.Editor");
+                try
+                {
+                    Assembly odinEditorAssembly = UdonSharpUtils.GetLoadedEditorAssemblies().FirstOrDefault(assembly => assembly.GetName().Name == "Sirenix.OdinInspector.Editor");
 
-                System.Type editorUtilityType = odinEditorAssembly.GetType("Sirenix.OdinInspector.Editor.CustomEditorUtility");
+                    System.Type editorUtilityType = odinEditorAssembly.GetType("Sirenix.OdinInspector.Editor.CustomEditorUtility");
 
-                MethodInfo resetCustomEditorsMethod = editorUtilityType.GetMethod("ResetCustomEditors");
+                    MethodInfo resetCustomEditorsMethod = editorUtilityType.GetMethod("ResetCustomEditors");
 
-                MethodInfo odinInspectorOverrideMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.OdinInspectorOverride), BindingFlags.Public | BindingFlags.Static);
-                HarmonyMethod odinInspectorOverrideHarmonyMethod = new HarmonyMethod(odinInspectorOverrideMethod);
+                    MethodInfo odinInspectorOverrideMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.OdinInspectorOverride), BindingFlags.Public | BindingFlags.Static);
+                    HarmonyMethod odinInspectorOverrideHarmonyMethod = new HarmonyMethod(odinInspectorOverrideMethod);
 
-                harmony.Patch(resetCustomEditorsMethod, null, odinInspectorOverrideHarmonyMethod);
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"Failed to patch Odin inspector fix for U#\nException: {e}");
-            }
+                    harmony.Patch(resetCustomEditorsMethod, null, odinInspectorOverrideHarmonyMethod);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"Failed to patch Odin inspector fix for U#\nException: {e}");
+                }
 #endif
+            }
         }
 
         static class InjectedMethods
@@ -356,6 +371,40 @@ namespace UdonSharpEditor
                 _skipSceneOpen = false;
             }
 
+            public static bool FindTypeInLoadedAssembliesPrefix(Func<System.Type, bool> predicate, ref System.Type __result)
+            {
+                __result = AppDomain.CurrentDomain.GetAssemblies()
+                    .Where(assembly => !assembly.IsDynamic && !string.IsNullOrEmpty(assembly.Location) && !assembly.Location.StartsWith("data") && !IsIgnoredAssembly(assembly.GetName()))
+                    .SelectMany(GetValidTypesIn)
+                    .FirstOrDefault(predicate);
+
+                return false;
+            }
+
+            static IEnumerable<System.Type> GetValidTypesIn(System.Reflection.Assembly assembly)
+            {
+                Type[] types;
+
+                try
+                {
+                    types = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException e)
+                {
+                    types = e.Types;
+                }
+
+                return types.Where(e => e != null);
+            }
+
+            static string[] _ignoredAssemblies = { "^UnityScript$", "^System\\..*", "^mscorlib$" };
+
+            static bool IsIgnoredAssembly(AssemblyName assemblyName)
+            {
+                string name = assemblyName.Name;
+                return _ignoredAssemblies.Any(candidate => System.Text.RegularExpressions.Regex.IsMatch(name, candidate));
+            }
+
 #if ODIN_INSPECTOR_3
             public static void OdinInspectorOverride()
             {
@@ -417,9 +466,7 @@ namespace UdonSharpEditor
 
             UpdateSerializedProgramAssets(allBehaviours);
             UpdatePublicVariables(allBehaviours);
-#if UDON_BETA_SDK
             UpdateSyncModes(allBehaviours);
-#endif
             CreateProxyBehaviours(allBehaviours);
         }
 
@@ -495,8 +542,11 @@ namespace UdonSharpEditor
                 UdonSharpProgramAsset programAsset = behaviour.programSource as UdonSharpProgramAsset;
                 if (programAsset == null)
                     continue;
-                
-                if (_serializedAssetField.GetValue(behaviour) == null)
+
+                AbstractSerializedUdonProgramAsset serializedProgramAsset = _serializedAssetField.GetValue(behaviour) as AbstractSerializedUdonProgramAsset;
+
+                if (serializedProgramAsset == null || 
+                    serializedProgramAsset != programAsset.SerializedProgramAsset)
                 {
                     SerializedObject serializedBehaviour = new SerializedObject(behaviour);
                     SerializedProperty serializedProgramProperty = serializedBehaviour.FindProperty("serializedProgramAsset");
@@ -505,35 +555,117 @@ namespace UdonSharpEditor
                 }
             }
         }
-
-#if UDON_BETA_SDK
+        
         static void UpdateSyncModes(List<UdonBehaviour> udonBehaviours)
         {
             int modificationCount = 0;
+
+            HashSet<GameObject> behaviourGameObjects = new HashSet<GameObject>();
 
             foreach (UdonBehaviour behaviour in udonBehaviours)
             {
                 if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset programAsset))
                     continue;
 
-                if (behaviour.Reliable == true &&
-                    programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous)
+                behaviourGameObjects.Add(behaviour.gameObject);
+
+                if (behaviour.Reliable == true && programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous)
                 {
                     behaviour.Reliable = false;
                     modificationCount++;
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
                 }
-                else if (behaviour.Reliable == false &&
-                         programAsset.behaviourSyncMode == BehaviourSyncMode.Manual)
+                else if (behaviour.Reliable == false && programAsset.behaviourSyncMode == BehaviourSyncMode.Manual)
                 {
                     behaviour.Reliable = true;
                     modificationCount++;
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                }
+            }
+
+            // Validation for mixed sync modes which can break sync on things and auto update NoVariableSync behaviours to match the sync mode of other behaviours on the GameObject
+            foreach (GameObject gameObject in behaviourGameObjects)
+            {
+                UdonBehaviour[] objectBehaviours = gameObject.GetComponents<UdonBehaviour>();
+
+                bool hasManual = false;
+                bool hasContinuous = false;
+                bool hasUdonPositionSync = false;
+                bool hasNoSync = false;
+
+                foreach (UdonBehaviour objectBehaviour in objectBehaviours)
+                {
+                    if (UdonSharpEditorUtility.IsUdonSharpBehaviour(objectBehaviour) &&
+                        ((UdonSharpProgramAsset)objectBehaviour.programSource).behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
+                    {
+                        hasNoSync = true;
+                        continue;
+                    }
+
+                    if (objectBehaviour.Reliable)
+                        hasManual = true;
+                    else
+                        hasContinuous = true;
+
+#pragma warning disable CS0618 // Type or member is obsolete
+                    if (objectBehaviour.SynchronizePosition)
+                        hasUdonPositionSync = true;
+#pragma warning restore CS0618 // Type or member is obsolete
+                }
+
+                if (hasManual)
+                {
+                    if (hasContinuous)
+                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] UdonBehaviours on GameObject '{gameObject.name}' have conflicting synchronization methods, this can cause sync to work unexpectedly.", gameObject);
+
+                    if (gameObject.GetComponent<VRC.SDK3.Components.VRCObjectSync>())
+                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] UdonBehaviours on GameObject '{gameObject.name}' are using manual sync while VRCObjectSync is on the GameObject, this can cause sync to work unexpectedly.", gameObject);
+
+                    if (hasUdonPositionSync)
+                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] UdonBehaviours on GameObject '{gameObject.name}' are using manual sync while position sync is enabled on an UdonBehaviour on the GameObject, this can cause sync to work unexpectedly.", gameObject);
+                }
+
+                if (hasNoSync)
+                {
+                    int conflictCount = 0;
+
+                    if (hasManual && hasContinuous)
+                        ++conflictCount;
+                    if (hasManual && (hasUdonPositionSync || gameObject.GetComponent<VRC.SDK3.Components.VRCObjectSync>()))
+                        ++conflictCount;
+                    
+                    if (conflictCount > 0)
+                    {
+                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] Cannot update sync mode on UdonSharpBehaviour with NoVariableSync on '{gameObject}' because there are conflicting sync types on the GameObject", gameObject);
+                        continue;
+                    }
+
+                    foreach (UdonBehaviour behaviour in objectBehaviours)
+                    {
+                        if (behaviour.programSource is UdonSharpProgramAsset programAsset && programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
+                        {
+                            if (hasManual && !behaviour.Reliable)
+                            {
+                                behaviour.Reliable = true;
+                                modificationCount++;
+
+                                PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                            }
+                            else if (behaviour.Reliable)
+                            {
+                                behaviour.Reliable = false;
+                                modificationCount++;
+
+                                PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                            }
+                        }
+                    }
                 }
             }
 
             if (modificationCount > 0)
                 EditorSceneManager.MarkAllScenesDirty();
         }
-#endif
 
         static bool UdonSharpBehaviourTypeMatches(object symbolValue, System.Type expectedType, string behaviourName, string variableName)
         {
@@ -731,6 +863,8 @@ namespace UdonSharpEditor
                 if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset programAsset))
                     continue;
 
+                int originalUpdateCount = updatedBehaviourVariables;
+
                 IUdonVariableTable publicVariables = behaviour.publicVariables;
 
                 Dictionary<string, FieldDefinition> fieldDefinitions = programAsset.fieldDefinitions;
@@ -877,12 +1011,13 @@ namespace UdonSharpEditor
                         Debug.LogError($"Failed to update public variable {variableSymbol} on behaviour {behaviour}, exception {e}\n\nPlease report this error to Merlin!");
                     }
                 }
+
+                if (originalUpdateCount != updatedBehaviourVariables)
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
             }
 
             if (updatedBehaviourVariables > 0)
-            {
                 EditorSceneManager.MarkAllScenesDirty();
-            }
         }
 
         /// <summary>

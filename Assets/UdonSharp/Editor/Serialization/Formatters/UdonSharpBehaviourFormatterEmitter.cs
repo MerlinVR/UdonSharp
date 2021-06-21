@@ -154,6 +154,9 @@ namespace UdonSharp.Serialization
 
                 foreach (FieldInfo field in allFields)
                 {
+                    if (field.IsDefined(typeof(CompilerGeneratedAttribute), false))
+                        continue;
+
                     if ((field.IsPublic && field.GetAttribute<System.NonSerializedAttribute>() == null) ||
                         (!field.IsPublic && field.GetAttribute<SerializeField>() != null))
                     {

@@ -8,6 +8,7 @@ namespace UdonSharp.Examples.Utilities
     /// Follows one of the chosen playerApi tracking targets
     /// </summary>
     [AddComponentMenu("Udon Sharp/Utilities/Tracking Data Follower")]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
     public class TrackingDataFollower : UdonSharpBehaviour 
     {
         public VRCPlayerApi.TrackingDataType trackingTarget;

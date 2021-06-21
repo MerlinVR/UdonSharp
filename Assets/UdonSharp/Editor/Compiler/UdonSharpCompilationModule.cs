@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -121,7 +122,25 @@ namespace UdonSharp.Compiler
             if (ErrorCount > 0)
                 return result;
 
-            ASTVisitor visitor = new ASTVisitor(resolver, moduleSymbols, moduleLabels, methodVisitor.definedMethods, classDefinitions, debugInfo);
+            PropertyVisitor propertyVisitor = new PropertyVisitor(resolver, moduleSymbols, moduleLabels);
+
+            try
+            {
+                propertyVisitor.Visit(syntaxTree.GetRoot());
+            }
+            catch (System.Exception e)
+            {
+                LogException(result, e, propertyVisitor.visitorContext.currentNode, out string logMessage);
+
+                programAsset.compileErrors.Add(logMessage);
+
+                ErrorCount++;
+            }
+
+            if (ErrorCount > 0)
+                return result;
+
+            ASTVisitor visitor = new ASTVisitor(resolver, moduleSymbols, moduleLabels, methodVisitor.definedMethods, propertyVisitor.definedProperties, classDefinitions, debugInfo);
 
             try
             {
@@ -157,9 +176,7 @@ namespace UdonSharp.Compiler
                 programAsset.behaviourIDHeapVarName = visitor.GetIDHeapVarName();
 
                 programAsset.fieldDefinitions = fieldVisitor.visitorContext.localFieldDefinitions;
-#if UDON_BETA_SDK
                 programAsset.behaviourSyncMode = visitor.visitorContext.behaviourSyncMode;
-#endif
 
                 if (debugInfo != null)
                     debugInfo.FinalizeDebugInfo();
@@ -197,16 +214,18 @@ namespace UdonSharp.Compiler
             // Prettify the symbol order in the data block
             // Reflection info goes first so that we can use it for knowing what script threw an error from in game logs
             foreach (SymbolDefinition symbol in moduleSymbols.GetAllUniqueChildSymbols()
-                .OrderBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Reflection))
-                .ThenBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Public))
-                .ThenBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Private))
-                .ThenBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.This))
-                .ThenBy(e => !e.declarationType.HasFlag(SymbolDeclTypeFlags.Internal))
-                .ThenBy(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Constant))
+                .OrderBy(e => (e.declarationType & SymbolDeclTypeFlags.Reflection) != 0)
+                .ThenBy(e => (e.declarationType & SymbolDeclTypeFlags.Public) != 0)
+                .ThenBy(e => (e.declarationType & SymbolDeclTypeFlags.Private) != 0)
+                .ThenBy(e => (e.declarationType & SymbolDeclTypeFlags.This) != 0)
+                .ThenBy(e => (e.declarationType & SymbolDeclTypeFlags.Internal) == 0)
+                .ThenBy(e => (e.declarationType &SymbolDeclTypeFlags.Constant) != 0)
                 .ThenByDescending(e => e.symbolCsType.Name)
-                .ThenByDescending(e => e.symbolUniqueName).Reverse())
+                //.ThenByDescending(e => e.symbolUniqueName)
+                .Reverse()
+            )
             {
-                if (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.This))
+                if ((symbol.declarationType & SymbolDeclTypeFlags.This) != 0)
                     builder.AppendLine($"{symbol.symbolUniqueName}: %{symbol.symbolResolvedTypeName}, this", 1);
                 else
                     builder.AppendLine($"{symbol.symbolUniqueName}: %{symbol.symbolResolvedTypeName}, null", 1);

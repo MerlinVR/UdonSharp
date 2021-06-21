@@ -30,6 +30,8 @@ namespace UdonSharp.Tests
             tester.TestAssertion("gameObject valid 2", gameObject.name == "LocalFunctionTests");
 
             tester.TestAssertion("Variable declaration after methods", heyImDeclaredAfter == 4f);
+
+            TestDelayed();
         }
 
         float heyImDeclaredAfter = 4f;
@@ -158,6 +160,32 @@ namespace UdonSharp.Tests
 
             tester.TestAssertion("SetProgramVariable local", programVar == 5);
             tester.TestAssertion("GetProgramVariable local", (int)GetProgramVariable("programVar") == 5);
+        }
+
+        public void PrintThingDelayed()
+        {
+            //Debug.Log("I printed delayed frame: " + Time.frameCount);
+        }
+
+        public void PrintThingDelayedLate()
+        {
+            //Debug.Log("I printed delayed LateUpdate frame: " + Time.frameCount);
+        }
+
+        void TestDelayed()
+        {
+            SendCustomEventDelayedSeconds(nameof(PrintThingDelayed), 4f);
+            SendCustomEventDelayedSeconds(nameof(PrintThingDelayed), 4f, VRC.Udon.Common.Enums.EventTiming.Update);
+            SendCustomEventDelayedSeconds(nameof(PrintThingDelayedLate), 4f, VRC.Udon.Common.Enums.EventTiming.LateUpdate);
+
+            LocalFunctionTest myself = this;
+            myself.SendCustomEventDelayedSeconds(nameof(PrintThingDelayed), 5f);
+            myself.SendCustomEventDelayedFrames(nameof(PrintThingDelayed), 0);
+            myself.SendCustomEventDelayedFrames(nameof(PrintThingDelayed), 1);
+            myself.SendCustomEventDelayedFrames(nameof(PrintThingDelayedLate), 1, VRC.Udon.Common.Enums.EventTiming.LateUpdate);
+
+            UdonBehaviour myselfUdon = (UdonBehaviour)(Component)myself;
+            myselfUdon.SendCustomEventDelayedFrames(nameof(PrintThingDelayed), 10);
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using UdonSharp;
 using UdonSharp.Serialization;
 using UnityEditor;
@@ -41,6 +42,25 @@ namespace UdonSharpEditor
             udonSharpProgramAsset.CompileCsProgram();
 
             string programAssembly = UdonSharpEditorCache.Instance.GetUASMStr(udonSharpProgramAsset);
+
+            // Strip comments/inline code
+            StringBuilder asmBuilder = new StringBuilder();
+
+            using (StringReader reader = new StringReader(programAssembly))
+            {
+                string line = reader.ReadLine();
+
+                while (line != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(line) &&
+                        !line.TrimStart().StartsWith("#", System.StringComparison.Ordinal))
+                        asmBuilder.AppendFormat("{0}\n", line);
+
+                    line = reader.ReadLine();
+                }
+            }
+
+            programAssembly = asmBuilder.ToString();
 
             FieldInfo assemblyField = typeof(UdonAssemblyProgramAsset).GetField("udonAssembly", BindingFlags.NonPublic | BindingFlags.Instance);
             assemblyField.SetValue(newProgramAsset, programAssembly);
@@ -699,6 +719,13 @@ namespace UdonSharpEditor
                     udonBehaviour = targetGameObject.AddComponent<UdonBehaviour>();
 
                 udonBehaviour.programSource = programAsset;
+#pragma warning disable CS0618 // Type or member is obsolete
+                udonBehaviour.SynchronizePosition = false;
+                udonBehaviour.AllowCollisionOwnershipTransfer = false;
+#pragma warning restore CS0618 // Type or member is obsolete
+
+                udonBehaviour.Reliable = programAsset.behaviourSyncMode == BehaviourSyncMode.Manual;
+                
 
                 //if (shouldUndo)
                 //    Undo.RegisterCompleteObjectUndo(targetObject, "Convert C# to U# behaviour");

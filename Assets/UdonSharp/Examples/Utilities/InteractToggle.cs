@@ -9,6 +9,7 @@ namespace UdonSharp.Examples.Utilities
     /// This toggle only works locally
     /// </summary>
     [AddComponentMenu("Udon Sharp/Utilities/Interact Toggle")]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
     public class InteractToggle : UdonSharpBehaviour 
     {
         [Tooltip("List of objects to toggle on and off")]

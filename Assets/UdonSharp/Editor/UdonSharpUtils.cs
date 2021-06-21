@@ -147,7 +147,7 @@ namespace UdonSharp
 
         public static bool IsNumericType(System.Type type)
         {
-            return implicitBuiltinConversions.ContainsKey(type);
+            return IsIntegerType(type) || IsFloatType(type);
         }
 
         public static bool IsNumericImplicitCastValid(System.Type targetType, System.Type sourceType)
@@ -352,29 +352,6 @@ namespace UdonSharp
             return first == second;
         }
 
-#if !UDON_BETA_SDK
-        private static readonly HashSet<System.Type> udonSyncTypes = new HashSet<System.Type>()
-        {
-            typeof(bool),
-            typeof(char),
-            typeof(byte), typeof(sbyte),
-            typeof(int), typeof(uint),
-            typeof(long), typeof(ulong),
-            typeof(float), typeof(double),
-            typeof(short), typeof(ushort),
-            typeof(string),
-            typeof(UnityEngine.Vector2), typeof(UnityEngine.Vector3), typeof(UnityEngine.Vector4),
-            typeof(UnityEngine.Quaternion),
-            typeof(UnityEngine.Color32), typeof(UnityEngine.Color),
-            typeof(VRC.SDKBase.VRCUrl),
-        };
-
-        public static bool IsUdonSyncedType(System.Type type)
-        {
-            return udonSyncTypes.Contains(type);
-        }
-#endif
-
         private static readonly HashSet<System.Type> builtinTypes = new HashSet<System.Type>
         {
             typeof(string),
@@ -503,12 +480,15 @@ namespace UdonSharp
 
         private static Dictionary<System.Type, System.Type> GetInheritedTypeMap()
         {
+            if (inheritedTypeMap != null)
+                return inheritedTypeMap;
+            
             lock (inheritedTypeMapLock)
             {
                 if (inheritedTypeMap != null)
                     return inheritedTypeMap;
-
-                inheritedTypeMap = new Dictionary<System.Type, System.Type>();
+                
+                Dictionary<System.Type, System.Type> typeMap = new Dictionary<System.Type, System.Type>();
 
                 IEnumerable<System.Type> typeList = System.AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == "VRCSDK3").GetTypes().Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
 
@@ -516,12 +496,14 @@ namespace UdonSharp
                 {
                     if (childType.BaseType != null && childType.BaseType.Namespace.StartsWith("VRC.SDKBase"))
                     {
-                        inheritedTypeMap.Add(childType.BaseType, childType);
+                        typeMap.Add(childType.BaseType, childType);
                     }
                 }
 
-                inheritedTypeMap.Add(typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
-                inheritedTypeMap.Add(typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
+                typeMap.Add(typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
+                typeMap.Add(typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
+
+                inheritedTypeMap = typeMap;
             }
 
             return inheritedTypeMap;
@@ -734,6 +716,38 @@ namespace UdonSharp
             }
 
             return (Assembly[])getLoadedAssembliesProp.GetValue(null);
+        }
+
+        /// <summary>
+        /// Used to prevent Odin's DefaultSerializationBinder from getting a callback to register an assembly in specific cases where it will explode due to https://github.com/mono/mono/issues/20968
+        /// </summary>
+        internal class UdonSharpAssemblyLoadStripScope : IDisposable
+        {
+            Delegate[] originalDelegates;
+
+            public UdonSharpAssemblyLoadStripScope()
+            {
+                FieldInfo info = AppDomain.CurrentDomain.GetType().GetField("AssemblyLoad", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance);
+
+                AssemblyLoadEventHandler handler = info.GetValue(AppDomain.CurrentDomain) as AssemblyLoadEventHandler;
+
+                originalDelegates = handler?.GetInvocationList();
+
+                if (originalDelegates != null)
+                {
+                    foreach (Delegate del in originalDelegates)
+                        AppDomain.CurrentDomain.AssemblyLoad -= (AssemblyLoadEventHandler)del;
+                }
+            }
+
+            public void Dispose()
+            {
+                if (originalDelegates != null)
+                {
+                    foreach (Delegate del in originalDelegates)
+                        AppDomain.CurrentDomain.AssemblyLoad += (AssemblyLoadEventHandler)del;
+                }
+            }
         }
     }
 }

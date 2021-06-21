@@ -56,5 +56,6 @@ namespace UdonSharp.Compiler
 
         public List<FieldDefinition> fieldDefinitions = new List<FieldDefinition>();
         public List<MethodDefinition> methodDefinitions = new List<MethodDefinition>();
+        public List<PropertyDefinition> propertyDefinitions = new List<PropertyDefinition>();
     }
 }

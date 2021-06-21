@@ -11,7 +11,6 @@ using VRC.Udon.Common.Interfaces;
 
 namespace UdonSharp
 {
-    [InitializeOnLoad]
     public static class RuntimeLogWatcher
     {
         class LogFileState
@@ -30,7 +29,7 @@ namespace UdonSharp
         static Dictionary<string, LogFileState> logFileStates = new Dictionary<string, LogFileState>();
         static HashSet<string> modifiedLogPaths = new HashSet<string>();
 
-        static RuntimeLogWatcher()
+        public static void InitLogWatcher()
         {
             EditorApplication.update += OnEditorUpdate;
             Application.logMessageReceived += OnLog;
@@ -101,7 +100,7 @@ namespace UdonSharp
                     program.Heap == null ||
                     program.SymbolTable == null)
                 {
-                    Debug.LogWarning($"Could not load program for '{programAsset}', exceptions for this script will not be handled until scripts have been reloaded");
+                    //Debug.LogWarning($"Could not load program for '{programAsset}', exceptions for this script will not be handled until scripts have been reloaded");
                     continue;
                 }
 
@@ -149,7 +148,7 @@ namespace UdonSharp
 
         static void OnLog(string logStr, string stackTrace, LogType type)
         {
-            if (type == LogType.Error)
+            if (type == LogType.Error || type == LogType.Exception)
             {
                 debugOutputQueue.Enqueue(logStr);
             }
@@ -211,7 +210,7 @@ namespace UdonSharp
                                         {
                                             string fullFileContents = reader.ReadToEnd();
 
-                                            const string SEARCH_STR = "[VRCFlowManagerVRC] User Authenticated: ";
+                                            const string SEARCH_STR = "[Behaviour] User Authenticated: ";
                                             int userIdx = fullFileContents.IndexOf(SEARCH_STR);
                                             if (userIdx != -1)
                                             {
@@ -347,17 +346,17 @@ namespace UdonSharp
             "Received Message of type: friend-offline received at",
             "Received Message of type: friend-location received at",
             "[VRCFlowNetworkManager] Sending token from provider vrchat",
-            "[USpeaker] uSpeak [",
+            "[Always] uSpeak:",
             "Internal: JobTempAlloc has allocations",
             "To Debug, enable the define: TLA_DEBUG_STACK_LEAK in ThreadsafeLinearAllocator.cpp.",
             "PLAYLIST GET id=",
             "Checking server time received at ",
             "[RoomManager] Room metadata is unchanged, skipping update",
-            "[API] Requesting Get favorites {{\"",
-            "[API] Requesting Get auth/user/moderations {",
-            "[API] Fetching user",
-            "[API] Requesting Get worlds/local",
-            "[API] Piggy-backing Get request to",
+            "Setting Custom Properties for Local Player: avatarEyeHeight",
+            "HTTPFormUseage:UrlEncoded",
+            // Big catch-alls for random irrelevant VRC stuff
+            "[API] ",
+            "[Behaviour] ",
         };
 
         static void HandleForwardedLog(string logMessage, LogFileState state, UdonSharpSettings settings)
@@ -404,6 +403,12 @@ namespace UdonSharp
 
         static void HandleLogError(string errorStr, string logPrefix, string prePrefix)
         {
+            if (errorStr.StartsWith("ExecutionEngineException: String conversion error: Illegal byte sequence encounted in the input.")) // Nice typo Mono
+            {
+                Debug.LogError("ExecutionEngineException detected! This means you have hit a bug in Mono. To fix this, move your project to a path without any unicode characters.");
+                return;
+            }
+
             UdonSharpEditorCache.DebugInfoType debugType;
             if (errorStr.StartsWith("[<color=yellow>UdonBehaviour</color>] An exception occurred during Udon execution, this UdonBehaviour will be halted.")) // Editor
             {
@@ -474,13 +479,7 @@ namespace UdonSharp
             if (debugInfo == null)
                 return;
 
-            int debugSpanIdx = System.Array.BinarySearch(debugInfo.DebugLineSpans.Select(e => e.endInstruction).ToArray(), programCounter);
-            if (debugSpanIdx < 0)
-                debugSpanIdx = ~debugSpanIdx;
-
-            debugSpanIdx = Mathf.Clamp(debugSpanIdx, 0, debugInfo.DebugLineSpans.Length - 1);
-
-            ClassDebugInfo.DebugLineSpan debugLineSpan = debugInfo.DebugLineSpans[debugSpanIdx];
+            ClassDebugInfo.DebugLineSpan debugLineSpan = debugInfo.GetLineFromProgramCounter(programCounter);
 
             UdonSharpUtils.LogRuntimeError($"{logPrefix}\n{errorMessage}", prePrefix != null ? $"[<color=#575ff2>{prePrefix}</color>]" : "", assetInfo.Item1, debugLineSpan.line, debugLineSpan.lineChar);
         }

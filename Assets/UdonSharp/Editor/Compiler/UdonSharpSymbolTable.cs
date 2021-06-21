@@ -21,6 +21,8 @@ namespace UdonSharp.Compiler
         Readonly = 256, // Symbols marked as either const or readonly by the user, treat them the same for now. 
         MethodParameter = 512, // Symbols used for passing around method parameters
         NeedsRecursivePush = 1024, // Internal symbols used for tracking flow control and such which need to be pushed to the recursive stack when a method is recursive. An example of this is the int counter for a foreach loop and the size of the array the foreach is iterating.
+        BuiltinVar = 2048,
+        PropertyBackingField = 4096, // Internal symbols used as backing field for user-defined property
     }
 
     [Serializable]
@@ -721,7 +723,7 @@ namespace UdonSharp.Compiler
             if (resolvedSymbolType == null || symbolName == null)
                 throw new System.ArgumentNullException();
 
-            if (!declType.HasFlag(SymbolDeclTypeFlags.Internal) && symbolName.StartsWith("__"))
+            if (!declType.HasFlag(SymbolDeclTypeFlags.Internal) && !declType.HasFlag(SymbolDeclTypeFlags.BuiltinVar) && symbolName.StartsWith("__"))
             {
                 throw new System.ArgumentException($"Symbol {symbolName} cannot have name starting with \"__\", this naming is reserved for internal variables.");
             }
@@ -747,6 +749,10 @@ namespace UdonSharp.Compiler
             {
                 uniqueSymbolName = $"this_{uniqueSymbolName}";
                 hasGlobalDeclaration = true;
+            }
+            if (declType.HasFlag(SymbolDeclTypeFlags.PropertyBackingField))
+            {
+                uniqueSymbolName = $"bf_{uniqueSymbolName}";
             }
             if (declType.HasFlag(SymbolDeclTypeFlags.Reflection))
             {
@@ -818,7 +824,8 @@ namespace UdonSharp.Compiler
                 {
                     if (!declType.HasFlag(SymbolDeclTypeFlags.Reflection) &&
                         !declType.HasFlag(SymbolDeclTypeFlags.Constant) &&
-                        !declType.HasFlag(SymbolDeclTypeFlags.This))
+                        !declType.HasFlag(SymbolDeclTypeFlags.This) &&
+                        !declType.HasFlag(SymbolDeclTypeFlags.BuiltinVar))
                         throw new Exception($"Cannot add symbol {symbolDefinition} to root table while other tables are in use.");
                 }
             }

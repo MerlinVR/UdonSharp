@@ -10,6 +10,7 @@ namespace UdonSharp.Examples.Utilities
     /// Follows a chosen bone on humanoid avatars using the playerapi
     /// </summary>
     [AddComponentMenu("Udon Sharp/Utilities/Bone Follower")]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
     public class BoneFollower : UdonSharpBehaviour 
     {
         public HumanBodyBones trackedBone;
