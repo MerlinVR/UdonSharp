@@ -538,7 +538,11 @@ namespace UdonSharp.Compiler
                     string exportStr = VRC.Udon.Common.VariableChangedEvent.EVENT_PREFIX + targetField.fieldSymbol.symbolUniqueName;
                     visitorContext.uasmBuilder.AppendLine($".export {exportStr}", 1);
                     visitorContext.uasmBuilder.AppendLine($"{exportStr}:", 1);
+
+                    SymbolDefinition oldPropertyVal = visitorContext.topTable.GetGlobalSymbolTable().CreateNamedSymbol($"{VRC.Udon.Common.VariableChangedEvent.OLD_VALUE_PREFIX}{targetField.fieldSymbol.symbolUniqueName}", targetField.fieldSymbol.userCsType, SymbolDeclTypeFlags.Private);
+
                     visitorContext.uasmBuilder.AddCopy(setter.paramSymbol, targetField.fieldSymbol);
+                    visitorContext.uasmBuilder.AddCopy(targetField.fieldSymbol, oldPropertyVal);
                 }
 
                 if ((node.Modifiers.HasModifier("public") && setter.declarationFlags == PropertyDeclFlags.None) || setter.declarationFlags == PropertyDeclFlags.Public)
