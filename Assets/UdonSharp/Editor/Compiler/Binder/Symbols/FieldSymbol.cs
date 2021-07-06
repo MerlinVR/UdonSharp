@@ -17,10 +17,10 @@ namespace UdonSharp.Compiler.Symbols
         public FieldSymbol(IFieldSymbol sourceSymbol, BindContext bindContext)
             :base(sourceSymbol, bindContext)
         {
+            ContainingSymbol = bindContext.GetTypeSymbol(sourceSymbol.ContainingType);
         }
 
         public new IFieldSymbol RoslynSymbol { get { return (IFieldSymbol)base.RoslynSymbol; } }
-        public override Symbol ContainingType => sourceType;
 
         public override ImmutableArray<Symbol> GetDirectDependencies()
         {

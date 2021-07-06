@@ -28,7 +28,7 @@ namespace UdonSharp.Compiler.Symbols
 
             var fieldSymbols = members.OfType<IFieldSymbol>().Select(e => (FieldSymbol)context.GetSymbol(e));
             var propertySymbols = members.OfType<IPropertySymbol>().Select(e => (PropertySymbol)context.GetSymbol(e));
-            var methodSymbols = members.OfType<IMethodSymbol>().Select(e => (MethodSymbol)context.GetSymbol(e));
+            var methodSymbols = members.OfType<IMethodSymbol>().Where(e => e.MethodKind != MethodKind.PropertyGet && e.MethodKind != MethodKind.PropertySet).Select(e => (MethodSymbol)context.GetSymbol(e));
 
             foreach (var fieldSymbol in fieldSymbols)
                 fieldSymbol.Bind(context);

@@ -18,8 +18,11 @@ MonoBehaviour:
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: 92adca1f7a977204491317f89763d6ca, type: 3}
   isV1Root: 1
+  behaviourSyncMode: 0
   behaviourIDHeapVarName: __refl_const_intnl_udonTypeID
-  compileErrors: []
+  compileErrors:
+  - '[<color=#FF00FF>UdonSharp</color>] Assets/V1TestScript.cs(8,0): System.Exception:
+    User type V1TestScript could not be found'
   hasInteractEvent: 0
   serializationData:
     SerializedFormat: 2

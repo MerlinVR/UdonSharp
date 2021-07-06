@@ -23,8 +23,8 @@ namespace UdonSharp.Compiler
             System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
             timer.Start();
 
-            //var rootProgramPaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Where(e => e.isV1Root).Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
-            var rootProgramPaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
+            var rootProgramPaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Where(e => e.isV1Root).Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
+            //var rootProgramPaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
             HashSet<string> allSourcePaths = new HashSet<string>(GetAllFilteredSourcePaths());
 
             var syntaxTrees = LoadSyntaxTrees(allSourcePaths);

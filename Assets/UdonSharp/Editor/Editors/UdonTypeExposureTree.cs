@@ -252,13 +252,16 @@ namespace UdonSharp.Editors
 
             bool shouldHideType = true;
 
-            BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
-            if (!showBaseTypeMembers)
-                bindingFlags |= BindingFlags.DeclaredOnly;
+            if (rootTypeCheck)
+            { 
+                BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
+                if (!showBaseTypeMembers)
+                    bindingFlags |= BindingFlags.DeclaredOnly;
 
-            foreach (MemberInfo member in type.GetMembers(bindingFlags))
-            {
-                shouldHideType &= ShouldHideMember(member);
+                foreach (MemberInfo member in type.GetMembers(bindingFlags))
+                {
+                    shouldHideType &= ShouldHideMember(member);
+                }
             }
 
             return shouldHideType && (rootTypeCheck || !typeof(UnityEngine.Object).IsAssignableFrom(type));

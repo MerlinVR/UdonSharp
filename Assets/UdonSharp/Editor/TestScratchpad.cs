@@ -202,8 +202,18 @@ using System;
 
 public partial class BaseTest<T>
 {
-    public float myTestFloat;
-    public float[][][] myJaggedArray;
+    //public float myTestFloat;
+    //public float[][][] myJaggedArray;
+
+    public float MyFloatProp { get; set; }
+
+    public void LogThing()
+    {
+        Debug.Log(MyFloatProp + 6f);
+        //BaseTest<T> self = this;
+
+        //self.MyFloatProp = 5f;
+    }
 }
 ";
 
@@ -256,11 +266,11 @@ public partial class BaseTest<T>
         Debug.Log(modelClass0.TypeArguments.First().TypeKind);
         Debug.Log(constructedType.TypeArguments.First().TypeKind);
 
-        Debug.Log(((IArrayTypeSymbol)modelClass0.GetMembers().OfType<IFieldSymbol>().First(e => e.Name == "myJaggedArray").Type).ElementType.GetType());
+        //Debug.Log(((IArrayTypeSymbol)modelClass0.GetMembers().OfType<IFieldSymbol>().First(e => e.Name == "myJaggedArray").Type).ElementType.GetType());
 
-        return;
+        //return;
 
-        var variableDeclNodes = programSyntaxTree.GetRoot().DescendantNodes();
+        var variableDeclNodes = programSyntaxTree2.GetRoot().DescendantNodes();
 
         foreach (SyntaxNode syntaxNode in variableDeclNodes)
         {
@@ -284,15 +294,15 @@ public partial class BaseTest<T>
             //    }
             //}
 
-            SymbolInfo symbolInfo = model.GetSymbolInfo(syntaxNode);
-            TypeInfo typeInfo = model.GetTypeInfo(syntaxNode);
+            SymbolInfo symbolInfo = model2.GetSymbolInfo(syntaxNode);
+            TypeInfo typeInfo = model2.GetTypeInfo(syntaxNode);
 
             //if (typeInfo.Type != null)
             //{
             //    Debug.Log($"TypeInfo: {syntaxNode.Kind()}, {typeInfo.Type}, typeof: {typeInfo.Type.GetType()}\n{syntaxNode}");
             //}
 
-            IOperation operation = model.GetOperation(syntaxNode);
+            IOperation operation = model2.GetOperation(syntaxNode);
 
             if (operation != null)
             {
@@ -310,6 +320,11 @@ public partial class BaseTest<T>
                     }
                     else
                         Debug.Log($"{new string('\t', indentLevel)}op: {child}, kind {child.Kind}");
+                }
+
+                if (operation is IPropertyReferenceOperation propertyReferenceOperation)
+                {
+                    Debug.Log($"\t\tProperty reference {propertyReferenceOperation.Property}");
                 }
             }
 
@@ -331,7 +346,7 @@ public partial class BaseTest<T>
                 //}
                 else if (symbolInfo.Symbol is IParameterSymbol parameterSymbol)
                 {
-                    Debug.Log($"\tParameter Symbol: {parameterSymbol.IsThis}, {parameterSymbol.Type.Name}, {model.GetTypeInfo(syntaxNode).ConvertedType}");
+                    Debug.Log($"\tParameter Symbol: {parameterSymbol.IsThis}, {parameterSymbol.Type.Name}, {model2.GetTypeInfo(syntaxNode).ConvertedType}");
                 }
                 //else if (symbolInfo.Symbol is ITypeSymbol typeSymbol)
                 //{

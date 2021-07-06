@@ -14,7 +14,7 @@ namespace UdonSharp.Compiler.Symbols
         /// <summary>
         /// The symbol this is declared in, for instance if this is a field symbol, will point to the declaring class symbol, or if a local variable symbol, will point to a method symbol
         /// </summary>
-        public virtual Symbol ContainingType { get; protected set; }
+        public virtual Symbol ContainingSymbol { get; protected set; }
 
         /// <summary>
         /// Used to retrieve the non-generic-typed version of this symbol, for instance if you're getting a symbol for DoThing<int>(), will return DoThing<>()
@@ -68,7 +68,7 @@ namespace UdonSharp.Compiler.Symbols
             RoslynSymbol = sourceSymbol;
 
             if (sourceSymbol.ContainingType != null)
-                ContainingType = bindContext.GetSymbol(sourceSymbol.ContainingType);
+                ContainingSymbol = bindContext.GetSymbol(sourceSymbol.ContainingType);
         }
 
         /// <summary>

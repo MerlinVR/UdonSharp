@@ -54,7 +54,12 @@ namespace UdonSharp.Compiler.Symbols
 
             MethodDeclarationSyntax methodSyntax = methodSymbol.DeclaringSyntaxReferences.First().GetSyntax() as MethodDeclarationSyntax;
 
-
+            if (methodSyntax.Body != null)
+                bodyVisitor.Visit(methodSyntax.Body);
+            else if (methodSyntax.ExpressionBody != null)
+                bodyVisitor.Visit(methodSyntax.ExpressionBody);
+            else
+                throw new CompilerException("No method body or expression body found", methodSyntax.GetLocation());
         }
 
         public override ImmutableArray<Symbol> GetDirectDependencies()

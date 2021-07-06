@@ -22,6 +22,11 @@ namespace UdonSharp.Compiler.Binder
             symbolLookupModel = context.CompileContext.GetSemanticModel(owningSymbol.RoslynSymbol.DeclaringSyntaxReferences.First().SyntaxTree);
         }
 
+        private void UpdateSyntaxNode(SyntaxNode node)
+        {
+
+        }
+
         private BoundExpression VisitExpression(SyntaxNode node)
         {
             return (BoundExpression)Visit(node);
@@ -40,11 +45,14 @@ namespace UdonSharp.Compiler.Binder
         // This will only be visited from within a method declaration so it means it only gets hit if there's a local method declaration which is not supported.
         public override BoundNode VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
+            UpdateSyntaxNode(node);
             throw new NotSupportedException(LocStr.CE_LocalMethodsNotSupported, node.GetLocation());
         }
 
         public override BoundNode VisitBlock(BlockSyntax node)
         {
+            UpdateSyntaxNode(node);
+
             if (node.Statements == null || node.Statements.Count == 0)
                 return new BoundBlock(node);
 
@@ -54,18 +62,26 @@ namespace UdonSharp.Compiler.Binder
             for (int i = 0; i < statementCount; ++i)
             {
                 BoundNode statement = Visit(node.Statements[i]);
-
-                if (statement is BoundExpression boundExpression)
-                    boundStatements[i] = new BoundExpressionStatement(node.Statements[i], boundExpression);
-                else
-                    boundStatements[i] = (BoundStatement)statement;
+                boundStatements[i] = (BoundStatement)statement;
             }
 
             return new BoundBlock(node, boundStatements);
         }
 
+        public override BoundNode VisitExpressionStatement(ExpressionStatementSyntax node)
+        {
+            UpdateSyntaxNode(node);
+            return new BoundExpressionStatement(node.Expression, (BoundExpression)Visit(node.Expression));
+        }
+
+        public override BoundNode VisitInvocationExpression(InvocationExpressionSyntax node)
+        {
+            throw new System.NotImplementedException();
+        }
+
         public override BoundNode VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
         {
+            UpdateSyntaxNode(node);
             throw new System.NotImplementedException();
         }
     }

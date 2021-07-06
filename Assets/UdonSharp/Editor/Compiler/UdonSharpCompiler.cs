@@ -107,10 +107,10 @@ namespace UdonSharp.Compiler
                 UdonSharpCompilerV1 compilerV1 = new UdonSharpCompilerV1();
                 compilerV1.Compile();
             }
-            catch (System.Exception e)
-            {
-                Debug.LogError(e);
-            }
+            //catch (System.Exception e)
+            //{
+            //    Debug.LogError(e);
+            //}
             finally
             {
                 EditorUtility.ClearProgressBar();
@@ -711,10 +711,10 @@ namespace UdonSharp.Compiler
                 }
                 else
                 {
-                    Assembly assembly;
+                    System.Reflection.Assembly assembly;
 
                     using (var loadScope = new UdonSharpUtils.UdonSharpAssemblyLoadStripScope())
-                        assembly = Assembly.Load(memoryStream.ToArray());
+                        assembly = System.Reflection.Assembly.Load(memoryStream.ToArray());
 
                     for (int moduleIdx = 0; moduleIdx < modulesToInitialize.Length; ++moduleIdx)
                     {

@@ -15,10 +15,12 @@ public class V1TestScript : UdonSharpBehaviour
 
     void Start()
     {
-        Vector3 myVec = new Vector3(1, 2, 3);
+        Debug.Log("Test!");
 
-        myVec.Normalize();
+        //Vector3 myVec = new Vector3(1, 2, 3);
 
-        Vector3.Cross(Vector3.up, myVec);
+        //myVec.Normalize();
+
+        //Vector3.Cross(Vector3.up, myVec);
     }
 }
