@@ -24,7 +24,7 @@ This compiler is in an early state and I have no prior experience making compile
 - User defined properties
 - Unity/Udon event callbacks with arguments. For instance, registering a OnPlayerJoined event with a VRCPlayerApi argument is valid.
 - String interpolation
-- Field initilizers
+- Field initializers
 - Jagged arrays
 - Referencing other custom classes, accessing fields, and calling methods on them
 - Recursive method calls are supported via the `[RecursiveMethod]` attribute
