@@ -29,6 +29,7 @@ namespace UdonSharp.Compiler.Binder
 
         private BoundExpression VisitExpression(SyntaxNode node)
         {
+            UpdateSyntaxNode(node);
             return (BoundExpression)Visit(node);
         }
 
@@ -76,7 +77,12 @@ namespace UdonSharp.Compiler.Binder
 
         public override BoundNode VisitInvocationExpression(InvocationExpressionSyntax node)
         {
-            throw new System.NotImplementedException();
+            BoundExpression[] boundArguments = new BoundExpression[node.ArgumentList.Arguments.Count];
+
+            foreach (ArgumentSyntax argumentExpression in node.ArgumentList.Arguments)
+            {
+
+            }
         }
 
         public override BoundNode VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
