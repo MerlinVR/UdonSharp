@@ -21,6 +21,7 @@ This compiler is in an early state and I have no prior experience making compile
 - `typeof()`
 - Extern methods with out or ref parameters (such as many variants of `Physics.Raycast()`)
 - User defined methods with parameters and return values. (This does not currently support method overloads, default parameter values, or `ref`/`params` parameters)
+- User defined properties
 - Unity/Udon event callbacks with arguments. For instance, registering a OnPlayerJoined event with a VRCPlayerApi argument is valid.
 - String interpolation
 - Field initilizers
@@ -51,8 +52,8 @@ This compiler is in an early state and I have no prior experience making compile
 - The latest [release](https://github.com/Merlin-san/UdonSharp/releases/latest) of UdonSharp
 
 ### Installation
-1. Read the getting started with Udon official thread https://ask.vrchat.com/t/getting-started-with-udon/80 this has basic installation instructions for Udon.
-2. Install the latest version of the VRCSDK3 and UdonSDK linked on the getting started thread. Make sure to install VRCSDK3 first.
+1. Read the getting started with Udon doc page https://docs.vrchat.com/docs/getting-started-with-udon this has basic installation instructions for Udon.
+2. Install the latest version of the VRCSDK3 linked on the getting started.
 3. Get the latest release of UdonSharp from [here](https://github.com/Merlin-san/UdonSharp/releases/latest) and install it to your project.
 
 ### Getting started
@@ -101,6 +102,8 @@ For more example scripts take a look at the wiki page for [examples](https://git
 [**PhaxeNor**](https://github.com/PhaxeNor) - Help with wiki and documentation
 
 [**bd_**](https://github.com/bdunderscore) - Significant optimizations to compiled code
+  
+[**mika-f**](https://github.com/mika-f/) - Implementation of user defined property support
 
 [**UdonPie Compiler**](https://github.com/zz-roba/UdonPieCompiler) - For demonstrating how straightforward it can be to write a compiler for Udon
 

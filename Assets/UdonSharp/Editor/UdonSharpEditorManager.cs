@@ -569,24 +569,21 @@ namespace UdonSharpEditor
 
                 behaviourGameObjects.Add(behaviour.gameObject);
 
-                if (behaviour.Reliable == true &&
-                    (programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous) ||
-                     programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
+                if (behaviour.Reliable == true && programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous)
                 {
                     behaviour.Reliable = false;
                     modificationCount++;
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
                 }
                 else if (behaviour.Reliable == false && programAsset.behaviourSyncMode == BehaviourSyncMode.Manual)
                 {
                     behaviour.Reliable = true;
                     modificationCount++;
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
                 }
             }
 
-            if (modificationCount > 0)
-                EditorSceneManager.MarkAllScenesDirty();
-
-            // Validation for mixed sync modes which can break sync on things
+            // Validation for mixed sync modes which can break sync on things and auto update NoVariableSync behaviours to match the sync mode of other behaviours on the GameObject
             foreach (GameObject gameObject in behaviourGameObjects)
             {
                 UdonBehaviour[] objectBehaviours = gameObject.GetComponents<UdonBehaviour>();
@@ -594,9 +591,17 @@ namespace UdonSharpEditor
                 bool hasManual = false;
                 bool hasContinuous = false;
                 bool hasUdonPositionSync = false;
+                bool hasNoSync = false;
 
                 foreach (UdonBehaviour objectBehaviour in objectBehaviours)
                 {
+                    if (UdonSharpEditorUtility.IsUdonSharpBehaviour(objectBehaviour) &&
+                        ((UdonSharpProgramAsset)objectBehaviour.programSource).behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
+                    {
+                        hasNoSync = true;
+                        continue;
+                    }
+
                     if (objectBehaviour.Reliable)
                         hasManual = true;
                     else
@@ -619,7 +624,47 @@ namespace UdonSharpEditor
                     if (hasUdonPositionSync)
                         Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] UdonBehaviours on GameObject '{gameObject.name}' are using manual sync while position sync is enabled on an UdonBehaviour on the GameObject, this can cause sync to work unexpectedly.", gameObject);
                 }
+
+                if (hasNoSync)
+                {
+                    int conflictCount = 0;
+
+                    if (hasManual && hasContinuous)
+                        ++conflictCount;
+                    if (hasManual && (hasUdonPositionSync || gameObject.GetComponent<VRC.SDK3.Components.VRCObjectSync>()))
+                        ++conflictCount;
+                    
+                    if (conflictCount > 0)
+                    {
+                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] Cannot update sync mode on UdonSharpBehaviour with NoVariableSync on '{gameObject}' because there are conflicting sync types on the GameObject", gameObject);
+                        continue;
+                    }
+
+                    foreach (UdonBehaviour behaviour in objectBehaviours)
+                    {
+                        if (behaviour.programSource is UdonSharpProgramAsset programAsset && programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
+                        {
+                            if (hasManual && !behaviour.Reliable)
+                            {
+                                behaviour.Reliable = true;
+                                modificationCount++;
+
+                                PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                            }
+                            else if (behaviour.Reliable)
+                            {
+                                behaviour.Reliable = false;
+                                modificationCount++;
+
+                                PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                            }
+                        }
+                    }
+                }
             }
+
+            if (modificationCount > 0)
+                EditorSceneManager.MarkAllScenesDirty();
         }
 
         static bool UdonSharpBehaviourTypeMatches(object symbolValue, System.Type expectedType, string behaviourName, string variableName)
@@ -818,6 +863,8 @@ namespace UdonSharpEditor
                 if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset programAsset))
                     continue;
 
+                int originalUpdateCount = updatedBehaviourVariables;
+
                 IUdonVariableTable publicVariables = behaviour.publicVariables;
 
                 Dictionary<string, FieldDefinition> fieldDefinitions = programAsset.fieldDefinitions;
@@ -964,12 +1011,13 @@ namespace UdonSharpEditor
                         Debug.LogError($"Failed to update public variable {variableSymbol} on behaviour {behaviour}, exception {e}\n\nPlease report this error to Merlin!");
                     }
                 }
+
+                if (originalUpdateCount != updatedBehaviourVariables)
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
             }
 
             if (updatedBehaviourVariables > 0)
-            {
                 EditorSceneManager.MarkAllScenesDirty();
-            }
         }
 
         /// <summary>

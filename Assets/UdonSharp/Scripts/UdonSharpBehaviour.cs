@@ -70,7 +70,7 @@ namespace UdonSharp
             }
 #endif
 
-            MethodInfo eventmethod = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == eventName && e.GetParameters().Length == 0).FirstOrDefault();
+            MethodInfo eventmethod = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(e => e.Name == eventName && e.GetParameters().Length == 0);
 
             if (eventmethod != null)
             {
@@ -78,7 +78,10 @@ namespace UdonSharp
             }
         }
 
-        public void SendCustomNetworkEvent(NetworkEventTarget target, string eventName) { }
+        public void SendCustomNetworkEvent(NetworkEventTarget target, string eventName)
+        {
+            SendCustomEvent(eventName);
+        }
 
         /// <summary>
         /// Executes target event after delaySeconds. If 0.0 delaySeconds is specified, will execute the following frame

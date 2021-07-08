@@ -147,7 +147,7 @@ namespace UdonSharp
 
         public static bool IsNumericType(System.Type type)
         {
-            return implicitBuiltinConversions.ContainsKey(type);
+            return IsIntegerType(type) || IsFloatType(type);
         }
 
         public static bool IsNumericImplicitCastValid(System.Type targetType, System.Type sourceType)
