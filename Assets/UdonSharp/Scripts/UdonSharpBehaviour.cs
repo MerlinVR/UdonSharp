@@ -147,6 +147,7 @@ namespace UdonSharp
         }
 
         // Method stubs for auto completion
+        public virtual void PostLateUpdate() { }
         public virtual void Interact() { }
         public virtual void OnDrop() { }
         public virtual void OnOwnershipTransferred(VRC.SDKBase.VRCPlayerApi player) { }
