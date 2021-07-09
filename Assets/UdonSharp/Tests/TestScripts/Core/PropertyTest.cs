@@ -35,6 +35,36 @@ namespace UdonSharp.Tests
         int accessCounter = 0;
         public int MyAccessCounter {  set { /*Debug.Log("Setting access counter to " + value); */accessCounter = value; } get { /*Debug.Log("Access counter: " + accessCounter);*/ return accessCounter++; } }
 
+        [FieldChangeCallback(nameof(CallbackProperty))]
+        public float backingCallbackfield;
+        int callbackCount = 0;
+
+        public float CallbackProperty
+        {
+            set
+            {
+                //Debug.Log($"Value current val: {backingCallbackfield}, new val: {value}");
+                backingCallbackfield = value;
+                ++callbackCount;
+            }
+            get => backingCallbackfield;
+        }
+
+        [FieldChangeCallback(nameof(GOCallbackTest))]
+        private GameObject _GOCallbackTest;
+        int goCallbackCounter = 0;
+
+        public GameObject GOCallbackTest
+        {
+            get => _GOCallbackTest;
+            set
+            {
+                //Debug.LogFormat("Setting GO callback to {0}, last value: {1}", new object[] { value, _GOCallbackTest });
+                _GOCallbackTest = value;
+                ++goCallbackCounter;
+            }
+        }
+
         public void ExecuteTests()
         {
             PropertyTest self = this;
@@ -104,6 +134,20 @@ namespace UdonSharp.Tests
             int additionResult = MyAccessCounter += 6;
 
             tester.TestAssertion("In place addition", accessCounter == 17 && additionResult == 17);
+
+            CallbackProperty = 4f;
+
+            SetProgramVariable(nameof(backingCallbackfield), 10f);
+
+            tester.TestAssertion("Property callback", callbackCount == 2);
+
+            GOCallbackTest = gameObject;
+            SetProgramVariable(nameof(_GOCallbackTest), null);
+            SetProgramVariable(nameof(_GOCallbackTest), gameObject);
+            SetProgramVariable(nameof(_GOCallbackTest), gameObject);
+            SetProgramVariable(nameof(_GOCallbackTest), null);
+
+            tester.TestAssertion("Property callback modification count", goCallbackCounter == 4);
         }
     }
 }

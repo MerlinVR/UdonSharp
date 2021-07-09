@@ -89,5 +89,23 @@ namespace UdonSharp
         public RecursiveMethodAttribute()
         { }
     }
+
+    /// <summary>
+    /// Calls the target property's setter when the marked field is modified by network sync or SetProgramVariable().
+    /// Fields marked with this will instead have the target property's setter called. The setter is expected to set the field if you want the field to change.
+    /// </summary>
+    [PublicAPI]
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
+    public class FieldChangeCallbackAttribute : Attribute
+    {
+        public string CallbackPropertyName { get; private set; }
+
+        private FieldChangeCallbackAttribute() { }
+
+        public FieldChangeCallbackAttribute(string targetPropertyName)
+        {
+            CallbackPropertyName = targetPropertyName;
+        }
+    }
 }
 
