@@ -2206,6 +2206,12 @@ namespace UdonSharp.Compiler
                     throw new System.Exception("foreach loop must iterate an array type");
             }
 
+            if (visitorContext.isRecursiveMethod &&
+               ((arraySymbol.declarationType & SymbolDeclTypeFlags.Internal) != 0))
+            {
+                arraySymbol.declarationType |= SymbolDeclTypeFlags.NeedsRecursivePush;
+            }
+
             if (node.Type.IsVar)
             {
                 if (!isTransformIterator)
