@@ -557,6 +557,7 @@ namespace UdonSharp.Compiler
                 Debug.Assert(visitorContext.returnLabel == null, "Return label must be null");
                 var returnLabel = visitorContext.labelTable.GetNewJumpLabel("return");
                 visitorContext.returnLabel = returnLabel;
+                visitorContext.returnSymbol = null;
 
                 visitorContext.uasmBuilder.AddJumpLabel(setter.entryPoint);
 
