@@ -42,7 +42,6 @@ This compiler is in an early state and I have no prior experience making compile
 ## Udon bugs that affect U#
 - Mutating methods on structs do not modify the struct (this can be seen on things like calling Normalize() on a Vector3) https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/raysetorigin-and-raysetdirection-not-working
 - Instantiated objects will lose their UdonBehaviours when instantiated from a prefab and cannot be interacted with/triggered https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/interactive-objects-break-after-being-clonedinstanciated-on-live-worlds
-- Calling Destroy() on an object in game and then using a null check to check if it's valid will throw exceptions when it shouldn't https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/null-check-on-gameobject-will-throw-exception-if-the-gameobj-is-destroyed
 
 ## Setup
 
