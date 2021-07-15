@@ -25,6 +25,9 @@ namespace UdonSharp.Tests
             get { return backingField; }
             set
             {
+                if (value == 222)
+                    return;
+
                 MyIntProperty = value;
                 backingField = value;
             }
@@ -84,6 +87,9 @@ namespace UdonSharp.Tests
 
             MyIntBackedProperty = 8;
             tester.TestAssertion("Property manual setter", MyIntProperty == 8 && MyIntBackedProperty == 8);
+
+            MyIntBackedProperty = 222;
+            tester.TestAssertion("Property setter return", MyIntBackedProperty == 8);
 
             PropertyTest[] selfArr = new PropertyTest[] { this };
 
