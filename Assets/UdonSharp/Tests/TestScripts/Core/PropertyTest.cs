@@ -1,4 +1,5 @@
 ﻿
+using JetBrains.Annotations;
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -14,6 +15,7 @@ namespace UdonSharp.Tests
 
         public string MyStrProperty => "Test " + 1;
         
+        [PublicAPI]
         public int MyIntProperty { get; set; }
 
         float backingFloat;
