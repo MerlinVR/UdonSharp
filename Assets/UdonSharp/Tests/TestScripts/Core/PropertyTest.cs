@@ -162,8 +162,8 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Property in othrer user script 1", referenceSource.Value == 1);
             referenceSource._value = 2;
             tester.TestAssertion("Property in othrer user script 2", referenceSource.Value == 2);
-            //referenceSource.Value = 3;
-            //tester.TestAssertion("Property in othrer user script 3", referenceSource.Value == 3);
+            referenceSource.Value = 3;
+            tester.TestAssertion("Property in othrer user script 3", referenceSource.Value == 3);
         }
     }
 }
