@@ -176,6 +176,18 @@ namespace UdonSharp.Tests
             return string.Concat(a, CombineStringsNested(count - 1, CombineStringsNested(count - 1, b, a), CombineStringsNested(count - 1, a, b)), CombineStringsNested(count - 1, CombineStringsNested(count - 1, a, b), CombineStringsNested(count - 1, b, a)), "c");
         }
 
+        Transform[] GetChildrenTransforms(Transform parent)
+        {
+            Transform[] children = new Transform[parent.childCount];
+
+            for (int i = 0; i < children.Length; ++i)
+            {
+                children[i] = parent.GetChild(i);
+            }
+
+            return children;
+        }
+
         [RecursiveMethod]
         int CountChildren(Transform transformToCount)
         {
@@ -183,6 +195,28 @@ namespace UdonSharp.Tests
 
             foreach (Transform child in transformToCount)
                 childCount += CountChildren(child);
+
+            return childCount;
+        }
+
+        [RecursiveMethod]
+        int CountChildrenForeachExpression(Transform transformToCount)
+        {
+            int childCount = transformToCount.childCount;
+
+            foreach (Transform child in GetChildrenTransforms(transformToCount))
+                childCount += CountChildrenForeachExpression(child);
+
+            return childCount;
+        }
+
+        [RecursiveMethod]
+        int CountChildrenForeachAccessExpression(Transform transformToCount)
+        {
+            int childCount = transformToCount.childCount;
+
+            foreach (Transform child in transformToCount.gameObject.transform)
+                childCount += CountChildrenForeachAccessExpression(child);
 
             return childCount;
         }
@@ -280,6 +314,8 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Nested call recursion", CombineStringsNested(3, "a", "b") == "abaccbcccabccacccccbaccbccccccabccacccbaccbcccccabccaccccccc");
 
             tester.TestAssertion("Count children recursively foreach", CountChildren(transform) == 20);
+            tester.TestAssertion("Count children recursively foreach expression", CountChildrenForeachExpression(transform) == 20);
+            tester.TestAssertion("Count children recursively foreach access", CountChildrenForeachAccessExpression(transform) == 20);
 
             externChildCount = 0;
             CountChildrenExternalCount(transform);

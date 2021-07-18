@@ -160,7 +160,9 @@ namespace UdonSharpEditor
         /// </summary>
         public static void OverrideUdonBehaviourDrawer() 
         {
+        #if !UNITY_2019_4_OR_NEWER
             if (customEditorField == null)
+        #endif
             {
                 Assembly editorAssembly = typeof(UnityEditor.Editor).Assembly;
 
@@ -205,7 +207,22 @@ namespace UdonSharpEditor
                 editorTypeList = Activator.CreateInstance(monoEditorTypeListType);
 
                 listCreateParams[0] = editorTypeObject;
+                
+            #if UNITY_2019_4_OR_NEWER
+                FieldInfo initializedField = editorAttributesClass.GetField("s_Initialized", BindingFlags.Static | BindingFlags.NonPublic);
+
+                if (!(bool) initializedField.GetValue(null))
+                {
+                    MethodInfo rebuildMethod =
+                        editorAttributesClass.GetMethod("Rebuild", BindingFlags.Static | BindingFlags.NonPublic);
+
+                    rebuildMethod.Invoke(null, null);
+
+                    initializedField.SetValue(null, true);
+                }
+            #endif
             }
+            
 
             listClearMethod.Invoke(editorTypeList, null);
             listAddTypeMethod.Invoke(editorTypeList, listCreateParams);

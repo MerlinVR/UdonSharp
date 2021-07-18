@@ -740,6 +740,9 @@ namespace UdonSharp.Compiler
             }
             else if (captureArchetype == ExpressionCaptureArchetype.ExternUserField)
             {
+                if (visitorContext.onModifyCallbackFields.Values.Any(e => e.fieldSymbol.symbolUniqueName == captureExternUserField.fieldSymbol.symbolUniqueName))
+                    throw new System.InvalidOperationException($"Cannot set field with {nameof(FieldChangeCallbackAttribute)}, use a property or SetProgramVariable");
+
                 using (ExpressionCaptureScope setVariableMethodScope = new ExpressionCaptureScope(visitorContext, null))
                 {
                     setVariableMethodScope.SetToLocalSymbol(accessSymbol);

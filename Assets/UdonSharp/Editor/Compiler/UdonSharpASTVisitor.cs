@@ -26,6 +26,7 @@ namespace UdonSharp.Compiler
         public List<MethodDefinition> definedMethods;
 
         public List<PropertyDefinition> definedProperties;
+        public Dictionary<string, FieldDefinition> onModifyCallbackFields = new Dictionary<string, FieldDefinition>();
 
         // Tracking labels for the current function and flow control
         public JumpLabel returnLabel = null;
@@ -531,6 +532,19 @@ namespace UdonSharp.Compiler
             {
                 var setter = definition.setter;
 
+                // Handle VRC field modification callbacks
+                if (visitorContext.onModifyCallbackFields.TryGetValue(definition.originalPropertyName, out FieldDefinition targetField))
+                {
+                    string exportStr = VRC.Udon.Common.VariableChangedEvent.EVENT_PREFIX + targetField.fieldSymbol.symbolUniqueName;
+                    visitorContext.uasmBuilder.AppendLine($".export {exportStr}", 1);
+                    visitorContext.uasmBuilder.AppendLine($"{exportStr}:", 1);
+
+                    SymbolDefinition oldPropertyVal = visitorContext.topTable.GetGlobalSymbolTable().CreateNamedSymbol($"{VRC.Udon.Common.VariableChangedEvent.OLD_VALUE_PREFIX}{targetField.fieldSymbol.symbolUniqueName}", targetField.fieldSymbol.userCsType, SymbolDeclTypeFlags.Private);
+
+                    visitorContext.uasmBuilder.AddCopy(setter.paramSymbol, targetField.fieldSymbol);
+                    visitorContext.uasmBuilder.AddCopy(targetField.fieldSymbol, oldPropertyVal);
+                }
+
                 if ((node.Modifiers.HasModifier("public") && setter.declarationFlags == PropertyDeclFlags.None) || setter.declarationFlags == PropertyDeclFlags.Public)
                 {
                     visitorContext.uasmBuilder.AppendLine($".export {setter.accessorName}", 1);
@@ -543,6 +557,7 @@ namespace UdonSharp.Compiler
                 Debug.Assert(visitorContext.returnLabel == null, "Return label must be null");
                 var returnLabel = visitorContext.labelTable.GetNewJumpLabel("return");
                 visitorContext.returnLabel = returnLabel;
+                visitorContext.returnSymbol = null;
 
                 visitorContext.uasmBuilder.AddJumpLabel(setter.entryPoint);
 
@@ -2192,6 +2207,12 @@ namespace UdonSharp.Compiler
                     throw new System.Exception("foreach loop must iterate an array type");
             }
 
+            if (visitorContext.isRecursiveMethod &&
+               ((arraySymbol.declarationType & SymbolDeclTypeFlags.Internal) != 0))
+            {
+                arraySymbol.declarationType |= SymbolDeclTypeFlags.NeedsRecursivePush;
+            }
+
             if (node.Type.IsVar)
             {
                 if (!isTransformIterator)
@@ -2471,41 +2492,6 @@ namespace UdonSharp.Compiler
 
             visitorContext.uasmBuilder.AddJumpLabel(switchExitLabel);
             visitorContext.breakLabelStack.Pop();
-        }
-
-        private void HandleNameOfExpression(InvocationExpressionSyntax node)
-        {
-            SyntaxNode currentNode = node.ArgumentList.Arguments[0].Expression;
-            string currentName = "";
-
-            while (currentNode != null)
-            {
-                switch (currentNode.Kind())
-                {
-                    case SyntaxKind.SimpleMemberAccessExpression:
-                        MemberAccessExpressionSyntax memberNode = (MemberAccessExpressionSyntax)currentNode;
-                        currentName = memberNode.Name.ToString();
-                        currentNode = memberNode.Name;
-                        break;
-                    case SyntaxKind.IdentifierName:
-                        IdentifierNameSyntax identifierName = (IdentifierNameSyntax)currentNode;
-                        currentName = identifierName.ToString();
-                        currentNode = null;
-                        break;
-                    default:
-                        currentNode = null;
-                        break;
-                }
-
-                if (currentNode != null)
-                    UpdateSyntaxNode(currentNode);
-            }
-
-            if (currentName == "")
-                throw new System.ArgumentException("Expression does not have a name");
-
-            if (visitorContext.topCaptureScope != null)
-                visitorContext.topCaptureScope.SetToLocalSymbol(visitorContext.topTable.CreateConstSymbol(typeof(string), currentName));
         }
 
         public override void VisitCaseSwitchLabel(CaseSwitchLabelSyntax node)

@@ -69,6 +69,7 @@ Assets/UdonSharp/Scripts/Editor.meta
 .idea/*
 Assets/Udon.meta
 [Aa]ssets/SerializedUdonPrograms*
+Packages/
 
 # UdonSharp stuff
 /Assets/UdonSharp/UdonSharpSettings.asset

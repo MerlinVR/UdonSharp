@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace UdonSharp.Compiler
@@ -49,10 +50,13 @@ namespace UdonSharp.Compiler
 
             List<System.Attribute> fieldAttributes = GetFieldAttributes(node);
 
+
             bool isPublic = (node.Modifiers.Any(SyntaxKind.PublicKeyword) || fieldAttributes.Find(e => e is SerializeField) != null) && fieldAttributes.Find(e => e is System.NonSerializedAttribute) == null;
             bool isConst = (node.Modifiers.Any(SyntaxKind.ConstKeyword) || node.Modifiers.Any(SyntaxKind.ReadOnlyKeyword));
             SymbolDeclTypeFlags flags = (isPublic ? SymbolDeclTypeFlags.Public : SymbolDeclTypeFlags.Private) |
                                         (isConst ? SymbolDeclTypeFlags.Readonly : 0);
+
+            FieldChangeCallbackAttribute varChange = fieldAttributes.OfType<FieldChangeCallbackAttribute>().FirstOrDefault();
 
             List<SymbolDefinition> fieldSymbols = HandleVariableDeclaration(node.Declaration, flags, fieldSyncMode);
             foreach (SymbolDefinition fieldSymbol in fieldSymbols)
@@ -77,6 +81,28 @@ namespace UdonSharp.Compiler
                 }
 
                 visitorContext.localFieldDefinitions.Add(fieldSymbol.symbolUniqueName, fieldDefinition);
+
+                if (varChange != null)
+                {
+                    string targetProperty = varChange.CallbackPropertyName;
+
+                    if (variables.Count > 1 || visitorContext.onModifyCallbackFields.ContainsKey(targetProperty))
+                        throw new System.Exception($"Only one field may target property '{targetProperty}'");
+
+                    PropertyDefinition foundProperty = visitorContext.definedProperties.FirstOrDefault(e => e.originalPropertyName == targetProperty);
+
+                    if (foundProperty == null)
+                        throw new System.ArgumentException($"Invalid target property for {nameof(FieldChangeCallbackAttribute)} on {node.Declaration}");
+
+                    PropertyDefinition property = visitorContext.definedProperties.FirstOrDefault(e => e.originalPropertyName == targetProperty);
+                    if (property == null)
+                        throw new System.ArgumentException($"Property not found for '{targetProperty}'");
+
+                    if (property.type != fieldDefinition.fieldSymbol.userCsType)
+                        throw new System.Exception($"Types must match between property and variable change field");
+
+                    visitorContext.onModifyCallbackFields.Add(targetProperty, fieldDefinition);
+                }
             }
         }
 

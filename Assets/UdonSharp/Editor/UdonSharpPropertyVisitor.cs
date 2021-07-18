@@ -41,9 +41,9 @@ namespace UdonSharp.Compiler
             {
                 foreach (AttributeListSyntax attributes in node.AttributeLists)
                 {
-                    foreach (AttributeSyntax attribute in attributes.Attributes)
+                    if (attributes.Target != null && attributes.Target.Identifier.Kind() == SyntaxKind.FieldKeyword)
                     {
-                        if (attributes.Target.Identifier.Kind() == SyntaxKind.FieldKeyword)
+                        foreach (AttributeSyntax attribute in attributes.Attributes)
                         {
                             using (ExpressionCaptureScope attributeTypeCapture = new ExpressionCaptureScope(visitorContext, null))
                             {

@@ -34,7 +34,26 @@ namespace UdonSharp
 
             if (variableField != null)
             {
-                variableField.SetValue(this, value);
+                FieldChangeCallbackAttribute fieldChangeCallback = variableField.GetCustomAttribute<FieldChangeCallbackAttribute>();
+
+                if (fieldChangeCallback != null)
+                {
+                    PropertyInfo targetProperty = variableField.DeclaringType.GetProperty(fieldChangeCallback.CallbackPropertyName, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+
+                    if (targetProperty == null)
+                        return;
+
+                    MethodInfo setMethod = targetProperty.GetSetMethod(true);
+
+                    if (setMethod == null)
+                        return;
+
+                    setMethod.Invoke(this, new object[] { value });
+                }
+                else
+                {
+                    variableField.SetValue(this, value);
+                }
             }
         }
 
@@ -59,7 +78,10 @@ namespace UdonSharp
             }
         }
 
-        public void SendCustomNetworkEvent(NetworkEventTarget target, string eventName) { }
+        public void SendCustomNetworkEvent(NetworkEventTarget target, string eventName)
+        {
+            SendCustomEvent(eventName);
+        }
 
         /// <summary>
         /// Executes target event after delaySeconds. If 0.0 delaySeconds is specified, will execute the following frame
@@ -125,6 +147,7 @@ namespace UdonSharp
         }
 
         // Method stubs for auto completion
+        public virtual void PostLateUpdate() { }
         public virtual void Interact() { }
         public virtual void OnDrop() { }
         public virtual void OnOwnershipTransferred(VRC.SDKBase.VRCPlayerApi player) { }

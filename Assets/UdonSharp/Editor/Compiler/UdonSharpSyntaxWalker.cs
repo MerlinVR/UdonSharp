@@ -319,6 +319,52 @@ namespace UdonSharp.Compiler
             }
         }
 
+        protected void HandleNameOfExpression(InvocationExpressionSyntax node)
+        {
+            SyntaxNode currentNode = node.ArgumentList.Arguments[0].Expression;
+            string currentName = "";
+
+            while (currentNode != null)
+            {
+                switch (currentNode.Kind())
+                {
+                    case SyntaxKind.SimpleMemberAccessExpression:
+                        MemberAccessExpressionSyntax memberNode = (MemberAccessExpressionSyntax)currentNode;
+                        currentName = memberNode.Name.ToString();
+                        currentNode = memberNode.Name;
+                        break;
+                    case SyntaxKind.IdentifierName:
+                        IdentifierNameSyntax identifierName = (IdentifierNameSyntax)currentNode;
+                        currentName = identifierName.ToString();
+                        currentNode = null;
+                        break;
+                    default:
+                        currentNode = null;
+                        break;
+                }
+
+                if (currentNode != null)
+                    UpdateSyntaxNode(currentNode);
+            }
+
+            if (currentName == "")
+                throw new System.ArgumentException("Expression does not have a name");
+
+            if (visitorContext.topCaptureScope != null)
+                visitorContext.topCaptureScope.SetToLocalSymbol(visitorContext.topTable.CreateConstSymbol(typeof(string), currentName));
+        }
+
+        public override void VisitInvocationExpression(InvocationExpressionSyntax node)
+        {
+            UpdateSyntaxNode(node);
+
+            if (node.Expression != null && node.Expression.ToString() == "nameof") // nameof is not a dedicated node and the Kind of the node isn't the nameof kind for whatever reason...
+            {
+                HandleNameOfExpression(node);
+                return;
+            }
+        }
+
         public override void VisitIdentifierName(IdentifierNameSyntax node)
         {
             UpdateSyntaxNode(node);

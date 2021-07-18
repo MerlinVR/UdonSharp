@@ -86,8 +86,27 @@ namespace UdonSharp.Compiler
                 debugInfo = new ClassDebugInfo(sourceCode, settings == null || settings.includeInlineCode);
             }
 
+            PropertyVisitor propertyVisitor = new PropertyVisitor(resolver, moduleSymbols, moduleLabels);
+
+            try
+            {
+                propertyVisitor.Visit(syntaxTree.GetRoot());
+            }
+            catch (System.Exception e)
+            {
+                LogException(result, e, propertyVisitor.visitorContext.currentNode, out string logMessage);
+
+                programAsset.compileErrors.Add(logMessage);
+
+                ErrorCount++;
+            }
+
+            if (ErrorCount > 0)
+                return result;
+
             UdonSharpFieldVisitor fieldVisitor = new UdonSharpFieldVisitor(fieldsWithInitializers, resolver, moduleSymbols, moduleLabels, classDefinitions, debugInfo);
-            
+            fieldVisitor.visitorContext.definedProperties = propertyVisitor.definedProperties;
+
             try
             {
                 fieldVisitor.Visit(syntaxTree.GetRoot());
@@ -122,25 +141,8 @@ namespace UdonSharp.Compiler
             if (ErrorCount > 0)
                 return result;
 
-            PropertyVisitor propertyVisitor = new PropertyVisitor(resolver, moduleSymbols, moduleLabels);
-
-            try
-            {
-                propertyVisitor.Visit(syntaxTree.GetRoot());
-            }
-            catch (System.Exception e)
-            {
-                LogException(result, e, propertyVisitor.visitorContext.currentNode, out string logMessage);
-
-                programAsset.compileErrors.Add(logMessage);
-
-                ErrorCount++;
-            }
-
-            if (ErrorCount > 0)
-                return result;
-
             ASTVisitor visitor = new ASTVisitor(resolver, moduleSymbols, moduleLabels, methodVisitor.definedMethods, propertyVisitor.definedProperties, classDefinitions, debugInfo);
+            visitor.visitorContext.onModifyCallbackFields = fieldVisitor.visitorContext.onModifyCallbackFields;
 
             try
             {
