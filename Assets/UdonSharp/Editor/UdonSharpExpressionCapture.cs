@@ -497,6 +497,8 @@ namespace UdonSharp.Compiler
                 if (getter.type == typeof(void))
                     throw new System.TypeLoadException("Cannot return type of void from a get statement");
 
+                outSymbol = AllocateOutputSymbol(getter.type);
+
                 using (ExpressionCaptureScope getPropertyMethodScope = new ExpressionCaptureScope(visitorContext, null, requestedDestination))
                 {
                     getPropertyMethodScope.SetToLocalSymbol(accessSymbol);
@@ -509,8 +511,8 @@ namespace UdonSharp.Compiler
                     getReturnScope.SetToLocalSymbol(accessSymbol);
                     getReturnScope.ResolveAccessToken("GetProgramVariable");
 
-                    outSymbol = getReturnScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(string), getter.returnSymbol.symbolUniqueName) });
-                    outSymbol = CastSymbolToType(outSymbol, getter.type, true, true, outSymbol == requestedDestination ? requestedDestination : null);
+                    SymbolDefinition externVarReturn = getReturnScope.Invoke(new SymbolDefinition[] { visitorContext.topTable.CreateConstSymbol(typeof(string), getter.returnSymbol.symbolUniqueName) });
+                    outSymbol = CastSymbolToType(externVarReturn, getter.type, true, true, outSymbol == requestedDestination ? requestedDestination : null);
                 }
             }
             else if (captureArchetype == ExpressionCaptureArchetype.Field)

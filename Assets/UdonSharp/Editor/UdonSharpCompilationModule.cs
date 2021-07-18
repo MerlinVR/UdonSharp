@@ -86,6 +86,24 @@ namespace UdonSharp.Compiler
                 debugInfo = new ClassDebugInfo(sourceCode, settings == null || settings.includeInlineCode);
             }
 
+            MethodVisitor methodVisitor = new MethodVisitor(resolver, moduleSymbols, moduleLabels);
+
+            try
+            {
+                methodVisitor.Visit(syntaxTree.GetRoot());
+            }
+            catch (System.Exception e)
+            {
+                LogException(result, e, methodVisitor.visitorContext.currentNode, out string logMessage);
+
+                programAsset.compileErrors.Add(logMessage);
+
+                ErrorCount++;
+            }
+
+            if (ErrorCount > 0)
+                return result;
+
             PropertyVisitor propertyVisitor = new PropertyVisitor(resolver, moduleSymbols, moduleLabels);
 
             try
@@ -114,24 +132,6 @@ namespace UdonSharp.Compiler
             catch (System.Exception e)
             {
                 LogException(result, e, fieldVisitor.visitorContext.currentNode, out string logMessage);
-
-                programAsset.compileErrors.Add(logMessage);
-
-                ErrorCount++;
-            }
-
-            if (ErrorCount > 0)
-                return result;
-
-            MethodVisitor methodVisitor = new MethodVisitor(resolver, moduleSymbols, moduleLabels);
-
-            try
-            {
-                methodVisitor.Visit(syntaxTree.GetRoot());
-            }
-            catch (System.Exception e)
-            {
-                LogException(result, e, methodVisitor.visitorContext.currentNode, out string logMessage);
 
                 programAsset.compileErrors.Add(logMessage);
 
