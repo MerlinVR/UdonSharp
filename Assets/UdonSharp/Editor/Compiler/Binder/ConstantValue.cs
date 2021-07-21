@@ -18,6 +18,11 @@ namespace UdonSharp.Compiler.Binder
         object IConstantValue.Value { get { return Value; } }
         public Type ValueType => typeof(T);
 
+        public ConstantValue(T value)
+        {
+            Value = value;
+        }
+
         public override bool Equals(object obj)
         {
             if (obj is ConstantValue<T> other)

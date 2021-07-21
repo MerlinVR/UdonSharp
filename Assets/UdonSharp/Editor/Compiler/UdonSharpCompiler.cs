@@ -15,6 +15,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CSharp;
+using UdonSharp.Deprecated;
 using UdonSharp.Serialization;
 using UdonSharpEditor;
 using UnityEditor;
@@ -107,10 +108,10 @@ namespace UdonSharp.Compiler
                 UdonSharpCompilerV1 compilerV1 = new UdonSharpCompilerV1();
                 compilerV1.Compile();
             }
-            //catch (System.Exception e)
-            //{
-            //    Debug.LogError(e);
-            //}
+            catch (System.Exception e)
+            {
+                Debug.LogError(e);
+            }
             finally
             {
                 EditorUtility.ClearProgressBar();

@@ -10,32 +10,36 @@ namespace UdonSharp.Compiler.Binder
 {
     internal class BinderSyntaxVisitor : CSharpSyntaxVisitor<BoundNode>
     {
-        readonly Symbol owningSymbol;
-        readonly BindContext bindContext;
-        readonly SemanticModel symbolLookupModel;
+        readonly Symbol _owningSymbol;
+        readonly BindContext _bindContext;
+        readonly SemanticModel _symbolLookupModel;
 
         public BinderSyntaxVisitor(Symbol owningSymbol, BindContext context)
         {
-            this.owningSymbol = owningSymbol;
-            bindContext = context;
+            this._owningSymbol = owningSymbol;
+            _bindContext = context;
 
-            symbolLookupModel = context.CompileContext.GetSemanticModel(owningSymbol.RoslynSymbol.DeclaringSyntaxReferences.First().SyntaxTree);
+            _symbolLookupModel = context.CompileContext.GetSemanticModel(owningSymbol.RoslynSymbol.DeclaringSyntaxReferences.First().SyntaxTree);
         }
 
         private void UpdateSyntaxNode(SyntaxNode node)
         {
+        }
 
+        public override BoundNode Visit(SyntaxNode node)
+        {
+            UpdateSyntaxNode(node);
+            return base.Visit(node);
         }
 
         private BoundExpression VisitExpression(SyntaxNode node)
         {
-            UpdateSyntaxNode(node);
             return (BoundExpression)Visit(node);
         }
 
         private Symbol GetSymbol(SyntaxNode node)
         {
-            return bindContext.GetSymbol(symbolLookupModel.GetSymbolInfo(node).Symbol);
+            return _bindContext.GetSymbol(_symbolLookupModel.GetSymbolInfo(node).Symbol);
         }
 
         public override BoundNode DefaultVisit(SyntaxNode node)
@@ -46,14 +50,11 @@ namespace UdonSharp.Compiler.Binder
         // This will only be visited from within a method declaration so it means it only gets hit if there's a local method declaration which is not supported.
         public override BoundNode VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
-            UpdateSyntaxNode(node);
             throw new NotSupportedException(LocStr.CE_LocalMethodsNotSupported, node.GetLocation());
         }
 
         public override BoundNode VisitBlock(BlockSyntax node)
         {
-            UpdateSyntaxNode(node);
-
             if (node.Statements == null || node.Statements.Count == 0)
                 return new BoundBlock(node);
 
@@ -71,23 +72,56 @@ namespace UdonSharp.Compiler.Binder
 
         public override BoundNode VisitExpressionStatement(ExpressionStatementSyntax node)
         {
-            UpdateSyntaxNode(node);
             return new BoundExpressionStatement(node.Expression, (BoundExpression)Visit(node.Expression));
+        }
+
+        public override BoundNode VisitLiteralExpression(LiteralExpressionSyntax node)
+        {
+            IConstantValue constantValue = null;
+
+            switch (node.Kind())
+            {
+                case SyntaxKind.NumericLiteralExpression:
+                    constantValue = (IConstantValue)System.Activator.CreateInstance(typeof(ConstantValue<>).MakeGenericType(node.Token.Value.GetType()), node.Token.Value);
+                    break;
+                case SyntaxKind.StringLiteralExpression:
+                    constantValue = new ConstantValue<string>((string)node.Token.Value);
+                    break;
+                case SyntaxKind.CharacterLiteralExpression:
+                    constantValue = new ConstantValue<char>((char)node.Token.Value);
+                    break;
+                case SyntaxKind.TrueLiteralExpression:
+                    constantValue = new ConstantValue<bool>(true);
+                    break;
+                case SyntaxKind.FalseLiteralExpression:
+                    constantValue = new ConstantValue<bool>(false);
+                    break;
+                case SyntaxKind.NullLiteralExpression:
+                    constantValue = new ConstantValue<object>(null);
+                    break;
+                default:
+                    return base.VisitLiteralExpression(node);
+            }
+
+            return new BoundConstantExpression(constantValue, node);
         }
 
         public override BoundNode VisitInvocationExpression(InvocationExpressionSyntax node)
         {
+            MethodSymbol methodSymbol = (MethodSymbol)GetSymbol(node);
+
             BoundExpression[] boundArguments = new BoundExpression[node.ArgumentList.Arguments.Count];
 
-            foreach (ArgumentSyntax argumentExpression in node.ArgumentList.Arguments)
+            for (int i = 0; i < boundArguments.Length; ++i)
             {
-
+                boundArguments[i] = VisitExpression(node.ArgumentList.Arguments[i].Expression);
             }
+
+            return BoundInvocationExpression.CreateBoundInvocation(node, methodSymbol, boundArguments);
         }
 
         public override BoundNode VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
         {
-            UpdateSyntaxNode(node);
             throw new System.NotImplementedException();
         }
     }

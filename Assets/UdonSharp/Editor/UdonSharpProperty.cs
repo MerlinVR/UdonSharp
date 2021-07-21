@@ -1,4 +1,6 @@
 
+using UdonSharp.Deprecated;
+
 namespace UdonSharp.Compiler
 {
     [System.Flags]

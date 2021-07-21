@@ -1,7 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿
+using Microsoft.CodeAnalysis;
+using UdonSharp.Compiler.Emit;
 
 namespace UdonSharp.Compiler.Binder
 {
@@ -17,6 +16,16 @@ namespace UdonSharp.Compiler.Binder
         protected BoundNode(SyntaxNode node)
         {
             SyntaxNode = node;
+        }
+
+        public virtual void Emit(EmitContext context)
+        {
+            throw new System.NotImplementedException($"Emit is not implemented on {GetType()}");
+        }
+
+        public Value EmitValue(EmitContext context)
+        {
+            throw new System.NotImplementedException($"EmitValue is not implemented on {GetType()}");
         }
     }
 }

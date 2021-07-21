@@ -13,5 +13,10 @@ namespace UdonSharp.Compiler.Symbols
         }
 
         public override bool IsExtern => true;
+
+        public override string ToString()
+        {
+            return $"ExternMethodSymbol: {RoslynSymbol}";
+        }
     }
 }

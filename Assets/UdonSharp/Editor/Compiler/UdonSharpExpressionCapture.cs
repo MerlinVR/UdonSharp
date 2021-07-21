@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
+using UdonSharp.Deprecated;
 using UnityEngine;
 
 namespace UdonSharp.Compiler
@@ -190,7 +191,7 @@ namespace UdonSharp.Compiler
 
                 allLinkedNamespaces = new HashSet<string>();
 
-                foreach (Assembly assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+                foreach (System.Reflection.Assembly assembly in System.AppDomain.CurrentDomain.GetAssemblies())
                 {
                     allLinkedNamespaces.UnionWith(assembly.GetTypes().Select(e => e.Namespace).Distinct());
                 }

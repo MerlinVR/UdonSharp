@@ -1,7 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿
+using Microsoft.CodeAnalysis;
 
 namespace UdonSharp.Compiler.Binder
 {
@@ -30,6 +28,11 @@ namespace UdonSharp.Compiler.Binder
             :base(node)
         {
             _constantValue = constantValue;
+        }
+
+        public override string ToString()
+        {
+            return $"BoundConstantExpression<{ConstantValue.GetType().GetGenericArguments()[0]}>: " + ConstantValue.Value?.ToString() ?? "null";
         }
     }
 }

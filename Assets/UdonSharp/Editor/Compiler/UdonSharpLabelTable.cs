@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UdonSharp
+namespace UdonSharp.Deprecated
 {
     public class JumpLabel
     {
@@ -62,5 +62,4 @@ namespace UdonSharp
             return null;
         }
     }
-
 }

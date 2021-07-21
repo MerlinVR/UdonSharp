@@ -21,7 +21,12 @@ namespace UdonSharp.Compiler.Symbols
 
         protected override Symbol CreateSymbol(ISymbol roslynSymbol, BindContext context)
         {
-            throw new System.NotImplementedException();
+            return new ExternMethodSymbol((IMethodSymbol)roslynSymbol, context);
+        }
+
+        public override string ToString()
+        {
+            return RoslynSymbol.ToString();
         }
     }
 }
