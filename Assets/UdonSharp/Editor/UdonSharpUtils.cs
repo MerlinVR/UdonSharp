@@ -4,10 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
-using UdonSharp.Compiler;
 
 namespace UdonSharp
 {
@@ -173,10 +171,19 @@ namespace UdonSharp
 
         public static MethodInfo GetNumericConversionMethod(System.Type targetType, System.Type sourceType)
         {
-            Type[] argumentTypes = new Type[] { sourceType.IsEnum ? typeof(object) : sourceType };
-            MethodInfo foundMethod = typeof(System.Convert).GetMethod($"To{targetType.Name}", BindingFlags.Public | BindingFlags.Static, null, argumentTypes, null);
+            IEnumerable<MethodInfo> foundMethods = typeof(System.Convert)
+                .GetMethods(BindingFlags.Static | BindingFlags.Public)
+                .Where(e => e.Name == $"To{targetType.Name}")
+                .Where(e => e.GetParameters().FirstOrDefault().ParameterType == sourceType);
 
-            return foundMethod;
+            if (sourceType.IsEnum)
+            {
+                foundMethods = typeof(System.Convert).GetMethods(BindingFlags.Static | BindingFlags.Public)
+                                                     .Where(e => e.Name == $"To{targetType.Name}")
+                                                     .Where(e => e.GetParameters().FirstOrDefault().ParameterType == typeof(object));
+            }
+
+            return foundMethods.FirstOrDefault();
         }
 
         public static bool IsNumericExplicitCastValid(System.Type targetType, System.Type sourceType)
@@ -219,7 +226,7 @@ namespace UdonSharp
 
             foreach (System.Type operatorType in operatorTypes)
             {
-                IEnumerable<MethodInfo> methods = UdonSharpUtils.GetTypeMethods(operatorType, BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Implicit");
+                IEnumerable<MethodInfo> methods = operatorType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Implicit");
 
                 foreach (MethodInfo methodInfo in methods)
                 {
@@ -262,7 +269,7 @@ namespace UdonSharp
 
             foreach (System.Type operatorType in operatorTypes)
             {
-                IEnumerable<MethodInfo> methods = UdonSharpUtils.GetTypeMethods(operatorType, BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Implicit");
+                IEnumerable<MethodInfo> methods = operatorType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Implicit");
 
                 foreach (MethodInfo methodInfo in methods)
                 {
@@ -273,7 +280,7 @@ namespace UdonSharp
 
             foreach (System.Type operatorType in operatorTypes)
             {
-                IEnumerable<MethodInfo> methods = UdonSharpUtils.GetTypeMethods(operatorType, BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Explicit");
+                IEnumerable<MethodInfo> methods = operatorType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Explicit");
 
                 foreach (MethodInfo methodInfo in methods)
                 {
@@ -391,7 +398,7 @@ namespace UdonSharp
 
             while (currentType != null)
             {
-                foundOperators.AddRange(UdonSharpUtils.GetTypeMethods(currentType, BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == operatorName));
+                foundOperators.AddRange(currentType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == operatorName));
                 currentType = currentType.BaseType;
             }
 
@@ -709,65 +716,6 @@ namespace UdonSharp
             }
 
             return (Assembly[])getLoadedAssembliesProp.GetValue(null);
-        }
-
-        private static Dictionary<(Type, BindingFlags), MethodInfo[]> typeMethodCache = new Dictionary<(Type, BindingFlags), MethodInfo[]>(512);
-
-        public static MethodInfo[] GetTypeMethods(Type type, BindingFlags bindingFlags)
-        {
-            MethodInfo[] methods;
-            if (!typeMethodCache.TryGetValue((type, bindingFlags), out methods))
-            {
-                methods = type.GetMethods(bindingFlags);
-                lock (typeMethodCache)
-                {
-                    if (!typeMethodCache.ContainsKey((type, bindingFlags)))
-                    {
-                        typeMethodCache.Add((type, bindingFlags), methods);
-                    }
-                }
-            }
-
-            return methods;
-        }
-
-
-        private static Dictionary<(Type, BindingFlags), PropertyInfo[]> typePropertyCache = new Dictionary<(Type, BindingFlags), PropertyInfo[]>(512);
-
-        public static PropertyInfo[] GetTypeProperties(Type type, BindingFlags bindingFlags)
-        {
-            PropertyInfo[] properties;
-            if (!typePropertyCache.TryGetValue((type, bindingFlags), out properties))
-            {
-                properties = type.GetProperties(bindingFlags);
-                lock (typePropertyCache)
-                {
-                    if (!typePropertyCache.ContainsKey((type, bindingFlags)))
-                    {
-                        typePropertyCache.Add((type, bindingFlags), properties);
-                    }
-                }
-            }
-
-            return properties;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool HasFlagFaster(this SymbolDeclTypeFlags value, SymbolDeclTypeFlags flag)
-        {
-            return (value & flag) == flag;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool HasFlagFaster(this MethodDeclFlags value, MethodDeclFlags flag)
-        {
-            return (value & flag) == flag;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool HasFlagFaster(this PropertyDeclFlags value, PropertyDeclFlags flag)
-        {
-            return (value & flag) == flag;
         }
 
         /// <summary>

@@ -381,7 +381,7 @@ namespace UdonSharp.Compiler
 
         public IEnumerable<SymbolDefinition> GetOpenCOWSymbols()
         {
-            return scopeCOWValues.Where(e => e.symbol != null && e.referenceCount > 0 && !e.symbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Constant) && !e.symbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Readonly)).Select(e => e.symbol);
+            return scopeCOWValues.Where(e => e.symbol != null && e.referenceCount > 0 && !e.symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) && !e.symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Readonly)).Select(e => e.symbol);
         }
 
         internal void AddSymbolCOW(SymbolDefinition.COWValueInternal value)
@@ -494,7 +494,7 @@ namespace UdonSharp.Compiler
 
             while (!currentTable.IsGlobalSymbolTable)
             {
-                localSymbolDefinitions.AddRange(currentTable.symbolDefinitions.Where(e => e.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Local)));
+                localSymbolDefinitions.AddRange(currentTable.symbolDefinitions.Where(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.Local)));
                 currentTable = currentTable.parentSymbolTable;
             }
 
@@ -509,7 +509,7 @@ namespace UdonSharp.Compiler
 
             while (currentTable != null)
             {
-                foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => includeInternal ? true : !e.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Internal)));
+                foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => includeInternal ? true : !e.declarationType.HasFlag(SymbolDeclTypeFlags.Internal)));
                 currentTable = currentTable.parentSymbolTable;
             }
 
@@ -524,7 +524,7 @@ namespace UdonSharp.Compiler
 
             while (currentTable != null && !currentTable.IsGlobalSymbolTable)
             {
-                foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => !e.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Internal) && e.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Local)));
+                foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => !e.declarationType.HasFlag(SymbolDeclTypeFlags.Internal) && e.declarationType.HasFlag(SymbolDeclTypeFlags.Local)));
                 currentTable = currentTable.parentSymbolTable;
             }
 
@@ -539,7 +539,7 @@ namespace UdonSharp.Compiler
 
             while (currentTable != null && !currentTable.IsGlobalSymbolTable)
             {
-                foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => (!e.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Internal) || e.declarationType.HasFlagFaster(SymbolDeclTypeFlags.NeedsRecursivePush)) && e.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Local)));
+                foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => (!e.declarationType.HasFlag(SymbolDeclTypeFlags.Internal) || e.declarationType.HasFlag(SymbolDeclTypeFlags.NeedsRecursivePush)) && e.declarationType.HasFlag(SymbolDeclTypeFlags.Local)));
                 currentTable = currentTable.parentSymbolTable;
             }
 
@@ -554,7 +554,7 @@ namespace UdonSharp.Compiler
 
             while (currentTable != null && !currentTable.IsGlobalSymbolTable)
             {
-                foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => e.declarationType.HasFlagFaster(SymbolDeclTypeFlags.MethodParameter)));
+                foundSymbols.AddRange(currentTable.symbolDefinitions.Where(e => e.declarationType.HasFlag(SymbolDeclTypeFlags.MethodParameter)));
                 currentTable = currentTable.parentSymbolTable;
             }
 
@@ -614,7 +614,7 @@ namespace UdonSharp.Compiler
 
             foreach (SymbolDefinition currentSymbol in globalSymbols.symbolDefinitions)
             {
-                if (currentSymbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Reflection) &&
+                if (currentSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Reflection) &&
                     currentSymbol.symbolOriginalName == name &&
                     currentSymbol.symbolCsType == type)
                 {
@@ -650,7 +650,7 @@ namespace UdonSharp.Compiler
 
             foreach (SymbolDefinition definition in globalSymTable.symbolDefinitions)
             {
-                if (definition.declarationType.HasFlagFaster(SymbolDeclTypeFlags.This) && (definition.symbolCsType == udonType))
+                if (definition.declarationType.HasFlag(SymbolDeclTypeFlags.This) && (definition.symbolCsType == udonType))
                     return definition;
             }
 
@@ -723,7 +723,7 @@ namespace UdonSharp.Compiler
             if (resolvedSymbolType == null || symbolName == null)
                 throw new System.ArgumentNullException();
 
-            if (!declType.HasFlagFaster(SymbolDeclTypeFlags.Internal) && !declType.HasFlagFaster(SymbolDeclTypeFlags.BuiltinVar) && symbolName.StartsWith("__"))
+            if (!declType.HasFlag(SymbolDeclTypeFlags.Internal) && !declType.HasFlag(SymbolDeclTypeFlags.BuiltinVar) && symbolName.StartsWith("__"))
             {
                 throw new System.ArgumentException($"Symbol {symbolName} cannot have name starting with \"__\", this naming is reserved for internal variables.");
             }
@@ -732,39 +732,39 @@ namespace UdonSharp.Compiler
 
             bool hasGlobalDeclaration = false;
             
-            if (declType.HasFlagFaster(SymbolDeclTypeFlags.Internal))
+            if (declType.HasFlag(SymbolDeclTypeFlags.Internal))
             {
                 uniqueSymbolName = $"intnl_{uniqueSymbolName}";
             }
-            if (declType.HasFlagFaster(SymbolDeclTypeFlags.Constant))
+            if (declType.HasFlag(SymbolDeclTypeFlags.Constant))
             {
                 uniqueSymbolName = $"const_{uniqueSymbolName}";
                 hasGlobalDeclaration = true;
             }
-            if (declType.HasFlagFaster(SymbolDeclTypeFlags.MethodParameter))
+            if (declType.HasFlag(SymbolDeclTypeFlags.MethodParameter))
             {
                 uniqueSymbolName = $"mp_{uniqueSymbolName}";
             }
-            if (declType.HasFlagFaster(SymbolDeclTypeFlags.This))
+            if (declType.HasFlag(SymbolDeclTypeFlags.This))
             {
                 uniqueSymbolName = $"this_{uniqueSymbolName}";
                 hasGlobalDeclaration = true;
             }
-            if (declType.HasFlagFaster(SymbolDeclTypeFlags.PropertyBackingField))
+            if (declType.HasFlag(SymbolDeclTypeFlags.PropertyBackingField))
             {
                 uniqueSymbolName = $"bf_{uniqueSymbolName}";
             }
-            if (declType.HasFlagFaster(SymbolDeclTypeFlags.Reflection))
+            if (declType.HasFlag(SymbolDeclTypeFlags.Reflection))
             {
                 uniqueSymbolName = $"__refl_{uniqueSymbolName}";
                 hasGlobalDeclaration = true;
             }
 
-            if (!declType.HasFlagFaster(SymbolDeclTypeFlags.Public) && !declType.HasFlagFaster(SymbolDeclTypeFlags.Private) && !declType.HasFlagFaster(SymbolDeclTypeFlags.Reflection))
+            if (!declType.HasFlag(SymbolDeclTypeFlags.Public) && !declType.HasFlag(SymbolDeclTypeFlags.Private) && !declType.HasFlag(SymbolDeclTypeFlags.Reflection))
             {
                 if (appendType)
                 {
-                    string sanitizedName = ResolverContext.SanitizeTypeName(resolvedSymbolType.Name);
+                    string sanitizedName = resolver.SanitizeTypeName(resolvedSymbolType.Name);
                     uniqueSymbolName += $"_{sanitizedName}";
                 }
 
@@ -776,7 +776,7 @@ namespace UdonSharp.Compiler
 
             System.Type typeForName = UdonSharpUtils.UserTypeToUdonType(resolvedSymbolType);
 
-            string udonTypeName = ResolverContext.GetUdonTypeName(typeForName);
+            string udonTypeName = resolver.GetUdonTypeName(typeForName);
 
             if (udonTypeName == null)
                 throw new System.ArgumentException($"Could not locate Udon type for system type {resolvedSymbolType.FullName}");
@@ -822,10 +822,10 @@ namespace UdonSharp.Compiler
 
                 if (anyChildTableOpen)
                 {
-                    if (!declType.HasFlagFaster(SymbolDeclTypeFlags.Reflection) &&
-                        !declType.HasFlagFaster(SymbolDeclTypeFlags.Constant) &&
-                        !declType.HasFlagFaster(SymbolDeclTypeFlags.This) &&
-                        !declType.HasFlagFaster(SymbolDeclTypeFlags.BuiltinVar))
+                    if (!declType.HasFlag(SymbolDeclTypeFlags.Reflection) &&
+                        !declType.HasFlag(SymbolDeclTypeFlags.Constant) &&
+                        !declType.HasFlag(SymbolDeclTypeFlags.This) &&
+                        !declType.HasFlag(SymbolDeclTypeFlags.BuiltinVar))
                         throw new Exception($"Cannot add symbol {symbolDefinition} to root table while other tables are in use.");
                 }
             }
@@ -838,7 +838,7 @@ namespace UdonSharp.Compiler
         public SymbolDefinition CreateNamedSymbol(string symbolName, string symbolType, SymbolDeclTypeFlags declType)
         {
             System.Type resolvedType = resolver.ResolveExternType(symbolType);
-            if (declType.HasFlagFaster(SymbolDeclTypeFlags.Array))
+            if (declType.HasFlag(SymbolDeclTypeFlags.Array))
                 resolvedType = resolvedType.MakeArrayType();
 
             return CreateNamedSymbol(symbolName, resolvedType, declType);
@@ -879,7 +879,7 @@ namespace UdonSharp.Compiler
         public SymbolDefinition CreateUnnamedSymbol(string symbolType, SymbolDeclTypeFlags declType)
         {
             System.Type resolvedType = resolver.ResolveExternType(symbolType);
-            if (declType.HasFlagFaster(SymbolDeclTypeFlags.Array))
+            if (declType.HasFlag(SymbolDeclTypeFlags.Array))
                 resolvedType = resolvedType.MakeArrayType();
 
             return CreateUnnamedSymbol(resolvedType, declType);
@@ -887,7 +887,7 @@ namespace UdonSharp.Compiler
 
         public SymbolDefinition CreateUnnamedSymbol(System.Type type, SymbolDeclTypeFlags declType)
         {
-            string typeName = ResolverContext.GetUdonTypeName(type);
+            string typeName = resolver.GetUdonTypeName(type);
 
             if (type.IsArray)
                 declType |= SymbolDeclTypeFlags.Array;

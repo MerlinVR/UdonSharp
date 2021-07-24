@@ -185,7 +185,7 @@ namespace UdonSharp.Serialization
                 // Read
                 {
                     System.Type readDelegateType = typeof(ReadDataMethodDelegate<>).MakeGenericType(typeof(T));
-                    MethodInfo readDataMethod = UdonSharpUtils.GetTypeMethods(formatterType, Flags.InstancePublic).First(e => e.Name == "Read" && e.GetParameters().Length == 2);
+                    MethodInfo readDataMethod = formatterType.GetMethods(Flags.InstancePublic).Where(e => e.Name == "Read" && e.GetParameters().Length == 2).First();
                     DynamicMethod readMethod = new DynamicMethod($"Dynamic_{typeof(T).GetCompilableNiceFullName()}_Read", null, new[] { typeof(IValueStorage[]), typeof(T).MakeByRefType(), typeof(bool) }, true);
 
                     foreach (ParameterInfo param in readDataMethod.GetParameters())
@@ -199,7 +199,7 @@ namespace UdonSharp.Serialization
                 // Write
                 {
                     System.Type writeDelegateType = typeof(WriteDataMethodDelegate<>).MakeGenericType(typeof(T));
-                    MethodInfo writeDataMethod = UdonSharpUtils.GetTypeMethods(formatterType, Flags.InstancePublic).First(e => e.Name == "Write" && e.GetParameters().Length == 2);
+                    MethodInfo writeDataMethod = formatterType.GetMethods(Flags.InstancePublic).Where(e => e.Name == "Write" && e.GetParameters().Length == 2).First();
                     DynamicMethod writeMethod = new DynamicMethod($"Dynamic_{typeof(T).GetCompilableNiceFullName()}_Write", null, new[] { typeof(IValueStorage[]), typeof(T).MakeByRefType(), typeof(bool) }, true);
 
                     foreach (ParameterInfo param in writeDataMethod.GetParameters())

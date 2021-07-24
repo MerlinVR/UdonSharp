@@ -138,16 +138,16 @@ namespace UdonSharp.Editors
 
                 if (member.MemberType == MemberTypes.Constructor || member.MemberType == MemberTypes.Method)
                 {
-                    return ResolverContext.GetUdonMethodName((MethodBase)member, false);
+                    return resolver.GetUdonMethodName((MethodBase)member, false);
                 }
                 else if (member.MemberType == MemberTypes.Property)
                 {
                     string udonNames = "";
 
                     if (((PropertyInfo)member).GetGetMethod() != null)
-                        udonNames = ResolverContext.GetUdonMethodName(((PropertyInfo)member).GetGetMethod(), false);
+                        udonNames = resolver.GetUdonMethodName(((PropertyInfo)member).GetGetMethod(), false);
                     if (((PropertyInfo)member).GetSetMethod() != null)
-                        udonNames += "\n" + ResolverContext.GetUdonMethodName(((PropertyInfo)member).GetSetMethod(), false);
+                        udonNames += "\n" + resolver.GetUdonMethodName(((PropertyInfo)member).GetSetMethod(), false);
 
                     return udonNames;
                 }
@@ -270,7 +270,7 @@ namespace UdonSharp.Editors
 
             if (memberInfo is MethodInfo methodInfo)
             {
-                string methodUdonName = ResolverContext.GetUdonMethodName(methodInfo, false);
+                string methodUdonName = resolver.GetUdonMethodName(methodInfo, false);
 
                 //if (resolver.IsValidUdonMethod(methodUdonName))
                 {
@@ -295,7 +295,7 @@ namespace UdonSharp.Editors
             }
             else if (memberInfo is PropertyInfo propertyInfo)
             {
-                string propertyName = ResolverContext.GetUdonMethodName(propertyInfo.GetGetMethod(), false);
+                string propertyName = resolver.GetUdonMethodName(propertyInfo.GetGetMethod(), false);
 
                 //if (resolver.IsValidUdonMethod(propertyName))
                     shouldHide &= ShouldHideType(propertyInfo.PropertyType);
@@ -359,7 +359,7 @@ namespace UdonSharp.Editors
             {
                 case MemberTypes.Constructor:
                 case MemberTypes.Method:
-                    itemMetadata.exposed = resolver.IsValidUdonMethod(ResolverContext.GetUdonMethodName((MethodBase)memberInfo, false));
+                    itemMetadata.exposed = resolver.IsValidUdonMethod(resolver.GetUdonMethodName((MethodBase)memberInfo, false));
                     break;
                 case MemberTypes.Field:
                     string getAccessor = resolver.GetUdonFieldAccessorName((FieldInfo)memberInfo, FieldAccessorType.Get, false);
@@ -370,12 +370,12 @@ namespace UdonSharp.Editors
                     itemMetadata.exposed = resolver.IsValidUdonMethod(getAccessor);
                     break;
                 case MemberTypes.Property:
-                    string getProperty = ResolverContext.GetUdonMethodName(((PropertyInfo)memberInfo).GetGetMethod(), false);
+                    string getProperty = resolver.GetUdonMethodName(((PropertyInfo)memberInfo).GetGetMethod(), false);
                     exposedUdonExterns.Remove(getProperty);
 
                     if (((PropertyInfo)memberInfo).GetSetMethod() != null)
                     {
-                        string setProperty = ResolverContext.GetUdonMethodName(((PropertyInfo)memberInfo).GetSetMethod(), false);
+                        string setProperty = resolver.GetUdonMethodName(((PropertyInfo)memberInfo).GetSetMethod(), false);
                         exposedUdonExterns.Remove(setProperty);
                     }
 
@@ -514,7 +514,7 @@ namespace UdonSharp.Editors
                         if (type.IsByRef)
                             continue;
 
-                        string typeName = ResolverContext.GetUdonTypeName(type);
+                        string typeName = resolver.GetUdonTypeName(type);
                         if (resolver.ValidateUdonTypeName(typeName, UdonReferenceType.Type) ||
                             resolver.ValidateUdonTypeName(typeName, UdonReferenceType.Variable) ||
                             UdonEditorManager.Instance.GetTypeFromTypeString(typeName) != null)
@@ -525,11 +525,11 @@ namespace UdonSharp.Editors
                                 exposedTypeSet.Add(type.MakeArrayType());
                         }
 
-                        MethodInfo[] methods = UdonSharpUtils.GetTypeMethods(type, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+                        MethodInfo[] methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
                         
                         foreach (MethodInfo method in methods)
                         {
-                            if (resolver.IsValidUdonMethod(ResolverContext.GetUdonMethodName(method, false)))
+                            if (resolver.IsValidUdonMethod(resolver.GetUdonMethodName(method, false)))
                             {
                                 exposedTypeSet.Add(method.DeclaringType);
 
@@ -559,13 +559,13 @@ namespace UdonSharp.Editors
                             }
                         }
 
-                        foreach (PropertyInfo property in UdonSharpUtils.GetTypeProperties(type, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+                        foreach (PropertyInfo property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
                         {
                             MethodInfo propertyGetter = property.GetGetMethod();
                             if (propertyGetter == null)
                                 continue;
 
-                            if (resolver.IsValidUdonMethod(ResolverContext.GetUdonMethodName(propertyGetter, false)))
+                            if (resolver.IsValidUdonMethod(resolver.GetUdonMethodName(propertyGetter, false)))
                             {
                                 System.Type returnType = propertyGetter.ReturnType;
                                 
@@ -679,35 +679,35 @@ namespace UdonSharp.Editors
                 namespaceParent.AddChild(typeParent);
                 itemMetadatas.Add(typeParent, new TypeItemMetadata() { isType = true });
 
-                exposedUdonExterns.Remove("Variable_" + ResolverContext.GetUdonTypeName(type));
-                exposedUdonExterns.Remove("Const_" + ResolverContext.GetUdonTypeName(type));
-                exposedUdonExterns.Remove("Type_" + ResolverContext.GetUdonTypeName(type));
-                exposedUdonExterns.Remove("Type_" + ResolverContext.GetUdonTypeName(type.MakeByRefType()));
+                exposedUdonExterns.Remove("Variable_" + resolver.GetUdonTypeName(type));
+                exposedUdonExterns.Remove("Const_" + resolver.GetUdonTypeName(type));
+                exposedUdonExterns.Remove("Type_" + resolver.GetUdonTypeName(type));
+                exposedUdonExterns.Remove("Type_" + resolver.GetUdonTypeName(type.MakeByRefType()));
 
                 //if (!type.IsEnum)
                 //{
                 //    // Variable definition
                 //    TreeViewItem variableDef = new TreeViewItem(currentID++, typeParent.depth + 1, "<variable> " + type.Name);
                 //    typeParent.AddChild(variableDef);
-                //    itemMetadatas.Add(variableDef, new TypeItemMetadata() { exposed = resolver.ValidateUdonTypeName(ResolverContext.GetUdonTypeName(type), UdonReferenceType.Variable) });
+                //    itemMetadatas.Add(variableDef, new TypeItemMetadata() { exposed = resolver.ValidateUdonTypeName(resolver.GetUdonTypeName(type), UdonReferenceType.Variable) });
                 //}
 
                 // Type definition
                 //TreeViewItem typeDef = new TreeViewItem(currentID++, typeParent.depth + 1, "<type> " + type.Name);
                 //typeParent.AddChild(typeDef);
-                //itemMetadatas.Add(typeDef, new TypeItemMetadata() { exposed = resolver.ValidateUdonTypeName(ResolverContext.GetUdonTypeName(type), UdonReferenceType.Type) });
+                //itemMetadatas.Add(typeDef, new TypeItemMetadata() { exposed = resolver.ValidateUdonTypeName(resolver.GetUdonTypeName(type), UdonReferenceType.Type) });
 
                 // Internal type
                 TreeViewItem internalTypeDef = new TreeViewItem(currentID++, typeParent.depth + 1, "<Type> " + type.Name);
                 typeParent.AddChild(internalTypeDef);
-                itemMetadatas.Add(internalTypeDef, new TypeItemMetadata() { exposed = UdonEditorManager.Instance.GetTypeFromTypeString(ResolverContext.GetUdonTypeName(type)) != null });
+                itemMetadatas.Add(internalTypeDef, new TypeItemMetadata() { exposed = UdonEditorManager.Instance.GetTypeFromTypeString(resolver.GetUdonTypeName(type)) != null });
 
                 // Const definition
                 //if (!type.IsArray && !type.IsEnum)
                 //{
                 //    TreeViewItem constDef = new TreeViewItem(currentID++, typeParent.depth + 1, "<const> " + type.Name);
                 //    typeParent.AddChild(constDef);
-                //    itemMetadatas.Add(constDef, new TypeItemMetadata() { exposed = resolver.ValidateUdonTypeName(ResolverContext.GetUdonTypeName(type), UdonReferenceType.Const) });
+                //    itemMetadatas.Add(constDef, new TypeItemMetadata() { exposed = resolver.ValidateUdonTypeName(resolver.GetUdonTypeName(type), UdonReferenceType.Const) });
                 //}
 
                 BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
@@ -724,14 +724,14 @@ namespace UdonSharp.Editors
                     AddChildNode(typeParent, field, ref currentID);
                 }
 
-                foreach (PropertyInfo property in UdonSharpUtils.GetTypeProperties(type, bindingFlags))
+                foreach (PropertyInfo property in type.GetProperties(bindingFlags))
                 {
                     AddChildNode(typeParent, property, ref currentID);
                 }
 
                 if (!type.IsEnum)
                 {
-                    foreach (MethodInfo method in UdonSharpUtils.GetTypeMethods(type, bindingFlags).Where(e => (!type.IsArray || e.Name != "Address")))
+                    foreach (MethodInfo method in type.GetMethods(bindingFlags).Where(e => (!type.IsArray || e.Name != "Address")))
                     {
                         if (method.IsSpecialName && !method.Name.StartsWith("op_"))
                             continue;

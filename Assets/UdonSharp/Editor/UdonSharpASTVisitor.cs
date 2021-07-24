@@ -310,7 +310,7 @@ namespace UdonSharp.Compiler
             bool hasRecursiveMethods = false;
             foreach (MethodDefinition definition in visitorContext.definedMethods)
             {
-                if (definition.declarationFlags.HasFlagFaster(MethodDeclFlags.RecursiveMethod))
+                if (definition.declarationFlags.HasFlag(MethodDeclFlags.RecursiveMethod))
                 {
                     hasRecursiveMethods = true;
                     break;
@@ -383,7 +383,7 @@ namespace UdonSharp.Compiler
             if (node.Initializer != null)
                 throw new System.NotSupportedException("UdonSharp does not currently support initializers on properties.");
 
-            PropertyDefinition definition = visitorContext.definedProperties.First(e => e.originalPropertyName == node.Identifier.ValueText);
+            PropertyDefinition definition = visitorContext.definedProperties.Where(e => e.originalPropertyName == node.Identifier.ValueText).First();
 
             if (definition.getter != null)
             {
@@ -739,12 +739,12 @@ namespace UdonSharp.Compiler
                     }
                 }
 
-                if (hasInitializer && arrayRankSymbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Constant) && ((int)arrayRankSymbol.symbolDefaultValue) != node.Initializer.Expressions.Count)
+                if (hasInitializer && arrayRankSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) && ((int)arrayRankSymbol.symbolDefaultValue) != node.Initializer.Expressions.Count)
                 {
                     UpdateSyntaxNode(node.Initializer);
                     throw new System.ArgumentException($"An array initializer of length '{(int)arrayRankSymbol.symbolDefaultValue}' is expected");
                 }
-                else if (hasInitializer && !arrayRankSymbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Constant))
+                else if (hasInitializer && !arrayRankSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant))
                 {
                     throw new System.ArgumentException("A constant value is expected");
                 }
@@ -1303,9 +1303,9 @@ namespace UdonSharp.Compiler
         {
             UpdateSyntaxNode(node);
 
-            MethodDefinition definition = visitorContext.definedMethods.First(e => e.originalMethodName == node.Identifier.ValueText);
+            MethodDefinition definition = visitorContext.definedMethods.Where(e => e.originalMethodName == node.Identifier.ValueText).First();
 
-            visitorContext.isRecursiveMethod = definition.declarationFlags.HasFlagFaster(MethodDeclFlags.RecursiveMethod);
+            visitorContext.isRecursiveMethod = definition.declarationFlags.HasFlag(MethodDeclFlags.RecursiveMethod);
 
             string functionName = node.Identifier.ValueText;
             bool isBuiltinEvent = visitorContext.resolverContext.ReplaceInternalEventName(ref functionName);
@@ -1798,8 +1798,8 @@ namespace UdonSharp.Compiler
                     if (operatorType == BuiltinOperatorType.Equality ||
                         operatorType == BuiltinOperatorType.Inequality)
                     {
-                        bool lhsNull = lhsValue.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Constant) && lhsValue.symbolDefaultValue == null;
-                        bool rhsNull = rhsValue.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Constant) && rhsValue.symbolDefaultValue == null;
+                        bool lhsNull = lhsValue.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) && lhsValue.symbolDefaultValue == null;
+                        bool rhsNull = rhsValue.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) && rhsValue.symbolDefaultValue == null;
 
                         if (lhsNull && !rhsNull)
                         {

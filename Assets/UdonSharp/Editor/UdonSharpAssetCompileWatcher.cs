@@ -61,15 +61,22 @@ namespace UdonSharp
 
             string[] directories = Directory.GetDirectories("Assets/", "*", SearchOption.AllDirectories).Append("Assets/")
                 .Select(e => e.Replace('\\', '/'))
-                .Where(e => !blacklistedDirectories.Any(name => name.TrimEnd('/') == e.TrimEnd('/') || e.StartsWith(name))
-                        && Directory.GetFiles(e, "*.cs").Length > 0)
+                .Where(e => !blacklistedDirectories.Any(name => name.TrimEnd('/') == e.TrimEnd('/') || e.StartsWith(name)))
                 .ToArray();
 
-            fileSystemWatchers = new FileSystemWatcher[directories.Length];
-            
-            for (int i = 0; i < directories.Length; ++i)
+            List<string> sourceDirectories = new List<string>();
+
+            foreach (string directory in directories)
             {
-                FileSystemWatcher fileSystemWatcher = new FileSystemWatcher(directories[i], "*.cs");
+                if (Directory.GetFiles(directory, "*.cs").Length > 0)
+                    sourceDirectories.Add(directory);
+            }
+
+            fileSystemWatchers = new FileSystemWatcher[sourceDirectories.Count];
+            
+            for (int i = 0; i < sourceDirectories.Count; ++i)
+            {
+                FileSystemWatcher fileSystemWatcher = new FileSystemWatcher(sourceDirectories[i], "*.cs");
                 fileSystemWatcher.IncludeSubdirectories = false;
                 fileSystemWatcher.InternalBufferSize = 1024; // Someone would need to modify 64 files in a single directory at once to hit this
 

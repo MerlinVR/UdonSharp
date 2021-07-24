@@ -457,7 +457,7 @@ namespace UdonSharp.Compiler
 
                     // Run the initializer if it exists
                     // Todo: Run the set on the new symbol scope from within the initializer scope for direct setting
-                    if (variableDeclarator.Initializer != null && symbolType.HasFlagFaster(SymbolDeclTypeFlags.Local))
+                    if (variableDeclarator.Initializer != null && symbolType.HasFlag(SymbolDeclTypeFlags.Local))
                     {
                         using (ExpressionCaptureScope initializerCapture = new ExpressionCaptureScope(visitorContext, null, newSymbol))
                         {

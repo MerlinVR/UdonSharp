@@ -93,7 +93,7 @@ namespace UdonSharpEditor
             {
                 const BindingFlags eventBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
-                MethodInfo eventInfo = UdonSharpUtils.GetTypeMethods(behaviourType, eventBindingFlags).FirstOrDefault(e => e.Name == eventName && e.ReturnType == typeof(void));
+                MethodInfo eventInfo = behaviourType.GetMethods(eventBindingFlags).FirstOrDefault(e => e.Name == eventName && e.ReturnType == typeof(void));
 
                 try
                 {
@@ -176,7 +176,7 @@ namespace UdonSharpEditor
                 InjectedMethods.shouldSkipEventsMethod = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), typeof(UdonSharpBehaviour).GetMethod("ShouldSkipEvents", BindingFlags.Static | BindingFlags.NonPublic));
 
                 // Patch GUI object field drawer
-                MethodInfo doObjectFieldMethod = UdonSharpUtils.GetTypeMethods(typeof(EditorGUI), BindingFlags.Static | BindingFlags.NonPublic).FirstOrDefault(e => e.Name == "DoObjectField" && e.GetParameters().Length == 9);
+                MethodInfo doObjectFieldMethod = typeof(EditorGUI).GetMethods(BindingFlags.Static | BindingFlags.NonPublic).FirstOrDefault(e => e.Name == "DoObjectField" && e.GetParameters().Length == 9);
 
                 HarmonyMethod objectFieldProxy = new HarmonyMethod(typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.DoObjectFieldProxy)));
                 harmony.Patch(doObjectFieldMethod, objectFieldProxy);
@@ -190,7 +190,7 @@ namespace UdonSharpEditor
                 InjectedMethods.crossSceneRefCheckMethod = (Func<UnityEngine.Object, UnityEngine.Object, bool>)Delegate.CreateDelegate(typeof(Func<UnityEngine.Object, UnityEngine.Object, bool>), crossSceneRefCheckMethod);
 
                 // Patch post BuildAssetBundles fixup function
-                MethodInfo buildAssetbundlesMethod = UdonSharpUtils.GetTypeMethods(typeof(BuildPipeline), BindingFlags.NonPublic | BindingFlags.Static).First(e => e.Name == "BuildAssetBundles" && e.GetParameters().Length == 5);
+                MethodInfo buildAssetbundlesMethod = typeof(BuildPipeline).GetMethods(BindingFlags.NonPublic | BindingFlags.Static).First(e => e.Name == "BuildAssetBundles" && e.GetParameters().Length == 5);
 
                 MethodInfo postBuildMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.PostBuildAssetBundles), BindingFlags.Public | BindingFlags.Static);
                 HarmonyMethod postBuildHarmonyMethod = new HarmonyMethod(postBuildMethod);
@@ -884,7 +884,7 @@ namespace UdonSharpEditor
                         }
 
                         // Field was exported at one point, but is no longer. So we need to remove it from the behaviour
-                        if (!fieldDefinition.fieldSymbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Public))
+                        if (!fieldDefinition.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public))
                         {
                             updatedBehaviourVariables++;
                             publicVariables.RemoveVariable(variableSymbol);

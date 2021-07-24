@@ -171,7 +171,10 @@ namespace UdonSharpEditor
 
                 System.Type fieldType = customEditorField.FieldType;
 
-                removeTypeMethod = fieldType.GetMethod("Remove", BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(System.Type) }, null);
+                removeTypeMethod = fieldType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                                            .FirstOrDefault(e => e.Name == "Remove" &&
+                                                                 e.GetParameters().Length == 1 &&
+                                                                 e.GetParameters()[0].ParameterType == typeof(System.Type));
 
                 monoEditorTypeType = editorAttributesClass.GetNestedType("MonoEditorType", BindingFlags.NonPublic);
                 monoEditorTypeInspectedTypeField = monoEditorTypeType.GetField("m_InspectedType", BindingFlags.Public | BindingFlags.Instance);
@@ -180,11 +183,20 @@ namespace UdonSharpEditor
                 monoEditorTypeListType = typeof(List<>).MakeGenericType(monoEditorTypeType);
 
 
-                addTypeMethod = fieldType.GetMethod("Add", BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(System.Type), monoEditorTypeListType }, null);
+                addTypeMethod = fieldType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                                         .FirstOrDefault(e => e.Name == "Add" &&
+                                                              e.GetParameters().Length == 2 &&
+                                                              e.GetParameters()[0].ParameterType == typeof(System.Type) &&
+                                                              e.GetParameters()[1].ParameterType == monoEditorTypeListType);
 
-                listAddTypeMethod = monoEditorTypeListType.GetMethod("Add", BindingFlags.Public | BindingFlags.Instance, null, new Type[] { monoEditorTypeType }, null);
+                listAddTypeMethod = monoEditorTypeListType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                                                          .FirstOrDefault(e => e.Name == "Add" &&
+                                                                               e.GetParameters().Length == 1 &&
+                                                                               e.GetParameters()[0].ParameterType == monoEditorTypeType);
 
-                listClearMethod = monoEditorTypeListType.GetMethod("Clear", BindingFlags.Public | BindingFlags.Instance, null, Array.Empty<Type>(), null);
+                listClearMethod = monoEditorTypeListType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                                                        .FirstOrDefault(e => e.Name == "Clear" &&
+                                                                             e.GetParameters().Length == 0);
 
                 customEditorDictionary = customEditorField.GetValue(null);
 

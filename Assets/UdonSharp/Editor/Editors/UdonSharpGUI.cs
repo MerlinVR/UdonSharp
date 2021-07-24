@@ -224,7 +224,7 @@ namespace UdonSharpEditor
                 popupLocationArray.SetValue(4, 1); // PopupLocation.Overlay
             }
 
-            MethodInfo showAsDropDownMethod = UdonSharpUtils.GetTypeMethods(typeof(EditorWindow), BindingFlags.NonPublic | BindingFlags.Instance).First(e => e.GetParameters().Length == 3);
+            MethodInfo showAsDropDownMethod = typeof(EditorWindow).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).First(e => e.GetParameters().Length == 3);
 
             showAsDropDownMethod.Invoke(this, new object[] { controlRect, size, popupLocationArray });
         }
@@ -546,7 +546,7 @@ namespace UdonSharpEditor
             if (IsNormalUnityObject(declaredType, fieldDefinition))
                 return EditorGUILayout.ObjectField(fieldName, (UnityEngine.Object)value, declaredType, true);
 
-            MethodInfo doObjectFieldMethod = UdonSharpUtils.GetTypeMethods(typeof(EditorGUI), BindingFlags.Static | BindingFlags.NonPublic).FirstOrDefault(e => e.Name == "DoObjectField" && e.GetParameters().Length == 8);
+            MethodInfo doObjectFieldMethod = typeof(EditorGUI).GetMethods(BindingFlags.Static | BindingFlags.NonPublic).Where(e => e.Name == "DoObjectField" && e.GetParameters().Length == 8).FirstOrDefault();
 
             if (doObjectFieldMethod == null)
                 throw new System.Exception("Could not find DoObjectField() method");
@@ -1622,7 +1622,7 @@ namespace UdonSharpEditor
                 EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
                 if (GUILayout.Button("Convert to UdonBehaviour", GUILayout.Height(25)))
                 {
-                    UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(targets.Select(e => e as UdonSharpBehaviour).Where(e => e != null && !UdonSharpEditorUtility.IsProxyBehaviour(e)).ToArray(), true, true, true);
+                    UdonSharpEditorUtility.ConvertToUdonBehavioursInternal(Array.ConvertAll(targets, e => e as UdonSharpBehaviour).Where(e => e != null && !UdonSharpEditorUtility.IsProxyBehaviour(e)).ToArray(), true, true, true);
                     EditorGUI.EndDisabledGroup();
 
                     return true;
