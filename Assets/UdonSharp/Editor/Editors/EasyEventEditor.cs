@@ -1131,7 +1131,7 @@ namespace Merlin
             // For some reason BindingFlags.FlattenHierarchy does not seem to work, so we manually traverse the base types instead
             while (objectType != null)
             {
-                MethodInfo[] foundMethodsOnType = objectType.GetMethods(BindingFlags.Public | (cachedSettings.showPrivateMembers ? BindingFlags.NonPublic : BindingFlags.Default) | BindingFlags.Instance);
+                MethodInfo[] foundMethodsOnType = UdonSharpUtils.GetTypeMethods(objectType,BindingFlags.Public | (cachedSettings.showPrivateMembers ? BindingFlags.NonPublic : BindingFlags.Default) | BindingFlags.Instance);
 
                 foundMethods.AddRange(foundMethodsOnType);
 

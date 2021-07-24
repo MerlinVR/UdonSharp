@@ -201,7 +201,7 @@ namespace UdonSharp.Compiler
 
             foreach (SymbolDefinition symbol in allSymbols)
             {
-                if (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public) && !symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Readonly))
+                if (symbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Public) && !symbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Readonly))
                     builder.AppendLine($".export {symbol.symbolUniqueName}", 1);
             }
 

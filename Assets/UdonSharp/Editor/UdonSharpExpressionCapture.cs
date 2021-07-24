@@ -458,7 +458,7 @@ namespace UdonSharp.Compiler
 
                 outSymbol = AllocateOutputSymbol(getMethod.ReturnType);
 
-                string methodUdonString = visitorContext.resolverContext.GetUdonMethodName(getMethod);
+                string methodUdonString = ResolverContext.GetUdonMethodName(getMethod);
 
                 if (!getMethod.IsStatic)
                 {
@@ -553,7 +553,7 @@ namespace UdonSharp.Compiler
                 if (arraySymbolType == typeof(string))
                 {
                     // udon-workaround: This is where support for Udon's string indexer would go, IF IT HAD ONE
-                    //getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "get_Chars").First());
+                    //getIndexerUdonName = ResolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == "get_Chars").First());
                     
                     elementType = typeof(char);
 
@@ -576,7 +576,7 @@ namespace UdonSharp.Compiler
                         subStrCharArrSymbol = charArrScope.Invoke(new SymbolDefinition[] { });
                     }
 
-                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(typeof(char[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
+                    getIndexerUdonName = ResolverContext.GetUdonMethodName(typeof(char[]).GetMethod("Get", BindingFlags.Public | BindingFlags.Instance));
                     visitorContext.uasmBuilder.AddPush(subStrCharArrSymbol);
                     visitorContext.uasmBuilder.AddPush(visitorContext.topTable.CreateConstSymbol(typeof(int), 0)); // 0 index
                 }
@@ -587,7 +587,7 @@ namespace UdonSharp.Compiler
                 {
                     elementType = typeof(float);
 
-                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbolType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "get_Item" && e.GetParameters().Length == 1));
+                    getIndexerUdonName = ResolverContext.GetUdonMethodName(arraySymbolType.GetMethod("get_Item", BindingFlags.Public | BindingFlags.Instance, null, new System.Type[] { typeof(int) }, null));
 
                     visitorContext.uasmBuilder.AddPush(arraySymbol);
                     visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
@@ -597,9 +597,9 @@ namespace UdonSharp.Compiler
                     // udon-workaround: VRC scans UnityEngine.Object arrays in their respective methods, so those methods are useless since they get disproportionately expensive the larger the array is.
                     // Instead use the object[] indexer for these objects since it does not get scanned
                     if (arraySymbolType.GetElementType() == typeof(UnityEngine.Object) || arraySymbolType.GetElementType().IsSubclassOf(typeof(UnityEngine.Object)))
-                        getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(typeof(object[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
+                        getIndexerUdonName = ResolverContext.GetUdonMethodName(typeof(object[]).GetMethod("Get", BindingFlags.Public | BindingFlags.Instance));
                     else
-                        getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbolType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
+                        getIndexerUdonName = ResolverContext.GetUdonMethodName(arraySymbolType.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance));
 
                     elementType = arraySymbol.userCsType.GetElementType();
 
@@ -636,7 +636,7 @@ namespace UdonSharp.Compiler
             {
                 if (captureArchetype == ExpressionCaptureArchetype.LocalSymbol)
                 {
-                    if (captureLocalSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) || captureLocalSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.This))
+                    if (captureLocalSymbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Constant) || captureLocalSymbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.This))
                         return null;
 
                     return captureLocalSymbol;
@@ -670,7 +670,7 @@ namespace UdonSharp.Compiler
                 if (setMethod == null)
                     throw new System.MemberAccessException($"Property or indexer '{captureProperty.DeclaringType.Name}.{captureProperty.Name}' cannot be assigned to -- it is read only or doesn't exist");
 
-                string udonMethodString = visitorContext.resolverContext.GetUdonMethodName(setMethod);
+                string udonMethodString = ResolverContext.GetUdonMethodName(setMethod);
 
                 if (!setMethod.IsStatic)
                 {
@@ -767,16 +767,16 @@ namespace UdonSharp.Compiler
                     arraySymbolType == typeof(Vector4) ||
                     arraySymbolType == typeof(Matrix4x4))
                 {
-                    setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbol.symbolCsType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "set_Item" && e.GetParameters().Length == 2));
+                    setIndexerUdonName = ResolverContext.GetUdonMethodName(UdonSharpUtils.GetTypeMethods(arraySymbol.symbolCsType, BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "set_Item" && e.GetParameters().Length == 2));
                 }
                 else
                 {
                     // udon-workaround: VRC scans UnityEngine.Object arrays in their respective methods, so those methods are useless since they get disproportionately expensive the larger the array is.
                     // Instead use the object[] indexer for these objects since it does not get scanned
                     if (arraySymbolType.GetElementType() == typeof(UnityEngine.Object) || arraySymbolType.GetElementType().IsSubclassOf(typeof(UnityEngine.Object)))
-                        setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(typeof(object[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Set"));
+                        setIndexerUdonName = ResolverContext.GetUdonMethodName(typeof(object[]).GetMethod("Set", BindingFlags.Public | BindingFlags.Instance));
                     else
-                        setIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbolType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Set"));
+                        setIndexerUdonName = ResolverContext.GetUdonMethodName(arraySymbolType.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance));
                 }
 
                 visitorContext.uasmBuilder.AddPush(arraySymbol);
@@ -892,7 +892,7 @@ namespace UdonSharp.Compiler
             bool isObjectAssignable = !targetType.IsValueType && sourceSymbol.symbolCsType == typeof(object);
 
             bool isNumericCastValid = UdonSharpUtils.IsNumericImplicitCastValid(targetType, sourceSymbol.symbolCsType) ||
-                 (sourceSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) && sourceSymbol.symbolCsType == typeof(int)); // Handle Roslyn giving us ints constant expressions
+                 (sourceSymbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Constant) && sourceSymbol.symbolCsType == typeof(int)); // Handle Roslyn giving us ints constant expressions
 
             if ((!isExplicit && !targetType.IsImplicitlyAssignableFrom(sourceSymbol.userCsType)) &&
                 !isObjectAssignable && !isNumericCastValid)
@@ -937,7 +937,7 @@ namespace UdonSharp.Compiler
 
                 visitorContext.uasmBuilder.AddPush(sourceNumericSymbol);
                 visitorContext.uasmBuilder.AddPush(castOutput);
-                visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(conversionFunction));
+                visitorContext.uasmBuilder.AddExternCall(ResolverContext.GetUdonMethodName(conversionFunction));
 
                 return castOutput;
             }
@@ -957,7 +957,7 @@ namespace UdonSharp.Compiler
 
             foreach (System.Type operatorType in operatorTypes)
             {
-                IEnumerable<MethodInfo> methods = operatorType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Implicit");
+                IEnumerable<MethodInfo> methods = UdonSharpUtils.GetTypeMethods(operatorType, BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Implicit");
 
                 foreach (MethodInfo methodInfo in methods)
                 {
@@ -978,7 +978,7 @@ namespace UdonSharp.Compiler
 
                 visitorContext.uasmBuilder.AddPush(sourceSymbol);
                 visitorContext.uasmBuilder.AddPush(castOutput);
-                visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(foundConversion));
+                visitorContext.uasmBuilder.AddExternCall(ResolverContext.GetUdonMethodName(foundConversion));
 
                 return castOutput;
             }
@@ -988,7 +988,7 @@ namespace UdonSharp.Compiler
             {
                 foreach (System.Type operatorType in operatorTypes)
                 {
-                    IEnumerable<MethodInfo> methods = operatorType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Explicit");
+                    IEnumerable<MethodInfo> methods = UdonSharpUtils.GetTypeMethods(operatorType, BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Explicit");
 
                     foreach (MethodInfo methodInfo in methods)
                     {
@@ -1009,7 +1009,7 @@ namespace UdonSharp.Compiler
 
                     visitorContext.uasmBuilder.AddPush(sourceSymbol);
                     visitorContext.uasmBuilder.AddPush(castOutput);
-                    visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(foundConversion));
+                    visitorContext.uasmBuilder.AddExternCall(ResolverContext.GetUdonMethodName(foundConversion));
 
                     return castOutput;
                 }
@@ -1023,7 +1023,7 @@ namespace UdonSharp.Compiler
                     
                     SymbolDefinition castOutput = requestedDestination != null ? requestedDestination : visitorContext.topTable.CreateUnnamedSymbol(targetType, SymbolDeclTypeFlags.Internal);
 
-                    string objArrayGetMethod = visitorContext.resolverContext.GetUdonMethodName(typeof(object[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get"));
+                    string objArrayGetMethod = ResolverContext.GetUdonMethodName(typeof(object[]).GetMethod("Get", BindingFlags.Public | BindingFlags.Instance));
 
                     visitorContext.uasmBuilder.AddPush(enumArraySymbol);
                     visitorContext.uasmBuilder.AddPush(indexSymbol);
@@ -1176,7 +1176,7 @@ namespace UdonSharp.Compiler
                 targetParameters = new System.Type[] { typeof(System.Type) }.Concat(targetParameters).ToArray();
             }
 
-            MethodInfo[] foundMethods = declaringType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == searchString && AllMethodParametersMatch(e, targetParameters)).ToArray();
+            MethodInfo[] foundMethods = UdonSharpUtils.GetTypeMethods(declaringType, BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == searchString && AllMethodParametersMatch(e, targetParameters)).ToArray();
             
             if (foundMethods.Length != 1)
             {
@@ -1574,7 +1574,7 @@ namespace UdonSharp.Compiler
 
             visitorContext.uasmBuilder.AddPush(resultComponents);
 
-            visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(targetMethod));
+            visitorContext.uasmBuilder.AddExternCall(ResolverContext.GetUdonMethodName(targetMethod));
 
             if (isArray)
             {
@@ -1748,7 +1748,8 @@ namespace UdonSharp.Compiler
                 visitorContext.uasmBuilder.AddPush(visitorContext.artificalStackSymbol);
                 visitorContext.uasmBuilder.AddPush(visitorContext.stackAddressSymbol);
                 visitorContext.uasmBuilder.AddPush(paramCOWVal.symbol);
-                visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(typeof(object[]).GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "Get")));
+                string externCall = ResolverContext.GetUdonMethodName(typeof(object[]).GetMethod("Get", BindingFlags.Public | BindingFlags.Instance));
+                visitorContext.uasmBuilder.AddExternCall(externCall);
 
                 paramCOWVal.Dispose();
             }
@@ -1776,7 +1777,7 @@ namespace UdonSharp.Compiler
             // We use void as a placeholder for a null constant value getting passed in, if null is passed in and the target type is a reference type then we assume they are compatible
             List<System.Type> typeList = invokeParams.Select(e =>
             {
-                if (e.declarationType.HasFlag(SymbolDeclTypeFlags.Constant) &&
+                if (e.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Constant) &&
                     e.symbolCsType == typeof(object) &&
                     e.symbolDefaultValue == null)
                     return typeof(void);
@@ -1802,13 +1803,13 @@ namespace UdonSharp.Compiler
                 {
                     if (targetMethod != null)
                     {
-                        throw new System.Exception($"Method is not exposed to Udon: {targetMethod}, Udon signature: {visitorContext.resolverContext.GetUdonMethodName(targetMethod, false)}");
+                        throw new System.Exception($"Method is not exposed to Udon: {targetMethod}, Udon signature: {ResolverContext.GetUdonMethodName(targetMethod, false)}");
                     }
 
                     string udonFilteredMethods = "";
 
                     udonFilteredMethods = string.Join("\n", captureMethods
-                        .Select(e => new System.Tuple<MethodBase, string>(e, visitorContext.resolverContext.GetUdonMethodName(e, false)))
+                        .Select(e => new System.Tuple<MethodBase, string>(e, ResolverContext.GetUdonMethodName(e, false)))
                         .Where(e => !visitorContext.resolverContext.IsValidUdonMethod(e.Item2))
                         .Select(e => e.Item1));
 
@@ -1855,7 +1856,7 @@ namespace UdonSharp.Compiler
 
                     visitorContext.uasmBuilder.AddPush(accessSymbol);
                     visitorContext.uasmBuilder.AddPush(outputTransformComponent);
-                    visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(getTransformMethod), "GetComponent strongbox mismatch fix");
+                    visitorContext.uasmBuilder.AddExternCall(ResolverContext.GetUdonMethodName(getTransformMethod), "GetComponent strongbox mismatch fix");
 
                     visitorContext.uasmBuilder.AddPush(outputTransformComponent);
                 }
@@ -1931,7 +1932,7 @@ namespace UdonSharp.Compiler
                     visitorContext.uasmBuilder.AddPush(returnSymbol);
                 }
 
-                visitorContext.uasmBuilder.AddExternCall(visitorContext.resolverContext.GetUdonMethodName(targetMethod, true, genericTypeArguments));
+                visitorContext.uasmBuilder.AddExternCall(ResolverContext.GetUdonMethodName(targetMethod, true, genericTypeArguments));
 
                 if (isPotentiallyRecursive && !shouldSkipRecursivePush)
                     PopRecursiveStack(symbolsToPush);
@@ -2280,7 +2281,7 @@ namespace UdonSharp.Compiler
         public bool IsConstExpression()
         {
             // Only basic handling for local symbols for now since we can directly reference them
-            if (IsLocalSymbol() && ExecuteGet().declarationType.HasFlag(SymbolDeclTypeFlags.Constant))
+            if (IsLocalSymbol() && ExecuteGet().declarationType.HasFlagFaster(SymbolDeclTypeFlags.Constant))
                 return true;
 
             return false;
@@ -2456,26 +2457,14 @@ namespace UdonSharp.Compiler
             return true;
         }
 
-        private MethodInfo[] GetTypeMethods(System.Type type, BindingFlags bindingFlags)
-        {
-            MethodInfo[] methods;
-            if (!visitorContext.typeMethodCache.TryGetValue((type, bindingFlags), out methods))
-            {
-                methods = type.GetMethods(bindingFlags);
-                visitorContext.typeMethodCache.Add((type, bindingFlags), methods);
-            }
-
-            return methods;
-        }
-
         private bool HandleLocalUdonBehaviourMethodLookup(string localUdonMethodName)
         {
-            List<MethodInfo> methods = new List<MethodInfo>(GetTypeMethods(typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver), BindingFlags.Instance | BindingFlags.Public));
-            methods.AddRange(GetTypeMethods(typeof(Component), BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy));
-            methods.AddRange(GetTypeMethods(typeof(Object), BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy));
+            List<MethodInfo> methods = new List<MethodInfo>(UdonSharpUtils.GetTypeMethods(typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver), BindingFlags.Instance | BindingFlags.Public));
+            methods.AddRange(UdonSharpUtils.GetTypeMethods(typeof(Component), BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy));
+            methods.AddRange(UdonSharpUtils.GetTypeMethods(typeof(Object), BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy));
 
             if (localUdonMethodName == "VRCInstantiate")
-                methods.AddRange(GetTypeMethods(typeof(UdonSharpBehaviour), BindingFlags.Static | BindingFlags.Public));
+                methods.AddRange(UdonSharpUtils.GetTypeMethods(typeof(UdonSharpBehaviour), BindingFlags.Static | BindingFlags.Public));
             else if (localUdonMethodName == "SetProgramVariable" || localUdonMethodName == "GetProgramVariable")
                 methods.Add(typeof(UdonSharpBehaviour).GetMethod(localUdonMethodName, BindingFlags.Instance | BindingFlags.Public));
 
@@ -2492,10 +2481,10 @@ namespace UdonSharp.Compiler
         }
 
         private static readonly PropertyInfo[] _componentProperties =
-            typeof(Component).GetProperties(BindingFlags.Instance | BindingFlags.Public);
+            UdonSharpUtils.GetTypeProperties(typeof(Component), BindingFlags.Instance | BindingFlags.Public);
         
         private static readonly PropertyInfo[] _udonEventReceiverProperties =
-            typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            UdonSharpUtils.GetTypeProperties(typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
         private bool HandleLocalUdonBehaviourPropertyLookup(string localUdonPropertyName)
         {
@@ -2595,7 +2584,7 @@ namespace UdonSharp.Compiler
             if (captureArchetype != ExpressionCaptureArchetype.Type)
                 throw new System.Exception("Static method lookup only supported on Type archetypes");
 
-            MethodInfo[] methods = captureType.GetMethods(BindingFlags.Static | BindingFlags.Public).Where(e => e.Name == methodToken).ToArray();
+            MethodInfo[] methods = UdonSharpUtils.GetTypeMethods(captureType, BindingFlags.Static | BindingFlags.Public).Where(e => e.Name == methodToken).ToArray();
 
             if (methods.Length == 0)
                 return false;
@@ -2684,14 +2673,14 @@ namespace UdonSharp.Compiler
 
             System.Type currentReturnType = GetReturnType();
 
-            PropertyInfo[] foundProperties = currentReturnType.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == propertyToken).ToArray();
+            PropertyInfo[] foundProperties = UdonSharpUtils.GetTypeProperties(currentReturnType, BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == propertyToken).ToArray();
 
             if (propertyToken == "enabled" &&
                 (currentReturnType == typeof(VRC.Udon.UdonBehaviour) ||
                  currentReturnType == typeof(UdonSharpBehaviour) ||
                  currentReturnType.IsSubclassOf(typeof(UdonSharpBehaviour))))
             {
-                foundProperties = typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(e => e.Name == propertyToken).ToArray();
+                foundProperties = UdonSharpUtils.GetTypeProperties(typeof(VRC.Udon.Common.Interfaces.IUdonEventReceiver), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(e => e.Name == propertyToken).ToArray();
             }
 
             if (foundProperties.Length == 0)
@@ -2747,7 +2736,7 @@ namespace UdonSharp.Compiler
         }
 
         private static readonly MethodInfo[] _objectMethods =
-            typeof(object).GetMethods(BindingFlags.Public | BindingFlags.Instance);
+            UdonSharpUtils.GetTypeMethods(typeof(object), BindingFlags.Public | BindingFlags.Instance);
         
         private bool HandleMemberMethodLookup(string methodToken)
         {
@@ -2763,7 +2752,7 @@ namespace UdonSharp.Compiler
             
             System.Type returnType = GetReturnType();
 
-            List<MethodInfo> foundMethodInfos = new List<MethodInfo>(returnType.GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == methodToken));
+            List<MethodInfo> foundMethodInfos = new List<MethodInfo>(UdonSharpUtils.GetTypeMethods(returnType, BindingFlags.Public | BindingFlags.Instance).Where(e => e.Name == methodToken));
 
             if (returnType != typeof(object))
                 foundMethodInfos.AddRange(_objectMethods.Where(e => e.Name == methodToken));
@@ -2792,7 +2781,7 @@ namespace UdonSharp.Compiler
             if (externClass == null)
                 return false;
 
-            FieldDefinition foundDefinition = externClass.fieldDefinitions.Find(e => e.fieldSymbol.symbolOriginalName == fieldToken && e.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public));
+            FieldDefinition foundDefinition = externClass.fieldDefinitions.Find(e => e.fieldSymbol.symbolOriginalName == fieldToken && e.fieldSymbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Public));
 
             if (foundDefinition == null)
                 return false;
@@ -2817,7 +2806,7 @@ namespace UdonSharp.Compiler
             if (externClass == null)
                 return false;
 
-            MethodDefinition foundDefinition = externClass.methodDefinitions.Find(e => e.originalMethodName == methodToken && e.declarationFlags.HasFlag(MethodDeclFlags.Public));
+            MethodDefinition foundDefinition = externClass.methodDefinitions.Find(e => e.originalMethodName == methodToken && e.declarationFlags.HasFlagFaster(MethodDeclFlags.Public));
 
             if (foundDefinition == null)
                 return false;
@@ -2842,7 +2831,7 @@ namespace UdonSharp.Compiler
             if (externClass == null)
                 return false;
 
-            PropertyDefinition foundDefinition = externClass.propertyDefinitions.Find(e => e.originalPropertyName == propertyToken && e.declarationFlags.HasFlag(PropertyDeclFlags.Public));
+            PropertyDefinition foundDefinition = externClass.propertyDefinitions.Find(e => e.originalPropertyName == propertyToken && e.declarationFlags.HasFlagFaster(PropertyDeclFlags.Public));
             if (foundDefinition == null)
                 return false;
 

@@ -225,7 +225,7 @@ namespace UdonSharp.Compiler
 
                                                 SymbolDefinition attrSymbol = attributeCapture.ExecuteGet();
 
-                                                if (!attrSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Constant))
+                                                if (!attrSymbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Constant))
                                                 {
                                                     throw new System.ArgumentException("Attributes do not support non-constant expressions");
                                                 }

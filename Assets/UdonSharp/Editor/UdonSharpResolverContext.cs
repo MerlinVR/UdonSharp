@@ -49,7 +49,7 @@ namespace UdonSharp
             { "void", "System.Void" } // void might need to be revisited since it could mess with something
         };
 
-        private Dictionary<string, System.Type> typeLookupCache = new Dictionary<string, System.Type>();
+        private Dictionary<string, System.Type> typeLookupCache = new Dictionary<string, System.Type>(128);
 
         private static HashSet<string> nodeDefinitionLookup;
 
@@ -239,7 +239,7 @@ namespace UdonSharp
 
         public IEnumerable<MethodInfo> ResolveMemberMethods(System.Type type, string methodName)
         {
-            return type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static).Where(e => e.Name == methodName);
+            return UdonSharpUtils.GetTypeMethods(type, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static).Where(e => e.Name == methodName);
         }
 
         public string ParseBuiltinTypeAlias(string typeName)
@@ -338,7 +338,7 @@ namespace UdonSharp
             return null;
         }
 
-        public string SanitizeTypeName(string typeName)
+        public static string SanitizeTypeName(string typeName)
         {
             return typeName.Replace(",", "")
                            .Replace(".", "")
@@ -354,7 +354,7 @@ namespace UdonSharp
         /// <param name="skipBaseTypeRemap">Skips remapping base VRCSDK types, this is primarily used for VRCSDK function return value types since they may point to the base type and we want to maintain that.</param>
         /// <returns>The Udon type name string if it is a valid Udon type, 
         ///     or null if it is not a valid Udon type.</returns>
-        public string GetUdonTypeName(System.Type externType, bool skipBaseTypeRemap = false)
+        public static string GetUdonTypeName(System.Type externType, bool skipBaseTypeRemap = false)
         {
             if (!skipBaseTypeRemap)
                 externType = UdonSharpUtils.RemapBaseType(externType);
@@ -413,7 +413,7 @@ namespace UdonSharp
         /// </summary>
         /// <param name="externMethod"></param>
         /// <returns></returns>
-        public string GetUdonMethodName(MethodBase externMethod, bool validate = true, List<System.Type> genericArguments = null)
+        public static string GetUdonMethodName(MethodBase externMethod, bool validate = true, List<System.Type> genericArguments = null)
         {
             System.Type methodSourceType = externMethod.ReflectedType;
 
@@ -707,7 +707,7 @@ namespace UdonSharp
             }
 
             if (nonGenericCount > 0 && genericCount > 0)
-                validMethods = validMethods.Where(e => !e.IsGenericMethod).ToList();
+                validMethods.RemoveAll(e => !e.IsGenericMethod);
 
             if (validMethods.Count == 1)
                 return validMethods.First();
@@ -723,7 +723,7 @@ namespace UdonSharp
             }
 
             if (normalOperatorCount > 0 && udonSharpOperatorCount > 0)
-                validMethods = validMethods.Where(e => !(e is OperatorMethodInfo)).ToList();
+                validMethods.RemoveAll(e => !(e is OperatorMethodInfo));
 
             // Count the params using methods in this pass
             // todo: this still needs a chunk of work to handle when users don't pass anything for params along with handling default arguments before the params args, 
@@ -744,10 +744,10 @@ namespace UdonSharp
             // If we have variants with `params` arguments and variants with normal arguments that fit requirements, then use the ones without the params
             if (paramsArgCount > 0 && nonParamsArgCount > 0)
             {
-                validMethods = validMethods.Where(e => {
+                validMethods.RemoveAll(e => {
                     ParameterInfo[] parameters = e.GetParameters();
                     return parameters.Length == 0 || !parameters.Last().HasParamsParameter() || parameters.Last().ParameterType.IsImplicitlyAssignableFrom(methodArgs.Last());
-                }).ToList();
+                });
             }
 
             if (validMethods.Count == 1)
@@ -767,10 +767,10 @@ namespace UdonSharp
 
             if (defaultArgMethodCount > 0 && fullySatisfiedArgMethodCount > 0)
             {
-                validMethods = validMethods.Where(e => {
+                validMethods.RemoveAll(e => {
                     ParameterInfo[] methodParams = e.GetParameters();
                     return methodParams.Length == 0 || !methodParams.Last().HasDefaultValue;
-                }).ToList();
+                });
             }
 
             if (validMethods.Count == 1)

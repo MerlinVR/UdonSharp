@@ -70,7 +70,7 @@ namespace UdonSharp
             }
 #endif
 
-            MethodInfo eventmethod = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(e => e.Name == eventName && e.GetParameters().Length == 0);
+            MethodInfo eventmethod = GetType().GetMethod(eventName, BindingFlags.Public | BindingFlags.Instance, null, Array.Empty<Type>(), null);
 
             if (eventmethod != null)
             {

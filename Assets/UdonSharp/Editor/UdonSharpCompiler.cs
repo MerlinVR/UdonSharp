@@ -147,8 +147,8 @@ namespace UdonSharp.Compiler
                 EditorUtility.DisplayProgressBar("UdonSharp Compile", "Parsing Syntax Trees...", 0f);
 
                 object syntaxTreeLock = new object();
-                List<(UdonSharpProgramAsset, Microsoft.CodeAnalysis.SyntaxTree)> programsAndSyntaxTrees = new List<(UdonSharpProgramAsset, Microsoft.CodeAnalysis.SyntaxTree)>();
-                Dictionary<UdonSharpProgramAsset, (string, Microsoft.CodeAnalysis.SyntaxTree)> syntaxTreeSourceLookup = new Dictionary<UdonSharpProgramAsset, (string, Microsoft.CodeAnalysis.SyntaxTree)>();
+                List<(UdonSharpProgramAsset, Microsoft.CodeAnalysis.SyntaxTree)> programsAndSyntaxTrees = new List<(UdonSharpProgramAsset, Microsoft.CodeAnalysis.SyntaxTree)>(programAssetsAndPaths.Count);
+                Dictionary<UdonSharpProgramAsset, (string, Microsoft.CodeAnalysis.SyntaxTree)> syntaxTreeSourceLookup = new Dictionary<UdonSharpProgramAsset, (string, Microsoft.CodeAnalysis.SyntaxTree)>(programAssetsAndPaths.Count);
 
                 string[] defines = UdonSharpUtils.GetProjectDefines(isEditorBuild);
 
@@ -431,7 +431,7 @@ namespace UdonSharp.Compiler
                         {
                             program.Heap.SetHeapVariable(symbolAddress, symbol.symbolDefaultValue, symbol.symbolCsType);
                         }
-                        else if (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public)) // Initialize null array fields to a 0-length array like Unity does
+                        else if (symbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Public)) // Initialize null array fields to a 0-length array like Unity does
                         {
                             if (symbol.symbolCsType.IsArray)
                                 program.Heap.SetHeapVariable(symbolAddress, System.Activator.CreateInstance(symbol.symbolCsType, new object[] { 0 }), symbol.symbolCsType);
@@ -463,7 +463,7 @@ namespace UdonSharp.Compiler
                     {
                         uint symbolAddress = program.SymbolTable.GetAddressFromSymbol(symbol.symbolUniqueName);
 
-                        if (symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public)) // Initialize null array fields to a 0-length array like Unity does
+                        if (symbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Public)) // Initialize null array fields to a 0-length array like Unity does
                         {
                             if (symbol.symbolCsType.IsArray)
                             {
@@ -483,7 +483,7 @@ namespace UdonSharp.Compiler
 
                         // Default to empty string on synced strings to prevent Udon sync from throwing errors
                         if (symbol.symbolCsType == typeof(string) &&
-                            symbol.declarationType.HasFlag(SymbolDeclTypeFlags.Private) &&
+                            symbol.declarationType.HasFlagFaster(SymbolDeclTypeFlags.Private) &&
                             symbol.syncMode != UdonSyncMode.NotSynced)
                         {
                             if (program.Heap.GetHeapVariable(symbolAddress) == null)
