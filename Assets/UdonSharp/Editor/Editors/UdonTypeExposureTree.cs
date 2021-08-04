@@ -330,7 +330,7 @@ namespace UdonSharp.Editors
             if (obsoleteAttribute != null)
                 return;
 
-            if (memberInfo.MemberType == MemberTypes.Property && !((PropertyInfo)memberInfo).GetGetMethod().IsPublic)
+            if (memberInfo.MemberType == MemberTypes.Property && (!((PropertyInfo)memberInfo).GetGetMethod()?.IsPublic ?? false))
                 return;
 
             if (memberInfo.DeclaringType.IsEnum)
@@ -350,7 +350,6 @@ namespace UdonSharp.Editors
             }
 
             TreeViewItem memberItem = new TreeViewItem(currentID++, parentItem.depth + 1, $"<{memberInfo.MemberType}>{staticStr} {memberInfo.ToString()}");
-            parentItem.AddChild(memberItem);
 
             TypeItemMetadata itemMetadata = new TypeItemMetadata();
             itemMetadata.member = memberInfo;
@@ -370,7 +369,12 @@ namespace UdonSharp.Editors
                     itemMetadata.exposed = resolver.IsValidUdonMethod(getAccessor);
                     break;
                 case MemberTypes.Property:
-                    string getProperty = resolver.GetUdonMethodName(((PropertyInfo)memberInfo).GetGetMethod(), false);
+                    var getMethod = ((PropertyInfo) memberInfo).GetGetMethod();
+
+                    if (getMethod == null)
+                        return;
+                    
+                    string getProperty = resolver.GetUdonMethodName(getMethod, false);
                     exposedUdonExterns.Remove(getProperty);
 
                     if (((PropertyInfo)memberInfo).GetSetMethod() != null)
@@ -382,6 +386,8 @@ namespace UdonSharp.Editors
                     itemMetadata.exposed = resolver.IsValidUdonMethod(getProperty);
                     break;
             }
+            
+            parentItem.AddChild(memberItem);
 
             itemMetadatas.Add(memberItem, itemMetadata);
 
