@@ -2675,6 +2675,7 @@ namespace UdonSharp.Compiler
 
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
                 captureArchetype != ExpressionCaptureArchetype.Property &&
+                captureArchetype != ExpressionCaptureArchetype.LocalProperty &&
                 captureArchetype != ExpressionCaptureArchetype.Field &&
                 captureArchetype != ExpressionCaptureArchetype.ArrayIndexer &&
                 captureArchetype != ExpressionCaptureArchetype.ExternUserField)
@@ -2718,6 +2719,7 @@ namespace UdonSharp.Compiler
 
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
                 captureArchetype != ExpressionCaptureArchetype.Property &&
+                captureArchetype != ExpressionCaptureArchetype.LocalProperty &&
                 captureArchetype != ExpressionCaptureArchetype.Field &&
                 captureArchetype != ExpressionCaptureArchetype.ArrayIndexer &&
                 captureArchetype != ExpressionCaptureArchetype.ExternUserField)
@@ -2753,6 +2755,7 @@ namespace UdonSharp.Compiler
         {
             if (captureArchetype != ExpressionCaptureArchetype.LocalSymbol &&
                 captureArchetype != ExpressionCaptureArchetype.Property &&
+                captureArchetype != ExpressionCaptureArchetype.LocalProperty &&
                 captureArchetype != ExpressionCaptureArchetype.Field && 
                 captureArchetype != ExpressionCaptureArchetype.ArrayIndexer &&
                 captureArchetype != ExpressionCaptureArchetype.Enum &&
