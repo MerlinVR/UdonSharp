@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using UdonSharp.Compiler;
 using UdonSharpEditor;
@@ -244,13 +245,39 @@ namespace UdonSharp
         {
             if (_programAssetCache == null)
             {
-                string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
+                string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}");
 
                 _programAssetCache = new UdonSharpProgramAsset[udonSharpDataAssets.Length];
 
                 for (int i = 0; i < _programAssetCache.Length; ++i)
-                {
                     _programAssetCache[i] = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(udonSharpDataAssets[i]));
+
+                bool neededFallback = false;
+                UdonSharpProgramAsset[] fallbackAssets = Resources.FindObjectsOfTypeAll<UdonSharpProgramAsset>();
+
+                foreach (UdonSharpProgramAsset fallbackAsset in fallbackAssets)
+                {
+                    if (!_programAssetCache.Contains(fallbackAsset))
+                    {
+                        Debug.LogWarning($"Repairing program asset {fallbackAsset} which Unity has broken");
+                        neededFallback = true;
+                        
+                        AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(fallbackAsset), ImportAssetOptions.ForceUpdate);
+                    }
+                }
+
+                if (neededFallback)
+                {
+                    udonSharpDataAssets = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}");
+
+                    _programAssetCache = new UdonSharpProgramAsset[udonSharpDataAssets.Length];
+
+                    for (int i = 0; i < _programAssetCache.Length; ++i)
+                    {
+                        _programAssetCache[i] =
+                            AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(
+                                AssetDatabase.GUIDToAssetPath(udonSharpDataAssets[i]));
+                    }
                 }
             }
 
