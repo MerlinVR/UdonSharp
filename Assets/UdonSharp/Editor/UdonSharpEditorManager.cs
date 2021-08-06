@@ -672,6 +672,8 @@ namespace UdonSharpEditor
                 {
                     Debug.LogWarning($"Empty UdonBehaviour found on {behaviour.gameObject}", behaviour);
                 }
+                
+                PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
             }
         }
 
