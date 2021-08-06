@@ -434,6 +434,9 @@ namespace UdonSharpEditor
                 {
                     CreateProxyBehaviours(GetAllUdonBehaviours());
                 }
+                
+                if (state == PlayModeStateChange.ExitingEditMode)
+                    RunAllUpdates();
             }
 
             if (state == PlayModeStateChange.EnteredEditMode)
@@ -547,8 +550,12 @@ namespace UdonSharpEditor
             HashSet<UnityEngine.Object> dependencies = new HashSet<UnityEngine.Object>();
             
             // Yes, this is not as thorough as AssetDatabase.GetDependencies, it is however much faster and catches the important cases.
+            // Notably does not gather indirect UdonBehaviour dependencies when one behaviour references a prefab and that prefab references another prefab, mostly because I'm too lazy to handle it at the moment
+            // Also does not gather any dependencies from Unity component's that reference game objects since that is not something that people should be using for prefab references anyways
             foreach (UdonBehaviour dependencyRoot in dependencyRoots)
             {
+                dependencies.Add(dependencyRoot.gameObject);
+                
                 var behaviourDependencies = ((List<UnityEngine.Object>)serializedObjectReferencesField.GetValue(dependencyRoot))?.Where(e => e != null);
                 
                 if (behaviourDependencies != null)
@@ -565,9 +572,20 @@ namespace UdonSharpEditor
                 
                 GameObject prefabRoot = null;
 
-                if (dependencyObject is GameObject dependencyGameObject && PrefabUtility.IsPartOfPrefabAsset(dependencyGameObject))
+                if (PrefabUtility.IsPartOfPrefabAsset(dependencyObject))
                 {
-                    prefabRoot = dependencyGameObject;
+                    prefabRoot = (GameObject) dependencyObject;
+                }
+                else if (dependencyObject is GameObject dependencyGameObject)
+                {
+                    if (PrefabUtility.IsAnyPrefabInstanceRoot(dependencyGameObject))
+                    {
+                        prefabRoot = PrefabUtility.GetCorrespondingObjectFromSource(dependencyGameObject);
+                    }
+                    else if (PrefabUtility.IsPartOfPrefabInstance(dependencyObject))
+                    {
+                        prefabRoot = PrefabUtility.GetCorrespondingObjectFromSource(PrefabUtility.GetNearestPrefabInstanceRoot(dependencyObject));
+                    }
                 }
 
                 if (prefabRoot)
