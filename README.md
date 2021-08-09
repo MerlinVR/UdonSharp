@@ -109,6 +109,4 @@ For more example scripts take a look at the wiki page for [examples](https://git
 ## Links
  [![Discord](https://img.shields.io/badge/Discord-My%20Discord%20Server-blueviolet?logo=discord)](https://discord.gg/Ub2n8ZA) - For support and bug reports
  
- [![Trello](https://img.shields.io/badge/Trello-Udon%20Sharp%20Trello-blueviolet?logo=trello)](https://trello.com/b/EkIGQBy2/udonsharp) - Look at what's planned and in progress
- 
  <a href="https://www.patreon.com/MerlinVR"><img src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fmerlin-patreon.herokuapp.com%2FMerlinVR" alt="Patreon donate button" /> </a> -  Support the development of UdonSharp
