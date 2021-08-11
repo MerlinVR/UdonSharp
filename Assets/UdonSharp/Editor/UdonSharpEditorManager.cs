@@ -574,7 +574,7 @@ namespace UdonSharpEditor
 
                 if (PrefabUtility.IsPartOfPrefabAsset(dependencyObject))
                 {
-                    prefabRoot = (GameObject) dependencyObject;
+                    prefabRoot = dependencyObject as GameObject;
                 }
                 else if (dependencyObject is GameObject dependencyGameObject)
                 {
