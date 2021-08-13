@@ -440,10 +440,8 @@ namespace UdonSharpEditor
             if (GUILayout.Button("Create Script"))
             {
                 string thisPath = AssetDatabase.GetAssetPath(programAsset);
-                //string initialPath = Path.GetDirectoryName(thisPath);
                 string fileName = Path.GetFileNameWithoutExtension(thisPath).Replace(" Udon C# Program Asset", "").Replace(" ", "").Replace("#", "Sharp");
-
-                string chosenFilePath = EditorUtility.SaveFilePanelInProject("Save UdonSharp File", fileName, "cs", "Save UdonSharp file");
+                string chosenFilePath = EditorUtility.SaveFilePanelInProject("Save UdonSharp File", fileName, "cs", "Save UdonSharp file", Path.GetDirectoryName(thisPath));
 
                 if (chosenFilePath.Length > 0)
                 {
