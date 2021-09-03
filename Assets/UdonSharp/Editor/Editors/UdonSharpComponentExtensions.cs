@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UdonSharp;
 using UnityEditor;
 using UnityEngine;
+using VRC.SDKBase;
 using VRC.Udon;
 
 namespace UdonSharpEditor
@@ -150,7 +151,18 @@ namespace UdonSharpEditor
             udonBehaviour.AllowCollisionOwnershipTransfer = false;
 #pragma warning restore CS0618 // Type or member is obsolete
 
-            udonBehaviour.Reliable = programAsset.behaviourSyncMode == BehaviourSyncMode.Manual;
+            switch (programAsset.behaviourSyncMode)
+            {
+                case BehaviourSyncMode.Continuous:
+                    udonBehaviour.SyncMethod = Networking.SyncType.Continuous;
+                    break;
+                case BehaviourSyncMode.Manual:
+                    udonBehaviour.SyncMethod = Networking.SyncType.Manual;
+                    break;
+                case BehaviourSyncMode.None:
+                    udonBehaviour.SyncMethod = Networking.SyncType.None;
+                    break;
+            }
 
             SerializedObject componentAsset = new SerializedObject(udonBehaviour);
             SerializedProperty serializedProgramAssetProperty = componentAsset.FindProperty("serializedProgramAsset");

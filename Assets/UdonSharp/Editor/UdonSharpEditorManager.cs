@@ -10,6 +10,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using VRC.SDKBase;
 using VRC.Udon;
 using VRC.Udon.Common;
 using VRC.Udon.Common.Interfaces;
@@ -733,15 +734,27 @@ namespace UdonSharpEditor
 
                 behaviourGameObjects.Add(behaviour.gameObject);
 
-                if (behaviour.Reliable == true && programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous)
+                if (programAsset.behaviourSyncMode == BehaviourSyncMode.Any ||
+                    programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
+                    continue;
+                
+                if (behaviour.SyncMethod == Networking.SyncType.None && programAsset.behaviourSyncMode != BehaviourSyncMode.None ||
+                    behaviour.SyncMethod == Networking.SyncType.Continuous && programAsset.behaviourSyncMode != BehaviourSyncMode.Continuous ||
+                    behaviour.SyncMethod == Networking.SyncType.Manual && programAsset.behaviourSyncMode != BehaviourSyncMode.Manual)
                 {
-                    behaviour.Reliable = false;
-                    modificationCount++;
-                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
-                }
-                else if (behaviour.Reliable == false && programAsset.behaviourSyncMode == BehaviourSyncMode.Manual)
-                {
-                    behaviour.Reliable = true;
+                    switch (programAsset.behaviourSyncMode)
+                    {
+                        case BehaviourSyncMode.Continuous:
+                            behaviour.SyncMethod = Networking.SyncType.Continuous;
+                            break;
+                        case BehaviourSyncMode.Manual:
+                            behaviour.SyncMethod = Networking.SyncType.Manual;
+                            break;
+                        case BehaviourSyncMode.None:
+                            behaviour.SyncMethod = Networking.SyncType.None;
+                            break;
+                    }
+
                     modificationCount++;
                     PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
                 }
@@ -766,9 +779,9 @@ namespace UdonSharpEditor
                         continue;
                     }
 
-                    if (objectBehaviour.Reliable)
+                    if (objectBehaviour.SyncMethod == Networking.SyncType.Manual)
                         hasManual = true;
-                    else
+                    else if (objectBehaviour.SyncMethod == Networking.SyncType.Continuous)
                         hasContinuous = true;
 
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -808,16 +821,16 @@ namespace UdonSharpEditor
                     {
                         if (behaviour.programSource is UdonSharpProgramAsset programAsset && programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
                         {
-                            if (hasManual && !behaviour.Reliable)
+                            if (hasManual && behaviour.SyncMethod != Networking.SyncType.Manual)
                             {
-                                behaviour.Reliable = true;
+                                behaviour.SyncMethod = Networking.SyncType.Manual;
                                 modificationCount++;
 
                                 PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
                             }
-                            else if (behaviour.Reliable)
+                            else if (behaviour.SyncMethod == Networking.SyncType.Manual)
                             {
-                                behaviour.Reliable = false;
+                                behaviour.SyncMethod = Networking.SyncType.Continuous;
                                 modificationCount++;
 
                                 PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);

@@ -52,6 +52,10 @@ namespace UdonSharp
         /// </summary>
         Any,
         /// <summary>
+        /// Enforces no synced variables on the behaviour and hides the selection dropdown in the UI for the sync mode. Nothing is synced and SendCustomNetworkEvent will not work on the behaviour
+        /// </summary>
+        None,
+        /// <summary>
         /// Enforces no synced variables on the behaviour and hides the selection dropdown in the UI for the sync mode, SendCustomNetworkEvent() will still work on this behaviour
         /// </summary>
         NoVariableSync,
