@@ -300,6 +300,40 @@ namespace UdonSharp
             return (UdonSharpProgramAsset[])_programAssetCache.Clone();
         }
 
+		[MenuItem("Window/Udon Sharp/Refresh All UdonSharp Assets")]
+		static public void UdonSharpCheckAbsent()
+		{
+			Debug.Log( "Checking Absent" );
+
+			string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}");
+			string[] udonSharpNames = new string[udonSharpDataAssets.Length];
+			Debug.Log( $"Found {udonSharpDataAssets.Length} assets." );
+
+			_programAssetCache = new UdonSharpProgramAsset[udonSharpDataAssets.Length];
+
+			for (int i = 0; i < _programAssetCache.Length; ++i)
+			{
+				udonSharpDataAssets[i] = AssetDatabase.GUIDToAssetPath(udonSharpDataAssets[i]);
+			}
+
+			foreach(string s in AssetDatabase.GetAllAssetPaths() )
+			{
+				if(!udonSharpDataAssets.Contains(s))
+				{
+					Type t = AssetDatabase.GetMainAssetTypeAtPath(s);
+					if (t != null && t.FullName == "UdonSharp.UdonSharpProgramAsset")
+					{
+						Debug.Log( $"Trying to recover {s}" );
+						Selection.activeObject = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(s);
+					}
+				}
+			}
+
+			ClearProgramAssetCache();
+
+			GetAllUdonSharpPrograms();
+		}
+
         [PublicAPI]
         public static bool AnyUdonSharpScriptHasError()
         {
