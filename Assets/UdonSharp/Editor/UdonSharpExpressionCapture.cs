@@ -1248,6 +1248,29 @@ namespace UdonSharp.Compiler
                 componentValue = CastSymbolToType(componentArrayGetter.ExecuteGet(), udonSharpType, true, true);
             }
 
+            SymbolDefinition objectTypeIdType = null;
+
+            using (ExpressionCaptureScope typeIDTypeGetScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                typeIDTypeGetScope.SetToLocalSymbol(componentValue);
+                SymbolDefinition udonTypeIdSymbolName = visitorContext.topTable.CreateConstSymbol(typeof(string), visitorContext.topTable.CreateReflectionSymbol("udonTypeID", typeof(long), Internal.UdonSharpInternalUtility.GetTypeID(visitorContext.behaviourUserType)).symbolUniqueName);
+                typeIDTypeGetScope.ResolveAccessToken(nameof(VRC.Udon.UdonBehaviour.GetProgramVariableType));
+
+                objectTypeIdType = typeIDTypeGetScope.Invoke(new SymbolDefinition[] { udonTypeIdSymbolName });
+            }
+
+            SymbolDefinition typeIdTypeEqualsConditionSymbol = null;
+
+            using (ExpressionCaptureScope equalsConditionScope = new ExpressionCaptureScope(visitorContext, null))
+            {
+                equalsConditionScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(System.Type), BuiltinOperatorType.Equality));
+                typeIdTypeEqualsConditionSymbol = equalsConditionScope.Invoke(new SymbolDefinition[] { objectTypeIdType, visitorContext.topTable.CreateConstSymbol(typeof(System.Type), componentTypeID.symbolCsType) });
+            }
+
+            JumpLabel conditionFalseJumpLoc = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentIdNotEqual");
+
+            visitorContext.uasmBuilder.AddJumpIfFalse(conditionFalseJumpLoc, typeIdTypeEqualsConditionSymbol);
+
             SymbolDefinition objectTypeId = null;
 
             using (ExpressionCaptureScope typeIDGetScope = new ExpressionCaptureScope(visitorContext, null))
@@ -1265,8 +1288,6 @@ namespace UdonSharp.Compiler
                 equalsConditionScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(long), BuiltinOperatorType.Equality));
                 typeIdEqualsConditionSymbol = equalsConditionScope.Invoke(new SymbolDefinition[] { objectTypeId, componentTypeID });
             }
-
-            JumpLabel conditionFalseJumpLoc = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentIdNotEqual");
 
             visitorContext.uasmBuilder.AddJumpIfFalse(conditionFalseJumpLoc, typeIdEqualsConditionSymbol);
 
@@ -1370,6 +1391,29 @@ namespace UdonSharp.Compiler
                     componentValue = CastSymbolToType(componentArrayGetter.ExecuteGet(), udonSharpType, true, true);
                 }
 
+                SymbolDefinition objectTypeIdType = null;
+
+                using (ExpressionCaptureScope typeIDTypeGetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    typeIDTypeGetScope.SetToLocalSymbol(componentValue);
+                    SymbolDefinition udonTypeIdSymbolName = visitorContext.topTable.CreateConstSymbol(typeof(string), visitorContext.topTable.CreateReflectionSymbol("udonTypeID", typeof(long), Internal.UdonSharpInternalUtility.GetTypeID(visitorContext.behaviourUserType)).symbolUniqueName);
+                    typeIDTypeGetScope.ResolveAccessToken(nameof(VRC.Udon.UdonBehaviour.GetProgramVariableType));
+
+                    objectTypeIdType = typeIDTypeGetScope.Invoke(new SymbolDefinition[] { udonTypeIdSymbolName });
+                }
+
+                SymbolDefinition typeIdTypeEqualsConditionSymbol = null;
+
+                using (ExpressionCaptureScope equalsConditionScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    equalsConditionScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(System.Type), BuiltinOperatorType.Equality));
+                    typeIdTypeEqualsConditionSymbol = equalsConditionScope.Invoke(new SymbolDefinition[] { objectTypeIdType, visitorContext.topTable.CreateConstSymbol(typeof(System.Type), componentTypeID.symbolCsType) });
+                }
+
+                JumpLabel incrementConditionFalseJump = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentsIncrementConditionFalse");
+
+                visitorContext.uasmBuilder.AddJumpIfFalse(incrementConditionFalseJump, typeIdTypeEqualsConditionSymbol);
+
                 SymbolDefinition objectTypeId = null;
 
                 using (ExpressionCaptureScope typeIDGetScope = new ExpressionCaptureScope(visitorContext, null))
@@ -1379,8 +1423,6 @@ namespace UdonSharp.Compiler
 
                     objectTypeId = typeIDGetScope.Invoke(new SymbolDefinition[] { });
                 }
-
-                JumpLabel incrementConditionFalseJump = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentsIncrementConditionFalse");
 
                 SymbolDefinition incrementConditionSymbol = null;
 
@@ -1486,6 +1528,29 @@ namespace UdonSharp.Compiler
                     componentValue = CastSymbolToType(componentArrayGetter.ExecuteGet(), udonSharpType, true, true);
                 }
 
+                SymbolDefinition objectTypeIdType = null;
+
+                using (ExpressionCaptureScope typeIDTypeGetScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    typeIDTypeGetScope.SetToLocalSymbol(componentValue);
+                    SymbolDefinition udonTypeIdSymbolName = visitorContext.topTable.CreateConstSymbol(typeof(string), visitorContext.topTable.CreateReflectionSymbol("udonTypeID", typeof(long), Internal.UdonSharpInternalUtility.GetTypeID(visitorContext.behaviourUserType)).symbolUniqueName);
+                    typeIDTypeGetScope.ResolveAccessToken(nameof(VRC.Udon.UdonBehaviour.GetProgramVariableType));
+
+                    objectTypeIdType = typeIDTypeGetScope.Invoke(new SymbolDefinition[] { udonTypeIdSymbolName });
+                }
+
+                SymbolDefinition typeIdTypeEqualsConditionSymbol = null;
+
+                using (ExpressionCaptureScope equalsConditionScope = new ExpressionCaptureScope(visitorContext, null))
+                {
+                    equalsConditionScope.SetToMethods(UdonSharpUtils.GetOperators(typeof(System.Type), BuiltinOperatorType.Equality));
+                    typeIdTypeEqualsConditionSymbol = equalsConditionScope.Invoke(new SymbolDefinition[] { objectTypeIdType, visitorContext.topTable.CreateConstSymbol(typeof(System.Type), componentTypeID.symbolCsType) });
+                }
+
+                JumpLabel addConditionFalseJump = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentsAddConditionFalse");
+
+                visitorContext.uasmBuilder.AddJumpIfFalse(addConditionFalseJump, typeIdTypeEqualsConditionSymbol);
+
                 SymbolDefinition objectTypeId = null;
 
                 using (ExpressionCaptureScope typeIDGetScope = new ExpressionCaptureScope(visitorContext, null))
@@ -1495,8 +1560,6 @@ namespace UdonSharp.Compiler
 
                     objectTypeId = typeIDGetScope.Invoke(new SymbolDefinition[] { });
                 }
-
-                JumpLabel addConditionFalseJump = visitorContext.labelTable.GetNewJumpLabel("genericGetUserComponentsAddConditionFalse");
 
                 SymbolDefinition addConditionSymbol = null;
 
