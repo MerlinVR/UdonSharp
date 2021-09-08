@@ -15,6 +15,18 @@ namespace UdonSharp.Compiler.Binder
 
         public override Value EmitValue(EmitContext context)
         {
+            // Make base calls to UdonSharpBehaviour events a noop
+            if (IsBaseCall)
+            {
+                if (Method.ContainingType == context.GetTypeSymbol(typeof(UdonSharpBehaviour)))
+                {
+                    if (Method.Name == "OnOwnershipRequest")
+                        return context.GetConstantValue(context.GetTypeSymbol(SpecialType.System_Boolean), true);
+                    
+                    return null;
+                }
+            }
+            
             if (SourceExpression == null || SourceExpression.IsThis)
                 return base.EmitValue(context);
 

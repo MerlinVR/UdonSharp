@@ -430,7 +430,7 @@ namespace UdonSharp.Compiler.Binder
 
             var invocation = BoundInvocationExpression.CreateBoundInvocation(Context, node, methodSymbol, instanceExpression, boundArguments);
             
-            if (instanceExpression == null && node.Expression is MemberAccessExpressionSyntax accessExpressionSyntax2 && 
+            if ((instanceExpression == null || instanceExpression.IsThis) && node.Expression is MemberAccessExpressionSyntax accessExpressionSyntax2 && 
                 accessExpressionSyntax2.Expression.Kind() == SyntaxKind.BaseExpression)
                 invocation.MarkForcedBaseCall();
 

@@ -195,10 +195,10 @@ namespace UdonSharp.Compiler
 
                 for (int i = 0; i < paramNames.Length; ++i)
                     paramNames[i] = GetUniqueID(idLookup, methodSymbol.Parameters[i].Name + "__param");
-
-                if (methodSymbol.ReturnType != null)
-                    returnName = GetUniqueID(idLookup, methodName + "__ret");
             }
+
+            if (methodSymbol.ReturnType != null)
+                returnName = GetUniqueID(idLookup, methodName + "__ret");
 
             MethodExportLayout exportLayout = new MethodExportLayout(methodSymbol, methodName, returnName, paramNames);
             

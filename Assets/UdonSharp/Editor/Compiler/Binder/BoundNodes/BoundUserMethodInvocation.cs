@@ -14,11 +14,11 @@ namespace UdonSharp.Compiler.Binder
         {
         }
 
-        private bool _isBaseCall;
+        protected bool IsBaseCall { get; private set; }
         
         public override void MarkForcedBaseCall()
         {
-            _isBaseCall = true;
+            IsBaseCall = true;
         }
 
         public override Value EmitValue(EmitContext context)
@@ -28,7 +28,7 @@ namespace UdonSharp.Compiler.Binder
                 context.CreateGlobalInternalValue(context.GetTypeSymbol(SpecialType.System_UInt32));
 
             context.Module.AddPush(returnPointVal);
-            var linkage = context.GetMethodLinkage(Method, !_isBaseCall);
+            var linkage = context.GetMethodLinkage(Method, !IsBaseCall);
 
             Value[] parameterValues = GetParameterValues(context);
             

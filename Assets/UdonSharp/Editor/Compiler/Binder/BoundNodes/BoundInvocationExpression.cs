@@ -67,6 +67,10 @@ namespace UdonSharp.Compiler.Binder
                     return new BoundGetUnityEngineComponentInvocation(context, node, symbol, instanceExpression,
                         parameterExpressions);
                 }
+
+                if (CompilerUdonInterface.IsUdonEvent(symbol.Name) &&
+                    symbol.ContainingType == context.GetTypeSymbol(typeof(UdonSharpBehaviour))) // Pass through for making base calls on the U# behaviour type return noop
+                    return new BoundUdonSharpBehaviourInvocationExpression(node, symbol, instanceExpression, parameterExpressions);
                 
                 var doExposureCheck = (!symbol.IsOperator || (symbol.ContainingType == null || !symbol.ContainingType.IsEnum));
                 if (doExposureCheck && !CompilerUdonInterface.IsExposedToUdon(((ExternMethodSymbol) symbol).ExternSignature))

@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using JetBrains.Annotations;
 using UnityEngine;
 using VRC.Udon.Common.Interfaces;
 
@@ -104,11 +105,13 @@ namespace UdonSharp
         /// </summary>
         public bool DisableInteractive { get; set; }
 
-        public static GameObject VRCInstantiate(GameObject original)
+        [Obsolete("VRCInstantiate is obsolete, use Instantiate instead")]
+        protected static GameObject VRCInstantiate(GameObject original)
         {
             return Instantiate(original);
         }
         
+        [PublicAPI]
         public void RequestSerialization() { }
 
         // Stubs for builtin UdonSharp methods to get type info
@@ -147,59 +150,59 @@ namespace UdonSharp
         }
 
         // Method stubs for auto completion
-        public virtual void PostLateUpdate() { }
-        public virtual void Interact() { }
-        public virtual void OnDrop() { }
-        public virtual void OnOwnershipTransferred(VRC.SDKBase.VRCPlayerApi player) { }
-        public virtual void OnPickup() { }
-        public virtual void OnPickupUseDown() { }
-        public virtual void OnPickupUseUp() { }
-        public virtual void OnPlayerJoined(VRC.SDKBase.VRCPlayerApi player) { }
-        public virtual void OnPlayerLeft(VRC.SDKBase.VRCPlayerApi player) { }
-        public virtual void OnSpawn() { }
-        public virtual void OnStationEntered(VRC.SDKBase.VRCPlayerApi player) { }
-        public virtual void OnStationExited(VRC.SDKBase.VRCPlayerApi player) { }
-        public virtual void OnVideoEnd() { }
-        public virtual void OnVideoError(VRC.SDK3.Components.Video.VideoError videoError) { }
-        public virtual void OnVideoLoop() { }
-        public virtual void OnVideoPause() { }
-        public virtual void OnVideoPlay() { }
-        public virtual void OnVideoReady() { }
-        public virtual void OnVideoStart() { }
-        public virtual void OnPreSerialization() { }
-        public virtual void OnDeserialization() { }
-        public virtual void OnPlayerTriggerEnter(VRC.SDKBase.VRCPlayerApi player) { }
-        public virtual void OnPlayerTriggerExit(VRC.SDKBase.VRCPlayerApi player) { }
-        public virtual void OnPlayerTriggerStay(VRC.SDKBase.VRCPlayerApi player) { }
-        public virtual void OnPlayerCollisionEnter(VRC.SDKBase.VRCPlayerApi player) { }
-        public virtual void OnPlayerCollisionExit(VRC.SDKBase.VRCPlayerApi player) { }
-        public virtual void OnPlayerCollisionStay(VRC.SDKBase.VRCPlayerApi player) { }
-        public virtual void OnPlayerParticleCollision(VRC.SDKBase.VRCPlayerApi player) { }
-        public virtual void OnPlayerRespawn(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void PostLateUpdate() { }
+        [PublicAPI] public virtual void Interact() { }
+        [PublicAPI] public virtual void OnDrop() { }
+        [PublicAPI] public virtual void OnOwnershipTransferred(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnPickup() { }
+        [PublicAPI] public virtual void OnPickupUseDown() { }
+        [PublicAPI] public virtual void OnPickupUseUp() { }
+        [PublicAPI] public virtual void OnPlayerJoined(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnPlayerLeft(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnSpawn() { }
+        [PublicAPI] public virtual void OnStationEntered(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnStationExited(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnVideoEnd() { }
+        [PublicAPI] public virtual void OnVideoError(VRC.SDK3.Components.Video.VideoError videoError) { }
+        [PublicAPI] public virtual void OnVideoLoop() { }
+        [PublicAPI] public virtual void OnVideoPause() { }
+        [PublicAPI] public virtual void OnVideoPlay() { }
+        [PublicAPI] public virtual void OnVideoReady() { }
+        [PublicAPI] public virtual void OnVideoStart() { }
+        [PublicAPI] public virtual void OnPreSerialization() { }
+        [PublicAPI] public virtual void OnDeserialization() { }
+        [PublicAPI] public virtual void OnPlayerTriggerEnter(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnPlayerTriggerExit(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnPlayerTriggerStay(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnPlayerCollisionEnter(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnPlayerCollisionExit(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnPlayerCollisionStay(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnPlayerParticleCollision(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnPlayerRespawn(VRC.SDKBase.VRCPlayerApi player) { }
         
-        public virtual void OnPostSerialization(VRC.Udon.Common.SerializationResult result) { }
-        public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi requestedOwner) => true;
+        [PublicAPI] public virtual void OnPostSerialization(VRC.Udon.Common.SerializationResult result) { }
+        [PublicAPI] public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi requestedOwner) => true;
 
-        public virtual void MidiNoteOn(int channel, int number, int velocity) { }
-        public virtual void MidiNoteOff(int channel, int number, int velocity) { }
-        public virtual void MidiControlChange(int channel, int number, int value) { }
+        [PublicAPI] public virtual void MidiNoteOn(int channel, int number, int velocity) { }
+        [PublicAPI] public virtual void MidiNoteOff(int channel, int number, int velocity) { }
+        [PublicAPI] public virtual void MidiControlChange(int channel, int number, int value) { }
+        
+        [PublicAPI] public virtual void InputJump(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        [PublicAPI] public virtual void InputUse(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        [PublicAPI] public virtual void InputGrab(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        [PublicAPI] public virtual void InputDrop(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        [PublicAPI] public virtual void InputMoveHorizontal(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        [PublicAPI] public virtual void InputMoveVertical(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        [PublicAPI] public virtual void InputLookHorizontal(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        [PublicAPI] public virtual void InputLookVertical(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
 
-        public virtual void InputJump(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
-        public virtual void InputUse(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
-        public virtual void InputGrab(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
-        public virtual void InputDrop(bool value, VRC.Udon.Common.UdonInputEventArgs args) { }
-        public virtual void InputMoveHorizontal(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
-        public virtual void InputMoveVertical(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
-        public virtual void InputLookHorizontal(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
-        public virtual void InputLookVertical(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
-
-        [Obsolete("The OnStationEntered() event is deprecated use the OnStationEntered(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
+        [Obsolete("The OnStationEntered() event is deprecated use the OnStationEntered(VRCPlayerApi player) event instead, this event will be removed in a future release.", true)]
         public virtual void OnStationEntered() { }
 
-        [Obsolete("The OnStationExited() event is deprecated use the OnStationExited(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
+        [Obsolete("The OnStationExited() event is deprecated use the OnStationExited(VRCPlayerApi player) event instead, this event will be removed in a future release.", true)]
         public virtual void OnStationExited() { }
 
-        [Obsolete("The OnOwnershipTransferred() event is deprecated use the OnOwnershipTransferred(VRCPlayerApi player) event instead, this event will be removed in a future release.")]
+        [Obsolete("The OnOwnershipTransferred() event is deprecated use the OnOwnershipTransferred(VRCPlayerApi player) event instead, this event will be removed in a future release.", true)]
         public virtual void OnOwnershipTransferred() { }
 
 #if UNITY_EDITOR
