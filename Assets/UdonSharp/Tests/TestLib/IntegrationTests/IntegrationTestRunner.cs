@@ -17,10 +17,10 @@ namespace UdonSharp.Tests
     [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
     public class IntegrationTestRunner : UdonSharpBehaviour
     {
-        public bool runTestOnStart = true;
-        public bool logPassedTests = true;
+        [SerializeField] private bool runTestOnStart = true;
+        [SerializeField] private bool logPassedTests = true;
 
-        public IntegrationTestSuite[] integrationTests;
+        [SerializeField] IntegrationTestSuite[] integrationTests;
 
         void Start()
         {
@@ -40,10 +40,8 @@ namespace UdonSharp.Tests
             int totalTests = 0;
             int passedTests = 0;
 
-            // foreach (IntegrationTestSuite suite in integrationTests)
-            for (int i = 0; i < integrationTests.Length; i++)
+            foreach (IntegrationTestSuite suite in integrationTests)
             {
-                IntegrationTestSuite suite = integrationTests[i];
                 suite.printPassedTests = logPassedTests;
                 suite.RunTests();
 

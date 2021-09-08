@@ -16,39 +16,37 @@ namespace UdonSharp.Tests
         public bool runSuiteTests = true;
 
 #pragma warning disable CS0649
-        public string testSuiteName;
-        [SerializeField] bool forcePrintPassedTests;
-        public UdonSharpBehaviour[] tests;
+        [SerializeField] private string testSuiteName;
+        [SerializeField] private bool forcePrintPassedTests;
+        [SerializeField] private UdonSharpBehaviour[] tests;
 #pragma warning restore CS0649
 
-        int testTotalCount;
-        int testSuccessCount;
-        string whitespaceStr = new string(' ', 4);
+        private int _testTotalCount;
+        private int _testSuccessCount;
+        private string _whitespaceStr = new string(' ', 4);
 
-        public int GetTotalTestCount() => testTotalCount;
-        public int GetSucceededTestCount() => testSuccessCount;
+        public int GetTotalTestCount() => _testTotalCount;
+        public int GetSucceededTestCount() => _testSuccessCount;
 
         public void RunTests()
         {
             if (!runSuiteTests)
                 return;
 
-            whitespaceStr = new string(' ', 4);
+            _whitespaceStr = new string(' ', 4);
             
-            testTotalCount = 0;
-            testSuccessCount = 0;
+            _testTotalCount = 0;
+            _testSuccessCount = 0;
 
-            Debug.Log($"{whitespaceStr}[<color=#00AF54>UdonSharp Tests</color>] [{testSuiteName}] Start");
+            Debug.Log($"{_whitespaceStr}[<color=#00AF54>UdonSharp Tests</color>] [{testSuiteName}] Start");
 
-            // foreach (UdonSharpBehaviour test in tests)
-            for (int i = 0; i < tests.Length; i++)
+            foreach (UdonSharpBehaviour test in tests)
             {
-                UdonSharpBehaviour test = tests[i];
                 test.SetProgramVariable("tester", this);
                 test.SendCustomEvent("ExecuteTests");
             }
 
-            Debug.Log($"{whitespaceStr}[<color=#00AF54>UdonSharp Tests</color>] [{testSuiteName}] [{testSuccessCount}/{testTotalCount}] {(testSuccessCount == testTotalCount ? "Tests succeeded" : "")}");
+            Debug.Log($"{_whitespaceStr}[<color=#00AF54>UdonSharp Tests</color>] [{testSuiteName}] [{_testSuccessCount}/{_testTotalCount}] {(_testSuccessCount == _testTotalCount ? "Tests succeeded" : "")}");
         }
 
         public void TestAssertion(string testName, bool assertion)
@@ -56,10 +54,10 @@ namespace UdonSharp.Tests
             string testPrefixText = assertion ? "[<color=#008000>Pass</color>]: " : "[<color=#FF0000>Fail</color>]: ";
 
             if (!assertion || printPassedTests || forcePrintPassedTests)
-                Debug.Log(whitespaceStr + whitespaceStr + "[<color=#00AF54>Test</color>] " + testPrefixText + testName);
+                Debug.Log(_whitespaceStr + _whitespaceStr + "[<color=#00AF54>Test</color>] " + testPrefixText + testName);
 
-            ++testTotalCount;
-            if (assertion) ++testSuccessCount;
+            ++_testTotalCount;
+            if (assertion) ++_testSuccessCount;
         }
     }
 }
