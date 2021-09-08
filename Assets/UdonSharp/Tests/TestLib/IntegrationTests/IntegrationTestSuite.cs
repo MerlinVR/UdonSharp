@@ -17,7 +17,7 @@ namespace UdonSharp.Tests
 
 #pragma warning disable CS0649
         public string testSuiteName;
-        [SerializeField] bool forcePrintPassedTests = false;
+        [SerializeField] bool forcePrintPassedTests;
         public UdonSharpBehaviour[] tests;
 #pragma warning restore CS0649
 

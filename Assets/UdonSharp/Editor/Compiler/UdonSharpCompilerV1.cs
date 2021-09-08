@@ -1,22 +1,22 @@
 ﻿
 using System;
-using System.Collections;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
 using UnityEditor;
 using UnityEditor.Compilation;
-using UnityEngine;
 using VRC.Udon.Common.Interfaces;
+using Debug = UnityEngine.Debug;
 
 namespace UdonSharp.Compiler
 {
@@ -26,7 +26,7 @@ namespace UdonSharp.Compiler
 
         public void Compile(string filePath)
         {
-            System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
+            Stopwatch timer = new Stopwatch();
             timer.Start();
 
             var allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
@@ -146,9 +146,6 @@ namespace UdonSharp.Compiler
 
                 foreach (FieldSymbol symbol in moduleEmitContext.DeclaredFields)
                 {
-                    if (symbol.IsConst)
-                        continue;
-                    
                     if (!symbol.Type.TryGetSystemType(out var symbolSystemType))
                         Debug.LogError($"Could not get type for field {symbol.Name}");
                     
@@ -163,7 +160,7 @@ namespace UdonSharp.Compiler
             foreach (ModuleBinding rootBinding in rootUdonSharpTypes.Select(e => e.Item2))
             {
                 List<Value> assemblyValues = rootBinding.assemblyModule.RootTable.GetAllUniqueChildValues();
-                string generatedUasm = rootBinding.assemblyModule.BuildUasmStr(null);
+                string generatedUasm = rootBinding.assemblyModule.BuildUasmStr();
                 
                 rootBinding.programAsset.SetUdonAssembly(generatedUasm);
                 rootBinding.programAsset.AssembleCsProgram(rootBinding.assemblyModule.GetHeapSize());
@@ -248,7 +245,7 @@ namespace UdonSharp.Compiler
         {
             if (metadataReferences == null)
             {
-                var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
+                var assemblies = AppDomain.CurrentDomain.GetAssemblies();
                 metadataReferences = new List<MetadataReference>();
 
                 for (int i = 0; i < assemblies.Length; i++)
@@ -269,7 +266,7 @@ namespace UdonSharp.Compiler
                         {
                             executableReference = MetadataReference.CreateFromFile(assembly.Location);
                         }
-                        catch (System.Exception e)
+                        catch (Exception e)
                         {
                             Debug.LogError($"Unable to locate assembly {assemblies[i].Location} Exception: {e}");
                         }

@@ -2,12 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using JetBrains.Annotations;
-using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Assembly.Instructions;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
-using UnityEngine;
 
 namespace UdonSharp.Compiler.Assembly
 {
@@ -169,8 +166,10 @@ namespace UdonSharp.Compiler.Assembly
 
             foreach (Value value in allValues)
             {
-                if (value.IsPublic)
+                if (value.AssociatedSymbol is FieldSymbol fieldSymbol && fieldSymbol.IsSerialized)
+                {
                     builder.AppendFormat("    .export {0}\n", value.UniqueID);
+                }
             }
 
             foreach (Value value in allValues)
@@ -191,7 +190,7 @@ namespace UdonSharp.Compiler.Assembly
             builder.Append(".code_end\n");
         }
         
-        public string BuildUasmStr(List<FieldDefinition> exportedFields)
+        public string BuildUasmStr()
         {
             StringBuilder uasmBuilder = new StringBuilder();
             

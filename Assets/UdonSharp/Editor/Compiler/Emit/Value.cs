@@ -91,6 +91,8 @@ namespace UdonSharp.Compiler.Emit
         private ValueTable _parentTable;
         private CowValueInternalTracker _cowTracker;
         
+        public Symbol AssociatedSymbol { get; private set; }
+        
         public Value(ValueTable parentTable, string uniqueID, TypeSymbol userType, ValueFlags flags)
         {
         #if UDONSHARP_DEBUG
@@ -112,6 +114,14 @@ namespace UdonSharp.Compiler.Emit
         public string GetDeclarationStr()
         {
             return $"{UniqueID}: %{UserType.UdonType.ExternSignature}, {((Flags & ValueFlags.UdonThis) != 0 ? "this" : "null")}";
+        }
+
+        public void SetAssociatedSymbol(Symbol symbol)
+        {
+            if (symbol == null)
+                throw new NullReferenceException();
+            
+            AssociatedSymbol = symbol;
         }
 
         public override string ToString()

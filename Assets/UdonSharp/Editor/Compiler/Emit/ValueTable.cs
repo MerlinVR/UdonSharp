@@ -155,6 +155,8 @@ namespace UdonSharp.Compiler.Emit
                             ? Value.ValueFlags.Public : Value.ValueFlags.Private, userSymbol.Name);
                     
                     GlobalTable._userValues.Add(userSymbol, userValue);
+                    
+                    userValue.SetAssociatedSymbol(userSymbol);
                     break;
                 default:
                     throw new InvalidOperationException("Was unable to create user value");

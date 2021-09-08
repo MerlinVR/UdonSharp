@@ -49,6 +49,17 @@ namespace UdonSharp.Compiler.Symbols
         
         public ImmutableArray<Attribute> SymbolAttributes { get; private set; }
 
+        protected bool HasAttribute<T>() where T : Attribute
+        {
+            foreach (Attribute symbolAttribute in SymbolAttributes)
+            {
+                if (symbolAttribute is T)
+                    return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Gets direct dependencies of this symbol, this symbol must be bound for the dependencies to be valid
         /// Will throw exception if this symbol has not been resolved

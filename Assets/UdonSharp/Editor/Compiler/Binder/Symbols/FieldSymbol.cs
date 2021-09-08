@@ -1,9 +1,11 @@
 ﻿
+using System;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Linq;
 using UdonSharp.Compiler.Binder;
 using UnityEngine;
+using VRC.Udon.Serialization.OdinSerializer;
 
 namespace UdonSharp.Compiler.Symbols
 {
@@ -28,6 +30,17 @@ namespace UdonSharp.Compiler.Symbols
 
         private bool _resolved;
         public override bool IsBound => _resolved;
+
+        public bool IsSerialized
+        {
+            get
+            {
+                if (IsStatic) return false;
+                if (RoslynSymbol.IsReadOnly) return false;
+                if (HasAttribute<NonSerializedAttribute>()) return false;
+                return RoslynSymbol.DeclaredAccessibility == Accessibility.Public || HasAttribute<SerializeField>() || HasAttribute<OdinSerializeAttribute>();
+            }
+        }
 
         public override void Bind(BindContext context)
         {
