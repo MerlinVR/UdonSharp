@@ -15,11 +15,12 @@ namespace UdonSharp.Compiler
             fieldAttributes = new List<System.Attribute>();
         }
 
-        public FieldDefinition(Type userType, Type systemType, UdonSyncMode? syncMode, List<Attribute> attributes)
+        public FieldDefinition(Type userType, Type systemType, UdonSyncMode? syncMode, bool isSerialized, List<Attribute> attributes)
         {
             UserType = userType;
             SystemType = systemType;
             SyncMode = syncMode;
+            IsSerialized = isSerialized;
             fieldAttributes = attributes;
         }
 
@@ -31,8 +32,10 @@ namespace UdonSharp.Compiler
         public System.Type SystemType { get; }
         [field: SerializeField]
         public UdonSyncMode? SyncMode { get; }
+        [field: SerializeField]
+        public bool IsSerialized { get; }
 
-        public List<System.Attribute> fieldAttributes;
+        public List<Attribute> fieldAttributes;
         
         public UnityEditor.MonoScript userBehaviourSource;
 

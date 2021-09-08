@@ -908,7 +908,7 @@ namespace UdonSharpEditor
                         }
 
                         // Field was exported at one point, but is no longer. So we need to remove it from the behaviour
-                        if (!fieldDefinition.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public))
+                        if (!fieldDefinition.IsSerialized)
                         {
                             updatedBehaviourVariables++;
                             publicVariables.RemoveVariable(variableSymbol);

@@ -151,7 +151,7 @@ namespace UdonSharp.Compiler
                     
                     // Debug.Log($"Field {symbol.Name}, type: {symbolSystemType}");
                     
-                    fieldDefinitions.Add(symbol.Name, new FieldDefinition(symbolSystemType, symbol.Type.UdonType.SystemType, null, symbol.SymbolAttributes.ToList()));
+                    fieldDefinitions.Add(symbol.Name, new FieldDefinition(symbolSystemType, symbol.Type.UdonType.SystemType, symbol.SyncMode, symbol.IsSerialized, symbol.SymbolAttributes.ToList()));
                 }
 
                 moduleBinding.programAsset.fieldDefinitions = fieldDefinitions;

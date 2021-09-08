@@ -1116,7 +1116,7 @@ namespace UdonSharpEditor
                     }
                 }
 
-                if (symbolField.fieldSymbol != null && symbolField.SyncMode != null)
+                if (symbolField.SyncMode != null)
                 {
                     if (symbolField.SyncMode == UdonSyncMode.None)
                         GUILayout.Label("synced", GUILayout.Width(55f));
