@@ -71,6 +71,17 @@ namespace UdonSharp.Compiler.Binder
                 if (CompilerUdonInterface.IsUdonEvent(symbol.Name) &&
                     symbol.ContainingType == context.GetTypeSymbol(typeof(UdonSharpBehaviour))) // Pass through for making base calls on the U# behaviour type return noop
                     return new BoundUdonSharpBehaviourInvocationExpression(node, symbol, instanceExpression, parameterExpressions);
+
+                if (symbol.Name == "VRCInstantiate" &&
+                    symbol.ContainingType == context.GetTypeSymbol(typeof(UdonSharpBehaviour)))
+                {
+                    return new BoundExternInvocation(node,
+                        new ExternSynthesizedMethodSymbol(context,
+                            "VRCInstantiate.__Instantiate__UnityEngineGameObject__UnityEngineGameObject",
+                            parameterExpressions.Select(e => e.ValueType).ToArray(),
+                            context.GetTypeSymbol(typeof(GameObject)), true), 
+                        instanceExpression, parameterExpressions);
+                }
                 
                 var doExposureCheck = (!symbol.IsOperator || (symbol.ContainingType == null || !symbol.ContainingType.IsEnum));
                 if (doExposureCheck && !CompilerUdonInterface.IsExposedToUdon(((ExternMethodSymbol) symbol).ExternSignature))
@@ -109,13 +120,6 @@ namespace UdonSharp.Compiler.Binder
                 
                 return new BoundExternInvocation(node, symbol, instanceExpression, parameterExpressions);
             }
-
-            // if (symbol.IsOperator && parameterExpressions.Length == 2 &&
-            //     (parameterExpressions[0].ValueType.IsEnum && !parameterExpressions[0].ValueType.IsExtern) &&
-            //     (parameterExpressions[0].ValueType.IsEnum && !parameterExpressions[0].ValueType.IsExtern))
-            // {
-            //     
-            // }
 
             if (symbol.IsStatic)
                 return new BoundStaticUserMethodInvocation(node, symbol, parameterExpressions);
