@@ -58,13 +58,8 @@ namespace UdonSharp.Tests
             GameObject[] gameObjects = new GameObject[2000];
             int gameObjectLen = gameObjects.Length;
 
-            for (int i = 0; i < gameObjects.Length; ++i)
-            {
-                gameObjects[i] = gameObject;
-            }
-
             System.DateTime startTime = System.DateTime.UtcNow;
-            for (int i = 0; i < gameObjects.Length; ++i)
+            for (int i = 0; i < gameObjectLen; ++i)
             {
                 gameObjects[i] = gameObject;
             }

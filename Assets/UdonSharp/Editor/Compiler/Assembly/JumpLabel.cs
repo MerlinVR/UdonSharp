@@ -1,15 +1,12 @@
 ﻿
+using UdonSharp.Compiler.Symbols;
+
 namespace UdonSharp.Compiler.Assembly
 {
     internal class JumpLabel
     {
-        private uint Address { get; set; }
+        public MethodSymbol DebugMethod { get; set; }
         
-        
-    }
-
-    internal class LabelTable
-    {
-        
+        public uint Address { get; set; } = uint.MaxValue;
     }
 }

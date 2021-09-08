@@ -1,6 +1,7 @@
 
 using UdonSharp;
 using UnityEngine;
+using UnityEngine.Rendering;
 using VRC.SDKBase;
 using VRC.Udon;
 
@@ -71,31 +72,37 @@ namespace UdonSharp.Tests
             Vector2 vec2Test = new Vector2(1f, 2f);
             vec2Test[0] = 4f;
             tester.TestAssertion("Vector2 set indexer", vec2Test[0] == 4f);
-
+            
             Vector3 vec3Test = new Vector3(1f, 2f, 3f);
             vec3Test[0] = 4f;
             tester.TestAssertion("Vector3 set indexer", vec3Test[0] == 4f);
-
+            
             Vector4 vec4Test = new Vector4(1f, 2f, 3f, 4f);
             vec4Test[0] = 4f;
             tester.TestAssertion("Vector4 set indexer", vec4Test[0] == 4f);
-
+            
             Matrix4x4 mat4x4Test = Matrix4x4.identity;
             mat4x4Test[1] = 4f;
             tester.TestAssertion("Matrix4x4 set indexer", mat4x4Test[1] == 4f);
-
+            
             mat4x4Test[0] += 2f;
             tester.TestAssertion("Matrix4x4 get and set in place", mat4x4Test[0] == 3f);
 
-            tester.TestAssertion("U# Behaviour GetComponent", tester.GetComponent<IntegrationTestSuite>() != null);
-            tester.TestAssertion("UdonBehaviour GetComponent", ((UdonBehaviour)(Component)tester).GetComponent<IntegrationTestSuite>() != null);
+            SphericalHarmonicsL2 harmonicsL2 = new SphericalHarmonicsL2();
 
+            harmonicsL2[0, 1] = 4;
+            
+            tester.TestAssertion("Multi param indexer operator", harmonicsL2[0, 1] == 4f);
+
+            // tester.TestAssertion("U# Behaviour GetComponent", tester.GetComponent<IntegrationTestSuite>() != null);
+            // tester.TestAssertion("UdonBehaviour GetComponent", ((UdonBehaviour)(Component)tester).GetComponent<IntegrationTestSuite>() != null);
+            //
             RigidbodyConstraints constraints = (RigidbodyConstraints)126;
-
+            
             tester.TestAssertion("Enum cast", constraints == RigidbodyConstraints.FreezeAll);
-
+            
             constraints = RigidbodyConstraints.FreezePosition;
-
+            
             tester.TestAssertion("Enum assignment after cast", constraints == RigidbodyConstraints.FreezePosition);
             tester.TestAssertion("Enum type after cast", (RigidbodyConstraints)126 == RigidbodyConstraints.FreezeAll);
 

@@ -1,4 +1,5 @@
 ﻿
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -177,6 +178,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
         {
             //return paths; // For now we want to just allow everything so we can be more certain that everything is parsed correctly
 
+            // todo: use hashset instead of n*m comparisons
             List<string> filteredPaths = new List<string>();
             string[] blacklist = GetScannerBlacklist();
             for (int i = 0; i < blacklist.Length; ++i)
@@ -189,7 +191,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 bool blackListed = false;
                 foreach (string blacklistPath in blacklist)
                 {
-                    if (replacedOriginal.StartsWith(blacklistPath))
+                    if (replacedOriginal.StartsWith(blacklistPath, StringComparison.OrdinalIgnoreCase))
                     {
                         blackListed = true;
                         break;

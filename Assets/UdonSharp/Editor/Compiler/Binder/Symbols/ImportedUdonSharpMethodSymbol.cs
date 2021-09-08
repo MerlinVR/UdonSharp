@@ -1,12 +1,11 @@
-﻿using Microsoft.CodeAnalysis;
-using UdonSharp.Compiler.Binder;
-
+﻿
+using Microsoft.CodeAnalysis;
 
 namespace UdonSharp.Compiler.Symbols
 {
     internal class ImportedUdonSharpMethodSymbol : MethodSymbol
     {
-        public ImportedUdonSharpMethodSymbol(IMethodSymbol sourceSymbol, BindContext context)
+        public ImportedUdonSharpMethodSymbol(IMethodSymbol sourceSymbol, AbstractPhaseContext context)
             : base(sourceSymbol, context)
         {
         }

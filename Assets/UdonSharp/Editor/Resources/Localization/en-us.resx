@@ -158,5 +158,11 @@
   </data>
   <data name="CE_NodeNotSupported" xml:space="preserve">
     <value>UdonSharp does not currently support node type '{0}'</value>
+  </data>  
+  <data name="CE_UdonMethodNotExposed" xml:space="preserve">
+    <value>Method is not exposed to Udon: '{0}'</value>
+  </data>
+  <data name="CE_InitializerListsNotSupported" xml:space="preserve">
+    <value>U# Does not yet support initializer lists</value>
   </data>
 </root>

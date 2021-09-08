@@ -60,14 +60,30 @@ namespace UdonSharp.Tests
             string result = string.Format("{0} {1} {2} {3}", a, a++, a += 2, ++a);
             tester.TestAssertion("Variadic extern function invocation with side effects", result == "2 2 5 6");
 
-            Vector3[] localVecArray = new Vector3[2];
+            Vector3[] localVecArray = new Vector3[5];
             a = 0;
             localVecArray[a].x = (a += 1);
 
             tester.TestAssertion("Structure array write with side effects", localVecArray[0].x == 1);
 
+            localVecArray[a].y += (a += 1);
+            
+            tester.TestAssertion("Structure array compound assignment with side effects", localVecArray[1].y == 2f);
+
+            localVecArray[a++].y += 3f;
+            
+            tester.TestAssertion("Structure array compound assignment with index postfix increment", localVecArray[2].y == 3f);
+            
+            localVecArray[++a].y += 6f;
+            tester.TestAssertion("Structure array compound assignment with index prefix increment", localVecArray[4].y == 6f);
+
+            int testVal = 4;
+
+            testVal += (testVal += 5);
+            
+            tester.TestAssertion("Nested compound assignment with side effects", testVal == 13);
+            
             intArray = new int[4];
-            a = 1;
 
             // Should not exception
             intArray[1] = ((intArray = null) == null ? 1 : 0);
@@ -76,17 +92,17 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Clearing structure array field while write is pending", true);
 
             intArray = new int[3];
-            // should not exception
+            // // should not exception
             intArray[0] = overwriteArrayFields(0);
             tester.TestAssertion("Clearing array field by local function while write is pending", true);
-
+            
             self = this;
             intArray = new int[3];
-
+            
             // should not exception
             intArray[0] = self.overwriteArrayFields(0);
             tester.TestAssertion("Clearing array field by non-local function while write is pending", true);
-
+            
             uint x = 3;
             tester.TestAssertion("Local function return values", (ROTRIGHT(x, 3) ^ ROTRIGHT(x, 18)) == 1610661888);
         }

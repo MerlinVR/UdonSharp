@@ -1,6 +1,8 @@
 {
     "name": "VRC.Udon.Editor.UPMImporter",
-    "references": [],
+    "references": [
+        "VRC.Udon.Editor"
+    ],
     "optionalUnityReferences": [],
     "includePlatforms": [
         "Editor"

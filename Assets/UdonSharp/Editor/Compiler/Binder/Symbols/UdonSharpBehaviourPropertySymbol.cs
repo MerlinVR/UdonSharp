@@ -11,7 +11,7 @@ namespace UdonSharp.Compiler.Symbols
 {
     internal class UdonSharpBehaviourPropertySymbol : PropertySymbol
     {
-        public UdonSharpBehaviourPropertySymbol(IPropertySymbol sourceSymbol, BindContext context)
+        public UdonSharpBehaviourPropertySymbol(IPropertySymbol sourceSymbol, AbstractPhaseContext context)
             : base(sourceSymbol, context)
         {
 

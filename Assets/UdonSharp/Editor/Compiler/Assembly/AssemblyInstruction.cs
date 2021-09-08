@@ -1,8 +1,8 @@
 ﻿
 using System;
+using System.Text;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
-using UnityEngine.Assertions;
 
 namespace UdonSharp.Compiler.Assembly
 {
@@ -15,8 +15,13 @@ namespace UdonSharp.Compiler.Assembly
         Jump,
         JumpIfFalse,
         Extern,
+        ExternSet,
+        ExternGet,
         JumpIndirect,
         Return,
+        Comment,
+        ExportTag,
+        SyncTag,
     }
 
     internal abstract class AssemblyInstruction
@@ -26,7 +31,17 @@ namespace UdonSharp.Compiler.Assembly
 
         public uint InstructionAddress { get; set; } = UInt32.MaxValue;
 
-        public string Comment { get; set; } = null;
+        public string Comment { get; set; }
+
+        public abstract void WriteAssembly(StringBuilder builder);
+
+        protected void WriteIndentedLine(string str, StringBuilder builder, int indent = 2)
+        {
+            if (indent == 2)
+                builder.AppendFormat("        {0}\n", str);
+            else
+                builder.AppendFormat("{0}{1}\n", new string(' ', indent * 4), str);
+        }
     }
 
     namespace Instructions
@@ -35,6 +50,84 @@ namespace UdonSharp.Compiler.Assembly
         {
             public override InstructionKind GetKind() => InstructionKind.Nop;
             public override uint Size => 4;
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                WriteIndentedLine("NOP", builder);
+            }
+
+            public override string ToString()
+            {
+                return "NOP";
+            }
+        }
+
+        internal class Comment : AssemblyInstruction
+        {
+            public override InstructionKind GetKind() => InstructionKind.Comment;
+            public override uint Size => 0;
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                WriteIndentedLine($"# {Comment}", builder, 0);
+            }
+
+            public Comment(string comment)
+            {
+                Comment = comment;
+            }
+            
+            public override string ToString()
+            {
+                return "# " + Comment;
+            }
+        }
+
+        internal class ExportTag : AssemblyInstruction
+        {
+            public override InstructionKind GetKind() => InstructionKind.ExportTag;
+            public override uint Size => 0;
+
+            public UdonSharpBehaviourMethodSymbol ExportedMethod { get; }
+            
+            public ExportTag(UdonSharpBehaviourMethodSymbol methodSymbol)
+            {
+                ExportedMethod = methodSymbol;
+            }
+            
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                WriteIndentedLine($".export {ExportedMethod.ExportedMethodAddress.AddressString}", builder, 1);
+                WriteIndentedLine($"{ExportedMethod.ExportedMethodAddress.AddressString}:", builder, 1);
+            }
+            
+            public override string ToString()
+            {
+                return "export " + ExportedMethod.ExportedMethodAddress.AddressString;
+            }
+        }
+        
+        internal class SyncTag : AssemblyInstruction
+        {
+            public override InstructionKind GetKind() => InstructionKind.SyncTag;
+            public override uint Size => 0;
+
+            public Value SyncedValue { get; }
+            public UdonSyncMode SyncMode { get; }
+            
+            public SyncTag(Value syncedValue, UdonSyncMode syncMode)
+            {
+                SyncedValue = syncedValue;
+                SyncMode = syncMode;
+            }
+            
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                // WriteIndentedLine($".export {}");
+            }
+            
+            public override string ToString()
+            {
+                return $"sync {SyncedValue}, {SyncMode}";
+            }
         }
 
         internal class PushInstruction : AssemblyInstruction
@@ -42,11 +135,21 @@ namespace UdonSharp.Compiler.Assembly
             public override InstructionKind GetKind() => InstructionKind.Push;
             public override uint Size => 8;
 
-            public Value PushValue { get; private set; }
+            public Value PushValue { get; }
             
             public PushInstruction(Value value)
             {
                 PushValue = value;
+            }
+            
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                WriteIndentedLine($"PUSH, {PushValue.UniqueID}", builder);
+            }
+
+            public override string ToString()
+            {
+                return "PUSH: " + PushValue;
             }
         }
 
@@ -54,20 +157,42 @@ namespace UdonSharp.Compiler.Assembly
         {
             public override InstructionKind GetKind() => InstructionKind.Pop;
             public override uint Size => 4;
+
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                WriteIndentedLine($"POP", builder);
+            }
+            
+            public override string ToString()
+            {
+                return "POP";
+            }
         }
 
         internal class CopyInstruction : AssemblyInstruction
         {
             public override InstructionKind GetKind() => InstructionKind.Copy;
-            public override uint Size => 4;
+            public override uint Size => 20;
 
-            public Value SourceValue { get; private set; }
-            public Value TargetValue { get; private set; }
+            public Value SourceValue { get; }
+            public Value TargetValue { get; }
             
             public CopyInstruction(Value sourceValue, Value targetValue)
             {
                 SourceValue = sourceValue;
                 TargetValue = targetValue;
+            }
+            
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                WriteIndentedLine($"PUSH, {SourceValue.UniqueID}", builder);
+                WriteIndentedLine($"PUSH, {TargetValue.UniqueID}", builder);
+                WriteIndentedLine($"COPY", builder);
+            }
+
+            public override string ToString()
+            {
+                return $"COPY: {SourceValue} -> {TargetValue}";
             }
         }
 
@@ -82,12 +207,25 @@ namespace UdonSharp.Compiler.Assembly
             {
                 JumpTarget = jumpTarget;
             }
+            
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                if (JumpTarget.Address == uint.MaxValue)
+                    throw new InvalidOperationException($"Cannot jump to uninitialized jump label!" + (JumpTarget.DebugMethod == null ? "" : $" Target method: {JumpTarget.DebugMethod}"));
+                
+                WriteIndentedLine($"JUMP, 0x{JumpTarget.Address:X8}", builder);
+            }
+
+            public override string ToString()
+            {
+                return $"JUMP: {JumpTarget}";
+            }
         }
 
         internal class JumpIfFalseInstruction : AssemblyInstruction
         {
             public override InstructionKind GetKind() => InstructionKind.JumpIfFalse;
-            public override uint Size => 8;
+            public override uint Size => 16;
             
             public JumpLabel JumpTarget { get; private set; }
             public Value ConditionValue { get; private set; }
@@ -96,6 +234,17 @@ namespace UdonSharp.Compiler.Assembly
             {
                 JumpTarget = jumpTarget;
                 ConditionValue = conditionValue;
+            }
+            
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                WriteIndentedLine($"PUSH, {ConditionValue.UniqueID}", builder);
+                WriteIndentedLine($"JUMP_IF_FALSE, 0x{JumpTarget.Address:x8}", builder);
+            }
+
+            public override string ToString()
+            {
+                return $"JUMP_IF_FALSE: target: {JumpTarget}, condition {ConditionValue}";
             }
         }
 
@@ -110,6 +259,16 @@ namespace UdonSharp.Compiler.Assembly
             {
                 JumpTargetValue = jumpTargetValue;
             }
+            
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                WriteIndentedLine($"JUMP_INDIRECT, {JumpTargetValue.UniqueID}", builder);
+            }
+
+            public override string ToString()
+            {
+                return $"JUMP_INDIRECT: {JumpTargetValue}";
+            }
         }
 
         internal class ExternInstruction : AssemblyInstruction
@@ -117,16 +276,57 @@ namespace UdonSharp.Compiler.Assembly
             public override InstructionKind GetKind() => InstructionKind.Extern;
             public override uint Size => 8;
             
-            public MethodSymbol Method { get; private set; }
+            public IExternSymbol Extern { get; }
 
-            public ExternInstruction(MethodSymbol method)
+            public ExternInstruction(IExternSymbol @extern)
             {
-                #if UDONSHARP_DEBUG
-                if (!(method is ExternMethodSymbol))
-                    throw new ArgumentException("Method must be extern method symbol");
-                #endif
-                
-                Method = method;
+                Extern = @extern;
+            }
+            
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                WriteIndentedLine($"EXTERN, \"{Extern.ExternSignature}\"", builder);
+            }
+
+            public override string ToString()
+            {
+                return $"EXTERN: {Extern}, {Extern.ExternSignature}";
+            }
+        }
+
+        internal class ExternSetInstruction : AssemblyInstruction
+        {
+            public override InstructionKind GetKind() => InstructionKind.ExternSet;
+            public override uint Size => 8;
+            
+            public IExternAccessor Extern { get; }
+            
+            public ExternSetInstruction(IExternAccessor externSet)
+            {
+                Extern = externSet;
+            }
+            
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                WriteIndentedLine($"EXTERN, \"{Extern.ExternSetSignature}\"", builder);
+            }
+        }
+        
+        internal class ExternGetInstruction : AssemblyInstruction
+        {
+            public override InstructionKind GetKind() => InstructionKind.ExternGet;
+            public override uint Size => 8;
+            
+            public IExternAccessor Extern { get; }
+            
+            public ExternGetInstruction(IExternAccessor externGet)
+            {
+                Extern = externGet;
+            }
+            
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                WriteIndentedLine($"EXTERN, \"{Extern.ExternGetSignature}\"", builder);
             }
         }
 
@@ -134,6 +334,29 @@ namespace UdonSharp.Compiler.Assembly
         {
             public override InstructionKind GetKind() => InstructionKind.Return;
             public override uint Size => 20; // Push, Copy, JumpIndirect
+            // public override uint Size => 12; // Temp force exit jump
+
+            public Value RetValRef { get; }
+
+            public RetInstruction(Value retVal)
+            {
+                RetValRef = retVal;
+            }
+
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                // WriteIndentedLine("POP", builder);
+                // WriteIndentedLine("JUMP, 0xFFFFFFF0", builder);
+                
+                WriteIndentedLine($"PUSH, {RetValRef.UniqueID}", builder);
+                WriteIndentedLine("COPY", builder);
+                WriteIndentedLine($"JUMP_INDIRECT, {RetValRef.UniqueID}", builder);
+            }
+            
+            public override string ToString()
+            {
+                return "RET";
+            }
         }
     }
     

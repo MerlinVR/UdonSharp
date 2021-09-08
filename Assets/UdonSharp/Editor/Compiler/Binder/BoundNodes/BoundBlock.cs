@@ -1,14 +1,14 @@
-﻿using Microsoft.CodeAnalysis;
-using System.Collections;
+﻿
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using UnityEngine;
+using Microsoft.CodeAnalysis;
+using UdonSharp.Compiler.Emit;
 
 namespace UdonSharp.Compiler.Binder
 {
     internal class BoundBlock : BoundStatement
     {
-        public ImmutableArray<BoundStatement> Statements { get; }
+        private ImmutableArray<BoundStatement> Statements { get; }
 
         public BoundBlock(SyntaxNode node)
             :base(node)
@@ -20,6 +20,15 @@ namespace UdonSharp.Compiler.Binder
             : base(node)
         {
             Statements = ImmutableArray.CreateRange(statements);
+        }
+
+        public override void Emit(EmitContext context)
+        {
+            using (context.OpenBlockScope())
+            {
+                foreach (BoundStatement statement in Statements)
+                    context.Emit(statement);
+            }
         }
     }
 }

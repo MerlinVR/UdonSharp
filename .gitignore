@@ -78,3 +78,9 @@ Assets/Merlin.meta
 Assets/Merlin/Editor.meta
 Assets/Merlin/Editor/EasyEventEditor.cs
 Assets/Merlin/Editor/EasyEventEditor.cs.meta
+
+# Package stuff
+Assets/Resources
+Assets/Resources.meta
+
+Packages/com.vrchat.vrcsdk3

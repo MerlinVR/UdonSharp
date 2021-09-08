@@ -42,12 +42,25 @@ namespace UdonSharp.Compiler.Binder
             }
         }
 
-        public static bool IsExternType(this INamedTypeSymbol typeSymbol)
+        public static bool IsExternType(this ITypeSymbol typeSymbol)
         {
-            return typeSymbol.Locations.First().IsInMetadata;
+            return typeSymbol.Locations.FirstOrDefault()?.IsInMetadata ?? false;
         }
 
-        public static System.Type GetExternType(this INamedTypeSymbol typeSymbol)
+        private static readonly SymbolDisplayFormat _externFullTypeFormat =
+            new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
+
+        public static Type GetExternType(this ITypeSymbol typeSymbol)
+        {
+            if (typeSymbol is INamedTypeSymbol namedType)
+                return namedType.GetExternType();
+            if (typeSymbol is IArrayTypeSymbol arrayType)
+                return arrayType.GetExternType();
+
+            throw new ArgumentException("Must give a named type, or an array type");
+        }
+        
+        public static Type GetExternType(this INamedTypeSymbol typeSymbol)
         {
             if (!IsExternType(typeSymbol))
                 return null;
@@ -55,22 +68,57 @@ namespace UdonSharp.Compiler.Binder
             InitResolverExtensions();
 
             ModuleMetadata module = typeSymbol.Locations.First().MetadataModule.GetMetadata();
+            
+            System.Reflection.Assembly assembly = assemblyNameLookup[module.Name];
+            string typeName = typeSymbol.ToDisplayString(_externFullTypeFormat);
+            if (typeSymbol.IsGenericType)
+                typeName += $"`{typeSymbol.TypeArguments.Length}";
+                
+            Type foundType = assembly.GetType(typeName);
 
-            string assemblyName = module.Name;
+            if (foundType == null)
+                throw new InvalidOperationException("foundType should not be null");
 
-            System.Reflection.Assembly assembly = assemblyNameLookup[assemblyName];
+            return foundType;
+        }
+        
+        public static Type GetExternType(this IArrayTypeSymbol typeSymbol)
+        {
+            InitResolverExtensions();
 
-            return assembly.GetType(typeSymbol.ToString());
+            int arrayDepth = 0;
+            while (true)
+            {
+                ++arrayDepth;
+                
+                if (typeSymbol.ElementType.TypeKind != TypeKind.Array)
+                    break;
+
+                typeSymbol = (IArrayTypeSymbol) typeSymbol.ElementType;
+            }
+
+            if (!IsExternType(typeSymbol.ElementType))
+                return null;
+
+            Type foundType = GetExternType((INamedTypeSymbol) typeSymbol.ElementType);
+
+            while (arrayDepth > 0)
+            {
+                foundType = foundType.MakeArrayType();
+                arrayDepth--;
+            }
+
+            return foundType;
         }
 
         public static MethodInfo GetExternMethod(this IMethodSymbol methodSymbol)
         {
-            List<System.Type> parameterTypes = new List<Type>();
+            List<Type> parameterTypes = new List<Type>();
 
             foreach (IParameterSymbol parameter in methodSymbol.Parameters)
                 parameterTypes.Add(GetExternType((INamedTypeSymbol)parameter.Type));
 
-            System.Type callingType = methodSymbol.ContainingType.GetExternType();
+            Type callingType = methodSymbol.ContainingType.GetExternType();
 
             MethodInfo foundMethod = callingType.GetMethods(BindingFlags.Public | (methodSymbol.IsStatic ? BindingFlags.Static : BindingFlags.Instance)).FirstOrDefault(e => e.Name == methodSymbol.Name && Enumerable.SequenceEqual(parameterTypes, e.GetParameters().Select(p => p.ParameterType)));
 
@@ -81,7 +129,7 @@ namespace UdonSharp.Compiler.Binder
         {
             while (typeSymbol != null)
             {
-                System.Type externType = GetExternType(typeSymbol);
+                Type externType = GetExternType(typeSymbol);
 
                 if (externType == typeof(UdonSharpBehaviour))
                     return true;

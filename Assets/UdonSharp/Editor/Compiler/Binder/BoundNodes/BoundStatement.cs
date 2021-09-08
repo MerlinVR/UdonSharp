@@ -10,7 +10,7 @@ namespace UdonSharp.Compiler.Binder
         protected BoundStatement(SyntaxNode node)
             :base(node)
         {
-
+            
         }
     }
 }

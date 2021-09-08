@@ -9,9 +9,7 @@ namespace UdonSharp.Compiler.Binder
     /// </summary>
     internal abstract class BoundNode
     {
-        public virtual SyntaxNode SyntaxNode { get; private set; }
-
-        private BoundNode() { }
+        public SyntaxNode SyntaxNode { get; }
 
         protected BoundNode(SyntaxNode node)
         {
@@ -21,11 +19,6 @@ namespace UdonSharp.Compiler.Binder
         public virtual void Emit(EmitContext context)
         {
             throw new System.NotImplementedException($"Emit is not implemented on {GetType()}");
-        }
-
-        public Value EmitValue(EmitContext context)
-        {
-            throw new System.NotImplementedException($"EmitValue is not implemented on {GetType()}");
         }
     }
 }

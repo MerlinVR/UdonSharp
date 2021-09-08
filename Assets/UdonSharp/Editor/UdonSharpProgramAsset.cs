@@ -71,7 +71,7 @@ namespace UdonSharp
             EditorGUI.EndDisabledGroup();
         }
 
-        new internal void DrawProgramDisassembly()
+        internal new void DrawProgramDisassembly()
         {
             base.DrawProgramDisassembly();
         }
@@ -118,14 +118,13 @@ namespace UdonSharp
                 }
             }
 
-            object behaviourID = null;
             bool shouldUseRuntimeValue = EditorApplication.isPlaying && currentBehaviour != null;
 
             // UdonBehaviours won't have valid heap values unless they have been enabled once to run their initialization. 
             // So we check against a value we know will exist to make sure we can use the heap variables.
             if (shouldUseRuntimeValue)
             {
-                behaviourID = currentBehaviour.GetProgramVariable(behaviourIDHeapVarName);
+                var behaviourID = currentBehaviour.GetProgramVariable(behaviourIDHeapVarName);
                 if (behaviourID == null)
                     shouldUseRuntimeValue = false;
             }
@@ -134,7 +133,7 @@ namespace UdonSharp
             GUI.enabled = GUI.enabled || shouldUseRuntimeValue;
             shouldUseRuntimeValue &= GUI.enabled;
 
-            DrawPublicVariables(udonBehaviour, ref dirty);
+            // DrawPublicVariables(udonBehaviour, ref dirty);
 
             if (currentBehaviour != null && !shouldUseRuntimeValue && program != null)
             {
@@ -169,7 +168,7 @@ namespace UdonSharp
             if (sourceCsScript != null &&
                 !EditorApplication.isCompiling &&
                 !EditorApplication.isUpdating &&
-                !UdonSharpProgramAsset.AnyUdonSharpScriptHasError())
+                !AnyUdonSharpScriptHasError())
             {
                 CompileAllCsPrograms(true);
             }
@@ -207,6 +206,7 @@ namespace UdonSharp
         /// Compiles all U# programs in the project. If forceCompile is true, will skip checking for file changes to skip compile tasks
         /// </summary>
         /// <param name="forceCompile"></param>
+        /// <param name="editorBuild"></param>
         [PublicAPI]
         public static void CompileAllCsPrograms(bool forceCompile = false, bool editorBuild = true)
         {
@@ -246,7 +246,7 @@ namespace UdonSharp
         {
             if (_programAssetCache == null)
             {
-                string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
+                string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}");
 
                 _programAssetCache = new UdonSharpProgramAsset[udonSharpDataAssets.Length];
 
@@ -312,26 +312,26 @@ namespace UdonSharp
             return null;
         }
 
-        static UdonEditorInterface editorInterfaceInstance;
-        static UdonSharp.HeapFactory heapFactoryInstance;
+        private static UdonEditorInterface _editorInterfaceInstance;
+        private static UdonSharp.HeapFactory _heapFactoryInstance;
 
         internal bool AssembleCsProgram(uint heapSize)
         {
-            if (editorInterfaceInstance == null || heapFactoryInstance == null)
+            if (_editorInterfaceInstance == null || _heapFactoryInstance == null)
             {
                 // The heap size is determined by the symbol count + the unique extern string count
-                heapFactoryInstance = new UdonSharp.HeapFactory();
-                editorInterfaceInstance = new UdonEditorInterface(null, heapFactoryInstance, null, null, null, null, null, null, null);
-                editorInterfaceInstance.AddTypeResolver(new UdonBehaviourTypeResolver()); // todo: can be removed with SDK's >= VRCSDK-UDON-2020.06.15.14.08_Public
+                _heapFactoryInstance = new UdonSharp.HeapFactory();
+                _editorInterfaceInstance = new UdonEditorInterface(null, _heapFactoryInstance, null, null, null, null, null, null, null);
+                _editorInterfaceInstance.AddTypeResolver(new UdonBehaviourTypeResolver()); // todo: can be removed with SDK's >= VRCSDK-UDON-2020.06.15.14.08_Public
             }
 
-            heapFactoryInstance.FactoryHeapSize = heapSize;
+            _heapFactoryInstance.FactoryHeapSize = heapSize;
 
             FieldInfo assemblyError = typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance);
 
             try
             {
-                program = editorInterfaceInstance.Assemble(udonAssembly);
+                program = _editorInterfaceInstance.Assemble(udonAssembly);
                 assemblyError.SetValue(this, null);
 
                 hasInteractEvent = false;

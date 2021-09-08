@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using VRC.Udon;
 
 namespace UdonSharp
 {
@@ -416,39 +417,39 @@ namespace UdonSharp
         {
             if (type == typeof(sbyte))
                 return "sbyte";
-            else if (type == typeof(byte))
+            if (type == typeof(byte))
                 return "byte";
-            else if (type == typeof(short))
+            if (type == typeof(short))
                 return "short";
-            else if (type == typeof(ushort))
+            if (type == typeof(ushort))
                 return "ushort";
-            else if (type == typeof(int))
+            if (type == typeof(int))
                 return "int";
-            else if (type == typeof(uint))
+            if (type == typeof(uint))
                 return "uint";
-            else if (type == typeof(long))
+            if (type == typeof(long))
                 return "long";
-            else if (type == typeof(ulong))
+            if (type == typeof(ulong))
                 return "ulong";
-            else if (type == typeof(char))
+            if (type == typeof(char))
                 return "char";
-            else if (type == typeof(string))
+            if (type == typeof(string))
                 return "string";
-            else if (type == typeof(float))
+            if (type == typeof(float))
                 return "float";
-            else if (type == typeof(double))
+            if (type == typeof(double))
                 return "double";
-            else if (type == typeof(bool))
+            if (type == typeof(bool))
                 return "bool";
-            else
-                return type.Name;
+            return type.Name;
         }
 
         public static bool IsUserDefinedBehaviour(System.Type type)
         {
             return type == typeof(UdonSharpBehaviour) ||
                    type.IsSubclassOf(typeof(UdonSharpBehaviour)) ||
-                  (type.IsArray && (type.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)) || type.GetElementType() == typeof(UdonSharpBehaviour)));
+                  (type.IsArray && (type.GetElementType() == typeof(UdonSharpBehaviour) || type.GetElementType().IsSubclassOf(typeof(UdonSharpBehaviour)) ||
+                                    type.GetElementType() == typeof(UdonBehaviour) || type.GetElementType().IsSubclassOf(typeof(UdonBehaviour))));
         }
         
         public static bool IsUserJaggedArray(System.Type type)
@@ -475,18 +476,18 @@ namespace UdonSharp
             return type;
         }
         
-        private static Dictionary<System.Type, System.Type> inheritedTypeMap = null;
-        private readonly static object inheritedTypeMapLock = new object();
+        private static Dictionary<System.Type, System.Type> _inheritedTypeMap = null;
+        private static readonly object inheritedTypeMapLock = new object();
 
         private static Dictionary<System.Type, System.Type> GetInheritedTypeMap()
         {
-            if (inheritedTypeMap != null)
-                return inheritedTypeMap;
+            if (_inheritedTypeMap != null)
+                return _inheritedTypeMap;
             
             lock (inheritedTypeMapLock)
             {
-                if (inheritedTypeMap != null)
-                    return inheritedTypeMap;
+                if (_inheritedTypeMap != null)
+                    return _inheritedTypeMap;
                 
                 Dictionary<System.Type, System.Type> typeMap = new Dictionary<System.Type, System.Type>();
 
@@ -503,10 +504,10 @@ namespace UdonSharp
                 typeMap.Add(typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
                 typeMap.Add(typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer), typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer));
 
-                inheritedTypeMap = typeMap;
+                _inheritedTypeMap = typeMap;
             }
 
-            return inheritedTypeMap;
+            return _inheritedTypeMap;
         }
 
         internal static System.Type RemapBaseType(System.Type type)
@@ -535,7 +536,7 @@ namespace UdonSharp
         [ThreadStatic]
         private static Dictionary<System.Type, System.Type> userTypeToUdonTypeCache;
 
-        public static System.Type UserTypeToUdonType(System.Type type)
+        public static Type UserTypeToUdonType(Type type)
         {
             if (type == null)
                 return null;

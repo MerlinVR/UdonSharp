@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System;
+using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -14,39 +15,62 @@ namespace UdonSharp.Compiler.Symbols
         /// <summary>
         /// The symbol this is declared in, for instance if this is a field symbol, will point to the declaring class symbol, or if a local variable symbol, will point to a method symbol
         /// </summary>
-        public virtual Symbol ContainingSymbol { get; protected set; }
+        public TypeSymbol ContainingType { get; protected set; }
 
         /// <summary>
         /// Used to retrieve the non-generic-typed version of this symbol, for instance if you're getting a symbol for DoThing<int>(), will return DoThing<>()
         /// </summary>
-        public virtual Symbol OriginalSymbol { get { return null; } }
+        public virtual Symbol OriginalSymbol => null;
 
         /// <summary>
         /// The source Roslyn-generated symbol for this U# symbol
         /// </summary>
-        public virtual ISymbol RoslynSymbol { get; protected set; }
+        public virtual ISymbol RoslynSymbol { get; }
+
+        /// <summary>
+        /// Name of the symbol in code
+        /// </summary>
+        public virtual string Name => RoslynSymbol.Name;
 
         /// <summary>
         /// If this symbol has had its body visited and types linked
         /// </summary>
-        public virtual bool IsBound { get { return true; } }
+        public virtual bool IsBound => true;
 
         /// <summary>
         /// If this is a symbol pointing to an Udon extern
         /// </summary>
-        public virtual bool IsExtern { get { return false; } }
+        public virtual bool IsExtern => false;
 
         /// <summary>
         /// If this is a static symbol. This may return true on fields, properties, and methods. Classes will only return true on this if they are marked as a static class.
         /// </summary>
-        public virtual bool IsStatic { get { return false; } }
+        public virtual bool IsStatic => RoslynSymbol.IsStatic;
+        
+        public ImmutableArray<Attribute> SymbolAttributes { get; private set; }
 
         /// <summary>
-        /// Gets direct dependencies of this symbol, this symbol must be resolved for the dependencies to be valid
+        /// Gets direct dependencies of this symbol, this symbol must be bound for the dependencies to be valid
         /// Will throw exception if this symbol has not been resolved
         /// </summary>
-        /// <returns></returns>
-        public abstract ImmutableArray<Symbol> GetDirectDependencies();
+        /// <value></value>
+        public ImmutableArray<Symbol> DirectDependencies { get; private set; }
+
+        public void SetDependencies(IEnumerable<Symbol> dependencies)
+        {
+            if (DirectDependencies != null)
+                throw new InvalidOperationException($"Cannot set dependencies on symbol {this} since dependencies have already been set");
+
+            DirectDependencies = ImmutableArray.CreateRange(dependencies);
+        }
+
+        internal void SetAttributes(ImmutableArray<Attribute> attributes)
+        {
+            if (SymbolAttributes != null)
+                throw new InvalidOperationException("Cannot set attributes multiple times on the same symbol");
+            
+            SymbolAttributes = attributes;
+        }
 
         /// <summary>
         /// Gets direct dependencies of this symbol, this symbol must be resolved for the dependencies to be valid
@@ -55,7 +79,7 @@ namespace UdonSharp.Compiler.Symbols
         /// <returns></returns>
         public ImmutableArray<Symbol> GetDirectDependencies<T>() where T : Symbol
         {
-            return ImmutableArray.CreateRange<Symbol>(GetDirectDependencies().OfType<T>()); // Todo: cache
+            return ImmutableArray.CreateRange<Symbol>(DirectDependencies.OfType<T>()); // Todo: cache
         }
 
         ImmutableArray<Symbol> _lazyAllDependencies;
@@ -63,12 +87,12 @@ namespace UdonSharp.Compiler.Symbols
 
         private bool AllDependenciesResolved { get { return _lazyAllDependencies != null; } }
         
-        protected Symbol(ISymbol sourceSymbol, BindContext bindContext)
+        protected Symbol(ISymbol sourceSymbol, AbstractPhaseContext context)
         {
             RoslynSymbol = sourceSymbol;
 
-            if (sourceSymbol.ContainingType != null)
-                ContainingSymbol = bindContext.GetSymbol(sourceSymbol.ContainingType);
+            if (sourceSymbol?.ContainingType != null)
+                ContainingType = context.GetTypeSymbol(sourceSymbol.ContainingType);
         }
 
         /// <summary>
@@ -102,7 +126,7 @@ namespace UdonSharp.Compiler.Symbols
                     continue;
                 }
 
-                resolvedDependencies.UnionWith(GetAllDependenciesRecursive(currentSymbol.GetDirectDependencies(), resolvedDependencies));
+                resolvedDependencies.UnionWith(GetAllDependenciesRecursive(currentSymbol.DirectDependencies, resolvedDependencies));
             }
 
             return resolvedDependencies;
@@ -123,7 +147,7 @@ namespace UdonSharp.Compiler.Symbols
                 if (_lazyAllDependencies != null)
                     return _lazyAllDependencies;
 
-                ImmutableArray<Symbol> directDependencies = GetDirectDependencies();
+                ImmutableArray<Symbol> directDependencies = DirectDependencies;
                 
                 _lazyAllDependencies = ImmutableArray.CreateRange(GetAllDependenciesRecursive(directDependencies));
             }
@@ -154,15 +178,39 @@ namespace UdonSharp.Compiler.Symbols
             return RoslynSymbol.GetHashCode();
         }
 
+        protected bool Equals(Symbol other)
+        {
+            return RoslynSymbol.Equals(other.RoslynSymbol);
+        }
+
         public override bool Equals(object obj)
         {
-            return RoslynSymbol.Equals(obj);
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((Symbol) obj);
         }
 
         // This may get more descriptive info in the future
         public override string ToString()
         {
             return RoslynSymbol.ToString();
+        }
+
+        /// <summary>
+        /// Stops complaints about reference comparison. In this context we know that there will only ever be one Symbol for a given Roslyn symbol. So it is safe to do reference comparisons.
+        /// </summary>
+        /// <param name="lhs"></param>
+        /// <param name="rhs"></param>
+        /// <returns></returns>
+        public static bool operator ==(Symbol lhs, Symbol rhs)
+        {
+            return ReferenceEquals(lhs, rhs);
+        }
+
+        public static bool operator !=(Symbol lhs, Symbol rhs)
+        {
+            return !(lhs == rhs);
         }
     }
 }

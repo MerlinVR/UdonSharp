@@ -40,6 +40,8 @@ namespace UdonSharp.Localization
         CE_UdonSharpBehaviourGenericMethodsNotSupported,
         CE_LocalMethodsNotSupported,
         CE_NodeNotSupported,
+        CE_UdonMethodNotExposed,
+        CE_InitializerListsNotSupported,
 
         Length,
     }
@@ -194,7 +196,7 @@ namespace UdonSharp.Localization
         }
     }
 
-#if UDONSHARP_LOC_DEBUG
+#if UDONSHARP_LOC_DEBUG && UNITY_EDITOR
     internal class LocalePostProcessor : AssetPostprocessor
     {
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)

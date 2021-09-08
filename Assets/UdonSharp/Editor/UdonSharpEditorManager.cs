@@ -190,7 +190,7 @@ namespace UdonSharpEditor
                 InjectedMethods.crossSceneRefCheckMethod = (Func<UnityEngine.Object, UnityEngine.Object, bool>)Delegate.CreateDelegate(typeof(Func<UnityEngine.Object, UnityEngine.Object, bool>), crossSceneRefCheckMethod);
 
                 // Patch post BuildAssetBundles fixup function
-                MethodInfo buildAssetbundlesMethod = typeof(BuildPipeline).GetMethods(BindingFlags.NonPublic | BindingFlags.Static).First(e => e.Name == "BuildAssetBundles" && e.GetParameters().Length == 5);
+                MethodInfo buildAssetBundlesMethod = typeof(BuildPipeline).GetMethods(BindingFlags.NonPublic | BindingFlags.Static).First(e => e.Name == "BuildAssetBundles" && e.GetParameters().Length == 5);
 
                 MethodInfo postBuildMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.PostBuildAssetBundles), BindingFlags.Public | BindingFlags.Static);
                 HarmonyMethod postBuildHarmonyMethod = new HarmonyMethod(postBuildMethod);
@@ -198,10 +198,10 @@ namespace UdonSharpEditor
                 MethodInfo preBuildMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.PreBuildAssetBundles), BindingFlags.Public | BindingFlags.Static);
                 HarmonyMethod preBuildHarmonyMethod = new HarmonyMethod(preBuildMethod);
 
-                harmony.Patch(buildAssetbundlesMethod, preBuildHarmonyMethod, postBuildHarmonyMethod);
+                harmony.Patch(buildAssetBundlesMethod, preBuildHarmonyMethod, postBuildHarmonyMethod);
 
                 // Patch a workaround for errors in Unity's APIUpdaterHelper when in a Japanese locale
-                MethodInfo findTypeInLoadedAssemblies = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.Scripting.Compilers.APIUpdaterHelper").GetMethod("FindTypeInLoadedAssemblies", BindingFlags.Static | BindingFlags.NonPublic);
+                MethodInfo findTypeInLoadedAssemblies = typeof(Editor).Assembly.GetType("UnityEditor.Scripting.Compilers.APIUpdaterHelper").GetMethod("FindTypeInLoadedAssemblies", BindingFlags.Static | BindingFlags.NonPublic);
                 MethodInfo injectedFindType = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.FindTypeInLoadedAssembliesPrefix), BindingFlags.Public | BindingFlags.Static);
                 HarmonyMethod injectedFindTypeHarmonyMethod = new HarmonyMethod(injectedFindType);
 
@@ -226,6 +226,22 @@ namespace UdonSharpEditor
                     Debug.LogWarning($"Failed to patch Odin inspector fix for U#\nException: {e}");
                 }
 #endif
+                
+                // Unity sucks
+                // This is currently cursed, do not include with the user-facing stuff
+                // This will prevent Unity from trying to compile dirty scripts when entering/exiting play mode which is great for iteration time, 
+                //  however it will not compile the modified scripts after exiting play mode and reimporting until you actually change another script
+                MethodInfo dirtyScriptMethod = typeof(Editor).Assembly
+                    .GetType("UnityEditor.Scripting.ScriptCompilation.EditorCompilation").GetMethod(
+                        "DirtyScript",
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                
+                MethodInfo injectedDirtyScriptMethod = typeof(InjectedMethods).GetMethod(
+                    nameof(InjectedMethods.DirtyScriptOverride), BindingFlags.Static | BindingFlags.Public);
+                
+                HarmonyMethod injectedHarmonyCompileMethod = new HarmonyMethod(injectedDirtyScriptMethod);
+                
+                harmony.Patch(dirtyScriptMethod, injectedHarmonyCompileMethod);
             }
         }
 
@@ -411,6 +427,11 @@ namespace UdonSharpEditor
                 UdonBehaviourDrawerOverride.OverrideUdonBehaviourDrawer();
             }
 #endif
+
+            public static bool DirtyScriptOverride()
+            {
+                return !EditorApplication.isPlayingOrWillChangePlaymode;
+            }
         }
 
         static void OnChangePlayMode(PlayModeStateChange state)
@@ -862,6 +883,9 @@ namespace UdonSharpEditor
             {
                 if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset programAsset))
                     continue;
+                
+                if (!programAsset.isV1Root)
+                    continue;
 
                 int originalUpdateCount = updatedBehaviourVariables;
 
@@ -909,7 +933,7 @@ namespace UdonSharpEditor
                             continue;
                         }
 
-                        System.Type programSymbolType = fieldDefinition.fieldSymbol.symbolCsType;
+                        System.Type programSymbolType = fieldDefinition.SystemType;
 
                         if (!symbolValue.IsUnityObjectNull())
                         {
@@ -967,7 +991,7 @@ namespace UdonSharpEditor
                         string behaviourName = behaviour.ToString();
 
                         // Clean up UdonSharpBehaviour types that are no longer compatible
-                        System.Type userType = fieldDefinition.fieldSymbol.userCsType;
+                        System.Type userType = fieldDefinition.UserType;
                         if (!UdonSharpBehaviourTypeMatches(symbolValue, userType, behaviourName, variableSymbol))
                         {
                             updatedBehaviourVariables++;

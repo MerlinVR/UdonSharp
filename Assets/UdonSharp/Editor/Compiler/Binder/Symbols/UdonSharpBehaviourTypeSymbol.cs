@@ -1,48 +1,28 @@
 ﻿
 using Microsoft.CodeAnalysis;
-using System.Collections.Generic;
-using System.Linq;
-using UdonSharp.Compiler.Binder;
+using UnityEngine;
+using VRC.Udon;
 
 namespace UdonSharp.Compiler.Symbols
 {
-    internal class UdonSharpBehaviourTypeSymbol : TypeSymbol
+    internal sealed class UdonSharpBehaviourTypeSymbol : TypeSymbol
     {
-        public UdonSharpBehaviourTypeSymbol(INamedTypeSymbol sourceSymbol, BindContext context)
+        public UdonSharpBehaviourTypeSymbol(INamedTypeSymbol sourceSymbol, AbstractPhaseContext context)
             : base(sourceSymbol, context)
         {
+            UdonType = (ExternTypeSymbol)context.GetTypeSymbol(typeof(UdonBehaviour));
         }
-
-        bool _bound = false;
-
-        public override bool IsBound => _bound;
-
-        public override void Bind(BindContext context)
+        
+        public UdonSharpBehaviourTypeSymbol(IArrayTypeSymbol sourceSymbol, AbstractPhaseContext context)
+            : base(sourceSymbol, context)
         {
-            if (_bound)
-                return;
-
-            ITypeSymbol typeSymbol = RoslynTypeSymbol;
-
-            IEnumerable<ISymbol> members = typeSymbol.GetMembers().Where(e => !e.IsImplicitlyDeclared);
-
-            var fieldSymbols = members.OfType<IFieldSymbol>().Select(e => (FieldSymbol)context.GetSymbol(e));
-            var propertySymbols = members.OfType<IPropertySymbol>().Select(e => (PropertySymbol)context.GetSymbol(e));
-            var methodSymbols = members.OfType<IMethodSymbol>().Where(e => e.MethodKind != MethodKind.PropertyGet && e.MethodKind != MethodKind.PropertySet).Select(e => (MethodSymbol)context.GetSymbol(e));
-
-            foreach (var fieldSymbol in fieldSymbols)
-                fieldSymbol.Bind(context);
-
-            foreach (var propertySymbol in propertySymbols)
-                propertySymbol.Bind(context);
-
-            foreach (var methodSymbol in methodSymbols)
-                methodSymbol.Bind(context);
-
-            _bound = true;
+            if (sourceSymbol.ElementType.TypeKind == TypeKind.Array)
+                UdonType = (ExternTypeSymbol)context.GetTypeSymbol(SpecialType.System_Object).MakeArrayType(context);
+            else
+                UdonType = (ExternTypeSymbol)context.GetTypeSymbol(typeof(Component[]));
         }
 
-        protected override Symbol CreateSymbol(ISymbol roslynSymbol, BindContext context)
+        protected override Symbol CreateSymbol(ISymbol roslynSymbol, AbstractPhaseContext context)
         {
             switch (roslynSymbol)
             {
@@ -54,6 +34,10 @@ namespace UdonSharp.Compiler.Symbols
                     return new UdonSharpBehaviourFieldSymbol(fieldSymbol, context);
                 case IPropertySymbol propertySymbol:
                     return new UdonSharpBehaviourPropertySymbol(propertySymbol, context);
+                case ILocalSymbol localSymbol:
+                    return new LocalSymbol(localSymbol, context);
+                case IParameterSymbol parameterSymbol:
+                    return new ParameterSymbol(parameterSymbol, context);
             }
 
             throw new System.InvalidOperationException("Failed to construct symbol for type");

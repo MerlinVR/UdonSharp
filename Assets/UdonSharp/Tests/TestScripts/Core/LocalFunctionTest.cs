@@ -52,13 +52,13 @@ namespace UdonSharp.Tests
         {
             eventCounter = 0;
 
-            SendCustomEvent("IncrementCounter");
-            SendCustomEvent("IncrementCounter");
-            SendCustomEvent("IncrementCounter");
+            SendCustomEvent(nameof(IncrementCounter));
+            SendCustomEvent(nameof(IncrementCounter));
+            SendCustomEvent(nameof(IncrementCounter));
 
             tester.TestAssertion("Custom Event Calls", eventCounter == 12);
 
-            selfReference.SendCustomEvent("IncrementCounter");
+            selfReference.SendCustomEvent(nameof(IncrementCounter));
             tester.TestAssertion("Reference Custom Event Calls", eventCounter == 16);
         }
 

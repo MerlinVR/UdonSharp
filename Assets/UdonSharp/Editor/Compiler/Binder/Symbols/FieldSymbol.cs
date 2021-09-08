@@ -1,39 +1,48 @@
-﻿using Microsoft.CodeAnalysis;
+﻿
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Collections.Immutable;
 using System.Linq;
 using UdonSharp.Compiler.Binder;
-
+using UnityEngine;
 
 namespace UdonSharp.Compiler.Symbols
 {
     internal class FieldSymbol : Symbol
     {
-        readonly TypeSymbol sourceType;
-
-        public TypeSymbol Type { get; private set; }
+        public TypeSymbol Type { get; protected set; }
         public ExpressionSyntax InitializerSyntax { get; private set; }
+        
+        public BoundExpression InitializerExpression { get; private set; }
 
-        public FieldSymbol(IFieldSymbol sourceSymbol, BindContext bindContext)
+        protected FieldSymbol(IFieldSymbol sourceSymbol, AbstractPhaseContext bindContext)
             :base(sourceSymbol, bindContext)
         {
-            ContainingSymbol = bindContext.GetTypeSymbol(sourceSymbol.ContainingType);
+            ContainingType = bindContext.GetTypeSymbol(sourceSymbol.ContainingType);
+            Type = bindContext.GetTypeSymbol(RoslynSymbol.Type);
         }
 
-        public new IFieldSymbol RoslynSymbol { get { return (IFieldSymbol)base.RoslynSymbol; } }
+        public new IFieldSymbol RoslynSymbol => (IFieldSymbol)base.RoslynSymbol;
 
-        public override ImmutableArray<Symbol> GetDirectDependencies()
-        {
-            throw new System.NotImplementedException();
-        }
+        public bool IsConst => RoslynSymbol.IsConst;
+        public bool IsReadonly => RoslynSymbol.IsReadOnly;
 
-        bool _resolved = false;
+        private bool _resolved;
         public override bool IsBound => _resolved;
 
         public override void Bind(BindContext context)
         {
-            Type = context.GetTypeSymbol(RoslynSymbol.Type);
+            if (IsBound)
+                return;
+            
             InitializerSyntax = (RoslynSymbol.DeclaringSyntaxReferences.First().GetSyntax() as VariableDeclaratorSyntax)?.Initializer?.Value;
+            // Re-get the type symbol to register it as a dependency in the bind context
+            context.GetTypeSymbol(RoslynSymbol.Type);
+
+            if (InitializerSyntax != null)
+            {
+                BinderSyntaxVisitor bodyVisitor = new BinderSyntaxVisitor(this, context);
+                InitializerExpression = (BoundExpression) bodyVisitor.Visit(InitializerSyntax);
+            }
 
             _resolved = true;
         }

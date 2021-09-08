@@ -1,49 +1,71 @@
 ﻿
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
-using System.Collections.Concurrent;
 using UdonSharp.Compiler.Symbols;
 
 namespace UdonSharp.Compiler.Binder
 {
-    internal class BindContext
+    /// <summary>
+    /// The context for the binding phase, this is local to a single type that is being bound
+    /// </summary>
+    internal class BindContext : AbstractPhaseContext
     {
-        public BindContext(CompilationContext context)
+        private ITypeSymbol BindSymbol { get; }
+
+        private Symbol _currentBindSymbol;
+        private HashSet<Symbol> _currentReferencedSymbols;
+
+        public BindContext(CompilationContext context, ITypeSymbol bindSymbol)
+        :base(context)
         {
-            CompileContext = context;
+            BindSymbol = bindSymbol;
         }
 
-        public CompilationContext CompileContext { get; private set; }
-
-        private ConcurrentBag<Symbol> symbolsToBind = new ConcurrentBag<Symbol>();
-        private ConcurrentDictionary<ITypeSymbol, TypeSymbol> typeSymbolLookup = new ConcurrentDictionary<ITypeSymbol, TypeSymbol>();
-
-        void QueueBind(Symbol symbol)
-        {
-            if (!symbol.IsBound) // Something may resolve this later on so this check is not a guarantee that all symbols in the queue will not be bound
-                symbolsToBind.Add(symbol);
+        public void Bind()
+        { 
+            GetTypeSymbol(BindSymbol).Bind(this);
         }
 
-        public TypeSymbol GetTypeSymbol(ITypeSymbol type)
+        protected override void OnSymbolRetrieved(Symbol symbol)
         {
-            TypeSymbol typeSymbol = typeSymbolLookup.GetOrAdd(type, (key) => TypeSymbolFactory.CreateSymbol(type, this));
-
-            QueueBind(typeSymbol);
-
-            return typeSymbol;
+            if (_currentBindSymbol != null && !symbol.IsExtern)
+                _currentReferencedSymbols.Add(symbol);
         }
 
-        public Symbol GetSymbol(ISymbol sourceSymbol)
+        public IDisposable OpenMemberBindScope(Symbol boundSymbol)
         {
-            if (sourceSymbol == null)
-                throw new System.NullReferenceException("Source symbol cannot be null");
+            return new MemberBindScope(this, boundSymbol);
+        }
+
+        private void FinishSymbolBind()
+        {
+            _currentBindSymbol.SetDependencies(_currentReferencedSymbols);
+            _currentBindSymbol = null;
+            _currentReferencedSymbols = null;
+        }
+
+        public TypeSymbol GetCurrentReturnType()
+        {
+            return (_currentBindSymbol as MethodSymbol)?.ReturnType;
+        }
+
+        private class MemberBindScope : IDisposable
+        {
+            private BindContext context;
             
-            if (sourceSymbol is INamedTypeSymbol typeSymbol)
-                return GetTypeSymbol(typeSymbol);
-
-            if (sourceSymbol.ContainingType != null)
-                return GetTypeSymbol(sourceSymbol.ContainingType).GetSymbol(sourceSymbol, this);
-
-            throw new System.InvalidOperationException($"Could not get symbol for {sourceSymbol}");
+            public MemberBindScope(BindContext context, Symbol bindSymbol)
+            {
+                this.context = context;
+                context._currentBindSymbol = bindSymbol;
+                context._currentReferencedSymbols = new HashSet<Symbol>();
+            }
+            
+            public void Dispose()
+            {
+                context.FinishSymbolBind();
+            }
         }
     }
 }

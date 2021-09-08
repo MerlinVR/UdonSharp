@@ -40,8 +40,10 @@ namespace UdonSharp.Tests
             int totalTests = 0;
             int passedTests = 0;
 
-            foreach (IntegrationTestSuite suite in integrationTests)
+            // foreach (IntegrationTestSuite suite in integrationTests)
+            for (int i = 0; i < integrationTests.Length; i++)
             {
+                IntegrationTestSuite suite = integrationTests[i];
                 suite.printPassedTests = logPassedTests;
                 suite.RunTests();
 
@@ -53,7 +55,7 @@ namespace UdonSharp.Tests
         }
     }
 
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
+#if !COMPILER_UDONSHARP && UNITY_EDITOR && false
     [CustomEditor(typeof(IntegrationTestRunner))]
     public class IntegrationTestRunnerInspector : Editor
     {

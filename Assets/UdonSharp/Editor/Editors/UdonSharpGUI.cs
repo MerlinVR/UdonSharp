@@ -395,21 +395,6 @@ namespace UdonSharpEditor
             }
             else
             {
-                EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
-
-                EditorGUILayout.Space();
-
-                if (GUILayout.Button("Export to Assembly Asset"))
-                {
-                    string savePath = EditorUtility.SaveFilePanelInProject("Assembly asset save location", Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(programAsset.sourceCsScript)), "asset", "Choose a save location for the assembly asset");
-
-                    if (savePath.Length > 0)
-                    {
-                        UdonSharpEditorUtility.UdonSharpProgramToAssemblyProgram(programAsset, savePath);
-                    }
-                }
-                EditorGUI.EndDisabledGroup();
-
                 EditorGUILayout.Space();
 
                 editorState.showProgramUasm = EditorGUILayout.Foldout(editorState.showProgramUasm, "Compiled C# Udon Assembly", true);
@@ -473,7 +458,7 @@ namespace UdonSharpEditor
             return false;
         }
 
-        private static MonoScript currentUserScript;
+        private static Type currentUserScript;
         private static UnityEngine.Object ValidateObjectReference(UnityEngine.Object[] references, System.Type objType, SerializedProperty property, Enum options = null)
         {
             if (property != null)
@@ -511,7 +496,7 @@ namespace UdonSharpEditor
                             udonSharpProgram.sourceCsScript != null)
                         {
                             if (currentUserScript == null || // If this is null, the field is referencing a generic UdonBehaviour or UdonSharpBehaviour instead of a behaviour of a certain type that inherits from UdonSharpBehaviour.
-                                udonSharpProgram.sourceCsScript == currentUserScript)
+                                udonSharpProgram.sourceCsScript.GetClass() == currentUserScript)
                                 return referenceBehaviour;
                         }
                     }
@@ -539,11 +524,15 @@ namespace UdonSharpEditor
 
         private static bool IsNormalUnityObject(System.Type declaredType, FieldDefinition fieldDefinition)
         {
-            return !UdonSharpUtils.IsUserDefinedBehaviour(declaredType) && (fieldDefinition == null || fieldDefinition.fieldSymbol.userCsType == null || !fieldDefinition.fieldSymbol.IsUserDefinedBehaviour());
+            return !UdonSharpUtils.IsUserDefinedBehaviour(declaredType) && (fieldDefinition == null || fieldDefinition.UserType == null || !UdonSharpUtils.IsUserDefinedBehaviour(fieldDefinition.UserType));
         }
 
         private static UdonSharpProgramAsset _currentProgramAsset;
         private static UdonBehaviour _currentBehaviour;
+
+        private static readonly MethodInfo _doObjectFieldMethod = typeof(EditorGUI)
+            .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+            .FirstOrDefault(e => e.Name == "DoObjectField" && e.GetParameters().Length == 8);
 
         private static object DrawUnityObjectField(GUIContent fieldName, string symbol, (object value, System.Type declaredType, FieldDefinition symbolField) publicVariable, ref bool dirty)
         {
@@ -554,9 +543,7 @@ namespace UdonSharpEditor
             if (IsNormalUnityObject(declaredType, fieldDefinition))
                 return EditorGUILayout.ObjectField(fieldName, (UnityEngine.Object)value, declaredType, true);
 
-            MethodInfo doObjectFieldMethod = typeof(EditorGUI).GetMethods(BindingFlags.Static | BindingFlags.NonPublic).Where(e => e.Name == "DoObjectField" && e.GetParameters().Length == 8).FirstOrDefault();
-
-            if (doObjectFieldMethod == null)
+            if (_doObjectFieldMethod == null)
                 throw new System.Exception("Could not find DoObjectField() method");
 
             Rect objectRect = EditorGUILayout.GetControlRect();
@@ -567,7 +554,7 @@ namespace UdonSharpEditor
 
             System.Type searchType = fieldDefinition.userBehaviourSource != null ? fieldDefinition.userBehaviourSource.GetClass() : typeof(UdonSharpBehaviour);
 
-            UnityEngine.Object objectFieldValue = (UnityEngine.Object)doObjectFieldMethod.Invoke(null, new object[] {
+            UnityEngine.Object objectFieldValue = (UnityEngine.Object)_doObjectFieldMethod.Invoke(null, new object[] {
                 objectRect,
                 objectRect,
                 id,
@@ -590,7 +577,7 @@ namespace UdonSharpEditor
             }
 
             string labelText;
-            System.Type variableType = fieldDefinition.fieldSymbol.userCsType;
+            System.Type variableType = fieldDefinition.UserType;
 
             while (variableType.IsArray)
                 variableType = variableType.GetElementType();
@@ -724,7 +711,7 @@ namespace UdonSharpEditor
 
                             List<UnityEngine.Object> draggedReferences = new List<UnityEngine.Object>();
 
-                            currentUserScript = fieldDefinition?.userBehaviourSource;
+                            currentUserScript = fieldDefinition?.UserType;
                             foreach (UnityEngine.Object obj in references)
                             {
                                 objArray[0] = obj;
@@ -1110,7 +1097,7 @@ namespace UdonSharpEditor
                     programAsset.fieldDefinitions.TryGetValue(symbol, out fieldDefinition);
 
                 EditorGUI.BeginChangeCheck();
-                object newValue = DrawFieldForType(null, symbol, (variableValue, variableType, fieldDefinition), fieldDefinition != null ? fieldDefinition.fieldSymbol.userCsType : null, ref dirty, enabled);
+                object newValue = DrawFieldForType(null, symbol, (variableValue, variableType, fieldDefinition), fieldDefinition?.UserType, ref dirty, enabled);
 
                 bool changed = EditorGUI.EndChangeCheck();
 
@@ -1129,12 +1116,12 @@ namespace UdonSharpEditor
                     }
                 }
 
-                if (symbolField.fieldSymbol != null && symbolField.fieldSymbol.syncMode != UdonSyncMode.NotSynced)
+                if (symbolField.fieldSymbol != null && symbolField.SyncMode != null)
                 {
-                    if (symbolField.fieldSymbol.syncMode == UdonSyncMode.None)
+                    if (symbolField.SyncMode == UdonSyncMode.None)
                         GUILayout.Label("synced", GUILayout.Width(55f));
                     else
-                        GUILayout.Label($"sync: {Enum.GetName(typeof(UdonSyncMode), symbolField.fieldSymbol.syncMode)}", GUILayout.Width(85f));
+                        GUILayout.Label($"sync: {Enum.GetName(typeof(UdonSyncMode), symbolField.SyncMode)}", GUILayout.Width(85f));
                 }
 
                 if (!isArray)

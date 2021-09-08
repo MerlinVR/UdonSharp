@@ -104,9 +104,14 @@ namespace UdonSharp.Compiler
             try
             {
                 EditorUtility.DisplayProgressBar("UdonSharp Compile", "Compiling...", 1f);
-
+            
                 UdonSharpCompilerV1 compilerV1 = new UdonSharpCompilerV1();
-                compilerV1.Compile();
+
+                string filePath = null;
+
+                if (modules.Length == 1)
+                    filePath = AssetDatabase.GetAssetPath(modules[0].programAsset.sourceCsScript);
+                compilerV1.Compile(filePath);
             }
             catch (System.Exception e)
             {
@@ -116,7 +121,7 @@ namespace UdonSharp.Compiler
             {
                 EditorUtility.ClearProgressBar();
             }
-
+            
             return;
 
             Profiler.BeginSample("UdonSharp Compile");

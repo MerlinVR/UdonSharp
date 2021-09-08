@@ -44,7 +44,6 @@ namespace UdonSharp
         UnaryNegation,
         ConditionalAnd, 
         ConditionalOr, 
-        ConditionalXor, // This doesn't exist in C#?
         // -- Bitwise operators
         LogicalAnd, 
         LogicalOr, 

@@ -25,10 +25,12 @@ namespace UdonSharp
             // This is marked experimental for now since I don't know if it will break horribly in some case.
             if (shouldForceCompile)
             {
+                Debug.Log("Refresh U# force update");
                 AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
             }
             else
             {
+                Debug.Log("Refresh U# force update 2");
                 AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
 
                 if (EditorApplication.isCompiling)

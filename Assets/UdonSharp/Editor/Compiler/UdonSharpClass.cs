@@ -1,6 +1,8 @@
 ﻿
 
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace UdonSharp.Compiler
 {
@@ -13,7 +15,22 @@ namespace UdonSharp.Compiler
             fieldAttributes = new List<System.Attribute>();
         }
 
+        public FieldDefinition(Type userType, Type systemType, UdonSyncMode? syncMode, List<Attribute> attributes)
+        {
+            UserType = userType;
+            SystemType = systemType;
+            SyncMode = syncMode;
+            fieldAttributes = attributes;
+        }
+
         public SymbolDefinition fieldSymbol;
+        
+        [field: SerializeField]
+        public System.Type UserType { get; }
+        [field: SerializeField]
+        public System.Type SystemType { get; }
+        [field: SerializeField]
+        public UdonSyncMode? SyncMode { get; }
 
         public List<System.Attribute> fieldAttributes;
         
@@ -21,8 +38,6 @@ namespace UdonSharp.Compiler
 
         public T GetAttribute<T>() where T : System.Attribute
         {
-            System.Type attributeType = typeof(T);
-
             foreach (var attribute in fieldAttributes)
             {
                 if (attribute is T)
@@ -34,8 +49,6 @@ namespace UdonSharp.Compiler
 
         public T[] GetAttributes<T>() where T : System.Attribute
         {
-            System.Type attributeType = typeof(T);
-
             List<T> attributes = new List<T>();
 
             foreach (var attribute in fieldAttributes)

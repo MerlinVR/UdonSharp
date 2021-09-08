@@ -1,7 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿
+using Microsoft.CodeAnalysis;
+using UdonSharp.Compiler.Emit;
 
 namespace UdonSharp.Compiler.Binder
 {
@@ -13,6 +12,11 @@ namespace UdonSharp.Compiler.Binder
             : base(node)
         {
             Expression = expression;
+        }
+
+        public override void Emit(EmitContext context)
+        {
+            context.Emit(Expression);
         }
     }
 }

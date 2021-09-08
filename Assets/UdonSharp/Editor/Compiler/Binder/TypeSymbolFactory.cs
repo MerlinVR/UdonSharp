@@ -7,20 +7,43 @@ namespace UdonSharp.Compiler.Binder
 {
     internal static class TypeSymbolFactory
     {
-        public static TypeSymbol CreateSymbol(ITypeSymbol type, BindContext context)
+        public static TypeSymbol CreateSymbol(ITypeSymbol type, AbstractPhaseContext context)
         {
             if (type is INamedTypeSymbol namedType)
             {
                 if (namedType.IsExternType())
                     return new ExternTypeSymbol(namedType, context);
-                else if (namedType.IsUdonSharpBehaviour())
+                if (namedType.IsUdonSharpBehaviour())
                     return new UdonSharpBehaviourTypeSymbol(namedType, context);
-                else
-                    return new ImportedUdonSharpTypeSymbol(namedType, context);
+                
+                return new ImportedUdonSharpTypeSymbol(namedType, context);
             }
-            else if (type is IArrayTypeSymbol arrayType)
+
+            // This is just used to be able to query all symbols on system/unity types that use pointer types
+            // Udon does not actually support pointer types
+            if (type is IPointerTypeSymbol pointerType)
             {
-                return new ArrayTypeSymbol(arrayType, context);
+                if (pointerType.PointedAtType.IsExternType())
+                    return new ExternTypeSymbol((INamedTypeSymbol)pointerType.PointedAtType, context);
+            }
+
+            if (type is IArrayTypeSymbol arrayType)
+            {
+                IArrayTypeSymbol currentArrayType = arrayType;
+                while (currentArrayType.ElementType is IArrayTypeSymbol)
+                {
+                    currentArrayType = currentArrayType.ElementType as IArrayTypeSymbol;
+                }
+
+                INamedTypeSymbol rootType = (INamedTypeSymbol)currentArrayType.ElementType;
+                
+                if (rootType.IsExternType())
+                    return new ExternTypeSymbol(arrayType, context);
+
+                if (rootType.IsUdonSharpBehaviour())
+                    return new UdonSharpBehaviourTypeSymbol(arrayType, context);
+
+                return new ImportedUdonSharpTypeSymbol(arrayType, context);
             }
 
             throw new System.ArgumentException($"Could not construct type for type symbol {type}");
