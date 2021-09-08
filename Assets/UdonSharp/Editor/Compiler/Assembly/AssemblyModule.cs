@@ -166,9 +166,25 @@ namespace UdonSharp.Compiler.Assembly
 
             foreach (Value value in allValues)
             {
-                if (value.AssociatedSymbol is FieldSymbol fieldSymbol && fieldSymbol.IsSerialized)
+                if (value.AssociatedSymbol is FieldSymbol fieldSymbol)
                 {
-                    builder.AppendFormat("    .export {0}\n", value.UniqueID);
+                    if (fieldSymbol.IsSerialized)
+                        builder.AppendFormat("    .export {0}\n", value.UniqueID);
+
+                    UdonSyncMode? syncMode = fieldSymbol.SyncMode;
+
+                    switch (syncMode)
+                    {
+                        case UdonSyncMode.None:
+                            builder.AppendFormat("    .sync {0}, none\n", value.UniqueID);
+                            break;
+                        case UdonSyncMode.Linear:
+                            builder.AppendFormat("    .sync {0}, linear\n", value.UniqueID);
+                            break;
+                        case UdonSyncMode.Smooth:
+                            builder.AppendFormat("    .sync {0}, smooth\n", value.UniqueID);
+                            break;
+                    }
                 }
             }
 

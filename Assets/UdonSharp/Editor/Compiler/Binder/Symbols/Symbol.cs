@@ -60,6 +60,17 @@ namespace UdonSharp.Compiler.Symbols
             return false;
         }
 
+        protected T GetAttribute<T>() where T : Attribute
+        {
+            foreach (Attribute symbolAttribute in SymbolAttributes)
+            {
+                if (symbolAttribute is T symbolT)
+                    return symbolT;
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Gets direct dependencies of this symbol, this symbol must be bound for the dependencies to be valid
         /// Will throw exception if this symbol has not been resolved

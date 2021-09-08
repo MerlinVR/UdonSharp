@@ -12,6 +12,7 @@ namespace UdonSharp
         /// <summary>
         /// Not synced, this is the same as not adding the UdonSynced attribute
         /// </summary>
+        // [Obsolete("This is getting removed, do not use a UdonSynced attribute with NotSynced")]
         NotSynced,
         /// <summary>
         /// Synced with no interpolation, this is the same as just using `[UdonSynced]`
@@ -31,11 +32,11 @@ namespace UdonSharp
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
     public class UdonSyncedAttribute : Attribute
     {
-        private UdonSyncMode networkSyncType;
+        public UdonSyncMode NetworkSyncType { get; }
 
         public UdonSyncedAttribute(UdonSyncMode networkSyncTypeIn = UdonSyncMode.None)
         {
-            networkSyncType = networkSyncTypeIn;
+            NetworkSyncType = networkSyncTypeIn;
         }
     }
     

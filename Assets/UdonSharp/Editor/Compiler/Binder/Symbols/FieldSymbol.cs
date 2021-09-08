@@ -42,6 +42,8 @@ namespace UdonSharp.Compiler.Symbols
             }
         }
 
+        public UdonSyncMode? SyncMode => GetAttribute<UdonSyncedAttribute>()?.NetworkSyncType;
+
         public override void Bind(BindContext context)
         {
             if (IsBound)
