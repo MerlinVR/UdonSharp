@@ -387,7 +387,8 @@ namespace UdonSharp.Compiler.Emit
                 }
             }
 
-            if (conversion.IsNumeric)
+            if (conversion.IsNumeric || 
+                (UdonSharpUtils.IsNumericType(targetType.UdonType.SystemType) && sourceType == GetTypeSymbol(SpecialType.System_Object)))
             {
                 MethodSymbol conversionMethod = GetNumericConversionMethod(sourceType, targetType);
 

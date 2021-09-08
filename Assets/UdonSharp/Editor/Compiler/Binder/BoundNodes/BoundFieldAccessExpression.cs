@@ -126,12 +126,12 @@ namespace UdonSharp.Compiler.Binder
                     .First(e => e.Parameters.Length == 1 && 
                                 e.Parameters[0].Type == stringType);
 
-                return context.EmitValue(BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode,
+                return context.CastValue(context.EmitValue(BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode,
                     setProgramVariableMethod, SourceExpression,
                     new BoundExpression[]
                     {
                         BindAccess(context.GetConstantValue(stringType, Field.Name))
-                    }));
+                    })), Field.Type, true);
             }
 
             public override Value EmitSet(EmitContext context, BoundExpression valueExpression)
