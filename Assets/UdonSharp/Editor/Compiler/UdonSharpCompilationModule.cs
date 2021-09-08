@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.Text;
 using System.Collections.Generic;
 using System.Linq;
 using UdonSharp.Deprecated;
+using UdonSharpEditor;
 using UnityEditor;
 using UnityEngine;
 using static UdonSharp.Compiler.UdonSharpCompiler;
@@ -16,7 +17,7 @@ namespace UdonSharp.Compiler
     /// <summary>
     /// Handles compiling a class into Udon assembly
     /// </summary>
-    public class UdonSharpCompilationModule
+    internal class UdonSharpCompilationModule
     {
         public UdonSharpProgramAsset programAsset { get; private set; }
         UdonSharpSettings settings;

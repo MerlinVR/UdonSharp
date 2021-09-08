@@ -1,8 +1,8 @@
 ﻿
-using UdonSharpEditor;
+using UdonSharp;
 using UnityEditor;
 
-namespace UdonSharp
+namespace UdonSharpEditor
 {
     public class UdonSharpProgramAssetPostprocessor : AssetPostprocessor
     {

@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace UdonSharp
 {
-    public class OperatorParameterInfo : ParameterInfo
+    internal class OperatorParameterInfo : ParameterInfo
     {
         public override string Name { get { return NameImpl; } }
 
@@ -18,7 +18,7 @@ namespace UdonSharp
         }
     }
 
-    public enum BuiltinOperatorType
+    internal enum BuiltinOperatorType
     {
         // -- Math
         Addition,
@@ -56,7 +56,7 @@ namespace UdonSharp
     /// Example: The addition operator on base types is an add instruction, this happens with most basic arithmetic ops
     /// Udon exports generated functions for all of the operators on base types, for instance "SystemSingle.__op_Addition__SystemSingle_SystemSingle__SystemSingle" for float addition
     /// </summary>
-    public class OperatorMethodInfo : MethodInfo
+    internal class OperatorMethodInfo : MethodInfo
     {
         public override ICustomAttributeProvider ReturnTypeCustomAttributes => throw new NotImplementedException();
 

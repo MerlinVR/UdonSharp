@@ -3,13 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UdonSharpEditor;
 using UnityEditor;
 using UnityEngine;
 
-namespace UdonSharp
+namespace UdonSharpEditor
 {
-    public class UdonSharpSettings : ScriptableObject
+    internal class UdonSharpSettings : ScriptableObject
     {
         public enum LogWatcherMode
         {

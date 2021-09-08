@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UdonSharp;
 using UdonSharp.Compiler;
 using UnityEditor;
 using UnityEngine;
 
-namespace UdonSharp
+namespace UdonSharpEditor
 {
 
     /// <summary>
@@ -19,7 +20,7 @@ namespace UdonSharp
     /// I may want to rewrite this eventually because the FileSystemWatcher polls updates too frequently and burns CPU for no reason. There is no way to slow down its internal polling as far as I know.
     /// </summary>
     [InitializeOnLoad]
-    public class UdonSharpAssetCompileWatcher
+    internal class UdonSharpAssetCompileWatcher
     {
         static FileSystemWatcher[] fileSystemWatchers;
         static readonly object modifiedFileLock = new object();

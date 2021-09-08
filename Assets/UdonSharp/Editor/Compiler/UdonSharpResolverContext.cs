@@ -11,7 +11,7 @@ using VRC.Udon.Graph;
 
 namespace UdonSharp
 {
-    public enum UdonReferenceType
+    internal enum UdonReferenceType
     {
         None,
         Variable,
@@ -19,7 +19,7 @@ namespace UdonSharp
         Type,
     }
 
-    public enum FieldAccessorType
+    internal enum FieldAccessorType
     {
         Get,
         Set,
@@ -484,7 +484,7 @@ namespace UdonSharp
             return finalFunctionSig;
         }
 
-        public string GetUdonFieldAccessorName(FieldInfo externField, FieldAccessorType accessorType, bool validate = true)
+        internal string GetUdonFieldAccessorName(FieldInfo externField, FieldAccessorType accessorType, bool validate = true)
         {
             System.Type fieldType = UdonSharpUtils.RemapBaseType(externField.DeclaringType);
 
@@ -918,7 +918,7 @@ namespace UdonSharp
             return scoredMethods.First().Item1;
         }
 
-        public bool ValidateUdonTypeName(string typeName, UdonReferenceType referenceType)
+        internal bool ValidateUdonTypeName(string typeName, UdonReferenceType referenceType)
         {
             typeName = typeName.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
 

@@ -1,12 +1,10 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿
 using VRC.Udon.Common;
 using VRC.Udon.Common.Interfaces;
 
 namespace UdonSharp
 {
-    public class HeapFactory : IUdonHeapFactory
+    internal class HeapFactory : IUdonHeapFactory
     {
         public uint FactoryHeapSize { get; set; }
 

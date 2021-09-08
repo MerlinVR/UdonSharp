@@ -433,7 +433,7 @@ namespace UdonSharp
     }
     
     [CustomEditor(typeof(UdonSharpProgramAsset))]
-    public class UdonSharpProgramAssetEditor : UdonAssemblyProgramAssetEditor
+    internal class UdonSharpProgramAssetEditor : UdonAssemblyProgramAssetEditor
     {
         // Allow people to drag program assets onto objects in the scene and automatically create a corresponding UdonBehaviour with everything set up
         // https://forum.unity.com/threads/drag-and-drop-scriptable-object-to-scene.546975/#post-4534333

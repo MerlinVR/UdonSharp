@@ -105,7 +105,7 @@ namespace UdonSharp
         /// </summary>
         public bool DisableInteractive { get; set; }
 
-        [Obsolete("VRCInstantiate is obsolete, use Instantiate instead")]
+        [Obsolete("This method is obsolete, use Object.Instantiate(gameObject) instead")]
         protected static GameObject VRCInstantiate(GameObject original)
         {
             return Instantiate(original);

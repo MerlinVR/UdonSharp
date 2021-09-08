@@ -13,6 +13,7 @@ using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
+using UdonSharpEditor;
 using UnityEditor;
 using UnityEditor.Compilation;
 using VRC.Udon.Common.Interfaces;

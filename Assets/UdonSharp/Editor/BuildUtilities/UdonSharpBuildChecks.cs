@@ -1,11 +1,12 @@
 ﻿
+using UdonSharp;
 using UnityEditor;
 using UnityEngine;
 using VRC.SDKBase.Editor.BuildPipeline;
 
-namespace UdonSharp
+namespace UdonSharpEditor
 {
-    public class UdonSharpBuildChecks : IVRCSDKBuildRequestedCallback
+    internal class UdonSharpBuildChecks : IVRCSDKBuildRequestedCallback
     {
         public int callbackOrder => -1;
 

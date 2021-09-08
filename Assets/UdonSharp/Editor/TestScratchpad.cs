@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using UdonSharp;
+using UdonSharpEditor;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
