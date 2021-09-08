@@ -49,6 +49,8 @@ namespace UdonSharp.Compiler.Binder
 
         private static readonly SymbolDisplayFormat _externFullTypeFormat =
             new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
+        private static readonly SymbolDisplayFormat _externTypeFormat =
+            new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameOnly);
 
         public static Type GetExternType(this ITypeSymbol typeSymbol)
         {
@@ -70,11 +72,42 @@ namespace UdonSharp.Compiler.Binder
             ModuleMetadata module = typeSymbol.Locations.First().MetadataModule.GetMetadata();
             
             System.Reflection.Assembly assembly = assemblyNameLookup[module.Name];
-            string typeName = typeSymbol.ToDisplayString(_externFullTypeFormat);
-            if (typeSymbol.IsGenericType)
-                typeName += $"`{typeSymbol.TypeArguments.Length}";
+
+            ITypeSymbol currentType = typeSymbol;
+
+            Stack<ITypeSymbol> containingTypeStack = new Stack<ITypeSymbol>();
+            while (currentType != null)
+            {
+                containingTypeStack.Push(currentType);
+                currentType = currentType.ContainingType;
+            }
+            
+            Type foundType;
+
+            if (containingTypeStack.Count == 1)
+            {
+                string typeName = typeSymbol.ToDisplayString(_externFullTypeFormat);
+            
+                if (typeSymbol.IsGenericType)
+                    typeName += $"`{typeSymbol.TypeArguments.Length}";
                 
-            Type foundType = assembly.GetType(typeName);
+                foundType = assembly.GetType(typeName);
+            }
+            else
+            {
+                string rootTypeName = containingTypeStack.Pop().ToDisplayString(_externFullTypeFormat);
+
+                Type rootType = assembly.GetType(rootTypeName);
+                Type currentFoundType = rootType;
+
+                while (containingTypeStack.Count > 0)
+                {
+                    string currentTypeName = containingTypeStack.Pop().ToDisplayString(_externTypeFormat);
+                    currentFoundType = currentFoundType.GetNestedType(currentTypeName);
+                }
+
+                foundType = currentFoundType;
+            }
 
             if (foundType == null)
                 throw new InvalidOperationException("foundType should not be null");
