@@ -5,10 +5,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Emit;
 using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Emit;
@@ -90,14 +92,28 @@ namespace UdonSharp.Compiler
                 references: GetMetadataReferences(),
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
+
             int compileErrors = 0;
 
-            foreach (var diag in compilation.GetDiagnostics())
+            byte[] builtAssembly = null;
+            
+            using (var memoryStream = new MemoryStream())
             {
-                if (diag.Severity == DiagnosticSeverity.Error)
+                EmitResult emitResult = compilation.Emit(memoryStream);
+                if (emitResult.Success)
                 {
-                    Debug.LogError($"Compile Error: {bindingLookup[diag.Location.SourceTree].filePath}: {diag}");
-                    ++compileErrors;
+                    builtAssembly = memoryStream.ToArray();
+                }
+                else
+                {
+                    foreach (Diagnostic diagnostic in emitResult.Diagnostics)
+                    {
+                        if (diagnostic.Severity == DiagnosticSeverity.Error)
+                        {
+                            Debug.LogError(diagnostic);
+                            compileErrors++;
+                        }
+                    }
                 }
             }
 
@@ -143,11 +159,12 @@ namespace UdonSharp.Compiler
                 
                 EmitContext moduleEmitContext = new EmitContext(assemblyModule, rootTypeSymbol);
 
+                string typeName = TypeSymbol.GetFullTypeName(rootTypeSymbol);
+                
                 moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeIDHeapKey,
-                    moduleEmitContext.GetTypeSymbol(SpecialType.System_Int64),
-                    UdonSharpInternalUtility.GetTypeID(rootTypeSymbol.ToDisplayString(
-                        new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle
-                            .NameAndContainingTypesAndNamespaces))));
+                    moduleEmitContext.GetTypeSymbol(SpecialType.System_Int64), UdonSharpInternalUtility.GetTypeID(typeName));
+                moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeNameHeapKey,
+                    moduleEmitContext.GetTypeSymbol(SpecialType.System_String), typeName);
                 
                 moduleEmitContext.Emit();
 
@@ -165,8 +182,15 @@ namespace UdonSharp.Compiler
 
                 moduleBinding.programAsset.fieldDefinitions = fieldDefinitions;
             }
+            
+            System.Reflection.Assembly assembly; 
 
-            foreach (ModuleBinding rootBinding in rootUdonSharpTypes.Select(e => e.Item2))
+            using (new UdonSharpUtils.UdonSharpAssemblyLoadStripScope())
+                assembly = System.Reflection.Assembly.Load(builtAssembly);
+
+            UdonSharpEditorManager.ConstructorWarningsDisabled = true;
+            
+            foreach ((INamedTypeSymbol namedType, ModuleBinding rootBinding) in rootUdonSharpTypes)
             {
                 List<Value> assemblyValues = rootBinding.assemblyModule.RootTable.GetAllUniqueChildValues();
                 string generatedUasm = rootBinding.assemblyModule.BuildUasmStr();
@@ -183,6 +207,22 @@ namespace UdonSharp.Compiler
                     uint valAddress = program.SymbolTable.GetAddressFromSymbol(val.UniqueID);
                     program.Heap.SetHeapVariable(valAddress, val.DefaultValue, val.UdonType.SystemType);
                 }
+
+                string typeName = TypeSymbol.GetFullTypeName(namedType);
+
+                Type asmType = assembly.GetType(typeName);
+
+                object component = Activator.CreateInstance(asmType);
+
+                foreach (FieldInfo field in asmType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+                {
+                    uint valAddress = program.SymbolTable.GetAddressFromSymbol(field.Name);
+
+                    object fieldValue = field.GetValue(component);
+                    
+                    if (fieldValue != null)
+                        program.Heap.SetHeapVariable(valAddress, fieldValue, field.FieldType);
+                }
                 
                 rootBinding.programAsset.ApplyProgram();
                 
@@ -191,6 +231,8 @@ namespace UdonSharp.Compiler
                 
                 EditorUtility.SetDirty(rootBinding.programAsset);
             }
+
+            UdonSharpEditorManager.ConstructorWarningsDisabled = false;
 
             Debug.Log($"Ran compile in {timer.Elapsed.TotalSeconds * 1000.0:F3}ms");
         }

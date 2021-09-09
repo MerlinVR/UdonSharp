@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using UdonSharp.Compiler.Binder;
-using UnityEngine;
 
 namespace UdonSharp.Compiler.Symbols
 {
@@ -194,6 +193,11 @@ namespace UdonSharp.Compiler.Symbols
 
         private static readonly System.Reflection.Assembly _gameScriptAssembly =
             AppDomain.CurrentDomain.GetAssemblies().First(e => e.GetName().Name == "Assembly-CSharp");
+
+        public static string GetFullTypeName(ITypeSymbol typeSymbol)
+        {
+            return typeSymbol.ToDisplayString(_fullTypeFormat);
+        }
         
         public bool TryGetSystemType(out Type systemType)
         {
@@ -217,7 +221,7 @@ namespace UdonSharp.Compiler.Symbols
                 currentType = currentType.ElementType;
             }
             
-            string typeName = currentType.RoslynSymbol.ToDisplayString(_fullTypeFormat);
+            string typeName = GetFullTypeName(currentType.RoslynSymbol);
 
             Type foundType = _gameScriptAssembly.GetType(typeName);
 

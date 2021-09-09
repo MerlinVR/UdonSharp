@@ -67,6 +67,8 @@ namespace UdonSharpEditor
             Harmony harmony = new Harmony(HARMONY_ID);
             harmony.UnpatchAll(HARMONY_ID);
         }
+        
+        public static bool ConstructorWarningsDisabled { get; set; }
 
         static void InjectUnityEventInterceptors()
         {
@@ -242,6 +244,13 @@ namespace UdonSharpEditor
                 HarmonyMethod injectedHarmonyCompileMethod = new HarmonyMethod(injectedDirtyScriptMethod);
                 
                 harmony.Patch(dirtyScriptMethod, injectedHarmonyCompileMethod);
+                
+                // Patch out the constructor check for U# behaviours since we instantiate them to retrieve the field values
+                MethodBase monoBehaviourConstructorMethod = (MethodBase)typeof(MonoBehaviour).GetMember(".ctor", BindingFlags.CreateInstance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).First();
+
+                HarmonyMethod monoBehaviourConstructorHarmonyPatch = new HarmonyMethod(typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.SkipMonoBehaviourConstructor)));
+
+                harmony.Patch(monoBehaviourConstructorMethod, monoBehaviourConstructorHarmonyPatch);
             }
         }
 
@@ -432,6 +441,8 @@ namespace UdonSharpEditor
             {
                 return !EditorApplication.isPlayingOrWillChangePlaymode;
             }
+
+            public static bool SkipMonoBehaviourConstructor() => !UdonSharpEditorManager.ConstructorWarningsDisabled;
         }
 
         static void OnChangePlayMode(PlayModeStateChange state)

@@ -133,7 +133,6 @@ namespace UdonSharp.Compiler.Emit
             }
 
             DeclaredFields = userFields.ToImmutableArray();
-            AssignConstantFields(DeclaredFields);
 
             HashSet<MethodSymbol> emittedSet = new HashSet<MethodSymbol>();
             HashSet<MethodSymbol> setToEmit = new HashSet<MethodSymbol>();
@@ -187,31 +186,6 @@ namespace UdonSharp.Compiler.Emit
                 }
 
                 setToEmit = newEmitSet;
-            }
-        }
-
-        private void AssignConstantFields(ImmutableArray<FieldSymbol> fields)
-        {
-            foreach (FieldSymbol fieldSymbol in fields)
-            {
-                if (fieldSymbol.InitializerExpression != null &&
-                    fieldSymbol.InitializerExpression.IsConstant)
-                {
-                    Value fieldValue = GetUserValue(fieldSymbol);
-
-                    object newVal = fieldSymbol.InitializerExpression.ConstantValue.Value;
-
-                    Type targetType = fieldSymbol.Type.UdonType.SystemType;
-                    
-                    if (newVal != null && newVal.GetType() != targetType &&
-                        ConstantExpressionOptimizer.CanDoConstantConversion(targetType))
-                    {
-                        newVal = ConstantExpressionOptimizer.FoldConstantConversion(targetType,
-                            fieldSymbol.InitializerExpression.ConstantValue.Value);
-                    }
-
-                    fieldValue.DefaultValue = newVal;
-                }
             }
         }
 
