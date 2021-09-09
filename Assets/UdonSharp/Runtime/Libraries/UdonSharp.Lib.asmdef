@@ -1,6 +1,8 @@
 {
     "name": "UdonSharp.Lib",
-    "references": [],
+    "references": [
+        "GUID:3c1bc1267eab5884ebe7f232c09ee0d9"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

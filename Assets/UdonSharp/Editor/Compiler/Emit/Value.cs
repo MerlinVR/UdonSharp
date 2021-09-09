@@ -1,9 +1,11 @@
 ﻿
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using UdonSharp.Compiler.Symbols;
+
+#if UDONSHARP_DEBUG
+using System.Collections.Generic;
 using Debug = UnityEngine.Debug;
+#endif
 
 namespace UdonSharp.Compiler.Emit
 {
@@ -164,7 +166,7 @@ namespace UdonSharp.Compiler.Emit
             public bool IsDirty { get; private set; }
             public int ReferenceCount { get; private set; }
 
-        #if UDONSHARP_DEBUG || true
+        #if UDONSHARP_DEBUG
             private HashSet<CowValue> _referenceHolders = new HashSet<CowValue>();
         #endif
             
@@ -196,7 +198,7 @@ namespace UdonSharp.Compiler.Emit
             public void AddRef(CowValue value)
             {
                 ReferenceCount++;
-            #if UDONSHARP_DEBUG || true
+            #if UDONSHARP_DEBUG
                 _referenceHolders.Add(value);
             #endif
                 
@@ -211,7 +213,7 @@ namespace UdonSharp.Compiler.Emit
                 ReferenceCount--;
                 // Debug.Log($"Clearing ref for {value.Value}, new ref count {ReferenceCount}\n{new StackTrace()}");
                 
-            #if UDONSHARP_DEBUG || true
+            #if UDONSHARP_DEBUG
                 if (!_referenceHolders.Remove(value))
                 {
                     throw new Exception("No matching holder for COWValue");
@@ -238,7 +240,7 @@ namespace UdonSharp.Compiler.Emit
                 _tracker.AddRef(this);
             }
 
-        #if UDONSHARP_DEBUG || true
+        #if UDONSHARP_DEBUG
             ~CowValue()
             {
                 if (!_disposed)

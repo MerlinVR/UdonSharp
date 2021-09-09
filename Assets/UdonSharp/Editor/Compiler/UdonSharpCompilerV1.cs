@@ -13,6 +13,8 @@ using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
+using UdonSharp.Internal;
+using UdonSharp.Lib.Internal;
 using UdonSharpEditor;
 using UnityEditor;
 using UnityEditor.Compilation;
@@ -140,6 +142,12 @@ namespace UdonSharp.Compiler
                 moduleBinding.assemblyModule = assemblyModule;
                 
                 EmitContext moduleEmitContext = new EmitContext(assemblyModule, rootTypeSymbol);
+
+                moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeIDHeapKey,
+                    moduleEmitContext.GetTypeSymbol(SpecialType.System_Int64),
+                    UdonSharpInternalUtility.GetTypeID(rootTypeSymbol.ToDisplayString(
+                        new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle
+                            .NameAndContainingTypesAndNamespaces))));
                 
                 moduleEmitContext.Emit();
 

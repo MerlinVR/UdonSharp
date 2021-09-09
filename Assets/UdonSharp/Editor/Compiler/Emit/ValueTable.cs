@@ -192,13 +192,22 @@ namespace UdonSharp.Compiler.Emit
             return GlobalTable.CreateValueInternal(type, null, Value.ValueFlags.Parameter, parameterID);
         }
 
+        public Value CreateReflectionValue(string parameterID, TypeSymbol type, object value)
+        {
+            Value newValue = GlobalTable.CreateValueInternal(type, null, Value.ValueFlags.Reflection, parameterID);
+            newValue.DefaultValue = value;
+
+            return newValue;
+        }
+
         private string GetUniqueValueName(TypeSymbol type, Value.ValueFlags flags, string symbolName)
         {
             string uniqueName;
 
             if ((flags & Value.ValueFlags.Public) != 0 || 
                 (flags & Value.ValueFlags.Private) != 0 ||
-                (flags & Value.ValueFlags.Parameter) != 0)
+                (flags & Value.ValueFlags.Parameter) != 0 ||
+                (flags & Value.ValueFlags.Reflection) != 0)
             {
                 uniqueName = symbolName;
             }

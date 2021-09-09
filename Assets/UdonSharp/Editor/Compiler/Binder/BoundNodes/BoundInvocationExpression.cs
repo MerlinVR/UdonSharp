@@ -9,6 +9,7 @@ using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
 using UdonSharp.Compiler.Udon;
 using UdonSharp.Core;
+using UdonSharp.Internal;
 using UdonSharp.Lib.Internal;
 using UdonSharp.Localization;
 using UnityEngine;
@@ -60,12 +61,31 @@ namespace UdonSharp.Compiler.Binder
         {
             if (symbol.RoslynSymbol != null &&
                 symbol.RoslynSymbol.IsGenericMethod && 
-                symbol.RoslynSymbol.TypeArguments.Length == 1 &&
+                symbol.TypeArguments.Length == 1 &&
                 _getComponentNames.Contains(symbol.Name) &&
                 (symbol.ContainingType.UdonType.SystemType == typeof(Component) || symbol.ContainingType.UdonType.SystemType == typeof(GameObject)))
             {
-                createdInvocation = new BoundGetUnityEngineComponentInvocation(context, node, symbol, instanceExpression,
-                    parameterExpressions);
+                if (symbol.TypeArguments[0].IsUdonSharpBehaviour)
+                {
+                    MethodSymbol getComponentMethodShim = context.GetTypeSymbol(typeof(GetUserComponentShim))
+                        .GetMembers<MethodSymbol>(symbol.Name, context)
+                        .First(e => e.Parameters.Length == parameterExpressions.Length + 2);
+
+                    string typeName = symbol.TypeArguments[0].RoslynSymbol.ToDisplayString(new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces));
+                    var boundConstant = new BoundConstantExpression(UdonSharpInternalUtility.GetTypeID(typeName), context.GetTypeSymbol(SpecialType.System_Int64));
+                    createdInvocation = new BoundStaticUserMethodInvocation(node, getComponentMethodShim,
+                        new [] {instanceExpression, boundConstant}.Concat(parameterExpressions).ToArray());
+                    
+                    context.MarkSymbolReferenced(getComponentMethodShim);
+
+                    return true;
+                }
+                else
+                {
+                    createdInvocation = new BoundGetUnityEngineComponentInvocation(context, node, symbol,
+                        instanceExpression,
+                        parameterExpressions);
+                }
 
                 return true;
             }

@@ -34,7 +34,7 @@ namespace UdonSharp.Compiler.Emit
         private Stack<JumpLabel> _breakLabelStack = new Stack<JumpLabel>();
 
         internal ValueTable TopTable => _valueTableStack.Peek();
-        private ValueTable RootTable { get; }
+        public ValueTable RootTable { get; }
 
         private Value _returnValue;
 
@@ -52,11 +52,11 @@ namespace UdonSharp.Compiler.Emit
             EmitType = GetTypeSymbol(emitType);
             _valueTableStack.Push(module.RootTable);
             RootTable = module.RootTable;
-            _returnValue = RootTable.CreateInternalValue(GetTypeSymbol(SpecialType.System_UInt32), "returnJump");
         }
 
         public void Emit()
         {
+            _returnValue = RootTable.CreateInternalValue(GetTypeSymbol(SpecialType.System_UInt32), "returnJump");
             TypeSymbol udonSharpBehaviourType = GetTypeSymbol(typeof(UdonSharpBehaviour));
             
             Stack<TypeSymbol> emitTypeBases = new Stack<TypeSymbol>();
