@@ -52,12 +52,12 @@ namespace UdonSharp.Compiler.Symbols
             
             InitializerSyntax = (RoslynSymbol.DeclaringSyntaxReferences.First().GetSyntax() as VariableDeclaratorSyntax)?.Initializer?.Value;
             // Re-get the type symbol to register it as a dependency in the bind context
-            context.GetTypeSymbol(RoslynSymbol.Type);
+            TypeSymbol fieldType = context.GetTypeSymbol(RoslynSymbol.Type);
 
             if (InitializerSyntax != null)
             {
                 BinderSyntaxVisitor bodyVisitor = new BinderSyntaxVisitor(this, context);
-                InitializerExpression = (BoundExpression) bodyVisitor.Visit(InitializerSyntax);
+                InitializerExpression = bodyVisitor.VisitExpression(InitializerSyntax, fieldType);
             }
 
             _resolved = true;
