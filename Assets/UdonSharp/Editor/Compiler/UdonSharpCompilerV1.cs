@@ -233,6 +233,8 @@ namespace UdonSharp.Compiler
             }
 
             UdonSharpEditorManager.ConstructorWarningsDisabled = false;
+            
+            UdonSharpEditorManager.RunPostBuildSceneFixup();
 
             Debug.Log($"Ran compile in {timer.Elapsed.TotalSeconds * 1000.0:F3}ms");
         }
