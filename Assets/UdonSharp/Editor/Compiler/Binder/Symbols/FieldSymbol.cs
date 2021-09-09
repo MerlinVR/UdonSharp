@@ -37,8 +37,9 @@ namespace UdonSharp.Compiler.Symbols
             {
                 if (IsStatic) return false;
                 if (RoslynSymbol.IsReadOnly) return false;
+                if (HasAttribute<OdinSerializeAttribute>()) return true; // OdinSerializeAttribute takes precedence over NonSerializedAttribute
                 if (HasAttribute<NonSerializedAttribute>()) return false;
-                return RoslynSymbol.DeclaredAccessibility == Accessibility.Public || HasAttribute<SerializeField>() || HasAttribute<OdinSerializeAttribute>();
+                return RoslynSymbol.DeclaredAccessibility == Accessibility.Public || HasAttribute<SerializeField>();
             }
         }
 
