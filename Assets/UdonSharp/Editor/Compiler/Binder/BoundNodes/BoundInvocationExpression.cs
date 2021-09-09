@@ -9,6 +9,7 @@ using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
 using UdonSharp.Compiler.Udon;
 using UdonSharp.Core;
+using UdonSharp.Lib.Internal;
 using UdonSharp.Localization;
 using UnityEngine;
 using NotSupportedException = UdonSharp.Core.NotSupportedException;
@@ -43,6 +44,80 @@ namespace UdonSharp.Compiler.Binder
         /// </summary>
         public virtual void MarkForcedBaseCall() {}
 
+        private static bool TryCreateGetComponentInvocation(AbstractPhaseContext context, SyntaxNode node,
+            MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
+            out BoundInvocationExpression createdInvocation)
+        {
+            if (symbol.RoslynSymbol != null &&
+                symbol.RoslynSymbol.IsGenericMethod && 
+                symbol.RoslynSymbol.TypeArguments.Length == 1 &&
+                _getComponentNames.Contains(symbol.Name) &&
+                (symbol.ContainingType.UdonType.SystemType == typeof(Component) || symbol.ContainingType.UdonType.SystemType == typeof(GameObject)))
+            {
+                createdInvocation = new BoundGetUnityEngineComponentInvocation(context, node, symbol, instanceExpression,
+                    parameterExpressions);
+
+                return true;
+            }
+
+            createdInvocation = null;
+            return false;
+        }
+
+        private static bool TryCreateInstantiationInvocation(AbstractPhaseContext context, SyntaxNode node,
+            MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
+            out BoundInvocationExpression createdInvocation)
+        {
+            switch (symbol.Name)
+            {
+                case "VRCInstantiate" when symbol.ContainingType == context.GetTypeSymbol(typeof(UdonSharpBehaviour)): // Backwards compatibility for UdonSharpBehaviour.VRCInstantiate
+                case "Instantiate_Extern" when symbol.ContainingType == context.GetTypeSymbol(typeof(InstantiationShim)):
+                    createdInvocation = new BoundExternInvocation(node,
+                        new ExternSynthesizedMethodSymbol(context,
+                            "VRCInstantiate.__Instantiate__UnityEngineGameObject__UnityEngineGameObject",
+                            parameterExpressions.Select(e => e.ValueType).ToArray(),
+                            context.GetTypeSymbol(typeof(GameObject)), true), 
+                        instanceExpression, parameterExpressions);
+
+                    return true;
+                case "Instantiate" when symbol.ContainingType == context.GetTypeSymbol(typeof(UnityEngine.Object)):
+                {
+                    if (symbol.TypeArguments.Length != 1 ||
+                        symbol.TypeArguments[0] !=
+                        context.GetTypeSymbol(typeof(GameObject)))
+                        throw new NotSupportedException("Udon does not support instantiating non-GameObject types");
+
+                    TypeSymbol instantiateShim = context.GetTypeSymbol(typeof(InstantiationShim));
+                    MethodSymbol instantiateMethod = instantiateShim.GetMembers<MethodSymbol>("Instantiate", context)
+                                                                    .First(e => e.Parameters
+                                                                        .Select(p => p.Type)
+                                                                        .SequenceEqual(parameterExpressions
+                                                                            .Select(p => p.ValueType)));
+                    
+                    context.MarkSymbolReferenced(instantiateMethod);
+                    
+                    createdInvocation = new BoundStaticUserMethodInvocation(node, instantiateMethod, parameterExpressions);
+                    return true;
+                }
+            }
+
+            createdInvocation = null;
+            return false;
+        }
+
+        private static bool TryCreateShimInvocation(AbstractPhaseContext context, SyntaxNode node,
+            MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
+            out BoundInvocationExpression createdInvocation)
+        {
+            if (TryCreateGetComponentInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
+                return true;
+
+            if (TryCreateInstantiationInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
+                return true;
+
+            return false;
+        }
+
         private static readonly HashSet<string> _getComponentNames = new HashSet<string>()
         {
             "GetComponent",
@@ -56,32 +131,14 @@ namespace UdonSharp.Compiler.Binder
         public static BoundInvocationExpression CreateBoundInvocation(AbstractPhaseContext context, SyntaxNode node,
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions)
         {
+            if (TryCreateShimInvocation(context, node, symbol, instanceExpression, parameterExpressions, out var boundShimInvocation))
+                return boundShimInvocation;
+            
             if (symbol.IsExtern)
             {
-                if (symbol.RoslynSymbol != null &&
-                    symbol.RoslynSymbol.IsGenericMethod && 
-                    symbol.RoslynSymbol.TypeArguments.Length == 1 &&
-                    _getComponentNames.Contains(symbol.Name) &&
-                    (symbol.ContainingType.UdonType.SystemType == typeof(Component) || symbol.ContainingType.UdonType.SystemType == typeof(GameObject)))
-                {
-                    return new BoundGetUnityEngineComponentInvocation(context, node, symbol, instanceExpression,
-                        parameterExpressions);
-                }
-
                 if (CompilerUdonInterface.IsUdonEvent(symbol.Name) &&
                     symbol.ContainingType == context.GetTypeSymbol(typeof(UdonSharpBehaviour))) // Pass through for making base calls on the U# behaviour type return noop
                     return new BoundUdonSharpBehaviourInvocationExpression(node, symbol, instanceExpression, parameterExpressions);
-
-                if (symbol.Name == "VRCInstantiate" &&
-                    symbol.ContainingType == context.GetTypeSymbol(typeof(UdonSharpBehaviour)))
-                {
-                    return new BoundExternInvocation(node,
-                        new ExternSynthesizedMethodSymbol(context,
-                            "VRCInstantiate.__Instantiate__UnityEngineGameObject__UnityEngineGameObject",
-                            parameterExpressions.Select(e => e.ValueType).ToArray(),
-                            context.GetTypeSymbol(typeof(GameObject)), true), 
-                        instanceExpression, parameterExpressions);
-                }
                 
                 var doExposureCheck = (!symbol.IsOperator || (symbol.ContainingType == null || !symbol.ContainingType.IsEnum));
                 if (doExposureCheck && !CompilerUdonInterface.IsExposedToUdon(((ExternMethodSymbol) symbol).ExternSignature))
@@ -231,13 +288,13 @@ namespace UdonSharp.Compiler.Binder
             public BoundGetUnityEngineComponentInvocation(AbstractPhaseContext context, SyntaxNode node, MethodSymbol methodSymbol, BoundExpression sourceExpression, BoundExpression[] parametersExpressions) 
                 : base(node, BuildMethod(context, methodSymbol), sourceExpression, GetParameterExpressions(context, methodSymbol, parametersExpressions))
             {
-                ValueType = context.GetTypeSymbol(methodSymbol.RoslynSymbol.TypeArguments[0]);
+                ValueType = methodSymbol.TypeArguments[0];
             }
 
             private static BoundExpression[] GetParameterExpressions(AbstractPhaseContext context, MethodSymbol symbol, BoundExpression[] parameters)
             {
                 BoundExpression typeExpression = new BoundConstantExpression(
-                    context.GetTypeSymbol(symbol.RoslynSymbol.TypeArguments[0]).UdonType.SystemType,
+                    symbol.TypeArguments[0].UdonType.SystemType,
                     context.GetTypeSymbol(typeof(Type)));
                 
                 if (parameters == null || parameters.Length == 0)

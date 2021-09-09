@@ -195,7 +195,7 @@ namespace UdonSharp.Compiler
 
             foreach (UnityEditor.Compilation.Assembly asm in CompilationPipeline.GetAssemblies(AssembliesType.Player))
             {
-                if (asm.name != "Assembly-CSharp") // We only want the root Unity script assembly for user scripts at the moment
+                if (asm.name != "Assembly-CSharp" && !IsUdonSharpAssembly(asm.name)) // We only want the root Unity script assembly for user scripts at the moment
                     assemblySourcePaths.UnionWith(asm.sourceFiles);
             }
             
@@ -239,46 +239,76 @@ namespace UdonSharp.Compiler
 
             return syntaxTrees;
         }
-        
-        static List<MetadataReference> metadataReferences;
 
-        static List<MetadataReference> GetMetadataReferences()
+        private static List<UdonSharpAssemblyDefinition> _udonSharpAssemblies;
+        private static List<UdonSharpAssemblyDefinition> GetUdonSharpAssemblyDefinitions()
         {
-            if (metadataReferences == null)
+            if (_udonSharpAssemblies != null)
+                return _udonSharpAssemblies;
+
+            _udonSharpAssemblies = AssetDatabase.FindAssets($"t:{nameof(UdonSharpAssemblyDefinition)}")
+                                                .Select(e => AssetDatabase.LoadAssetAtPath<UdonSharpAssemblyDefinition>(AssetDatabase.GUIDToAssetPath(e)))
+                                                .ToList();
+
+            return _udonSharpAssemblies;
+        }
+
+        private static HashSet<string> _udonSharpAssemblyNames;
+
+        private static bool IsUdonSharpAssembly(string assemblyName)
+        {
+            if (_udonSharpAssemblyNames == null)
             {
-                var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-                metadataReferences = new List<MetadataReference>();
-
-                for (int i = 0; i < assemblies.Length; i++)
+                _udonSharpAssemblyNames = new HashSet<string>();
+                foreach (UdonSharpAssemblyDefinition asmDef in GetUdonSharpAssemblyDefinitions())
                 {
-                    if (!assemblies[i].IsDynamic && assemblies[i].Location.Length > 0 && !assemblies[i].Location.StartsWith("data"))
-                    {
-                        System.Reflection.Assembly assembly = assemblies[i];
-
-                        if (assembly.GetName().Name == "Assembly-CSharp" ||
-                            assembly.GetName().Name == "Assembly-CSharp-Editor")
-                        {
-                            continue;
-                        }
-
-                        PortableExecutableReference executableReference = null;
-
-                        try
-                        {
-                            executableReference = MetadataReference.CreateFromFile(assembly.Location);
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogError($"Unable to locate assembly {assemblies[i].Location} Exception: {e}");
-                        }
-
-                        if (executableReference != null)
-                            metadataReferences.Add(executableReference);
-                    }
+                    _udonSharpAssemblyNames.Add(asmDef.sourceAssembly.name);
                 }
             }
 
-            return metadataReferences;
+            return _udonSharpAssemblyNames.Contains(assemblyName);
+        }
+
+        private static List<MetadataReference> _metadataReferences;
+
+        private static IEnumerable<MetadataReference> GetMetadataReferences()
+        {
+            if (_metadataReferences != null) return _metadataReferences;
+            
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            _metadataReferences = new List<MetadataReference>();
+
+            foreach (var assembly in assemblies)
+            {
+                if (assembly.IsDynamic || assembly.Location.Length <= 0 ||
+                    assembly.Location.StartsWith("data")) 
+                    continue;
+                
+                if (assembly.GetName().Name == "Assembly-CSharp" ||
+                    assembly.GetName().Name == "Assembly-CSharp-Editor")
+                {
+                    continue;
+                }
+
+                if (IsUdonSharpAssembly(assembly.GetName().Name))
+                    continue;
+
+                PortableExecutableReference executableReference = null;
+
+                try
+                {
+                    executableReference = MetadataReference.CreateFromFile(assembly.Location);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Unable to locate assembly {assembly.Location} Exception: {e}");
+                }
+
+                if (executableReference != null)
+                    _metadataReferences.Add(executableReference);
+            }
+
+            return _metadataReferences;
         }
 
         void BindAllPrograms(IEnumerable<(INamedTypeSymbol, ModuleBinding)> bindings, CompilationContext compilationContext)

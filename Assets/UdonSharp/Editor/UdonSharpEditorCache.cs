@@ -4,12 +4,11 @@ using System.Collections.Generic;
 using System.IO;
 using UdonSharp.Compiler;
 using UnityEditor;
-using UdonSharp;
 using UnityEngine;
 using VRC.Udon.Serialization.OdinSerializer;
 using VRC.Udon.Serialization.OdinSerializer.Utilities;
 
-namespace UdonSharpEditor
+namespace UdonSharp
 {
     /// <summary>
     /// Handles cache data for U# that gets saved to the Library. All data this uses is intermediate generated data that is not required and can be regenerated from the source files.

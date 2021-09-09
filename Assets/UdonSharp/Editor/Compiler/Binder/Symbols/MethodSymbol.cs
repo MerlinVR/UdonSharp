@@ -46,6 +46,11 @@ namespace UdonSharp.Compiler.Symbols
                     Parameters = ImmutableArray<ParameterSymbol>.Empty;
                 }
 
+                if (sourceSymbol.TypeArguments.Length > 0)
+                    TypeArguments = sourceSymbol.TypeArguments.Select(context.GetTypeSymbol).ToImmutableArray();
+                else
+                    TypeArguments = ImmutableArray<TypeSymbol>.Empty;
+
                 if (RoslynSymbol.IsOverride)
                     OverridenMethod = (MethodSymbol) context.GetSymbol(RoslynSymbol.OverriddenMethod);
 
@@ -57,10 +62,11 @@ namespace UdonSharp.Compiler.Symbols
         public bool IsConstructor { get; protected set; }
         public TypeSymbol ReturnType { get; protected set; }
         public ImmutableArray<ParameterSymbol> Parameters { get; protected set; }
+        public ImmutableArray<TypeSymbol> TypeArguments { get; }
 
         public override bool IsStatic => base.RoslynSymbol.IsStatic;
         
-        public MethodSymbol OverridenMethod { get; private set; }
+        public MethodSymbol OverridenMethod { get; }
 
         public bool IsOperator { get; protected set; }
 

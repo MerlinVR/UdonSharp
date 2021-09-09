@@ -56,6 +56,11 @@ namespace UdonSharp.Compiler
             return symbol;
         }
 
+        public void MarkSymbolReferenced(Symbol symbol)
+        {
+            OnSymbolRetrieved(symbol);
+        }
+
         protected virtual void OnSymbolRetrieved(Symbol symbol)
         {
         }
