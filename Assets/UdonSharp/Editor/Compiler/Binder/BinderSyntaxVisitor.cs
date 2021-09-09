@@ -526,7 +526,7 @@ namespace UdonSharp.Compiler.Binder
             return VisitExpression(node.Expression, castType, true);
         }
 
-        public BoundExpression HandleShortCircuitOperator(BinaryExpressionSyntax node)
+        private BoundExpression HandleShortCircuitOperator(BinaryExpressionSyntax node)
         {
             TypeSymbol booleanType = Context.GetTypeSymbol(SpecialType.System_Boolean);
             BoundExpression lhs = VisitExpression(node.Left, booleanType);
@@ -541,12 +541,29 @@ namespace UdonSharp.Compiler.Binder
                     ? BuiltinOperatorType.LogicalAnd
                     : BuiltinOperatorType.LogicalOr, lhs, rhs, Context);
         }
+
+        private BoundExpression HandleNullCoalescingExpression(BinaryExpressionSyntax node)
+        {
+            TypeSymbol expressionResultType = GetTypeSymbol(node);
+            BoundExpression lhs = VisitExpression(node.Left, expressionResultType);
+
+            // Handling for C# 8.0 allowing null coalesce on generics that may be value types if we ever upgrade to C# 8 functionality
+            if (lhs.ValueType.IsValueType)
+                return lhs;
+
+            BoundExpression rhs = VisitExpression(node.Right, expressionResultType);
+
+            return new BoundCoalesceExpression(node, lhs, rhs);
+        }
         
         public override BoundNode VisitBinaryExpression(BinaryExpressionSyntax node)
         {
             if (node.Kind() == SyntaxKind.LogicalOrExpression ||
                 node.Kind() == SyntaxKind.LogicalAndExpression)
                 return HandleShortCircuitOperator(node);
+
+            if (node.Kind() == SyntaxKind.CoalesceExpression)
+                return HandleNullCoalescingExpression(node);
             
             MethodSymbol binaryMethodSymbol = (MethodSymbol)GetSymbol(node);
             
