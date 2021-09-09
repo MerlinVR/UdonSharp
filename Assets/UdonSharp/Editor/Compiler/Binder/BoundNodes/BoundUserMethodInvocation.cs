@@ -31,11 +31,13 @@ namespace UdonSharp.Compiler.Binder
             var linkage = context.GetMethodLinkage(Method, !IsBaseCall);
 
             Value[] parameterValues = GetParameterValues(context);
-            
-            context.TopTable.DirtyAllValues();
                 
             for (int i = 0; i < linkage.ParameterValues.Length; ++i)
                 context.Module.AddCopy(parameterValues[i], linkage.ParameterValues[i]);
+            
+            ReleaseCowReferences(context);
+            
+            context.TopTable.DirtyAllValues();
                 
             context.Module.AddJump(linkage.MethodLabel);
 
