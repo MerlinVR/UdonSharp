@@ -13,6 +13,7 @@ using UdonSharp.Internal;
 using UdonSharp.Lib.Internal;
 using UdonSharp.Localization;
 using UnityEngine;
+using VRC.Udon;
 using NotSupportedException = UdonSharp.Core.NotSupportedException;
 
 namespace UdonSharp.Compiler.Binder
@@ -134,6 +135,30 @@ namespace UdonSharp.Compiler.Binder
             createdInvocation = null;
             return false;
         }
+        
+        /// <summary>
+        /// Udon exposes a generic SetProgramVariable which the overload finding will attempt to use and fail to find,
+        ///  so just use the non-generic version in this case
+        /// </summary>
+        private static bool TryCreateSetProgramVariableInvocation(AbstractPhaseContext context, SyntaxNode node,
+            MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
+            out BoundInvocationExpression createdInvocation)
+        {
+            if (symbol.Name == "SetProgramVariable" &&
+                symbol.ContainingType == context.GetTypeSymbol(typeof(UdonBehaviour)))
+            {
+                MethodSymbol setProgramVarObjMethod = context.GetTypeSymbol(typeof(UdonBehaviour))
+                    .GetMembers<MethodSymbol>("SetProgramVariable", context)
+                    .First(e => !e.RoslynSymbol.IsGenericMethod);
+
+                createdInvocation = new BoundExternInvocation(node, setProgramVarObjMethod, instanceExpression,
+                    parameterExpressions);
+                return true;
+            }
+
+            createdInvocation = null;
+            return false;
+        }
 
         private static bool TryCreateShimInvocation(AbstractPhaseContext context, SyntaxNode node,
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
@@ -143,6 +168,9 @@ namespace UdonSharp.Compiler.Binder
                 return true;
 
             if (TryCreateInstantiationInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
+                return true;
+            
+            if (TryCreateSetProgramVariableInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
                 return true;
 
             return false;

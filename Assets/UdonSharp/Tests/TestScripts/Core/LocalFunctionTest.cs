@@ -151,15 +151,22 @@ namespace UdonSharp.Tests
         }
 
 #pragma warning disable CS0649
-        int programVar;
+        private int _programVar;
 #pragma warning restore CS0649 
 
         void TestSetGetProgramVar()
         {
-            SetProgramVariable("programVar", 5);
+            SetProgramVariable(nameof(_programVar), 5);
 
-            tester.TestAssertion("SetProgramVariable local", programVar == 5);
-            tester.TestAssertion("GetProgramVariable local", (int)GetProgramVariable("programVar") == 5);
+            tester.TestAssertion("SetProgramVariable local", _programVar == 5);
+            tester.TestAssertion("GetProgramVariable local", (int)GetProgramVariable(nameof(_programVar)) == 5);
+
+            // ReSharper disable once SuspiciousTypeConversion.Global
+            UdonBehaviour selfUdonBehaviour = (UdonBehaviour)(Component)this;
+            selfUdonBehaviour.SetProgramVariable(nameof(_programVar), 10);
+            
+            tester.TestAssertion("UdonBehaviour SetProgramVariable", _programVar == 10);
+            tester.TestAssertion("UdonBehaviour GetProgramVariable", (int)selfUdonBehaviour.GetProgramVariable(nameof(_programVar)) == 10);
         }
 
         public void PrintThingDelayed()
@@ -184,6 +191,8 @@ namespace UdonSharp.Tests
             myself.SendCustomEventDelayedFrames(nameof(PrintThingDelayed), 1);
             myself.SendCustomEventDelayedFrames(nameof(PrintThingDelayedLate), 1, VRC.Udon.Common.Enums.EventTiming.LateUpdate);
 
+            // ReSharper disable once SuspiciousTypeConversion.Global
+            // ReSharper disable once PossibleInvalidCastException
             UdonBehaviour myselfUdon = (UdonBehaviour)(Component)myself;
             myselfUdon.SendCustomEventDelayedFrames(nameof(PrintThingDelayed), 10);
         }

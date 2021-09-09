@@ -51,7 +51,7 @@ namespace UdonSharp.Compiler.Symbols
                 else
                     TypeArguments = ImmutableArray<TypeSymbol>.Empty;
 
-                if (RoslynSymbol.IsOverride)
+                if (RoslynSymbol.IsOverride && RoslynSymbol.OverriddenMethod != null) // abstract methods can be overrides, but not have overriden methods
                     OverridenMethod = (MethodSymbol) context.GetSymbol(RoslynSymbol.OverriddenMethod);
 
                 IsOperator = RoslynSymbol.MethodKind == MethodKind.BuiltinOperator ||

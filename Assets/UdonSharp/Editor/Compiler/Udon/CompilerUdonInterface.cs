@@ -104,6 +104,9 @@ namespace UdonSharp.Compiler.Udon
 
         public static string GetUdonTypeName(TypeSymbol externSymbol)
         {
+            if (externSymbol is TypeParameterSymbol)
+                return "T";
+            
             return GetUdonTypeName(externSymbol.UdonType.SystemType);
         }
         
