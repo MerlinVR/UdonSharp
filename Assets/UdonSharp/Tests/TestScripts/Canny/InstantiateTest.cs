@@ -16,7 +16,7 @@ namespace UdonSharp.Tests
 
         public void ExecuteTests()
         {
-            GameObject newObject = VRCInstantiate(objectToSpawn);
+            GameObject newObject = Instantiate(objectToSpawn);
 
             tester.TestAssertion("Instantiation", newObject != null);
         }

@@ -40,7 +40,7 @@ using VRC.Udon;
 
             for (int i = 0; i < objectCount; ++i)
             {
-                GameObject instantiatedObject = VRCInstantiate(sourcePrefab);
+                GameObject instantiatedObject = Instantiate(sourcePrefab);
                 UdonBehaviour behaviour = (UdonBehaviour)instantiatedObject.GetComponent(typeof(UdonBehaviour));
 
                 //Debug.Log(behaviour);

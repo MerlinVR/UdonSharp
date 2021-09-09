@@ -28,7 +28,7 @@ namespace UdonSharp.Tests
 
         void TestHeapVariableGetComponent()
         {
-            GameObject newObject = VRCInstantiate(referenceSpawnObject);
+            GameObject newObject = Instantiate(referenceSpawnObject);
 
             InstantiatedObjectTesterScript testScript = newObject.GetComponent<InstantiatedObjectTesterScript>();
 
@@ -40,7 +40,7 @@ namespace UdonSharp.Tests
 
         void TestHeapVariableGet()
         {
-            GameObject newObject = VRCInstantiate(referenceSpawnObject);
+            GameObject newObject = Instantiate(referenceSpawnObject);
 
             // Have a separate case that will force find the script because of the above issue. We know in this specific test case that the only UdonBehaviour on the object will be of the type `InstantiatedObjectTesterScript`
             InstantiatedObjectTesterScript testScript = (InstantiatedObjectTesterScript)newObject.GetComponent(typeof(UdonBehaviour));
@@ -52,7 +52,7 @@ namespace UdonSharp.Tests
 
         void TestHeapVariableSet()
         {
-            GameObject newObject = VRCInstantiate(referenceSpawnObject);
+            GameObject newObject = Instantiate(referenceSpawnObject);
             
             InstantiatedObjectTesterScript testScript = (InstantiatedObjectTesterScript)newObject.GetComponent(typeof(UdonBehaviour));
 
@@ -74,7 +74,7 @@ namespace UdonSharp.Tests
         {
             spawnCounter = 0;
 
-            GameObject newObject = VRCInstantiate(referenceSpawnObject);
+            GameObject newObject = Instantiate(referenceSpawnObject);
 
             InstantiatedObjectTesterScript testScript = (InstantiatedObjectTesterScript)newObject.GetComponent(typeof(UdonBehaviour));
 
