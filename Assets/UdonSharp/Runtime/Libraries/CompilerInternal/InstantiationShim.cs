@@ -12,22 +12,24 @@ namespace UdonSharp.Lib.Internal
         [UsedImplicitly]
         public static GameObject Instantiate(GameObject original)
         {
-            return Instantiate_Extern(original);
-        }
-
-        [UsedImplicitly]
-        public static GameObject Instantiate(GameObject original, Vector3 position)
-        {
-            GameObject instantiatedObject = Instantiate(original);
-            instantiatedObject.transform.position = position;
+            Transform originalTransform = original.transform;
+            Vector3 originalPosition = originalTransform.position;
+            Quaternion originalRotation = originalTransform.rotation;
+            GameObject instantiatedObject = Instantiate_Extern(original);
+            instantiatedObject.transform.SetPositionAndRotation(originalPosition, originalRotation);
 
             return instantiatedObject;
+        }
+
+        private static GameObject InstantiateNoPositionFix(GameObject original)
+        {
+            return Instantiate_Extern(original);
         }
 
         [UsedImplicitly]
         public static GameObject Instantiate(GameObject original, Vector3 position, Quaternion rotation)
         {
-            GameObject instantiatedObject = Instantiate(original);
+            GameObject instantiatedObject = InstantiateNoPositionFix(original);
             Transform objectTransform = instantiatedObject.transform;
             objectTransform.SetPositionAndRotation(position, rotation);
 
@@ -57,7 +59,7 @@ namespace UdonSharp.Lib.Internal
         [UsedImplicitly]
         public static GameObject Instantiate(GameObject original, Vector3 position, Quaternion rotation, Transform parent)
         {
-            GameObject instantiatedObject = Instantiate(original);
+            GameObject instantiatedObject = InstantiateNoPositionFix(original);
             Transform objectTransform = instantiatedObject.transform;
             objectTransform.SetPositionAndRotation(position, rotation);
             objectTransform.SetParent(parent, true);

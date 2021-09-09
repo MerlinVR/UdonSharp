@@ -61,12 +61,6 @@ namespace UdonSharp.Compiler.Binder
 
             if (Method.ReturnType != null)
             {
-                // Value returnVal = context.CreateInternalValue(Method.ReturnType);
-                //     
-                // context.Module.AddCopy(linkage.ReturnValue, returnVal);
-                //
-                // return returnVal;
-
                 return linkage.ReturnValue;
             }
 
