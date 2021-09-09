@@ -44,6 +44,16 @@ namespace UdonSharp.Compiler.Binder
         /// </summary>
         public virtual void MarkForcedBaseCall() {}
 
+        private static readonly HashSet<string> _getComponentNames = new HashSet<string>()
+        {
+            "GetComponent",
+            "GetComponents",
+            "GetComponentInChildren",
+            "GetComponentsInChildren",
+            "GetComponentInParent",
+            "GetComponentsInParent",
+        };
+        
         private static bool TryCreateGetComponentInvocation(AbstractPhaseContext context, SyntaxNode node,
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
             out BoundInvocationExpression createdInvocation)
@@ -70,7 +80,6 @@ namespace UdonSharp.Compiler.Binder
         {
             switch (symbol.Name)
             {
-                case "VRCInstantiate" when symbol.ContainingType == context.GetTypeSymbol(typeof(UdonSharpBehaviour)): // Backwards compatibility for UdonSharpBehaviour.VRCInstantiate
                 case "Instantiate_Extern" when symbol.ContainingType == context.GetTypeSymbol(typeof(InstantiationShim)):
                     createdInvocation = new BoundExternInvocation(node,
                         new ExternSynthesizedMethodSymbol(context,
@@ -80,11 +89,12 @@ namespace UdonSharp.Compiler.Binder
                         instanceExpression, parameterExpressions);
 
                     return true;
+                case "VRCInstantiate" when symbol.ContainingType == context.GetTypeSymbol(typeof(UdonSharpBehaviour)): // Backwards compatibility for UdonSharpBehaviour.VRCInstantiate
                 case "Instantiate" when symbol.ContainingType == context.GetTypeSymbol(typeof(UnityEngine.Object)):
                 {
-                    if (symbol.TypeArguments.Length != 1 ||
-                        symbol.TypeArguments[0] !=
-                        context.GetTypeSymbol(typeof(GameObject)))
+                    if (symbol.Name != "VRCInstantiate" && 
+                        (symbol.TypeArguments.Length != 1 ||
+                         symbol.TypeArguments[0] != context.GetTypeSymbol(typeof(GameObject))))
                         throw new NotSupportedException("Udon does not support instantiating non-GameObject types");
 
                     TypeSymbol instantiateShim = context.GetTypeSymbol(typeof(InstantiationShim));
@@ -117,16 +127,6 @@ namespace UdonSharp.Compiler.Binder
 
             return false;
         }
-
-        private static readonly HashSet<string> _getComponentNames = new HashSet<string>()
-        {
-            "GetComponent",
-            "GetComponents",
-            "GetComponentInChildren",
-            "GetComponentsInChildren",
-            "GetComponentInParent",
-            "GetComponentsInParent",
-        };
         
         public static BoundInvocationExpression CreateBoundInvocation(AbstractPhaseContext context, SyntaxNode node,
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions)
