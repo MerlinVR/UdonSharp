@@ -1,4 +1,6 @@
 ﻿
+//#define SINGLE_THREAD_BUILD
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -28,6 +30,12 @@ namespace UdonSharp.Compiler
     public class UdonSharpCompilerV1
     {
         private static int _assemblyCounter;
+        private const int MAX_PARALLELISM = 6;
+
+        private static void PrintStageTime(string stageName, Stopwatch stopwatch)
+        {
+            // Debug.Log($"{stageName}: {stopwatch.Elapsed.TotalSeconds * 1000.0}ms");
+        }
 
         public void Compile(string filePath)
         {
@@ -69,7 +77,6 @@ namespace UdonSharp.Compiler
                 return;
 
             List<ModuleBinding> rootTrees = new List<ModuleBinding>();
-            List<ModuleBinding> derivitiveTrees = new List<ModuleBinding>();
             Dictionary<SyntaxTree, ModuleBinding> bindingLookup = new Dictionary<SyntaxTree, ModuleBinding>();
             
             foreach (ModuleBinding treeBinding in syntaxTrees)
@@ -79,23 +86,26 @@ namespace UdonSharp.Compiler
                     rootTrees.Add(treeBinding);
                     treeBinding.programAsset = rootProgramLookup[treeBinding.filePath];
                 }
-                else
-                    derivitiveTrees.Add(treeBinding);
 
                 bindingLookup.Add(treeBinding.tree, treeBinding);
             }
+            
+            Stopwatch roslynCompileTimer = Stopwatch.StartNew();
 
             // Run compilation for the semantic views
             CSharpCompilation compilation = CSharpCompilation.Create(
                 $"UdonSharpRoslynCompileAssembly{_assemblyCounter++}",
-                syntaxTrees: syntaxTrees.Select(e => e.tree),
-                references: GetMetadataReferences(),
-                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+                syntaxTrees.Select(e => e.tree),
+                GetMetadataReferences(),
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-
+            PrintStageTime("Roslyn Compile", roslynCompileTimer);
+            
             int compileErrors = 0;
 
             byte[] builtAssembly = null;
+            
+            Stopwatch roslynEmitTimer = Stopwatch.StartNew();
             
             using (var memoryStream = new MemoryStream())
             {
@@ -116,6 +126,8 @@ namespace UdonSharp.Compiler
                     }
                 }
             }
+            
+            PrintStageTime("Roslyn Emit", roslynEmitTimer);
 
             if (compileErrors > 0)
                 return;
@@ -125,7 +137,7 @@ namespace UdonSharp.Compiler
 
             ConcurrentBag<(INamedTypeSymbol, ModuleBinding)> rootUdonSharpTypes = new ConcurrentBag<(INamedTypeSymbol, ModuleBinding)>();
 
-            Parallel.ForEach(rootTrees, module =>
+            Parallel.ForEach(rootTrees, new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM}, module =>
             {
                 SemanticModel model = module.semanticModel;
                 SyntaxTree tree = model.SyntaxTree;
@@ -151,37 +163,8 @@ namespace UdonSharp.Compiler
             BindAllPrograms(rootUdonSharpTypes, compilationContext);
 
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.Emit;
-
-            foreach (var (rootTypeSymbol, moduleBinding) in rootUdonSharpTypes)
-            {
-                AssemblyModule assemblyModule = new AssemblyModule(compilationContext);
-                moduleBinding.assemblyModule = assemblyModule;
-                
-                EmitContext moduleEmitContext = new EmitContext(assemblyModule, rootTypeSymbol);
-
-                string typeName = TypeSymbol.GetFullTypeName(rootTypeSymbol);
-                
-                moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeIDHeapKey,
-                    moduleEmitContext.GetTypeSymbol(SpecialType.System_Int64), UdonSharpInternalUtility.GetTypeID(typeName));
-                moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeNameHeapKey,
-                    moduleEmitContext.GetTypeSymbol(SpecialType.System_String), typeName);
-                
-                moduleEmitContext.Emit();
-
-                Dictionary<string, FieldDefinition> fieldDefinitions = new Dictionary<string, FieldDefinition>();
-
-                foreach (FieldSymbol symbol in moduleEmitContext.DeclaredFields)
-                {
-                    if (!symbol.Type.TryGetSystemType(out var symbolSystemType))
-                        Debug.LogError($"Could not get type for field {symbol.Name}");
-                    
-                    // Debug.Log($"Field {symbol.Name}, type: {symbolSystemType}");
-                    
-                    fieldDefinitions.Add(symbol.Name, new FieldDefinition(symbolSystemType, symbol.Type.UdonType.SystemType, symbol.SyncMode, symbol.IsSerialized, symbol.SymbolAttributes.ToList()));
-                }
-
-                moduleBinding.programAsset.fieldDefinitions = fieldDefinitions;
-            }
+            
+            EmitAllPrograms(rootUdonSharpTypes, compilationContext);
             
             System.Reflection.Assembly assembly; 
 
@@ -189,57 +172,28 @@ namespace UdonSharp.Compiler
                 assembly = System.Reflection.Assembly.Load(builtAssembly);
 
             UdonSharpEditorManager.ConstructorWarningsDisabled = true;
+
+            compilationContext.CurrentPhase = CompilationContext.CompilePhase.Assemble;
             
-            foreach ((INamedTypeSymbol namedType, ModuleBinding rootBinding) in rootUdonSharpTypes)
+            AssembleAllPrograms(rootUdonSharpTypes, assembly);
+            
+            UdonSharpEditorManager.ConstructorWarningsDisabled = false;
+
+            foreach ((_, ModuleBinding rootBinding) in rootUdonSharpTypes)
             {
-                List<Value> assemblyValues = rootBinding.assemblyModule.RootTable.GetAllUniqueChildValues();
-                string generatedUasm = rootBinding.assemblyModule.BuildUasmStr();
-                
-                rootBinding.programAsset.SetUdonAssembly(generatedUasm);
-                rootBinding.programAsset.AssembleCsProgram(rootBinding.assemblyModule.GetHeapSize());
-                rootBinding.programAsset.SetUdonAssembly("");
-
-                IUdonProgram program = rootBinding.programAsset.GetRealProgram();
-                
-                foreach (Value val in assemblyValues)
-                {
-                    if (val.DefaultValue == null) continue;
-                    uint valAddress = program.SymbolTable.GetAddressFromSymbol(val.UniqueID);
-                    program.Heap.SetHeapVariable(valAddress, val.DefaultValue, val.UdonType.SystemType);
-                }
-
-                string typeName = TypeSymbol.GetFullTypeName(namedType);
-
-                Type asmType = assembly.GetType(typeName);
-
-                object component = Activator.CreateInstance(asmType);
-
-                foreach (FieldInfo field in asmType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-                {
-                    uint valAddress = program.SymbolTable.GetAddressFromSymbol(field.Name);
-
-                    object fieldValue = field.GetValue(component);
-                    
-                    if (fieldValue != null)
-                        program.Heap.SetHeapVariable(valAddress, fieldValue, field.FieldType);
-                }
-                
                 rootBinding.programAsset.ApplyProgram();
                 
-                UdonSharpEditorCache.Instance.SetUASMStr(rootBinding.programAsset, generatedUasm);
+                UdonSharpEditorCache.Instance.SetUASMStr(rootBinding.programAsset, rootBinding.assembly);
                 UdonSharpEditorCache.Instance.UpdateSourceHash(rootBinding.programAsset, rootBinding.sourceText);
-                
                 EditorUtility.SetDirty(rootBinding.programAsset);
             }
-
-            UdonSharpEditorManager.ConstructorWarningsDisabled = false;
             
             UdonSharpEditorManager.RunPostBuildSceneFixup();
-
-            Debug.Log($"Ran compile in {timer.Elapsed.TotalSeconds * 1000.0:F3}ms");
+            
+            Debug.Log($"[<color=#0c824c>UdonSharp</color>] Compile of {rootUdonSharpTypes.Count} scripts finished in {timer.Elapsed:mm\\:ss\\.fff}");
         }
 
-        IEnumerable<string> GetAllFilteredSourcePaths()
+        private static IEnumerable<string> GetAllFilteredSourcePaths()
         {
             var allScripts = UdonSharpSettings.FilterBlacklistedPaths(Directory.GetFiles("Assets/", "*.cs", SearchOption.AllDirectories));
 
@@ -262,7 +216,7 @@ namespace UdonSharp.Compiler
             return filteredPaths;
         }
 
-        class ModuleBinding
+        private class ModuleBinding
         {
             public SyntaxTree tree;
             public string filePath;
@@ -271,16 +225,19 @@ namespace UdonSharp.Compiler
             public AssemblyModule assemblyModule;
             public UdonSharpProgramAsset programAsset;
             public BindContext binding;
+            public string assembly;
         }
 
-        IEnumerable<ModuleBinding> LoadSyntaxTrees(IEnumerable<string> sourcePaths)
+        private static IEnumerable<ModuleBinding> LoadSyntaxTrees(IEnumerable<string> sourcePaths)
         {
+            Stopwatch loadTimer = Stopwatch.StartNew();
+            
             ConcurrentBag<ModuleBinding> syntaxTrees = new ConcurrentBag<ModuleBinding>();
 
             bool isEditorBuild = true;
             string[] defines = UdonSharpUtils.GetProjectDefines(isEditorBuild);
 
-            Parallel.ForEach(sourcePaths, (currentSource) =>
+            Parallel.ForEach(sourcePaths, new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM}, (currentSource) =>
             {
                 string programSource = UdonSharpUtils.ReadFileTextSync(currentSource);
 
@@ -288,6 +245,8 @@ namespace UdonSharp.Compiler
 
                 syntaxTrees.Add(new ModuleBinding() { tree = programSyntaxTree, filePath = currentSource, sourceText = programSource });
             });
+
+            PrintStageTime("Parse AST", loadTimer);
 
             return syntaxTrees;
         }
@@ -363,38 +322,177 @@ namespace UdonSharp.Compiler
             return _metadataReferences;
         }
 
-        void BindAllPrograms(IEnumerable<(INamedTypeSymbol, ModuleBinding)> bindings, CompilationContext compilationContext)
+        private static void BindAllPrograms(IEnumerable<(INamedTypeSymbol, ModuleBinding)> bindings, CompilationContext compilationContext)
         {
+            Stopwatch bindTimer = Stopwatch.StartNew();
+            
             HashSet<TypeSymbol> symbolsToBind = new HashSet<TypeSymbol>();
+            object hashSetLock = new object();
 
+        #if SINGLE_THREAD_BUILD
             foreach (var rootTypeSymbol in bindings)
+            {
+                BindContext bindContext = new BindContext(compilationContext, rootTypeSymbol.Item1);
+                bindContext.Bind();
+            
+                rootTypeSymbol.Item2.binding = bindContext;
+                
+                symbolsToBind.UnionWith(bindContext.GetTypeSymbol(rootTypeSymbol.Item1).CollectReferencedUnboundTypes(bindContext));
+            }
+        #else
+            Parallel.ForEach(bindings, new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM},rootTypeSymbol =>
             {
                 BindContext bindContext = new BindContext(compilationContext, rootTypeSymbol.Item1);
                 bindContext.Bind();
 
                 rootTypeSymbol.Item2.binding = bindContext;
-                
-                symbolsToBind.UnionWith(bindContext.GetTypeSymbol(rootTypeSymbol.Item1).CollectReferencedUnboundTypes(bindContext));
-            }
 
+                var referencedTypes = bindContext.GetTypeSymbol(rootTypeSymbol.Item1)
+                    .CollectReferencedUnboundTypes(bindContext).ToArray();
+
+                lock (hashSetLock)
+                {
+                    // ReSharper disable once AccessToModifiedClosure
+                    symbolsToBind.UnionWith(referencedTypes);
+                }
+            });
+        #endif
+            
             while (symbolsToBind.Count > 0)
             {
                 HashSet<TypeSymbol> newSymbols = new HashSet<TypeSymbol>();
                 
+            #if SINGLE_THREAD_BUILD
                 foreach (TypeSymbol symbolToBind in symbolsToBind)
                 {
                     if (!symbolToBind.IsBound)
                     {
                         BindContext bindContext = new BindContext(compilationContext, symbolToBind.RoslynSymbol);
-
+                
                         bindContext.Bind();
-
+                
                         newSymbols.UnionWith(symbolToBind.CollectReferencedUnboundTypes(bindContext));
                     }
                 }
+            #else
+                Parallel.ForEach(symbolsToBind.Where(e => !e.IsBound), new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM}, typeSymbol =>
+                {
+                    BindContext bindContext = new BindContext(compilationContext, typeSymbol.RoslynSymbol);
+
+                    bindContext.Bind();
+                    
+                    var referencedSymbols = typeSymbol.CollectReferencedUnboundTypes(bindContext).ToArray();
+
+                    lock (hashSetLock)
+                    {
+                        newSymbols.UnionWith(referencedSymbols);
+                    }
+                });
+            #endif
 
                 symbolsToBind = newSymbols;
             }
+            
+            PrintStageTime("U# Bind", bindTimer);
+        }
+
+        private static void EmitAllPrograms(IEnumerable<(INamedTypeSymbol, ModuleBinding)> bindings, CompilationContext compilationContext)
+        {
+            Stopwatch emitTimer = Stopwatch.StartNew();
+            
+        #if SINGLE_THREAD_BUILD
+            foreach (var binding in bindings)
+        #else
+            Parallel.ForEach(bindings, new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM}, binding => 
+        #endif
+            {
+                INamedTypeSymbol rootTypeSymbol = binding.Item1;
+                ModuleBinding moduleBinding = binding.Item2;
+                AssemblyModule assemblyModule = new AssemblyModule(compilationContext);
+                moduleBinding.assemblyModule = assemblyModule;
+                
+                EmitContext moduleEmitContext = new EmitContext(assemblyModule, rootTypeSymbol);
+
+                string typeName = TypeSymbol.GetFullTypeName(rootTypeSymbol);
+                
+                moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeIDHeapKey,
+                    moduleEmitContext.GetTypeSymbol(SpecialType.System_Int64), UdonSharpInternalUtility.GetTypeID(typeName));
+                moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeNameHeapKey,
+                    moduleEmitContext.GetTypeSymbol(SpecialType.System_String), typeName);
+                
+                moduleEmitContext.Emit();
+
+                Dictionary<string, FieldDefinition> fieldDefinitions = new Dictionary<string, FieldDefinition>();
+
+                foreach (FieldSymbol symbol in moduleEmitContext.DeclaredFields)
+                {
+                    if (!symbol.Type.TryGetSystemType(out var symbolSystemType))
+                        Debug.LogError($"Could not get type for field {symbol.Name}");
+                    
+                    fieldDefinitions.Add(symbol.Name, new FieldDefinition(symbolSystemType, symbol.Type.UdonType.SystemType, symbol.SyncMode, symbol.IsSerialized, symbol.SymbolAttributes.ToList()));
+                }
+
+                moduleBinding.programAsset.fieldDefinitions = fieldDefinitions;
+            }
+        #if !SINGLE_THREAD_BUILD
+            );
+        #endif
+            
+            PrintStageTime("U# Emit", emitTimer);
+        }
+
+        private static void AssembleAllPrograms(IEnumerable<(INamedTypeSymbol, ModuleBinding)> bindings, System.Reflection.Assembly assembly)
+        {
+            Stopwatch assembleTimer = Stopwatch.StartNew();
+            
+            // #if SINGLE_THREAD_BUILD
+            // #else
+            //     Parallel.ForEach(bindings, binding => 
+            // #endif
+            // Can't thread because assembly relies on state from the editor interface internally and constructing an editor interface for each thread is way worse :<
+            foreach (var binding in bindings)
+            {
+                INamedTypeSymbol rootTypeSymbol = binding.Item1;
+                ModuleBinding rootBinding = binding.Item2;
+                List<Value> assemblyValues = rootBinding.assemblyModule.RootTable.GetAllUniqueChildValues();
+                string generatedUasm = rootBinding.assemblyModule.BuildUasmStr();
+                
+                rootBinding.programAsset.SetUdonAssembly(generatedUasm);
+                rootBinding.programAsset.AssembleCsProgram(rootBinding.assemblyModule.GetHeapSize());
+                rootBinding.programAsset.SetUdonAssembly("");
+
+                IUdonProgram program = rootBinding.programAsset.GetRealProgram();
+                
+                foreach (Value val in assemblyValues)
+                {
+                    if (val.DefaultValue == null) continue;
+                    uint valAddress = program.SymbolTable.GetAddressFromSymbol(val.UniqueID);
+                    program.Heap.SetHeapVariable(valAddress, val.DefaultValue, val.UdonType.SystemType);
+                }
+
+                string typeName = TypeSymbol.GetFullTypeName(rootTypeSymbol);
+
+                Type asmType = assembly.GetType(typeName);
+
+                object component = Activator.CreateInstance(asmType);
+
+                foreach (FieldInfo field in asmType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+                {
+                    uint valAddress = program.SymbolTable.GetAddressFromSymbol(field.Name);
+
+                    object fieldValue = field.GetValue(component);
+                    
+                    if (fieldValue != null)
+                        program.Heap.SetHeapVariable(valAddress, fieldValue, field.FieldType);
+                }
+
+                rootBinding.assembly = generatedUasm;
+            }
+            // #if !SINGLE_THREAD_BUILD
+            //     );
+            // #endif
+        
+            PrintStageTime("Assemble", assembleTimer);
         }
     }
 }

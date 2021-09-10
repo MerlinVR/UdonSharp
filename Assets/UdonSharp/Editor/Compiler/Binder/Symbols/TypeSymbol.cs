@@ -11,7 +11,7 @@ namespace UdonSharp.Compiler.Symbols
 {
     internal abstract class TypeSymbol : Symbol
     {
-        private static readonly object dictionaryLazyInitLock = new object();
+        private readonly object _dictionaryLazyInitLock = new object();
         private ConcurrentDictionary<ISymbol, Symbol> _typeSymbols;
 
         public new ITypeSymbol RoslynSymbol => (ITypeSymbol)base.RoslynSymbol;
@@ -57,7 +57,7 @@ namespace UdonSharp.Compiler.Symbols
             if (_typeSymbols != null)
                 return;
 
-            lock (dictionaryLazyInitLock)
+            lock (_dictionaryLazyInitLock)
             {
                 if (_typeSymbols != null)
                     return;
