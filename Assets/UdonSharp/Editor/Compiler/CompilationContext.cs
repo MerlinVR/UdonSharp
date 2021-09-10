@@ -55,14 +55,9 @@ namespace UdonSharp.Compiler
         
         private ConcurrentDictionary<ITypeSymbol, TypeSymbol> _typeSymbolLookup = new ConcurrentDictionary<ITypeSymbol, TypeSymbol>();
 
-        void QueueBind(Symbol symbol)
-        {
-        }
-
         public TypeSymbol GetTypeSymbol(ITypeSymbol type, AbstractPhaseContext context)
         {
             TypeSymbol typeSymbol = _typeSymbolLookup.GetOrAdd(type, (key) => TypeSymbolFactory.CreateSymbol(type, context));
-            QueueBind(typeSymbol);
 
             return typeSymbol;
         }
