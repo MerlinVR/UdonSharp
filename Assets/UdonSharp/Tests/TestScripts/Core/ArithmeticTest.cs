@@ -35,53 +35,102 @@ namespace UdonSharp.Tests
 
         void IntBinaryOps()
         {
-            int result = 4 + 6;
-            tester.TestAssertion("Integer Addition", result == 10);
+            int result;
+            result = 4 + 6;
+            tester.TestAssertion("Constant Integer Addition", result == 10);
         
             result = 3 - 5;
-            tester.TestAssertion("Integer Subtraction", result == -2);
+            tester.TestAssertion("Constant Integer Subtraction", result == -2);
         
             result = 20 / 3;
-            tester.TestAssertion("Integer Division", result == 6);
+            tester.TestAssertion("Constant Integer Division", result == 6);
             
             result = 5 % 2;
-            tester.TestAssertion("Integer Remainder", result == 1);
+            tester.TestAssertion("Constant Integer Remainder", result == 1);
         
             result = 2 | 8;
-            tester.TestAssertion("Integer OR", result == 10);
+            tester.TestAssertion("Constant Integer OR", result == 10);
         
             result = 2 & 10;
-            tester.TestAssertion("Integer AND", result == 2);
+            tester.TestAssertion("Constant Integer AND", result == 2);
         
-            tester.TestAssertion("Integer Left Shift", 1 << 2 == 4);
-            tester.TestAssertion("Integer Right Shift", 4 >> 2 == 1);
-            tester.TestAssertion("Integer XOR", (0x499602D3 ^ 0x132C10CB) == 0x5ABA1218); // Randomly chosen numbers
+            tester.TestAssertion("Constant Integer Left Shift", 1 << 2 == 4);
+            tester.TestAssertion("Constant Integer Right Shift", 4 >> 2 == 1);
+            tester.TestAssertion("Constant Integer XOR", (0x499602D3 ^ 0x132C10CB) == 0x5ABA1218); // Randomly chosen numbers
+
+            int a = 13;
+            int b = 2;
+            result = a + b;
+            tester.TestAssertion("Integer Addition", result == 15);
+        
+            result = b - a;
+            tester.TestAssertion("Integer Subtraction", result == -11);
+        
+            result = a / b;
+            tester.TestAssertion("Integer Division", result == 6);
+            
+            result = a % b;
+            tester.TestAssertion("Integer Remainder", result == 1);
+        
+            result = a | b;
+            tester.TestAssertion("Integer OR", result == 15);
+        
+            result = a & b;
+            tester.TestAssertion("Integer AND", result == 0);
+        
+            tester.TestAssertion("Integer Left Shift", a << b == 52);
+            tester.TestAssertion("Integer Right Shift", a >> b == 3);
+            tester.TestAssertion("Integer XOR", (a ^ b) == 15);
         
         }
         
         void SByteBinaryOps()
         {
             sbyte result = (sbyte)(4 + 6);
-            tester.TestAssertion("sByte Addition", result == 10);
+            tester.TestAssertion("Constant sByte Addition", result == 10);
         
             result = 3 - 5;
-            tester.TestAssertion("sByte Subtraction", result == -2);
+            tester.TestAssertion("Constant sByte Subtraction", result == -2);
         
             result = 20 / 3;
-            tester.TestAssertion("sByte Division", result == 6);
+            tester.TestAssertion("Constant sByte Division", result == 6);
         
             result = 5 % 2;
-            tester.TestAssertion("sByte Remainder", result == 1);
+            tester.TestAssertion("Constant sByte Remainder", result == 1);
         
             result = 2 | 8;
-            tester.TestAssertion("sByte OR", result == 10);
+            tester.TestAssertion("Constant sByte OR", result == 10);
         
             result = 2 & 10;
-            tester.TestAssertion("sByte AND", result == 2);
+            tester.TestAssertion("Constant sByte AND", result == 2);
         
-            tester.TestAssertion("sByte Left Shift", (sbyte)1 << 2 == 4);
-            tester.TestAssertion("sByte Right Shift", (sbyte)4 >> 2 == 1);
-            tester.TestAssertion("sByte XOR", ((sbyte)0x03 ^ 0x0B) == 0x08); // Randomly chosen numbers
+            tester.TestAssertion("Constant sByte Left Shift", (sbyte)1 << 2 == 4);
+            tester.TestAssertion("Constant sByte Right Shift", (sbyte)4 >> 2 == 1);
+            tester.TestAssertion("Constant sByte XOR", ((sbyte)0x03 ^ 0x0B) == 0x08); // Randomly chosen numbers
+            
+            sbyte a = 13;
+            sbyte b = 2;
+            result = (sbyte)(a + b);
+            tester.TestAssertion("sByte Addition", result == 15);
+        
+            result = (sbyte)(b - a);
+            tester.TestAssertion("sByte Subtraction", result == -11);
+        
+            result = (sbyte)(a / b);
+            tester.TestAssertion("sByte Division", result == 6);
+            
+            result = (sbyte)(a % b);
+            tester.TestAssertion("sByte Remainder", result == 1);
+        
+            result = (sbyte)(a | b);
+            tester.TestAssertion("sByte OR", result == 15);
+        
+            result = (sbyte)(a & b);
+            tester.TestAssertion("sByte AND", result == 0);
+        
+            tester.TestAssertion("sByte Left Shift", a << b == 52);
+            tester.TestAssertion("sByte Right Shift", a >> b == 3);
+            tester.TestAssertion("sByte XOR", (a ^ b) == 15);
         }
         
         void LongBinaryOps() 
@@ -95,7 +144,6 @@ namespace UdonSharp.Tests
             result = 20L / 3L;
             tester.TestAssertion("Const Long Division", result == 6);
         
-            // udonsupport: https://vrchat.canny.io/vrchat-udon-closed-alpha-feedback/p/long-remainder
             result = 5L % 2L;
             tester.TestAssertion("Const Long Remainder", result == 1);
         
@@ -109,31 +157,30 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Const Long Right Shift", (long)4 >> 2 == 1);
             tester.TestAssertion("Const Long XOR", (0x499602D3499602D3 ^ 0x132C10CB132C10CB) == 0x5ABA12185ABA1218); // Randomly chosen numbers
 
-            long six = 6;
-            result = 4L + six;
-            tester.TestAssertion("Long Addition", result == 10);
+            long a = 13;
+            long b = 2;
+            result = a + b;
+            tester.TestAssertion("Long Addition", result == 15);
         
-            result = 3L - 5L; 
-            tester.TestAssertion("Long Subtraction", result == -2);
+            result = b - a;
+            tester.TestAssertion("Long Subtraction", result == -11);
         
-            result = 20L / 3L;
+            result = a / b;
             tester.TestAssertion("Long Division", result == 6);
-        
+            
             // udonsupport: https://vrchat.canny.io/vrchat-udon-closed-alpha-feedback/p/long-remainder
-            result = 5L % 2L;
-            tester.TestAssertion("Long Remainder", result == 1);
+            // result = a % b;
+            // tester.TestAssertion("Long Remainder", result == 1);
         
-            result = 2L | 8L;
-            tester.TestAssertion("Long OR", result == 10);
+            result = a | b;
+            tester.TestAssertion("Long OR", result == 15);
         
-            result = 2L & 10L;
-            tester.TestAssertion("Long AND", result == 2);
+            result = a & b;
+            tester.TestAssertion("Long AND", result == 0);
         
-            tester.TestAssertion("Long Left Shift", (long)1 << 2 == 4);
-            tester.TestAssertion("Long Right Shift", (long)4 >> 2 == 1);
-
-            long xorrhs = 0x132C10CB132C10CB;
-            tester.TestAssertion("Long XOR", (0x499602D3499602D3 ^ xorrhs) == 0x5ABA12185ABA1218); // Randomly chosen numbers
+            tester.TestAssertion("Long Left Shift", a << (int)b == 52);
+            tester.TestAssertion("Long Right Shift", a >> (int)b == 3);
+            tester.TestAssertion("Long XOR", (a ^ b) == 15);
         }
         
         void IntIncrement()
