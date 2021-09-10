@@ -731,8 +731,16 @@ namespace UdonSharp.Compiler.Emit
             return newLinkage;
         }
 
+        private void UpdateNode(BoundNode node)
+        {
+            if (node.SyntaxNode != null)
+                CurrentNode = node.SyntaxNode;
+        }
+
         public void Emit(BoundNode node)
         {
+            UpdateNode(node);
+            
             node.Emit(this);
             
             if (node is BoundExpression boundExpression)
@@ -741,6 +749,8 @@ namespace UdonSharp.Compiler.Emit
         
         public Value EmitValue(BoundExpression expression)
         {
+            UpdateNode(expression);
+            
             Value result = expression.EmitValue(this);
             expression.ReleaseCowReferences(this);
             
@@ -749,11 +759,15 @@ namespace UdonSharp.Compiler.Emit
 
         public Value EmitValueWithDeferredRelease(BoundExpression expression)
         {
+            UpdateNode(expression);
+            
             return expression.EmitValue(this);
         }
 
         public Value EmitSet(BoundAccessExpression targetExpression, BoundExpression sourceExpression)
         {
+            UpdateNode(targetExpression);
+            
             Value resultVal = targetExpression.EmitSet(this, sourceExpression);
             targetExpression.ReleaseCowReferences(this);
 

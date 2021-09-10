@@ -177,7 +177,13 @@ namespace UdonSharp.Localization
 
         static Loc()
         {
-            ReloadLocalization();
+            InitLocalization();
+        }
+
+        public static void InitLocalization()
+        {
+            if (instance == null)
+                ReloadLocalization();
         }
 
         internal static void ReloadLocalization()

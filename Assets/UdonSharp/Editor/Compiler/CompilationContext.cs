@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading;
 using System.Threading.Tasks;
 using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Binder;
@@ -85,6 +86,10 @@ namespace UdonSharp.Compiler
         public CompilePhase CurrentPhase { get; set; }
         
         public float PhaseProgress { get; set; }
+
+        private int _errorCount;
+
+        public int ErrorCount => _errorCount;
         
         public CSharpCompilation RoslynCompilation { get; set; }
 
@@ -156,12 +161,18 @@ namespace UdonSharp.Compiler
 
         public void AddDiagnostic(DiagnosticSeverity severity, SyntaxNode node, string message)
         {
-            Diagnostics.Add(new CompileDiagnostic(severity, node.GetLocation(), message));
+            Diagnostics.Add(new CompileDiagnostic(severity, node?.GetLocation(), message));
+
+            if (severity == DiagnosticSeverity.Error)
+                Interlocked.Increment(ref _errorCount);
         }
         
         public void AddDiagnostic(DiagnosticSeverity severity, Location location, string message)
         {
             Diagnostics.Add(new CompileDiagnostic(severity, location, message));
+            
+            if (severity == DiagnosticSeverity.Error)
+                Interlocked.Increment(ref _errorCount);
         }
 
         public ModuleBinding[] LoadSyntaxTreesAndCreateModules(IEnumerable<string> sourcePaths, string[] scriptingDefines)

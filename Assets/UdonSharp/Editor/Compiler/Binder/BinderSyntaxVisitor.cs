@@ -29,6 +29,7 @@ namespace UdonSharp.Compiler.Binder
 
         private void UpdateSyntaxNode(SyntaxNode node)
         {
+            Context.CurrentNode = node;
         }
 
         public override BoundNode Visit(SyntaxNode node)

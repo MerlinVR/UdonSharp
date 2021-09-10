@@ -1,7 +1,6 @@
 ﻿
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Symbols;
 
@@ -16,7 +15,7 @@ namespace UdonSharp.Compiler.Binder
 
         private Symbol _currentBindSymbol;
         private HashSet<Symbol> _currentReferencedSymbols;
-
+        
         public BindContext(CompilationContext context, ITypeSymbol bindSymbol)
         :base(context)
         {

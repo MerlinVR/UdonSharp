@@ -14,6 +14,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.Text;
 using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Emit;
@@ -76,6 +77,40 @@ namespace UdonSharp.Compiler
                 UdonSharpUtils.ShowAsyncProgressBar("U#: " + currentPhase, totalProgress);
                 return;
             }
+
+            foreach (var diagnostic in CurrentJob.Context.Diagnostics)
+            {
+                string filePath = TranslateLocationToFileName(diagnostic.Location, CurrentJob.Context);
+                LinePosition? linePosition = diagnostic.Location?.GetLineSpan().StartLinePosition;
+
+                int line = (linePosition?.Line ?? 0) + 1;
+                int character = (linePosition?.Character ?? 0) + 1;
+                
+                string fileStr = $"{filePath ?? "Unknown File"}({line},{character})";
+
+                string logStr = $"{fileStr}: {diagnostic.Message}";
+
+                switch (diagnostic.Severity)
+                {
+                    case DiagnosticSeverity.Error:
+                        UdonSharpUtils.LogBuildError(diagnostic.Message, filePath, line, character);
+                        break;
+                    case DiagnosticSeverity.Warning:
+                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] {logStr}");
+                        break;
+                    case DiagnosticSeverity.Log:
+                        Debug.Log($"[<color=#0c824c>UdonSharp</color>] {logStr}");
+                        break;
+                }
+            }
+
+            if (CurrentJob.Context.ErrorCount > 0)
+            {
+                // Debug.LogError($"[<color=#FF00FF>UdonSharp</color>] Compile Failed!");
+                
+                CleanupCompile();
+                return;
+            }
                 
             foreach (ModuleBinding rootBinding in CurrentJob.Context.ModuleBindings)
             {
@@ -93,11 +128,7 @@ namespace UdonSharp.Compiler
             
             Debug.Log($"[<color=#0c824c>UdonSharp</color>] Compile of {CurrentJob.Context.ModuleBindings.Length} scripts finished in {CurrentJob.CompileTimer.Elapsed:mm\\:ss\\.fff}");
             
-            UdonSharpUtils.ClearAsyncProgressBar();
-            
-            EditorApplication.UnlockReloadAssemblies();
-
-            CurrentJob = null;
+            CleanupCompile();
         }
 
         private static void WaitForCompile()
@@ -110,9 +141,33 @@ namespace UdonSharp.Compiler
             TickCompile();
         }
 
+        private static void CleanupCompile()
+        {
+            UdonSharpUtils.ClearAsyncProgressBar();
+            
+            EditorApplication.UnlockReloadAssemblies();
+
+            CurrentJob = null;
+        }
+
         private static void PrintStageTime(string stageName, Stopwatch stopwatch)
         {
             // Debug.Log($"{stageName}: {stopwatch.Elapsed.TotalSeconds * 1000.0}ms");
+        }
+
+        private static string TranslateLocationToFileName(Location location, CompilationContext context)
+        {
+            if (location == null) return null;
+            
+            SyntaxTree locationSyntaxTree = location.SourceTree;
+
+            if (locationSyntaxTree == null) return null;
+
+            ModuleBinding binding = context.ModuleBindings.FirstOrDefault(e => e.tree == locationSyntaxTree);
+
+            if (binding == null) return null;
+
+            return binding.filePath;
         }
 
         public static void CompileSync()
@@ -128,6 +183,7 @@ namespace UdonSharp.Compiler
             
             EditorApplication.LockReloadAssemblies();
             
+            Localization.Loc.InitLocalization();
             var allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
             
             var rootProgramLookup = new Dictionary<string, UdonSharpProgramAsset>();
@@ -157,20 +213,17 @@ namespace UdonSharp.Compiler
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.Setup;
             var syntaxTrees = compilationContext.LoadSyntaxTreesAndCreateModules(allSourcePaths, scriptingDefines);
 
-            int treeErrors = 0;
-
             foreach (ModuleBinding binding in syntaxTrees)
             {
                 foreach (var diag in binding.tree.GetDiagnostics())
                 {
                     if (diag.Severity != Microsoft.CodeAnalysis.DiagnosticSeverity.Error) continue;
                     
-                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, diag.Location, diag.GetMessage());
-                    treeErrors++;
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, diag.Location, $"{diag.Severity.ToString().ToLower()} {diag.Id}: {diag.GetMessage()}");
                 }
             }
 
-            if (treeErrors > 0)
+            if (compilationContext.ErrorCount > 0)
                 return;
 
             List<ModuleBinding> rootTrees = new List<ModuleBinding>();
@@ -198,8 +251,6 @@ namespace UdonSharp.Compiler
             PrintStageTime("Roslyn Compile", roslynCompileTimer);
 
             compilationContext.RoslynCompilation = compilation;
-            
-            int compileErrors = 0;
 
             byte[] builtAssembly = null;
             
@@ -214,12 +265,11 @@ namespace UdonSharp.Compiler
                 }
                 else
                 {
-                    foreach (Diagnostic diagnostic in emitResult.Diagnostics)
+                    foreach (Diagnostic diag in emitResult.Diagnostics)
                     {
-                        if (diagnostic.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error)
+                        if (diag.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error)
                         {
-                            Debug.LogError(diagnostic);
-                            compileErrors++;
+                            compilationContext.AddDiagnostic(DiagnosticSeverity.Error, diag.Location, $"{diag.Severity.ToString().ToLower()} {diag.Id}: {diag.GetMessage()}");
                         }
                     }
                 }
@@ -227,7 +277,7 @@ namespace UdonSharp.Compiler
             
             PrintStageTime("Roslyn Emit", roslynEmitTimer);
 
-            if (compileErrors > 0)
+            if (compilationContext.ErrorCount > 0)
                 return;
 
             foreach (var tree in syntaxTrees)
@@ -255,9 +305,13 @@ namespace UdonSharp.Compiler
 
             BindAllPrograms(rootTypes, compilationContext);
 
+            if (compilationContext.ErrorCount > 0) return;
+
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.Emit;
             
             EmitAllPrograms(rootTypes, compilationContext);
+            
+            if (compilationContext.ErrorCount > 0) return;
             
             System.Reflection.Assembly assembly; 
 
@@ -390,8 +444,20 @@ namespace UdonSharp.Compiler
         #else
             Parallel.ForEach(bindings, new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM},rootTypeSymbol =>
             {
+                if (compilationContext.ErrorCount > 0)
+                    return;
+                
                 BindContext bindContext = new BindContext(compilationContext, rootTypeSymbol.Item1);
-                bindContext.Bind();
+                
+                try
+                {
+                    bindContext.Bind();
+                }
+                catch (Exception e)
+                {
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, bindContext.CurrentNode, e.ToString());
+                    return;
+                }
 
                 rootTypeSymbol.Item2.binding = bindContext;
 
@@ -428,9 +494,20 @@ namespace UdonSharp.Compiler
             #else
                 Parallel.ForEach(symbolsToBind.Where(e => !e.IsBound), new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM}, typeSymbol =>
                 {
+                    if (compilationContext.ErrorCount > 0)
+                        return;
+                    
                     BindContext bindContext = new BindContext(compilationContext, typeSymbol.RoslynSymbol);
-
-                    bindContext.Bind();
+                    
+                    try
+                    {
+                        bindContext.Bind();
+                    }
+                    catch (Exception e)
+                    {
+                        compilationContext.AddDiagnostic(DiagnosticSeverity.Error, bindContext.CurrentNode, e.ToString());
+                        return;
+                    }
                     
                     var referencedSymbols = typeSymbol.CollectReferencedUnboundTypes(bindContext).ToArray();
 
@@ -461,6 +538,9 @@ namespace UdonSharp.Compiler
             Parallel.ForEach(bindings, new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM}, binding => 
         #endif
             {
+                if (compilationContext.ErrorCount > 0)
+                    return;
+                
                 INamedTypeSymbol rootTypeSymbol = binding.Item1;
                 ModuleBinding moduleBinding = binding.Item2;
                 AssemblyModule assemblyModule = new AssemblyModule(compilationContext);
@@ -474,8 +554,16 @@ namespace UdonSharp.Compiler
                     moduleEmitContext.GetTypeSymbol(SpecialType.System_Int64), UdonSharpInternalUtility.GetTypeID(typeName));
                 moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeNameHeapKey,
                     moduleEmitContext.GetTypeSymbol(SpecialType.System_String), typeName);
-                
-                moduleEmitContext.Emit();
+
+                try
+                {
+                    moduleEmitContext.Emit();
+                }
+                catch (Exception e)
+                {
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, moduleEmitContext.CurrentNode, e.ToString());
+                    return;
+                }
 
                 Dictionary<string, FieldDefinition> fieldDefinitions = new Dictionary<string, FieldDefinition>();
 

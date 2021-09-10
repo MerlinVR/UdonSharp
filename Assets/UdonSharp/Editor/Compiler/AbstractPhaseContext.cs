@@ -10,6 +10,7 @@ namespace UdonSharp.Compiler
     internal abstract class AbstractPhaseContext
     {
         public CompilationContext CompileContext { get; }
+        public SyntaxNode CurrentNode { get; set; }
 
         protected AbstractPhaseContext(CompilationContext compileContext)
         {
