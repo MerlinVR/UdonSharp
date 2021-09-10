@@ -46,6 +46,14 @@ namespace UdonSharp.Compiler
         static UdonSharpCompilerV1()
         {
             EditorApplication.update += EditorUpdate;
+            EditorApplication.playModeStateChanged += OnPlayStateChanged;
+        }
+
+        private static void OnPlayStateChanged(PlayModeStateChange stateChange)
+        {
+            if (stateChange == PlayModeStateChange.ExitingEditMode || 
+                stateChange == PlayModeStateChange.ExitingPlayMode)
+                WaitForCompile();
         }
 
         private static void EditorUpdate()
@@ -86,8 +94,20 @@ namespace UdonSharp.Compiler
             Debug.Log($"[<color=#0c824c>UdonSharp</color>] Compile of {CurrentJob.Context.ModuleBindings.Length} scripts finished in {CurrentJob.CompileTimer.Elapsed:mm\\:ss\\.fff}");
             
             UdonSharpUtils.ClearAsyncProgressBar();
+            
+            EditorApplication.UnlockReloadAssemblies();
 
             CurrentJob = null;
+        }
+
+        private static void WaitForCompile()
+        {
+            if (CurrentJob == null) return;
+            
+            if (!CurrentJob.Task.IsCompleted)
+                CurrentJob.Task.Wait();
+            
+            TickCompile();
         }
 
         private static void PrintStageTime(string stageName, Stopwatch stopwatch)
@@ -95,10 +115,18 @@ namespace UdonSharp.Compiler
             // Debug.Log($"{stageName}: {stopwatch.Elapsed.TotalSeconds * 1000.0}ms");
         }
 
+        public static void CompileSync()
+        {
+            Compile();
+            WaitForCompile();
+        }
+
         public static void Compile()
         {
             if (CurrentJob != null)
                 return;
+            
+            EditorApplication.LockReloadAssemblies();
             
             var allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
             

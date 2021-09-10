@@ -74,7 +74,7 @@ namespace UdonSharp.Compiler
             /// <summary>
             /// Linking behaviours to the UdonSharpRuntime manager object in the current scene
             /// </summary>
-            SceneLink,
+            // SceneLink,
             /// <summary>
             /// Validating that behaviours in the current scene are in a correct state
             /// </summary>
@@ -115,8 +115,6 @@ namespace UdonSharp.Compiler
 
         public TypeSymbol GetTypeSymbol(Type systemType, AbstractPhaseContext context)
         {
-            ITypeSymbol typeSymbol;
-
             int arrayDepth = 0;
             while (systemType.IsArray)
             {
@@ -124,7 +122,7 @@ namespace UdonSharp.Compiler
                 systemType = systemType.GetElementType();
             }
             
-            typeSymbol = RoslynCompilation.GetTypeByMetadataName(systemType.FullName);
+            ITypeSymbol typeSymbol = RoslynCompilation.GetTypeByMetadataName(systemType.FullName);
 
             for (int i = 0; i < arrayDepth; ++i)
                 typeSymbol = RoslynCompilation.CreateArrayTypeSymbol(typeSymbol, 1);
@@ -205,7 +203,7 @@ namespace UdonSharp.Compiler
 
         private class TypeLayout
         {
-            public ImmutableDictionary<MethodSymbol, MethodExportLayout> MethodLayouts { get; }
+            private ImmutableDictionary<MethodSymbol, MethodExportLayout> MethodLayouts { get; }
             public ImmutableDictionary<string, int> SymbolCounters { get; }
 
             public TypeLayout(Dictionary<MethodSymbol, MethodExportLayout> methodLayouts, Dictionary<string, int> symbolCounters)
