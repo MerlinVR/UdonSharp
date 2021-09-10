@@ -27,21 +27,64 @@ using Debug = UnityEngine.Debug;
 
 namespace UdonSharp.Compiler
 {
+    [InitializeOnLoad]
     public class UdonSharpCompilerV1
     {
         private static int _assemblyCounter;
         private const int MAX_PARALLELISM = 6;
 
-        private static void PrintStageTime(string stageName, Stopwatch stopwatch)
+        private class CompileJob
         {
-            // Debug.Log($"{stageName}: {stopwatch.Elapsed.TotalSeconds * 1000.0}ms");
+            public Task Task { get; set; }
+            public CompilationContext Context { get; set; }
+            public Stopwatch CompileTimer { get; set; }
+        }
+        
+        private static CompileJob CurrentJob { get; set; }
+
+        static UdonSharpCompilerV1()
+        {
+            EditorApplication.update += EditorUpdate;
         }
 
-        public void Compile(string filePath)
+        private static void EditorUpdate()
         {
-            Stopwatch timer = new Stopwatch();
-            timer.Start();
+            TickCompile();
+        }
 
+        private static void TickCompile()
+        {
+            if (CurrentJob == null || !CurrentJob.Task.IsCompleted) return;
+                
+            foreach (ModuleBinding rootBinding in CurrentJob.Context.ModuleBindings)
+            {
+                if (rootBinding.programAsset == null) 
+                    continue;
+                
+                rootBinding.programAsset.ApplyProgram();
+                
+                UdonSharpEditorCache.Instance.SetUASMStr(rootBinding.programAsset, rootBinding.assembly);
+                UdonSharpEditorCache.Instance.UpdateSourceHash(rootBinding.programAsset, rootBinding.sourceText);
+                EditorUtility.SetDirty(rootBinding.programAsset);
+            }
+            
+            UdonSharpEditorManager.RunPostBuildSceneFixup();
+            
+            Debug.Log($"[<color=#0c824c>UdonSharp</color>] Compile of {CurrentJob.Context.ModuleBindings.Length} scripts finished in {CurrentJob.CompileTimer.Elapsed:mm\\:ss\\.fff}");
+
+            CurrentJob = null;
+        }
+
+        private static void PrintStageTime(string stageName, Stopwatch stopwatch)
+        {
+            Debug.Log($"{stageName}: {stopwatch.Elapsed.TotalSeconds * 1000.0}ms");
+        }
+
+        public static void Compile()
+        {
+            if (CurrentJob != null)
+                return;
+            
             var allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
             
             var rootProgramLookup = new Dictionary<string, UdonSharpProgramAsset>();
@@ -54,10 +97,22 @@ namespace UdonSharp.Compiler
             // var allSourcePaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Where(e => e.isV1Root).Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
             HashSet<string> allSourcePaths = new HashSet<string>(GetAllFilteredSourcePaths());
 
-            if (filePath != null)
-                allSourcePaths = new HashSet<string>(new [] {filePath});
+            CompilationContext compilationContext = new CompilationContext();
+            string[] defines = UdonSharpUtils.GetProjectDefines(true);
+            
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
 
-            var syntaxTrees = LoadSyntaxTrees(allSourcePaths);
+            var compileTask = new Task(() => Compile(compilationContext, rootProgramLookup, allSourcePaths, defines));
+            
+            compileTask.Start();
+
+            CurrentJob = new CompileJob() {Context = compilationContext, Task = compileTask, CompileTimer = timer};
+        }
+
+        private static void Compile(CompilationContext compilationContext, Dictionary<string, UdonSharpProgramAsset> rootProgramLookup, IEnumerable<string> allSourcePaths, string[] scriptingDefines)
+        {
+            var syntaxTrees = compilationContext.LoadSyntaxTreesAndCreateModules(allSourcePaths, scriptingDefines);
 
             int treeErrors = 0;
 
@@ -65,11 +120,10 @@ namespace UdonSharp.Compiler
             {
                 foreach (var diag in binding.tree.GetDiagnostics())
                 {
-                    if (diag.Severity == DiagnosticSeverity.Error)
-                    {
-                        Debug.LogError(diag);
-                        treeErrors++;
-                    }
+                    if (diag.Severity != Microsoft.CodeAnalysis.DiagnosticSeverity.Error) continue;
+                    
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, diag.Location, diag.GetMessage());
+                    treeErrors++;
                 }
             }
 
@@ -77,7 +131,6 @@ namespace UdonSharp.Compiler
                 return;
 
             List<ModuleBinding> rootTrees = new List<ModuleBinding>();
-            Dictionary<SyntaxTree, ModuleBinding> bindingLookup = new Dictionary<SyntaxTree, ModuleBinding>();
             
             foreach (ModuleBinding treeBinding in syntaxTrees)
             {
@@ -86,8 +139,6 @@ namespace UdonSharp.Compiler
                     rootTrees.Add(treeBinding);
                     treeBinding.programAsset = rootProgramLookup[treeBinding.filePath];
                 }
-
-                bindingLookup.Add(treeBinding.tree, treeBinding);
             }
             
             Stopwatch roslynCompileTimer = Stopwatch.StartNew();
@@ -100,6 +151,8 @@ namespace UdonSharp.Compiler
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
             PrintStageTime("Roslyn Compile", roslynCompileTimer);
+
+            compilationContext.RoslynCompilation = compilation;
             
             int compileErrors = 0;
 
@@ -118,7 +171,7 @@ namespace UdonSharp.Compiler
                 {
                     foreach (Diagnostic diagnostic in emitResult.Diagnostics)
                     {
-                        if (diagnostic.Severity == DiagnosticSeverity.Error)
+                        if (diagnostic.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error)
                         {
                             Debug.LogError(diagnostic);
                             compileErrors++;
@@ -156,8 +209,6 @@ namespace UdonSharp.Compiler
             foreach (var pair in rootUdonSharpTypes)
                 moduleLookup.Add(pair.Item1, pair.Item2);
 
-            CompilationContext compilationContext = new CompilationContext(compilation);
-
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.Bind;
 
             BindAllPrograms(rootUdonSharpTypes, compilationContext);
@@ -171,26 +222,13 @@ namespace UdonSharp.Compiler
             using (new UdonSharpUtils.UdonSharpAssemblyLoadStripScope())
                 assembly = System.Reflection.Assembly.Load(builtAssembly);
 
-            UdonSharpEditorManager.ConstructorWarningsDisabled = true;
-
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.Assemble;
+
+            UdonSharpEditorManager.ConstructorWarningsDisabled = true;
             
             AssembleAllPrograms(rootUdonSharpTypes, assembly);
             
             UdonSharpEditorManager.ConstructorWarningsDisabled = false;
-
-            foreach ((_, ModuleBinding rootBinding) in rootUdonSharpTypes)
-            {
-                rootBinding.programAsset.ApplyProgram();
-                
-                UdonSharpEditorCache.Instance.SetUASMStr(rootBinding.programAsset, rootBinding.assembly);
-                UdonSharpEditorCache.Instance.UpdateSourceHash(rootBinding.programAsset, rootBinding.sourceText);
-                EditorUtility.SetDirty(rootBinding.programAsset);
-            }
-            
-            UdonSharpEditorManager.RunPostBuildSceneFixup();
-            
-            Debug.Log($"[<color=#0c824c>UdonSharp</color>] Compile of {rootUdonSharpTypes.Count} scripts finished in {timer.Elapsed:mm\\:ss\\.fff}");
         }
 
         private static IEnumerable<string> GetAllFilteredSourcePaths()
@@ -214,41 +252,6 @@ namespace UdonSharp.Compiler
             }
 
             return filteredPaths;
-        }
-
-        private class ModuleBinding
-        {
-            public SyntaxTree tree;
-            public string filePath;
-            public string sourceText;
-            public SemanticModel semanticModel; // Populated after Roslyn compile
-            public AssemblyModule assemblyModule;
-            public UdonSharpProgramAsset programAsset;
-            public BindContext binding;
-            public string assembly;
-        }
-
-        private static IEnumerable<ModuleBinding> LoadSyntaxTrees(IEnumerable<string> sourcePaths)
-        {
-            Stopwatch loadTimer = Stopwatch.StartNew();
-            
-            ConcurrentBag<ModuleBinding> syntaxTrees = new ConcurrentBag<ModuleBinding>();
-
-            bool isEditorBuild = true;
-            string[] defines = UdonSharpUtils.GetProjectDefines(isEditorBuild);
-
-            Parallel.ForEach(sourcePaths, new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM}, (currentSource) =>
-            {
-                string programSource = UdonSharpUtils.ReadFileTextSync(currentSource);
-
-                var programSyntaxTree = CSharpSyntaxTree.ParseText(programSource, CSharpParseOptions.Default.WithDocumentationMode(DocumentationMode.None).WithPreprocessorSymbols(defines).WithLanguageVersion(LanguageVersion.CSharp7_3));
-
-                syntaxTrees.Add(new ModuleBinding() { tree = programSyntaxTree, filePath = currentSource, sourceText = programSource });
-            });
-
-            PrintStageTime("Parse AST", loadTimer);
-
-            return syntaxTrees;
         }
 
         private static List<UdonSharpAssemblyDefinition> _udonSharpAssemblies;

@@ -103,15 +103,14 @@ namespace UdonSharp.Compiler
         {
             try
             {
-                EditorUtility.DisplayProgressBar("UdonSharp Compile", "Compiling...", 1f);
-            
-                UdonSharpCompilerV1 compilerV1 = new UdonSharpCompilerV1();
+                // EditorUtility.DisplayProgressBar("UdonSharp Compile", "Compiling...", 1f);
 
-                string filePath = null;
+                // string filePath = null;
 
-                if (modules.Length == 1)
-                    filePath = AssetDatabase.GetAssetPath(modules[0].programAsset.sourceCsScript);
-                compilerV1.Compile(filePath);
+                // if (modules.Length == 1)
+                //     filePath = AssetDatabase.GetAssetPath(modules[0].programAsset.sourceCsScript);
+                
+                UdonSharpCompilerV1.Compile();
             }
             catch (System.Exception e)
             {
@@ -196,7 +195,7 @@ namespace UdonSharp.Compiler
                 {
                     foreach (Diagnostic diagnostic in syntaxTree.Item2.GetDiagnostics())
                     {
-                        if (diagnostic.Severity == DiagnosticSeverity.Error)
+                        if (diagnostic.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error)
                         {
                             totalErrorCount++;
 
@@ -704,7 +703,7 @@ namespace UdonSharp.Compiler
                     bool error = false;
                     foreach (Diagnostic diagnostic in result.Diagnostics)
                     {
-                        if (diagnostic.Severity == DiagnosticSeverity.Error)
+                        if (diagnostic.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error)
                         {
                             Debug.LogError(diagnostic);
                             error = true;

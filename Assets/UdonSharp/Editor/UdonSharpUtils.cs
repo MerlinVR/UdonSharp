@@ -614,7 +614,7 @@ namespace UdonSharp
 
             string fileText = "";
 
-            System.DateTime startTime = System.DateTime.Now;
+            DateTime startTime = DateTime.Now;
 
             while (true)
             {
@@ -631,15 +631,15 @@ namespace UdonSharp
 
                     if (e is System.IO.FileNotFoundException ||
                         e is System.IO.DirectoryNotFoundException)
-                        throw e;
+                        throw;
                 }
 
                 if (sourceLoaded)
                     break;
-                else
-                    System.Threading.Thread.Sleep(20);
                 
-                System.TimeSpan timeFromStart = System.DateTime.Now - startTime;
+                System.Threading.Thread.Sleep(20);
+
+                TimeSpan timeFromStart = DateTime.Now - startTime;
 
                 if (timeFromStart.TotalSeconds > timeoutSeconds)
                 {

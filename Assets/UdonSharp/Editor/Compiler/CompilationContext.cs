@@ -5,14 +5,49 @@ using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading.Tasks;
+using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Symbols;
 using UdonSharp.Compiler.Udon;
 
 namespace UdonSharp.Compiler
 {
+    internal enum DiagnosticSeverity
+    {
+        Log,
+        Warning,
+        Error,
+    }
+    
+    internal class ModuleBinding
+    {
+        public SyntaxTree tree;
+        public string filePath;
+        public string sourceText;
+        public SemanticModel semanticModel; // Populated after Roslyn compile
+        public AssemblyModule assemblyModule;
+        public UdonSharpProgramAsset programAsset;
+        public BindContext binding;
+        public string assembly;
+    }
+    
     internal class CompilationContext
     {
+        internal class CompileDiagnostic
+        {
+            public DiagnosticSeverity Severity { get; }
+            public Location Location { get; }
+            public string Message { get; }
+
+            public CompileDiagnostic(DiagnosticSeverity severity, Location location, string message)
+            {
+                Severity = severity;
+                Location = location;
+                Message = message;
+            }
+        }
+        
         /// <summary>
         /// High level phase of the compiler
         /// </summary>
@@ -45,13 +80,12 @@ namespace UdonSharp.Compiler
         }
         
         public CompilePhase CurrentPhase { get; set; }
-
-        public CompilationContext(CSharpCompilation compilation)
-        {
-            RoslynCompilation = compilation;
-        }
         
-        public CSharpCompilation RoslynCompilation { get; }
+        public CSharpCompilation RoslynCompilation { get; set; }
+
+        public ConcurrentBag<CompileDiagnostic> Diagnostics { get; } = new ConcurrentBag<CompileDiagnostic>();
+        
+        public ModuleBinding[] ModuleBindings { get; private set; }
         
         private ConcurrentDictionary<ITypeSymbol, TypeSymbol> _typeSymbolLookup = new ConcurrentDictionary<ITypeSymbol, TypeSymbol>();
 
@@ -115,6 +149,34 @@ namespace UdonSharp.Compiler
         public SemanticModel GetSemanticModel(SyntaxTree modelTree)
         {
             return RoslynCompilation.GetSemanticModel(modelTree);
+        }
+
+        public void AddDiagnostic(DiagnosticSeverity severity, SyntaxNode node, string message)
+        {
+            Diagnostics.Add(new CompileDiagnostic(severity, node.GetLocation(), message));
+        }
+        
+        public void AddDiagnostic(DiagnosticSeverity severity, Location location, string message)
+        {
+            Diagnostics.Add(new CompileDiagnostic(severity, location, message));
+        }
+
+        public IEnumerable<ModuleBinding> LoadSyntaxTreesAndCreateModules(IEnumerable<string> sourcePaths, string[] scriptingDefines)
+        {
+            ConcurrentBag<ModuleBinding> syntaxTrees = new ConcurrentBag<ModuleBinding>();
+
+            Parallel.ForEach(sourcePaths, (currentSource) =>
+            {
+                string programSource = UdonSharpUtils.ReadFileTextSync(currentSource);
+
+                var programSyntaxTree = CSharpSyntaxTree.ParseText(programSource, CSharpParseOptions.Default.WithDocumentationMode(DocumentationMode.None).WithPreprocessorSymbols(scriptingDefines).WithLanguageVersion(LanguageVersion.CSharp7_3));
+
+                syntaxTrees.Add(new ModuleBinding() { tree = programSyntaxTree, filePath = currentSource, sourceText = programSource });
+            });
+            
+            ModuleBindings = syntaxTrees.ToArray();
+            
+            return ModuleBindings;
         }
 
         public class MethodExportLayout
