@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -54,7 +55,19 @@ namespace UdonSharp.Compiler
 
         private static void TickCompile()
         {
-            if (CurrentJob == null || !CurrentJob.Task.IsCompleted) return;
+            if (CurrentJob == null) return;
+            
+            if (!CurrentJob.Task.IsCompleted)
+            {
+                var currentPhase = CurrentJob.Context.CurrentPhase;
+                float phaseProgress = CurrentJob.Context.PhaseProgress;
+
+                float totalProgress = (phaseProgress / (int) CompilationContext.CompilePhase.Count) +
+                                      ((int) currentPhase / (float)(int)CompilationContext.CompilePhase.Count);
+                
+                UdonSharpUtils.ShowAsyncProgressBar("U#: " + currentPhase, totalProgress);
+                return;
+            }
                 
             foreach (ModuleBinding rootBinding in CurrentJob.Context.ModuleBindings)
             {
@@ -71,13 +84,15 @@ namespace UdonSharp.Compiler
             UdonSharpEditorManager.RunPostBuildSceneFixup();
             
             Debug.Log($"[<color=#0c824c>UdonSharp</color>] Compile of {CurrentJob.Context.ModuleBindings.Length} scripts finished in {CurrentJob.CompileTimer.Elapsed:mm\\:ss\\.fff}");
+            
+            UdonSharpUtils.ClearAsyncProgressBar();
 
             CurrentJob = null;
         }
 
         private static void PrintStageTime(string stageName, Stopwatch stopwatch)
         {
-            Debug.Log($"{stageName}: {stopwatch.Elapsed.TotalSeconds * 1000.0}ms");
+            // Debug.Log($"{stageName}: {stopwatch.Elapsed.TotalSeconds * 1000.0}ms");
         }
 
         public static void Compile()
@@ -104,14 +119,14 @@ namespace UdonSharp.Compiler
             timer.Start();
 
             var compileTask = new Task(() => Compile(compilationContext, rootProgramLookup, allSourcePaths, defines));
+            CurrentJob = new CompileJob() {Context = compilationContext, Task = compileTask, CompileTimer = timer};
             
             compileTask.Start();
-
-            CurrentJob = new CompileJob() {Context = compilationContext, Task = compileTask, CompileTimer = timer};
         }
 
         private static void Compile(CompilationContext compilationContext, Dictionary<string, UdonSharpProgramAsset> rootProgramLookup, IEnumerable<string> allSourcePaths, string[] scriptingDefines)
         {
+            compilationContext.CurrentPhase = CompilationContext.CompilePhase.Setup;
             var syntaxTrees = compilationContext.LoadSyntaxTreesAndCreateModules(allSourcePaths, scriptingDefines);
 
             int treeErrors = 0;
@@ -143,6 +158,8 @@ namespace UdonSharp.Compiler
             
             Stopwatch roslynCompileTimer = Stopwatch.StartNew();
 
+            compilationContext.CurrentPhase = CompilationContext.CompilePhase.RoslynCompile;
+            
             // Run compilation for the semantic views
             CSharpCompilation compilation = CSharpCompilation.Create(
                 $"UdonSharpRoslynCompileAssembly{_assemblyCounter++}",
@@ -204,18 +221,15 @@ namespace UdonSharp.Compiler
                 }
             });
 
-            Dictionary<INamedTypeSymbol, ModuleBinding>
-                moduleLookup = new Dictionary<INamedTypeSymbol, ModuleBinding>();
-            foreach (var pair in rootUdonSharpTypes)
-                moduleLookup.Add(pair.Item1, pair.Item2);
+            (INamedTypeSymbol, ModuleBinding)[] rootTypes = rootUdonSharpTypes.ToArray();
 
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.Bind;
 
-            BindAllPrograms(rootUdonSharpTypes, compilationContext);
+            BindAllPrograms(rootTypes, compilationContext);
 
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.Emit;
             
-            EmitAllPrograms(rootUdonSharpTypes, compilationContext);
+            EmitAllPrograms(rootTypes, compilationContext);
             
             System.Reflection.Assembly assembly; 
 
@@ -226,7 +240,7 @@ namespace UdonSharp.Compiler
 
             UdonSharpEditorManager.ConstructorWarningsDisabled = true;
             
-            AssembleAllPrograms(rootUdonSharpTypes, assembly);
+            AssembleAllPrograms(rootTypes, assembly, compilationContext);
             
             UdonSharpEditorManager.ConstructorWarningsDisabled = false;
         }
@@ -325,12 +339,15 @@ namespace UdonSharp.Compiler
             return _metadataReferences;
         }
 
-        private static void BindAllPrograms(IEnumerable<(INamedTypeSymbol, ModuleBinding)> bindings, CompilationContext compilationContext)
+        private static void BindAllPrograms((INamedTypeSymbol, ModuleBinding)[] bindings, CompilationContext compilationContext)
         {
             Stopwatch bindTimer = Stopwatch.StartNew();
             
             HashSet<TypeSymbol> symbolsToBind = new HashSet<TypeSymbol>();
             object hashSetLock = new object();
+
+            int currentIterationDivisor = 2;
+            compilationContext.PhaseProgress = 0f;
 
         #if SINGLE_THREAD_BUILD
             foreach (var rootTypeSymbol in bindings)
@@ -357,12 +374,15 @@ namespace UdonSharp.Compiler
                 {
                     // ReSharper disable once AccessToModifiedClosure
                     symbolsToBind.UnionWith(referencedTypes);
+                    compilationContext.PhaseProgress += (1f / bindings.Length) / currentIterationDivisor;
                 }
             });
         #endif
             
             while (symbolsToBind.Count > 0)
             {
+                currentIterationDivisor *= 2;
+                
                 HashSet<TypeSymbol> newSymbols = new HashSet<TypeSymbol>();
                 
             #if SINGLE_THREAD_BUILD
@@ -389,6 +409,7 @@ namespace UdonSharp.Compiler
                     lock (hashSetLock)
                     {
                         newSymbols.UnionWith(referencedSymbols);
+                        compilationContext.PhaseProgress += (1f / symbolsToBind.Count) / currentIterationDivisor;
                     }
                 });
             #endif
@@ -399,9 +420,12 @@ namespace UdonSharp.Compiler
             PrintStageTime("U# Bind", bindTimer);
         }
 
-        private static void EmitAllPrograms(IEnumerable<(INamedTypeSymbol, ModuleBinding)> bindings, CompilationContext compilationContext)
+        private static void EmitAllPrograms((INamedTypeSymbol, ModuleBinding)[] bindings, CompilationContext compilationContext)
         {
             Stopwatch emitTimer = Stopwatch.StartNew();
+
+            int progressCounter = 0;
+            int bindingCount = bindings.Length;
             
         #if SINGLE_THREAD_BUILD
             foreach (var binding in bindings)
@@ -436,6 +460,9 @@ namespace UdonSharp.Compiler
                 }
 
                 moduleBinding.programAsset.fieldDefinitions = fieldDefinitions;
+
+                Interlocked.Increment(ref progressCounter);
+                compilationContext.PhaseProgress = progressCounter / (float) bindingCount;
             }
         #if !SINGLE_THREAD_BUILD
             );
@@ -444,9 +471,11 @@ namespace UdonSharp.Compiler
             PrintStageTime("U# Emit", emitTimer);
         }
 
-        private static void AssembleAllPrograms(IEnumerable<(INamedTypeSymbol, ModuleBinding)> bindings, System.Reflection.Assembly assembly)
+        private static void AssembleAllPrograms((INamedTypeSymbol, ModuleBinding)[] bindings, System.Reflection.Assembly assembly, CompilationContext context)
         {
             Stopwatch assembleTimer = Stopwatch.StartNew();
+
+            int progressCounter = 0;
             
             // #if SINGLE_THREAD_BUILD
             // #else
@@ -490,6 +519,8 @@ namespace UdonSharp.Compiler
                 }
 
                 rootBinding.assembly = generatedUasm;
+
+                context.PhaseProgress = progressCounter++ / (float) bindings.Length;
             }
             // #if !SINGLE_THREAD_BUILD
             //     );

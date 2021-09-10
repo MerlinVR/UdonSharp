@@ -53,6 +53,8 @@ namespace UdonSharp.Compiler
         /// </summary>
         public enum CompilePhase
         {
+            Setup,
+            RoslynCompile,
             /// <summary>
             /// Roslyn has run its compilation and error checking, we are now binding all symbol references and solving for dependencies.
             /// </summary>
@@ -77,9 +79,12 @@ namespace UdonSharp.Compiler
             /// Validating that behaviours in the current scene are in a correct state
             /// </summary>
             Validation,
+            Count,
         }
         
         public CompilePhase CurrentPhase { get; set; }
+        
+        public float PhaseProgress { get; set; }
         
         public CSharpCompilation RoslynCompilation { get; set; }
 
@@ -161,7 +166,7 @@ namespace UdonSharp.Compiler
             Diagnostics.Add(new CompileDiagnostic(severity, location, message));
         }
 
-        public IEnumerable<ModuleBinding> LoadSyntaxTreesAndCreateModules(IEnumerable<string> sourcePaths, string[] scriptingDefines)
+        public ModuleBinding[] LoadSyntaxTreesAndCreateModules(IEnumerable<string> sourcePaths, string[] scriptingDefines)
         {
             ConcurrentBag<ModuleBinding> syntaxTrees = new ConcurrentBag<ModuleBinding>();
 

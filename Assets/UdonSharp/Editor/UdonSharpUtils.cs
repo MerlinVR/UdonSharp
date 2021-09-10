@@ -6,6 +6,8 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using UnityEditor;
+using UnityEngine;
 using VRC.Udon;
 
 namespace UdonSharp
@@ -591,6 +593,19 @@ namespace UdonSharp
                         character });
 
             return errorMessage;
+        }
+
+        private static readonly MethodInfo _displayProgressBar = typeof(Editor).Assembly.GetTypes().FirstOrDefault(e => e.Name == "AsyncProgressBar")?.GetMethod("Display");
+        private static readonly MethodInfo _clearProgressBar = typeof(Editor).Assembly.GetTypes().FirstOrDefault(e => e.Name == "AsyncProgressBar")?.GetMethod("Clear");
+        
+        public static void ShowAsyncProgressBar(string text, float progress)
+        {
+            _displayProgressBar.Invoke(null, new object[] {text, progress});
+        }
+
+        public static void ClearAsyncProgressBar()
+        {
+            _clearProgressBar.Invoke(null, null);
         }
 
         public static string LogRuntimeError(string message, string prefix, string filePath, int line, int character)
