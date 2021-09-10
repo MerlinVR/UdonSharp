@@ -314,7 +314,7 @@ namespace UdonSharp.Compiler.Binder
         {
             TypeSymbol type = GetTypeSymbol(node.Type);
 
-            if (type != type.UdonType)
+            if (!type.IsExtern)
                 throw new NotSupportedException("Cannot use typeof on user-defined types", node.GetLocation());
 
             return new BoundConstantExpression(type.UdonType.SystemType, Context.GetTypeSymbol(typeof(Type)));
