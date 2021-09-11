@@ -238,8 +238,12 @@ namespace UdonSharp.Compiler.Emit
             }
 
             MethodLinkage currentMethodLinkage = GetMethodLinkage(_currentEmitMethod);
+
+            if (currentMethodLinkage.ReturnValue != null)
+                EmitValueAssignment(currentMethodLinkage.ReturnValue, returnExpression);
+            else
+                Emit(returnExpression);
             
-            EmitValueAssignment(currentMethodLinkage.ReturnValue, returnExpression);
             EmitReturn();
         }
 
