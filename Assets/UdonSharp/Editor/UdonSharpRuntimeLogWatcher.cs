@@ -1,13 +1,16 @@
 ﻿
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using UdonSharp.Compiler;
-using UnityEditor;
 using UdonSharp;
+using UdonSharp.Compiler;
+using UdonSharp.Lib.Internal;
+using UnityEditor;
 using UnityEngine;
 using VRC.Udon.Common.Interfaces;
+using Random = System.Random;
 
 namespace UdonSharpEditor
 {
@@ -80,7 +83,7 @@ namespace UdonSharpEditor
                 return true;
 
             scriptLookup = new Dictionary<long, (string, UdonSharpProgramAsset)>();
-            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{typeof(UdonSharpProgramAsset).Name}");
+            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}");
 
             UdonSharpEditorCache editorCache = UdonSharpEditorCache.Instance;
 
@@ -106,7 +109,7 @@ namespace UdonSharpEditor
 
                 long programID;
 
-                if (program.SymbolTable.TryGetAddressFromSymbol(programAsset.behaviourIDHeapVarName, out uint address))
+                if (program.SymbolTable.TryGetAddressFromSymbol(CompilerConstants.UsbTypeIDHeapKey, out uint address))
                     programID = program.Heap.GetHeapVariable<long>(address);
                 else
                 {
@@ -225,7 +228,7 @@ namespace UdonSharpEditor
                                                 logState.playerName = username;
 
                                                 // Use the log path as well since Build & Test can have multiple of the same display named users
-                                                System.Random random = new System.Random((username + logPath).GetHashCode());
+                                                Random random = new Random((username + logPath).GetHashCode());
 
                                                 Color randomUserColor = Color.HSVToRGB((float)random.NextDouble(), 1.00f, EditorGUIUtility.isProSkin ? 0.9f : 0.6f);
                                                 string colorStr = ColorUtility.ToHtmlStringRGB(randomUserColor);
@@ -257,7 +260,7 @@ namespace UdonSharpEditor
                                 if (newLogContent != "")
                                     modifiedFilesAndContents.Add((logPath, newLogContent));
                             }
-                            catch (System.IO.IOException)
+                            catch (IOException)
                             { }
                         }
 
@@ -422,12 +425,12 @@ namespace UdonSharpEditor
                 return;
 
             const string exceptionMessageStr = "Exception Message:";
-            const string seperatorStr = "----------------------";
+            const string separatorStr = "----------------------";
             int errorMessageStart = errorStr.IndexOf(exceptionMessageStr) + exceptionMessageStr.Length;
             if (errorMessageStart == -1)
                 return;
 
-            int errorMessageEnd = errorStr.IndexOf(seperatorStr, errorMessageStart);
+            int errorMessageEnd = errorStr.IndexOf(separatorStr, errorMessageStart);
 
             if (errorMessageEnd == -1 || errorMessageEnd < errorMessageStart)
             {
@@ -460,28 +463,26 @@ namespace UdonSharpEditor
                 programID = long.Parse(programTypeMatch.Groups["programID"].Value);
                 programName = programTypeMatch.Groups["programName"].Value;
             }
-            catch (System.Exception)
+            catch (Exception)
             {
                 return;
             }
 
-            (string, UdonSharpProgramAsset) assetInfo;
-
-            if (!scriptLookup.TryGetValue(programID, out assetInfo))
+            if (!scriptLookup.TryGetValue(programID, out var assetInfo))
                 return;
 
             if (assetInfo.Item2 == null)
                 return;
 
-            ClassDebugInfo debugInfo = UdonSharpEditorCache.Instance.GetDebugInfo(assetInfo.Item2, debugType);
+            AssemblyDebugInfo debugInfo = UdonSharpEditorCache.Instance.GetDebugInfo(assetInfo.Item2, debugType);
 
             // No debug info was built
             if (debugInfo == null)
                 return;
 
-            ClassDebugInfo.DebugLineSpan debugLineSpan = debugInfo.GetLineFromProgramCounter(programCounter);
+            debugInfo.GetPositionFromProgramCounter(programCounter, out var filePath, out var methodName, out var line, out var lineChar);
 
-            UdonSharpUtils.LogRuntimeError($"{logPrefix}\n{errorMessage}", prePrefix != null ? $"[<color=#575ff2>{prePrefix}</color>]" : "", assetInfo.Item1, debugLineSpan.line, debugLineSpan.lineChar);
+            UdonSharpUtils.LogRuntimeError($"{logPrefix}\n{errorMessage}", prePrefix != null ? $"[<color=#575ff2>{prePrefix}</color>]" : "", filePath, line, lineChar + 1);
         }
     }
 }

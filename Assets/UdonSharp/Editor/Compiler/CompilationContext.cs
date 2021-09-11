@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UdonSharp.Compiler.Assembly;
@@ -191,6 +192,21 @@ namespace UdonSharp.Compiler
             ModuleBindings = syntaxTrees.ToArray();
             
             return ModuleBindings;
+        }
+        
+        public string TranslateLocationToFileName(Location location)
+        {
+            if (location == null) return null;
+            
+            SyntaxTree locationSyntaxTree = location.SourceTree;
+
+            if (locationSyntaxTree == null) return null;
+
+            ModuleBinding binding = ModuleBindings.FirstOrDefault(e => e.tree == locationSyntaxTree);
+
+            if (binding == null) return null;
+
+            return binding.filePath;
         }
 
         public class MethodExportLayout

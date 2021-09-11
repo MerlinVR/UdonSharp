@@ -81,7 +81,7 @@ namespace UdonSharp.Compiler
 
             foreach (var diagnostic in CurrentJob.Context.Diagnostics)
             {
-                string filePath = TranslateLocationToFileName(diagnostic.Location, CurrentJob.Context);
+                string filePath = CurrentJob.Context.TranslateLocationToFileName(diagnostic.Location);
                 LinePosition? linePosition = diagnostic.Location?.GetLineSpan().StartLinePosition;
 
                 int line = (linePosition?.Line ?? 0) + 1;
@@ -160,21 +160,6 @@ namespace UdonSharp.Compiler
         private static void PrintStageTime(string stageName, Stopwatch stopwatch)
         {
             // Debug.Log($"{stageName}: {stopwatch.Elapsed.TotalSeconds * 1000.0}ms");
-        }
-
-        private static string TranslateLocationToFileName(Location location, CompilationContext context)
-        {
-            if (location == null) return null;
-            
-            SyntaxTree locationSyntaxTree = location.SourceTree;
-
-            if (locationSyntaxTree == null) return null;
-
-            ModuleBinding binding = context.ModuleBindings.FirstOrDefault(e => e.tree == locationSyntaxTree);
-
-            if (binding == null) return null;
-
-            return binding.filePath;
         }
 
         public static void CompileSync()
@@ -586,6 +571,9 @@ namespace UdonSharp.Compiler
 
                 Interlocked.Increment(ref progressCounter);
                 compilationContext.PhaseProgress = progressCounter / (float) bindingCount;
+                
+                if (moduleEmitContext.DebugInfo != null)
+                    UdonSharpEditorCache.Instance.SetDebugInfo(moduleBinding.programAsset, UdonSharpEditorCache.DebugInfoType.Editor, moduleEmitContext.DebugInfo);
             }
         #if !SINGLE_THREAD_BUILD
             );

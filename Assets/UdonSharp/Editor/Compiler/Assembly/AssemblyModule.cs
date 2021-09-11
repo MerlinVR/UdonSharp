@@ -21,6 +21,8 @@ namespace UdonSharp.Compiler.Assembly
         private List<JumpLabel> _jumpLabels = new List<JumpLabel>();
         private uint _currentAddress = 0;
 
+        public uint CurrentAddress => _currentAddress;
+
         public ValueTable RootTable { get; }
 
         public Dictionary<Symbol, ExportAddress> Exports { get; } = new Dictionary<Symbol, ExportAddress>();

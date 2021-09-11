@@ -255,7 +255,7 @@ namespace UdonSharp
 
         private const string DEBUG_INFO_PATH = "Library/UdonSharpCache/DebugInfo/";
 
-        ClassDebugInfo LoadDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType)
+        AssemblyDebugInfo LoadDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType)
         {
             if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(sourceProgram, out string guid, out long _))
             {
@@ -267,11 +267,11 @@ namespace UdonSharp
             if (!File.Exists(debugInfoPath))
                 return null;
 
-            ClassDebugInfo classDebugInfo = null;
+            AssemblyDebugInfo debugInfo;
 
             try
             {
-                classDebugInfo = SerializationUtility.DeserializeValue<ClassDebugInfo>(File.ReadAllBytes(debugInfoPath), DataFormat.Binary);
+                debugInfo = SerializationUtility.DeserializeValue<AssemblyDebugInfo>(File.ReadAllBytes(debugInfoPath), DataFormat.Binary);
             }
             catch (System.Exception e)
             {
@@ -279,10 +279,10 @@ namespace UdonSharp
                 return null;
             }
 
-            return classDebugInfo;
+            return debugInfo;
         }
 
-        void SaveDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType, ClassDebugInfo debugInfo)
+        void SaveDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType, AssemblyDebugInfo debugInfo)
         {
             if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(sourceProgram, out string guid, out long _))
             {
@@ -294,10 +294,10 @@ namespace UdonSharp
             if (!Directory.Exists(DEBUG_INFO_PATH))
                 Directory.CreateDirectory(DEBUG_INFO_PATH);
 
-            File.WriteAllBytes(debugInfoPath, SerializationUtility.SerializeValue<ClassDebugInfo>(debugInfo, DataFormat.Binary));
+            File.WriteAllBytes(debugInfoPath, SerializationUtility.SerializeValue<AssemblyDebugInfo>(debugInfo, DataFormat.Binary));
         }
 
-        Dictionary<UdonSharpProgramAsset, Dictionary<DebugInfoType, ClassDebugInfo>> _classDebugInfoLookup = new Dictionary<UdonSharpProgramAsset, Dictionary<DebugInfoType, ClassDebugInfo>>();
+        Dictionary<UdonSharpProgramAsset, Dictionary<DebugInfoType, AssemblyDebugInfo>> _classDebugInfoLookup = new Dictionary<UdonSharpProgramAsset, Dictionary<DebugInfoType, AssemblyDebugInfo>>();
 
         /// <summary>
         /// Gets the debug info for a given program asset. If debug info type for Client is specified when there is no client debug info, will fall back to Editor debug info.
@@ -306,20 +306,20 @@ namespace UdonSharp
         /// <param name="debugInfoType"></param>
         /// <returns></returns>
         [PublicAPI]
-        public ClassDebugInfo GetDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType)
+        public AssemblyDebugInfo GetDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType)
         {
             if (!_classDebugInfoLookup.TryGetValue(sourceProgram, out var debugInfo))
             {
-                debugInfo = new Dictionary<DebugInfoType, ClassDebugInfo>();
+                debugInfo = new Dictionary<DebugInfoType, AssemblyDebugInfo>();
                 _classDebugInfoLookup.Add(sourceProgram, debugInfo);
             }
 
-            if (debugInfo.TryGetValue(debugInfoType, out ClassDebugInfo info))
+            if (debugInfo.TryGetValue(debugInfoType, out AssemblyDebugInfo info))
             {
                 return info;
             }
 
-            ClassDebugInfo loadedInfo = LoadDebugInfo(sourceProgram, debugInfoType);
+            AssemblyDebugInfo loadedInfo = LoadDebugInfo(sourceProgram, debugInfoType);
             if (loadedInfo != null)
             {
                 debugInfo.Add(debugInfoType, loadedInfo);
@@ -342,10 +342,10 @@ namespace UdonSharp
             return null;
         }
 
-        HashSet<ClassDebugInfo> dirtyDebugInfos = new HashSet<ClassDebugInfo>(new ReferenceEqualityComparer<ClassDebugInfo>());
+        HashSet<AssemblyDebugInfo> dirtyDebugInfos = new HashSet<AssemblyDebugInfo>(new ReferenceEqualityComparer<AssemblyDebugInfo>());
         object setDebugInfoLock = new object();
 
-        public void SetDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType, ClassDebugInfo debugInfo)
+        public void SetDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType, AssemblyDebugInfo debugInfo)
         {
             lock (setDebugInfoLock)
             {
@@ -353,7 +353,7 @@ namespace UdonSharp
 
                 if (!_classDebugInfoLookup.TryGetValue(sourceProgram, out var debugInfos))
                 {
-                    debugInfos = new Dictionary<DebugInfoType, ClassDebugInfo>();
+                    debugInfos = new Dictionary<DebugInfoType, AssemblyDebugInfo>();
                     _classDebugInfoLookup.Add(sourceProgram, debugInfos);
                 }
 

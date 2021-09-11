@@ -41,6 +41,7 @@ namespace UdonSharp.Compiler.Emit
         private MethodSymbol _currentEmitMethod;
         
         public ImmutableArray<FieldSymbol> DeclaredFields { get; private set; }
+        public AssemblyDebugInfo DebugInfo { get; }
 
         private Dictionary<BoundExpression, Dictionary<string, Value.CowValue[]>> _expressionCowValueTracker =
             new Dictionary<BoundExpression, Dictionary<string, Value.CowValue[]>>();
@@ -52,6 +53,28 @@ namespace UdonSharp.Compiler.Emit
             EmitType = GetTypeSymbol(emitType);
             _valueTableStack.Push(module.RootTable);
             RootTable = module.RootTable;
+            DebugInfo = new AssemblyDebugInfo();
+        }
+
+        private class MethodEmitScope : IDisposable
+        {
+            private EmitContext _context;
+            private MethodSymbol _method;
+
+            public MethodEmitScope(MethodSymbol method, EmitContext context)
+            {
+                _method = method;
+                _context = context;
+                context._currentEmitMethod = method;
+                
+                context.DebugInfo.StartMethodEmit(method, _context);
+            }
+
+            public void Dispose()
+            {
+                _context.DebugInfo.FinalizeMethodEmit(_context);
+                _context._currentEmitMethod = null;
+            }
         }
 
         public void Emit()
@@ -140,10 +163,11 @@ namespace UdonSharp.Compiler.Emit
             // Do not roll this into the while loop, the order must be maintained for the root symbols so calls across behaviours work consistently
             foreach (MethodSymbol methodSymbol in rootMethods)
             {
-                _currentEmitMethod = methodSymbol;
-                methodSymbol.Emit(this);
-                _currentEmitMethod = null;
-                
+                using (new MethodEmitScope(methodSymbol, this))
+                {
+                    methodSymbol.Emit(this);
+                }
+
                 emittedSet.Add(methodSymbol);
                 
                 setToEmit.UnionWith(methodSymbol.DirectDependencies.OfType<MethodSymbol>());
@@ -175,10 +199,11 @@ namespace UdonSharp.Compiler.Emit
                                 continue;
                         }
 
-                        _currentEmitMethod = methodSymbol;
-                        methodSymbol.Emit(this);
-                        _currentEmitMethod = null;
-                        
+                        using (new MethodEmitScope(methodSymbol, this))
+                        {
+                            methodSymbol.Emit(this);
+                        }
+
                         emittedSet.Add(methodSymbol);
                         
                         newEmitSet.UnionWith(methodSymbol.DirectDependencies.OfType<MethodSymbol>());
@@ -187,6 +212,8 @@ namespace UdonSharp.Compiler.Emit
 
                 setToEmit = newEmitSet;
             }
+            
+            DebugInfo.FinalizeAssemblyInfo();
         }
 
         public Value GetReturnValue(TypeSymbol type)
@@ -738,7 +765,11 @@ namespace UdonSharp.Compiler.Emit
         private void UpdateNode(BoundNode node)
         {
             if (node.SyntaxNode != null)
+            {
                 CurrentNode = node.SyntaxNode;
+                
+                DebugInfo.UpdateSyntaxNode(node.SyntaxNode, this);
+            }
         }
 
         public void Emit(BoundNode node)
