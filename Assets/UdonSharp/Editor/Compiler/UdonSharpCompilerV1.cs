@@ -43,6 +43,7 @@ namespace UdonSharp.Compiler
         }
         
         private static CompileJob CurrentJob { get; set; }
+        private static bool _compileQueued;
 
         static UdonSharpCompilerV1()
         {
@@ -129,6 +130,12 @@ namespace UdonSharp.Compiler
             Debug.Log($"[<color=#0c824c>UdonSharp</color>] Compile of {CurrentJob.Context.ModuleBindings.Length} scripts finished in {CurrentJob.CompileTimer.Elapsed:mm\\:ss\\.fff}");
             
             CleanupCompile();
+
+            if (_compileQueued)
+            {
+                Compile();
+                _compileQueued = false;
+            }
         }
 
         private static void WaitForCompile()
@@ -179,8 +186,11 @@ namespace UdonSharp.Compiler
         public static void Compile()
         {
             if (CurrentJob != null)
+            {
+                _compileQueued = true;
                 return;
-            
+            }
+
             EditorApplication.LockReloadAssemblies();
             
             Localization.Loc.InitLocalization();
@@ -198,12 +208,9 @@ namespace UdonSharp.Compiler
 
             CompilationContext compilationContext = new CompilationContext();
             string[] defines = UdonSharpUtils.GetProjectDefines(true);
-            
-            Stopwatch timer = new Stopwatch();
-            timer.Start();
 
             var compileTask = new Task(() => Compile(compilationContext, rootProgramLookup, allSourcePaths, defines));
-            CurrentJob = new CompileJob() {Context = compilationContext, Task = compileTask, CompileTimer = timer};
+            CurrentJob = new CompileJob() {Context = compilationContext, Task = compileTask, CompileTimer = Stopwatch.StartNew()};
             
             compileTask.Start();
         }
