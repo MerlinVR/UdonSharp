@@ -1,6 +1,5 @@
 ﻿
 using Microsoft.CodeAnalysis;
-using UnityEngine;
 
 namespace UdonSharp.Compiler.Symbols
 {

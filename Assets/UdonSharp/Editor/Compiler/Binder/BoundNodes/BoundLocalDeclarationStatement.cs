@@ -1,6 +1,4 @@
 ﻿
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using UdonSharp.Compiler.Emit;
 

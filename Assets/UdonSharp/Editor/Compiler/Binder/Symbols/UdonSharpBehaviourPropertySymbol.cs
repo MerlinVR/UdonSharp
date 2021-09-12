@@ -1,11 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
-using System.Collections;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using UdonSharp.Compiler.Binder;
-using UnityEngine;
-
+﻿
+using Microsoft.CodeAnalysis;
 
 namespace UdonSharp.Compiler.Symbols
 {

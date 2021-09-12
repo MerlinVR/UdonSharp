@@ -1,5 +1,4 @@
 ﻿
-using System;
 using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Emit;

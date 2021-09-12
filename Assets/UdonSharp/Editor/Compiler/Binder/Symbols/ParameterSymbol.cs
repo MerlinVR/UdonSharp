@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Binder;
 

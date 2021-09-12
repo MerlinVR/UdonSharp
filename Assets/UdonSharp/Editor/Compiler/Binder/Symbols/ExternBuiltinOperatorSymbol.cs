@@ -2,7 +2,6 @@
 using System;
 using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Udon;
-using UnityEngine;
 
 namespace UdonSharp.Compiler.Symbols
 {

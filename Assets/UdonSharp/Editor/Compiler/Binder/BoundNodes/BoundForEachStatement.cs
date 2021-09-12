@@ -3,7 +3,6 @@ using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
-using UnityEngine;
 
 namespace UdonSharp.Compiler.Binder
 {
