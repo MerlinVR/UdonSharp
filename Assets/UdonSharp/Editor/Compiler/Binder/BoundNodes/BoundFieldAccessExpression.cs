@@ -50,7 +50,10 @@ namespace UdonSharp.Compiler.Binder
                 if (instanceValue != null)
                     return instanceValue[0];
                 
-                Value.CowValue instanceCowValue = context.EmitValueWithDeferredRelease(SourceExpression).GetCowValue(context);
+                Value.CowValue instanceCowValue;
+                
+                using (context.InterruptAssignmentScope())
+                    instanceCowValue = context.EmitValueWithDeferredRelease(SourceExpression).GetCowValue(context);
                 
                 context.RegisterCowValues(new []{instanceCowValue}, this, "propertyInstance");
 

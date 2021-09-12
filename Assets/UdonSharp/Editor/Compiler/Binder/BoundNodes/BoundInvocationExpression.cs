@@ -284,7 +284,9 @@ namespace UdonSharp.Compiler.Binder
 
             if (instanceValue == null)
             {
-                instanceValue = new[] {context.EmitValue(SourceExpression).GetCowValue(context)};
+                using (context.InterruptAssignmentScope())
+                    instanceValue = new[] {context.EmitValue(SourceExpression).GetCowValue(context)};
+                
                 context.RegisterCowValues(instanceValue, this, "instance");
             }
 
