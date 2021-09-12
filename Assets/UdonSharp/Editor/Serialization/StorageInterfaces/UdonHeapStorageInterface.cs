@@ -152,7 +152,7 @@ namespace UdonSharp.Serialization
                 return null;
             }
 
-            IValueStorage udonHeapValue = (IValueStorage)System.Activator.CreateInstance(typeof(UdonHeapValueStorage<>).MakeGenericType(fieldDefinition.fieldSymbol.symbolCsType), heap, symbolTable, elementKey);
+            IValueStorage udonHeapValue = (IValueStorage)System.Activator.CreateInstance(typeof(UdonHeapValueStorage<>).MakeGenericType(fieldDefinition.SystemType), heap, symbolTable, elementKey);
 
             heapValueRefs.Add(udonHeapValue);
 

@@ -15,8 +15,9 @@ namespace UdonSharp.Compiler
             fieldAttributes = new List<System.Attribute>();
         }
 
-        public FieldDefinition(Type userType, Type systemType, UdonSyncMode? syncMode, bool isSerialized, List<Attribute> attributes)
+        public FieldDefinition(string name, Type userType, Type systemType, UdonSyncMode? syncMode, bool isSerialized, List<Attribute> attributes)
         {
+            Name = name;
             UserType = userType;
             SystemType = systemType;
             SyncMode = syncMode;
@@ -26,6 +27,8 @@ namespace UdonSharp.Compiler
 
         public SymbolDefinition fieldSymbol;
         
+        [field: SerializeField]
+        public string Name { get; }
         [field: SerializeField]
         public System.Type UserType { get; }
         [field: SerializeField]

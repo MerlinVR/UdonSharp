@@ -116,8 +116,8 @@ namespace UdonSharp.Serialization
                 programTypeLookup = new Dictionary<string, Type>();
                 foreach (FieldDefinition def in programAsset.fieldDefinitions.Values)
                 {
-                    if (def.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public) || def.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Private))
-                        programTypeLookup.Add(def.fieldSymbol.symbolOriginalName, def.fieldSymbol.symbolCsType);
+                    // if (def.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public) || def.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Private))
+                        programTypeLookup.Add(def.Name, def.SystemType);
                 }
                 variableTypeLookup.Add(programAsset, programTypeLookup);
             }

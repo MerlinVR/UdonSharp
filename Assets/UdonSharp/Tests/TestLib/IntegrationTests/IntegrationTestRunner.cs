@@ -53,7 +53,7 @@ namespace UdonSharp.Tests
         }
     }
 
-#if !COMPILER_UDONSHARP && UNITY_EDITOR && false
+#if !COMPILER_UDONSHARP && UNITY_EDITOR
     [CustomEditor(typeof(IntegrationTestRunner))]
     public class IntegrationTestRunnerInspector : Editor
     {

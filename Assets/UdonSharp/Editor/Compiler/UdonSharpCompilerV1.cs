@@ -584,7 +584,7 @@ namespace UdonSharp.Compiler
                     if (!symbol.Type.TryGetSystemType(out var symbolSystemType))
                         Debug.LogError($"Could not get type for field {symbol.Name}");
                     
-                    fieldDefinitions.Add(symbol.Name, new FieldDefinition(symbolSystemType, symbol.Type.UdonType.SystemType, symbol.SyncMode, symbol.IsSerialized, symbol.SymbolAttributes.ToList()));
+                    fieldDefinitions.Add(symbol.Name, new FieldDefinition(symbol.Name, symbolSystemType, symbol.Type.UdonType.SystemType, symbol.SyncMode, symbol.IsSerialized, symbol.SymbolAttributes.ToList()));
                 }
 
                 moduleBinding.programAsset.fieldDefinitions = fieldDefinitions;
