@@ -66,6 +66,20 @@ namespace UdonSharp.Compiler.Binder
                 _getComponentNames.Contains(symbol.Name) &&
                 (symbol.ContainingType.UdonType.SystemType == typeof(Component) || symbol.ContainingType.UdonType.SystemType == typeof(GameObject)))
             {
+                var gameObjectType = context.GetTypeSymbol(typeof(GameObject));
+             
+                // udon-workaround: Work around the udon bug where it checks the strongbox type instead of variable type and blows up when the strong box is `object`
+                if (instanceExpression.ValueType == gameObjectType)
+                {
+                    var accessProperty = gameObjectType.GetMember<PropertySymbol>("transform", context);
+                    instanceExpression = BoundAccessExpression.BindAccess(context, node, accessProperty, instanceExpression);
+                }
+                else
+                {
+                    var accessProperty = context.GetTypeSymbol(typeof(Component)).GetMember<PropertySymbol>("transform", context);
+                    instanceExpression = BoundAccessExpression.BindAccess(context, node, accessProperty, instanceExpression);
+                }
+                
                 if (symbol.TypeArguments[0].IsUdonSharpBehaviour)
                 {
                     MethodSymbol getComponentMethodShim = context.GetTypeSymbol(typeof(GetUserComponentShim))
@@ -81,12 +95,10 @@ namespace UdonSharp.Compiler.Binder
 
                     return true;
                 }
-                else
-                {
-                    createdInvocation = new BoundGetUnityEngineComponentInvocation(context, node, symbol,
-                        instanceExpression,
-                        parameterExpressions);
-                }
+                
+                createdInvocation = new BoundGetUnityEngineComponentInvocation(context, node, symbol,
+                    instanceExpression,
+                    parameterExpressions);
 
                 return true;
             }
