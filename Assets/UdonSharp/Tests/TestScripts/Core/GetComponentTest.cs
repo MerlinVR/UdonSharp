@@ -81,13 +81,13 @@ namespace UdonSharp.Tests
             VRCStation station;
             station = (VRCStation)GetComponent(typeof(VRCStation));
 
-            //Debug.Log(getBehaviour.GetUdonTypeID());
-            //Debug.Log(getBehaviour.GetUdonTypeName());
+            // Debug.Log(getBehaviour.GetUdonTypeID());
+            // Debug.Log(getBehaviour.GetUdonTypeName());
 
-            //foreach (Component behaviour in modObject.GetComponents(typeof(UdonBehaviour)))
-            //{
-            //    Debug.Log("Component name: " + ((UdonSharpBehaviour)behaviour).GetUdonTypeName());
-            //}
+            // foreach (Component behaviour in modObject.GetComponents(typeof(UdonBehaviour)))
+            // {
+            //     Debug.Log("Component name: " + ((UdonSharpBehaviour)behaviour).GetUdonTypeName());
+            // }
         }
     }
 }

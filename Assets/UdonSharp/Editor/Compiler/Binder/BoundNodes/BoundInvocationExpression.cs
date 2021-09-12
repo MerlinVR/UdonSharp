@@ -55,7 +55,54 @@ namespace UdonSharp.Compiler.Binder
             "GetComponentInParent",
             "GetComponentsInParent",
         };
-        
+
+        private static bool TryCreateUdonSharpMetadataInvocation(AbstractPhaseContext context, SyntaxNode node,
+            MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
+            out BoundInvocationExpression createdInvocation)
+        {
+            if (symbol.Name == "GetUdonTypeID" || symbol.Name == "GetUdonTypeName")
+            {
+                if (symbol.IsStatic &&
+                    symbol.TypeArguments.Length == 1 &&
+                    symbol.ContainingType == context.GetTypeSymbol(typeof(UdonSharpBehaviour)))
+                {
+                    IConstantValue constantValue;
+                    TypeSymbol constantType;
+                    
+                    if (symbol.Name == "GetUdonTypeID")
+                    {
+                        constantValue = new ConstantValue<long>(UdonSharpInternalUtility.GetTypeID(TypeSymbol.GetFullTypeName(symbol.TypeArguments[0].RoslynSymbol)));
+                        constantType = context.GetTypeSymbol(SpecialType.System_Int64);
+                    }
+                    else
+                    {
+                        constantValue = new ConstantValue<string>(TypeSymbol.GetFullTypeName(symbol.TypeArguments[0].RoslynSymbol));
+                        constantType = context.GetTypeSymbol(SpecialType.System_String);
+                    }
+
+                    createdInvocation = new BoundConstantInvocationExpression(node, constantValue, constantType);
+
+                    return true;
+                }
+
+                if (!symbol.IsStatic &&
+                    instanceExpression != null &&
+                    symbol.ContainingType == context.GetTypeSymbol(typeof(UdonSharpBehaviour)))
+                {
+                    TypeSymbol methodContainer = context.GetTypeSymbol(typeof(UdonSharpBehaviourMethods));
+                    var shimMethod = methodContainer.GetMember<MethodSymbol>(symbol.Name, context);
+                    context.MarkSymbolReferenced(shimMethod);
+                    
+                    createdInvocation = CreateBoundInvocation(context, node, shimMethod, null, new [] {instanceExpression});
+
+                    return true;
+                }
+            }
+
+            createdInvocation = null;
+            return false;
+        }
+
         private static bool TryCreateGetComponentInvocation(AbstractPhaseContext context, SyntaxNode node,
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
             out BoundInvocationExpression createdInvocation)
@@ -176,6 +223,9 @@ namespace UdonSharp.Compiler.Binder
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
             out BoundInvocationExpression createdInvocation)
         {
+            if (TryCreateUdonSharpMetadataInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
+                return true;
+            
             if (TryCreateGetComponentInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
                 return true;
 
@@ -453,6 +503,32 @@ namespace UdonSharp.Compiler.Binder
             public override Value EmitValue(EmitContext context)
             {
                 return context.EmitSet(TargetExpression, InternalExpression);
+            }
+        }
+
+        public sealed class BoundConstantInvocationExpression : BoundInvocationExpression
+        {
+            private IConstantValue Constant { get; }
+
+            public override IConstantValue ConstantValue => Constant;
+
+            public override TypeSymbol ValueType { get; }
+
+            public BoundConstantInvocationExpression(SyntaxNode node, IConstantValue constantValue, TypeSymbol constantValType) 
+                :base(node, null, null, Array.Empty<BoundExpression>())
+            {
+                Constant = constantValue;
+                ValueType = constantValType;
+            }
+
+            public override Value EmitValue(EmitContext context)
+            {
+                Value returnVal = context.GetReturnValue(ValueType);
+
+                context.EmitValueAssignment(returnVal,
+                    BoundAccessExpression.BindAccess(context.GetConstantValue(ValueType, ConstantValue.Value)));
+
+                return returnVal;
             }
         }
     }
