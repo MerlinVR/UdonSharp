@@ -14,6 +14,10 @@ namespace UdonSharp.Lib.Internal
             UdonBehaviour[] udonBehaviours = (UdonBehaviour[])instance.GetComponents(typeof(UdonBehaviour));
             foreach (UdonBehaviour behaviour in udonBehaviours)
             {
+            #if UNITY_EDITOR
+                if (behaviour.GetProgramVariableType(CompilerConstants.UsbTypeIDHeapKey) == null)
+                    continue;
+            #endif
                 object idValue = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
                 if (idValue != null && (long) idValue == behaviourType)
                     return behaviour;
@@ -27,6 +31,10 @@ namespace UdonSharp.Lib.Internal
             UdonBehaviour[] udonBehaviours = (UdonBehaviour[])instance.GetComponentsInChildren(typeof(UdonBehaviour));
             foreach (UdonBehaviour behaviour in udonBehaviours)
             {
+            #if UNITY_EDITOR
+                if (behaviour.GetProgramVariableType(CompilerConstants.UsbTypeIDHeapKey) == null)
+                    continue;
+            #endif
                 object idValue = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
                 if (idValue != null && (long) idValue == behaviourType)
                     return behaviour;
@@ -40,6 +48,10 @@ namespace UdonSharp.Lib.Internal
             UdonBehaviour[] udonBehaviours = (UdonBehaviour[])instance.GetComponentsInChildren(typeof(UdonBehaviour), includeInactive);
             foreach (UdonBehaviour behaviour in udonBehaviours)
             {
+            #if UNITY_EDITOR
+                if (behaviour.GetProgramVariableType(CompilerConstants.UsbTypeIDHeapKey) == null)
+                    continue;
+            #endif
                 object idValue = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
                 if (idValue != null && (long) idValue == behaviourType)
                     return behaviour;
@@ -53,6 +65,10 @@ namespace UdonSharp.Lib.Internal
             UdonBehaviour[] udonBehaviours = (UdonBehaviour[])instance.GetComponentsInParent(typeof(UdonBehaviour));
             foreach (UdonBehaviour behaviour in udonBehaviours)
             {
+            #if UNITY_EDITOR
+                if (behaviour.GetProgramVariableType(CompilerConstants.UsbTypeIDHeapKey) == null)
+                    continue;
+            #endif
                 object idValue = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
                 if (idValue != null && (long) idValue == behaviourType)
                     return behaviour;
@@ -66,6 +82,10 @@ namespace UdonSharp.Lib.Internal
             UdonBehaviour[] udonBehaviours = (UdonBehaviour[])instance.GetComponentsInParent(typeof(UdonBehaviour), includeInactive);
             foreach (UdonBehaviour behaviour in udonBehaviours)
             {
+            #if UNITY_EDITOR
+                if (behaviour.GetProgramVariableType(CompilerConstants.UsbTypeIDHeapKey) == null)
+                    continue;
+            #endif
                 object idValue = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
                 if (idValue != null && (long) idValue == behaviourType)
                     return behaviour;
@@ -81,6 +101,10 @@ namespace UdonSharp.Lib.Internal
             int arraySize = 0;
             foreach (UdonBehaviour behaviour in inputArray)
             {
+            #if UNITY_EDITOR
+                if (behaviour.GetProgramVariableType(CompilerConstants.UsbTypeIDHeapKey) == null)
+                    continue;
+            #endif
                 object typeID = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
                 if (typeID != null && (long) typeID == behaviourType)
                     arraySize++;
@@ -91,6 +115,10 @@ namespace UdonSharp.Lib.Internal
             
             foreach (UdonBehaviour behaviour in inputArray)
             {
+            #if UNITY_EDITOR
+                if (behaviour.GetProgramVariableType(CompilerConstants.UsbTypeIDHeapKey) == null)
+                    continue;
+            #endif
                 object typeID = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
                 if (typeID != null && (long) typeID == behaviourType)
                     foundBehaviours[targetIdx++] = behaviour;
