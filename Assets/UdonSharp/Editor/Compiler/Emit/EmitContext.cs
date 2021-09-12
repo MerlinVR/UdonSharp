@@ -37,6 +37,7 @@ namespace UdonSharp.Compiler.Emit
         public ValueTable RootTable { get; }
 
         private Value _returnValue;
+        private Value _udonReturnValue;
 
         private MethodSymbol _currentEmitMethod;
         
@@ -267,7 +268,20 @@ namespace UdonSharp.Compiler.Emit
             MethodLinkage currentMethodLinkage = GetMethodLinkage(_currentEmitMethod);
 
             if (currentMethodLinkage.ReturnValue != null)
+            {
                 EmitValueAssignment(currentMethodLinkage.ReturnValue, returnExpression);
+
+                if (currentMethodLinkage.ReturnValue != null &&
+                    _currentEmitMethod.Name == "OnOwnershipRequest" &&
+                    !_currentEmitMethod.IsExtern && 
+                    GetMostDerivedMethod(_currentEmitMethod) == _currentEmitMethod)
+                {
+                    if (_udonReturnValue == null)
+                        _udonReturnValue = RootTable.CreateParameterValue("__returnValue", GetTypeSymbol(SpecialType.System_Object));
+                    
+                    Module.AddCopy(currentMethodLinkage.ReturnValue, _udonReturnValue);
+                }
+            }
             else
                 Emit(returnExpression);
             
