@@ -9,6 +9,7 @@ using System.Text;
 using UdonSharp.Compiler.Symbols;
 using UdonSharp.Localization;
 using UnityEngine;
+using VRC.Udon.Compiler;
 using NotSupportedException = UdonSharp.Core.NotSupportedException;
 
 namespace UdonSharp.Compiler.Binder
@@ -107,12 +108,12 @@ namespace UdonSharp.Compiler.Binder
             
             object constantValue = boundExpression.ConstantValue.Value;
             
-            if (targetSystemType == typeof(string))
-            {
-                IConstantValue constant = new ConstantValue<string>(constantValue?.ToString() ?? "");
-
-                boundExpression = new BoundConstantExpression(constant, targetType, boundExpression.SyntaxNode);
-            }
+            // if (targetSystemType == typeof(string))
+            // {
+            //     IConstantValue constant = new ConstantValue<string>(constantValue?.ToString() ?? "");
+            //
+            //     boundExpression = new BoundConstantExpression(constant, targetType, boundExpression.SyntaxNode);
+            // }
             
             var sourceSystemType = boundExpression.ValueType.UdonType.SystemType;
             
@@ -121,6 +122,15 @@ namespace UdonSharp.Compiler.Binder
             {
                 IConstantValue constant = (IConstantValue)Activator.CreateInstance(typeof(ConstantValue<>).MakeGenericType(targetSystemType), ConstantExpressionOptimizer.FoldConstantConversion(targetSystemType, constantValue));
                 boundExpression = new BoundConstantExpression(constant, targetType, boundExpression.SyntaxNode);
+
+                return true;
+            }
+
+            if (boundExpression.ValueType.IsEnum && 
+                boundExpression.ValueType.IsExtern &&
+                UdonSharpUtils.IsIntegerType(targetSystemType))
+            {
+                boundExpression = new BoundConstantExpression(ConstantExpressionOptimizer.FoldConstantConversion(targetSystemType, constantValue), targetType);
 
                 return true;
             }
@@ -653,9 +663,7 @@ namespace UdonSharp.Compiler.Binder
                    conditionInvocation.Method.ReturnType == boolTypeSymbol)
             {
                 conditionExpression = conditionInvocation.ParameterExpressions[0];
-                var oldElse = elseStatement;
-                elseStatement = bodyStatement;
-                bodyStatement = oldElse;
+                (elseStatement, bodyStatement) = (bodyStatement, elseStatement);
             }
 
             return new BoundIfStatement(node, conditionExpression, bodyStatement, elseStatement);
@@ -664,6 +672,50 @@ namespace UdonSharp.Compiler.Binder
         public override BoundNode VisitElseClause(ElseClauseSyntax node)
         {
             return Visit(node.Statement);
+        }
+
+        public override BoundNode VisitSwitchStatement(SwitchStatementSyntax node)
+        {
+            TypeSymbol switchType = GetTypeSymbol(node.Expression);
+            
+            // Convert switches over enums to ints to prevent a ton of .Equals calls and allow easy jump table optimizations for enums
+            if (switchType.IsEnum && switchType.IsExtern)
+            {
+                switchType = Context.GetTypeSymbol(((INamedTypeSymbol)switchType.RoslynSymbol).EnumUnderlyingType);
+            }
+            
+            BoundExpression switchExpression = VisitExpression(node.Expression, switchType);
+            
+            List<(List<BoundExpression>, List<BoundStatement>)> switchSectionList = new List<(List<BoundExpression>, List<BoundStatement>)>();
+
+            int defaultSection = -1;
+            
+            for (int i = 0; i < node.Sections.Count; ++i)
+            {
+                var section = node.Sections[i];
+                List<BoundExpression> boundLabels = new List<BoundExpression>();
+                foreach (SwitchLabelSyntax sectionLabel in section.Labels)
+                {
+                    if (sectionLabel is CaseSwitchLabelSyntax caseSwitchLabelSyntax)
+                    {
+                        BoundExpression labelExpression = VisitExpression(caseSwitchLabelSyntax.Value, switchType);
+                        if (!labelExpression.IsConstant)
+                            throw new CompilerException("Switch label is not a constant value");
+                        
+                        boundLabels.Add(labelExpression);
+                    }
+                    else if (sectionLabel is DefaultSwitchLabelSyntax)
+                        defaultSection = i;
+                }
+
+                List<BoundStatement> statements = new List<BoundStatement>();
+                foreach (StatementSyntax statement in section.Statements)
+                    statements.Add(VisitStatement(statement));
+                
+                switchSectionList.Add((boundLabels, statements));
+            }
+
+            return new BoundSwitchStatement(node, switchExpression, switchSectionList, defaultSection);
         }
 
         public override BoundNode VisitForStatement(ForStatementSyntax node)

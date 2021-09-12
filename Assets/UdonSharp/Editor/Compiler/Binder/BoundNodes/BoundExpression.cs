@@ -71,11 +71,21 @@ namespace UdonSharp.Compiler.Binder
 
             if (typeSymbol.IsEnum && typeSymbol.IsExtern)
                 constantValue = Enum.ToObject(targetType, constantValue);
-
-            // Type sourceType = constantValue?.GetType();
             
-            // if (!typeof(Type).IsAssignableFrom(sourceType) && sourceType != targetType)
-            //     constantValue = Convert.ChangeType(constantValue, targetType);
+            ConstantValue =
+                (IConstantValue) Activator.CreateInstance(typeof(ConstantValue<>).MakeGenericType(typeSymbol.UdonType.SystemType),
+                    constantValue);
+        }
+        
+        public BoundConstantExpression(object constantValue, TypeSymbol typeSymbol, SyntaxNode node)
+            :base(null, null)
+        {
+            ConstantType = typeSymbol;
+
+            Type targetType = typeSymbol.UdonType.SystemType;
+
+            if (typeSymbol.IsEnum && typeSymbol.IsExtern)
+                constantValue = Enum.ToObject(targetType, constantValue);
             
             ConstantValue =
                 (IConstantValue) Activator.CreateInstance(typeof(ConstantValue<>).MakeGenericType(typeSymbol.UdonType.SystemType),

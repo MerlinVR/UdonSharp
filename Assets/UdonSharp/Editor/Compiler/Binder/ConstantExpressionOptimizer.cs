@@ -370,6 +370,14 @@ namespace UdonSharp.Compiler.Binder
             if (targetType == value.GetType())
                 return value;
 
+            if (value.GetType().IsEnum && UdonSharpUtils.IsIntegerType(targetType))
+            {
+                MethodInfo enumToInt = typeof(Convert).GetMethods().First(e =>
+                    e.Name == $"To{targetType.Name}" && e.GetParameters()[0].ParameterType == typeof(object));
+
+                return enumToInt.Invoke(null, new [] { value });
+            }
+
             GetFoldingLookup().TryGetValue((value.GetType(), targetType), out var castMethod);
 
             if (castMethod != null)
