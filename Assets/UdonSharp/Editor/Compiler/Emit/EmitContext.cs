@@ -271,8 +271,7 @@ namespace UdonSharp.Compiler.Emit
             {
                 EmitValueAssignment(currentMethodLinkage.ReturnValue, returnExpression);
 
-                if (currentMethodLinkage.ReturnValue != null &&
-                    _currentEmitMethod.Name == "OnOwnershipRequest" &&
+                if (_currentEmitMethod.Name == "OnOwnershipRequest" &&
                     !_currentEmitMethod.IsExtern && 
                     GetMostDerivedMethod(_currentEmitMethod) == _currentEmitMethod)
                 {
