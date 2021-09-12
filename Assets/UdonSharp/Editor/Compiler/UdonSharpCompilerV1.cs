@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -29,6 +30,13 @@ using Debug = UnityEngine.Debug;
 
 namespace UdonSharp.Compiler
 {
+    public class UdonSharpCompileOptions
+    {
+        public bool IsEditorBuild { get; set; } = true;
+        // public bool BuildDebugInfo { get; set; } = true;
+        public bool DisableLogging { get; set; } = false;
+    }
+    
     [InitializeOnLoad]
     public class UdonSharpCompilerV1
     {
@@ -39,11 +47,13 @@ namespace UdonSharp.Compiler
         {
             public Task Task { get; set; }
             public CompilationContext Context { get; set; }
+            public UdonSharpCompileOptions CompileOptions { get; set; }
             public Stopwatch CompileTimer { get; set; }
         }
         
         private static CompileJob CurrentJob { get; set; }
         private static bool _compileQueued;
+        private static UdonSharpCompileOptions _queuedOptions;
 
         static UdonSharpCompilerV1()
         {
@@ -79,29 +89,32 @@ namespace UdonSharp.Compiler
                 return;
             }
 
-            foreach (var diagnostic in CurrentJob.Context.Diagnostics)
+            if (!CurrentJob.CompileOptions.DisableLogging)
             {
-                string filePath = CurrentJob.Context.TranslateLocationToFileName(diagnostic.Location);
-                LinePosition? linePosition = diagnostic.Location?.GetLineSpan().StartLinePosition;
-
-                int line = (linePosition?.Line ?? 0) + 1;
-                int character = (linePosition?.Character ?? 0) + 1;
-                
-                string fileStr = $"{filePath ?? "Unknown File"}({line},{character})";
-
-                string logStr = $"{fileStr}: {diagnostic.Message}";
-
-                switch (diagnostic.Severity)
+                foreach (var diagnostic in CurrentJob.Context.Diagnostics)
                 {
-                    case DiagnosticSeverity.Error:
-                        UdonSharpUtils.LogBuildError(diagnostic.Message, filePath, line, character);
-                        break;
-                    case DiagnosticSeverity.Warning:
-                        Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] {logStr}");
-                        break;
-                    case DiagnosticSeverity.Log:
-                        Debug.Log($"[<color=#0c824c>UdonSharp</color>] {logStr}");
-                        break;
+                    string filePath = CurrentJob.Context.TranslateLocationToFileName(diagnostic.Location);
+                    LinePosition? linePosition = diagnostic.Location?.GetLineSpan().StartLinePosition;
+
+                    int line = (linePosition?.Line ?? 0) + 1;
+                    int character = (linePosition?.Character ?? 0) + 1;
+
+                    string fileStr = $"{filePath ?? "Unknown File"}({line},{character})";
+
+                    string logStr = $"{fileStr}: {diagnostic.Message}";
+
+                    switch (diagnostic.Severity)
+                    {
+                        case DiagnosticSeverity.Error:
+                            UdonSharpUtils.LogBuildError(diagnostic.Message, filePath, line, character);
+                            break;
+                        case DiagnosticSeverity.Warning:
+                            Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] {logStr}");
+                            break;
+                        case DiagnosticSeverity.Log:
+                            Debug.Log($"[<color=#0c824c>UdonSharp</color>] {logStr}");
+                            break;
+                    }
                 }
             }
 
@@ -133,8 +146,9 @@ namespace UdonSharp.Compiler
 
             if (_compileQueued)
             {
-                Compile();
+                Compile(_queuedOptions);
                 _compileQueued = false;
+                _queuedOptions = null;
             }
         }
 
@@ -162,17 +176,23 @@ namespace UdonSharp.Compiler
             // Debug.Log($"{stageName}: {stopwatch.Elapsed.TotalSeconds * 1000.0}ms");
         }
 
-        public static void CompileSync()
+        [PublicAPI]
+        public static void CompileSync(UdonSharpCompileOptions options = null)
         {
-            Compile();
+            Compile(options);
             WaitForCompile();
         }
 
-        public static void Compile()
+        [PublicAPI]
+        public static void Compile(UdonSharpCompileOptions options = null)
         {
+            if (options == null)
+                options = new UdonSharpCompileOptions();
+            
             if (CurrentJob != null)
             {
                 _compileQueued = true;
+                _queuedOptions = options;
                 return;
             }
 
@@ -192,10 +212,10 @@ namespace UdonSharp.Compiler
             HashSet<string> allSourcePaths = new HashSet<string>(GetAllFilteredSourcePaths());
 
             CompilationContext compilationContext = new CompilationContext();
-            string[] defines = UdonSharpUtils.GetProjectDefines(true);
+            string[] defines = UdonSharpUtils.GetProjectDefines(options.IsEditorBuild);
 
             var compileTask = new Task(() => Compile(compilationContext, rootProgramLookup, allSourcePaths, defines));
-            CurrentJob = new CompileJob() {Context = compilationContext, Task = compileTask, CompileTimer = Stopwatch.StartNew()};
+            CurrentJob = new CompileJob() { Context = compilationContext, Task = compileTask, CompileTimer = Stopwatch.StartNew(), CompileOptions = options };
             
             compileTask.Start();
         }
@@ -573,7 +593,7 @@ namespace UdonSharp.Compiler
                 compilationContext.PhaseProgress = progressCounter / (float) bindingCount;
                 
                 if (moduleEmitContext.DebugInfo != null)
-                    UdonSharpEditorCache.Instance.SetDebugInfo(moduleBinding.programAsset, UdonSharpEditorCache.DebugInfoType.Editor, moduleEmitContext.DebugInfo);
+                    UdonSharpEditorCache.Instance.SetDebugInfo(moduleBinding.programAsset, CurrentJob.CompileOptions.IsEditorBuild ? UdonSharpEditorCache.DebugInfoType.Editor : UdonSharpEditorCache.DebugInfoType.Client, moduleEmitContext.DebugInfo);
             }
         #if !SINGLE_THREAD_BUILD
             );

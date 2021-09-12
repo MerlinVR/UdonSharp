@@ -1,4 +1,5 @@
 ﻿
+using UdonSharp.Compiler;
 using UdonSharpEditor;
 using UnityEngine;
 using VRC.SDKBase.Editor.BuildPipeline;
@@ -17,7 +18,7 @@ namespace UdonSharp
             if (UdonSharpSettings.GetSettings()?.disableUploadCompile ?? false)
                 return true;
 
-            UdonSharpProgramAsset.CompileAllCsPrograms(true, false);
+            UdonSharpCompilerV1.CompileSync(new UdonSharpCompileOptions() { IsEditorBuild = false });
             UdonSharpEditorCache.SaveAllCache();
 
             if (UdonSharpProgramAsset.AnyUdonSharpScriptHasError())

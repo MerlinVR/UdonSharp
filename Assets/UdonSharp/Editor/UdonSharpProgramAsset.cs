@@ -192,8 +192,7 @@ namespace UdonSharp
         {
             try
             {
-                UdonSharpCompiler compiler = new UdonSharpCompiler(this);
-                compiler.Compile();
+                UdonSharpCompilerV1.Compile();
             }
             catch (Exception e)
             {
@@ -229,8 +228,7 @@ namespace UdonSharp
                     return;
             }
 
-            UdonSharpCompiler compiler = new UdonSharpCompiler(programs, editorBuild);
-            compiler.Compile();
+            UdonSharpCompilerV1.Compile(new UdonSharpCompileOptions() { IsEditorBuild = editorBuild });
         }
 
         static UdonSharpProgramAsset[] _programAssetCache;

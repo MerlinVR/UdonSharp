@@ -149,8 +149,7 @@ namespace UdonSharpEditor
                     }
                     else
                     {
-                        UdonSharpCompiler compiler = new UdonSharpCompiler(assetsToUpdate.ToArray());
-                        compiler.Compile();
+                        UdonSharpCompilerV1.Compile();
                     }
                 }
             }
