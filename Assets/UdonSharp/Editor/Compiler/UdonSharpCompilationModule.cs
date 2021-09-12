@@ -177,8 +177,6 @@ namespace UdonSharp.Compiler
                 result.compiledAssembly = dataBlock + codeBlock;
                 result.symbolCount = (uint)(moduleSymbols.GetAllUniqueChildSymbols().Count + visitor.GetExternStrCount());
 
-                programAsset.behaviourIDHeapVarName = visitor.GetIDHeapVarName();
-
                 programAsset.fieldDefinitions = fieldVisitor.visitorContext.localFieldDefinitions;
                 programAsset.behaviourSyncMode = visitor.visitorContext.behaviourSyncMode;
 

@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Reflection;
 using UdonSharp.Compiler;
+using UdonSharp.Lib.Internal;
 using UdonSharp.Localization;
 using UdonSharpEditor;
 using UnityEditor;
@@ -35,13 +36,10 @@ namespace UdonSharp
         public BehaviourSyncMode behaviourSyncMode = BehaviourSyncMode.Any;
 
         [HideInInspector]
-        public string behaviourIDHeapVarName;
-
-        [HideInInspector]
         public List<string> compileErrors = new List<string>();
 
         [HideInInspector]
-        public bool hasInteractEvent = false;
+        public bool hasInteractEvent;
 
         [SerializeField, HideInInspector]
         private SerializationData serializationData;
@@ -124,7 +122,7 @@ namespace UdonSharp
             // So we check against a value we know will exist to make sure we can use the heap variables.
             if (shouldUseRuntimeValue)
             {
-                var behaviourID = currentBehaviour.GetProgramVariable(behaviourIDHeapVarName);
+                var behaviourID = currentBehaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
                 if (behaviourID == null)
                     shouldUseRuntimeValue = false;
             }
