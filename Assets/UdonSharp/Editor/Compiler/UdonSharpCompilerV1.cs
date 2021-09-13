@@ -22,6 +22,7 @@ using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
 using UdonSharp.Internal;
 using UdonSharp.Lib.Internal;
+using UdonSharp.Serialization;
 using UdonSharpEditor;
 using UnityEditor;
 using UnityEditor.Compilation;
@@ -644,9 +645,22 @@ namespace UdonSharp.Compiler
                     uint valAddress = program.SymbolTable.GetAddressFromSymbol(field.Name);
 
                     object fieldValue = field.GetValue(component);
+
+                    if (fieldValue == null) continue;
                     
-                    if (fieldValue != null)
+                    if (UdonSharpUtils.IsUserJaggedArray(fieldValue.GetType()))
+                    {
+                        Serializer serializer = Serializer.CreatePooled(fieldValue.GetType());
+
+                        SimpleValueStorage<object[]> arrayStorage = new SimpleValueStorage<object[]>();
+                        serializer.WriteWeak(arrayStorage, fieldValue);
+
+                        program.Heap.SetHeapVariable<object[]>(valAddress, arrayStorage.Value);
+                    }
+                    else
+                    {
                         program.Heap.SetHeapVariable(valAddress, fieldValue, field.FieldType);
+                    }
                 }
 
                 rootBinding.assembly = generatedUasm;
