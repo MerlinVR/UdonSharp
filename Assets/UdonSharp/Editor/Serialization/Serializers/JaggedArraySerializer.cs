@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Runtime.Serialization;
 
 namespace UdonSharp.Serialization
@@ -8,7 +8,7 @@ namespace UdonSharp.Serialization
     {
         private Serializer rootArraySerializer;
 
-        private Stack<IValueStorage> innerValueStorages = new Stack<IValueStorage>();
+        private ConcurrentStack<IValueStorage> innerValueStorages = new ConcurrentStack<IValueStorage>();
 
         public JaggedArraySerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)
@@ -39,8 +39,8 @@ namespace UdonSharp.Serialization
 
         IValueStorage GetInnerValueStorage()
         {
-            if (innerValueStorages.Count > 0)
-                return innerValueStorages.Pop();
+            if (innerValueStorages.TryPop(out var storage))
+                return storage;
 
             return ValueStorageUtil.CreateStorage(rootArraySerializer.GetUdonStorageType());
         }

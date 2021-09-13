@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using UnityEngine;
 
 namespace UdonSharp.Serialization
@@ -7,8 +7,8 @@ namespace UdonSharp.Serialization
     public class ArraySerializer<T> : Serializer<T[]>
     {
         private Serializer<T> elementSerializer;
-        
-        Stack<IValueStorage> arrayStorages = new Stack<IValueStorage>();
+
+        private ConcurrentStack<IValueStorage> arrayStorages = new ConcurrentStack<IValueStorage>();
 
         public ArraySerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)
@@ -30,8 +30,8 @@ namespace UdonSharp.Serialization
 
         private IValueStorage GetNextStorage()
         {
-            if (arrayStorages.Count > 0)
-                return arrayStorages.Pop();
+            if (arrayStorages.TryPop(out var storage))
+                return storage;
             
             return ValueStorageUtil.CreateStorage(elementSerializer.GetUdonStorageType());
         }

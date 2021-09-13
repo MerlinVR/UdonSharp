@@ -32,10 +32,13 @@ namespace UdonSharp.Serialization
                 throw new System.ArgumentException("Type metadata cannot be null for serializer creation");
 
             Serializer serializer;
-            if (!typeSerializerDictionary.TryGetValue(typeMetadata, out serializer))
+            lock (_pooledSerializerLock)
             {
-                serializer = Create(typeMetadata);
-                typeSerializerDictionary.Add(typeMetadata, serializer);
+                if (!typeSerializerDictionary.TryGetValue(typeMetadata, out serializer))
+                {
+                    serializer = Create(typeMetadata);
+                    typeSerializerDictionary.Add(typeMetadata, serializer);
+                }
             }
 
             return serializer;
@@ -46,18 +49,22 @@ namespace UdonSharp.Serialization
             return (Serializer<T>)CreatePooled(typeof(T));
         }
 
+        private static readonly object _pooledSerializerLock = new object();
         static TypeSerializationMetadata lookupPooledTypeData = new TypeSerializationMetadata();
 
         public static Serializer CreatePooled(System.Type type)
         {
-            lookupPooledTypeData.SetToType(type);
-
             Serializer serializer;
-            if (!typeSerializerDictionary.TryGetValue(lookupPooledTypeData, out serializer))
+            
+            lock (_pooledSerializerLock)
             {
-                TypeSerializationMetadata typeMetadata = new TypeSerializationMetadata(type);
-                serializer = Create(typeMetadata);
-                typeSerializerDictionary.Add(typeMetadata, serializer);
+                lookupPooledTypeData.SetToType(type);
+                if (!typeSerializerDictionary.TryGetValue(lookupPooledTypeData, out serializer))
+                {
+                    TypeSerializationMetadata typeMetadata = new TypeSerializationMetadata(type);
+                    serializer = Create(typeMetadata);
+                    typeSerializerDictionary.Add(typeMetadata, serializer);
+                }
             }
 
             return serializer;
