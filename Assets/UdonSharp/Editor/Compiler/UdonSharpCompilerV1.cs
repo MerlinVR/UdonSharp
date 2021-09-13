@@ -1,5 +1,5 @@
 ﻿
-//#define SINGLE_THREAD_BUILD
+// #define SINGLE_THREAD_BUILD
 
 using System;
 using System.Collections.Concurrent;
@@ -94,7 +94,9 @@ namespace UdonSharp.Compiler
             {
                 foreach (var diagnostic in CurrentJob.Context.Diagnostics)
                 {
-                    string filePath = CurrentJob.Context.TranslateLocationToFileName(diagnostic.Location);
+                    string filePath = "";
+                    if (diagnostic.Location != null)
+                        filePath = CurrentJob.Context.TranslateLocationToFileName(diagnostic.Location);
                     LinePosition? linePosition = diagnostic.Location?.GetLineSpan().StartLinePosition;
 
                     int line = (linePosition?.Line ?? 0) + 1;
@@ -326,16 +328,23 @@ namespace UdonSharp.Compiler
             
             if (compilationContext.ErrorCount > 0) return;
             
-            System.Reflection.Assembly assembly; 
-
-            using (new UdonSharpUtils.UdonSharpAssemblyLoadStripScope())
-                assembly = System.Reflection.Assembly.Load(builtAssembly);
-
-            compilationContext.CurrentPhase = CompilationContext.CompilePhase.Assemble;
-
             UdonSharpEditorManager.ConstructorWarningsDisabled = true;
-            
-            AssembleAllPrograms(rootTypes, assembly, compilationContext);
+
+            try
+            {
+                System.Reflection.Assembly assembly; 
+
+                using (new UdonSharpUtils.UdonSharpAssemblyLoadStripScope())
+                    assembly = System.Reflection.Assembly.Load(builtAssembly);
+
+                compilationContext.CurrentPhase = CompilationContext.CompilePhase.Assemble;
+
+                AssembleAllPrograms(rootTypes, assembly, compilationContext);
+            }
+            catch (Exception e)
+            {
+                compilationContext.AddDiagnostic(DiagnosticSeverity.Error, (Location)null, e.ToString());
+            }
             
             UdonSharpEditorManager.ConstructorWarningsDisabled = false;
         }
@@ -646,7 +655,8 @@ namespace UdonSharp.Compiler
 
                     object fieldValue = field.GetValue(component);
 
-                    if (fieldValue == null) continue;
+                    if (fieldValue == null)
+                        continue;
                     
                     if (UdonSharpUtils.IsUserJaggedArray(fieldValue.GetType()))
                     {

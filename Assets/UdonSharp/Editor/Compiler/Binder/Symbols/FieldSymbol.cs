@@ -43,7 +43,10 @@ namespace UdonSharp.Compiler.Symbols
             }
         }
 
+        public bool IsConstInitialized => InitializerExpression != null && InitializerExpression.IsConstant;
+
         public UdonSyncMode? SyncMode => GetAttribute<UdonSyncedAttribute>()?.NetworkSyncType;
+        public bool IsSynced => SyncMode != null;
 
         public override void Bind(BindContext context)
         {

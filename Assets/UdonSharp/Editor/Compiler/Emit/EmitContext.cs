@@ -157,6 +157,7 @@ namespace UdonSharp.Compiler.Emit
             }
 
             DeclaredFields = userFields.ToImmutableArray();
+            InitConstFields();
 
             HashSet<MethodSymbol> emittedSet = new HashSet<MethodSymbol>();
             HashSet<MethodSymbol> setToEmit = new HashSet<MethodSymbol>();
@@ -215,6 +216,42 @@ namespace UdonSharp.Compiler.Emit
             }
             
             DebugInfo.FinalizeAssemblyInfo();
+        }
+
+        private void InitConstFields()
+        {
+            foreach (var field in DeclaredFields)
+            {
+                Value fieldVal = RootTable.GetUserValue(field);
+                
+                // if (field.IsConstInitialized)
+                // {
+                //     fieldVal.DefaultValue = field.InitializerExpression.ConstantValue.Value;
+                // }
+
+                if (field.InitializerExpression == null)
+                {
+                    if (field.IsSerialized)
+                    {
+                        if (field.Type.IsArray)
+                        {
+                            fieldVal.DefaultValue = Activator.CreateInstance(fieldVal.UdonType.SystemType, 0);
+                            continue;
+                        }
+
+                        if (field.Type.UdonType.SystemType == typeof(string))
+                        {
+                            fieldVal.DefaultValue = "";
+                            continue;
+                        }
+                    }
+
+                    if (field.IsSynced && field.Type.UdonType.SystemType == typeof(string))
+                    {
+                        fieldVal.DefaultValue = "";
+                    }
+                }
+            }
         }
 
         public Value GetReturnValue(TypeSymbol type)
