@@ -68,11 +68,11 @@ namespace UdonSharp.Compiler
             /// <summary>
             /// Linking jump points for methods, linking other behaviour's field/method addresses, and building vtables
             /// </summary>
-            Link,
+            // Link,
             /// <summary>
             /// Running uasm assembler to generate bytecode that's usable by Udon and writing modified program asssets
             /// </summary>
-            Assemble,
+            // Assemble,
             /// <summary>
             /// Linking behaviours to the UdonSharpRuntime manager object in the current scene
             /// </summary>

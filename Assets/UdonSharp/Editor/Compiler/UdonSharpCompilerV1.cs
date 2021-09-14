@@ -322,31 +322,22 @@ namespace UdonSharp.Compiler
 
             if (compilationContext.ErrorCount > 0) return;
 
-            compilationContext.CurrentPhase = CompilationContext.CompilePhase.Emit;
-            
-            EmitAllPrograms(rootTypes, compilationContext);
-            
-            if (compilationContext.ErrorCount > 0) return;
-            
-            UdonSharpEditorManager.ConstructorWarningsDisabled = true;
-
+            System.Reflection.Assembly assembly = null;
             try
             {
-                System.Reflection.Assembly assembly; 
-
                 using (new UdonSharpUtils.UdonSharpAssemblyLoadStripScope())
                     assembly = System.Reflection.Assembly.Load(builtAssembly);
-
-                compilationContext.CurrentPhase = CompilationContext.CompilePhase.Assemble;
-
-                AssembleAllPrograms(rootTypes, assembly, compilationContext);
             }
             catch (Exception e)
             {
                 compilationContext.AddDiagnostic(DiagnosticSeverity.Error, (Location)null, e.ToString());
             }
             
-            UdonSharpEditorManager.ConstructorWarningsDisabled = false;
+            if (compilationContext.ErrorCount > 0) return;
+            
+            compilationContext.CurrentPhase = CompilationContext.CompilePhase.Emit;
+            
+            EmitAllPrograms(rootTypes, compilationContext, assembly);
         }
 
         private static IEnumerable<string> GetAllFilteredSourcePaths()
@@ -547,7 +538,7 @@ namespace UdonSharp.Compiler
             PrintStageTime("U# Bind", bindTimer);
         }
 
-        private static void EmitAllPrograms((INamedTypeSymbol, ModuleBinding)[] bindings, CompilationContext compilationContext)
+        private static void EmitAllPrograms((INamedTypeSymbol, ModuleBinding)[] bindings, CompilationContext compilationContext, System.Reflection.Assembly assembly)
         {
             Stopwatch emitTimer = Stopwatch.StartNew();
 
@@ -557,7 +548,7 @@ namespace UdonSharp.Compiler
         #if SINGLE_THREAD_BUILD
             foreach (var binding in bindings)
         #else
-            Parallel.ForEach(bindings, new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM}, binding => 
+            Parallel.ForEach(bindings, new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM * 2 }, binding => 
         #endif
             {
                 if (compilationContext.ErrorCount > 0)
@@ -604,38 +595,34 @@ namespace UdonSharp.Compiler
                 
                 if (moduleEmitContext.DebugInfo != null)
                     UdonSharpEditorCache.Instance.SetDebugInfo(moduleBinding.programAsset, CurrentJob.CompileOptions.IsEditorBuild ? UdonSharpEditorCache.DebugInfoType.Editor : UdonSharpEditorCache.DebugInfoType.Client, moduleEmitContext.DebugInfo);
+                
+                AssembleProgram(binding, assembly);
             }
         #if !SINGLE_THREAD_BUILD
             );
         #endif
             
-            PrintStageTime("U# Emit", emitTimer);
+            PrintStageTime("U# Emit + Udon Assembly", emitTimer);
         }
 
-        private static void AssembleAllPrograms((INamedTypeSymbol, ModuleBinding)[] bindings, System.Reflection.Assembly assembly, CompilationContext context)
-        {
-            Stopwatch assembleTimer = Stopwatch.StartNew();
+        private static readonly object _assembleLock = new object();
 
-            int progressCounter = 0;
-            
-            // #if SINGLE_THREAD_BUILD
-            // #else
-            //     Parallel.ForEach(bindings, binding => 
-            // #endif
-            // Can't thread because assembly relies on state from the editor interface internally and constructing an editor interface for each thread is way worse :<
-            foreach (var binding in bindings)
+        private static void AssembleProgram((INamedTypeSymbol, ModuleBinding) binding,
+            System.Reflection.Assembly assembly)
+        {
+            lock (_assembleLock)
             {
                 INamedTypeSymbol rootTypeSymbol = binding.Item1;
                 ModuleBinding rootBinding = binding.Item2;
                 List<Value> assemblyValues = rootBinding.assemblyModule.RootTable.GetAllUniqueChildValues();
                 string generatedUasm = rootBinding.assemblyModule.BuildUasmStr();
-                
+
                 rootBinding.programAsset.SetUdonAssembly(generatedUasm);
                 rootBinding.programAsset.AssembleCsProgram(rootBinding.assemblyModule.GetHeapSize());
                 rootBinding.programAsset.SetUdonAssembly("");
 
                 IUdonProgram program = rootBinding.programAsset.GetRealProgram();
-                
+
                 foreach (Value val in assemblyValues)
                 {
                     if (val.DefaultValue == null) continue;
@@ -647,9 +634,12 @@ namespace UdonSharp.Compiler
 
                 Type asmType = assembly.GetType(typeName);
 
+                UdonSharpEditorManager.ConstructorWarningsDisabled = true;
                 object component = Activator.CreateInstance(asmType);
+                UdonSharpEditorManager.ConstructorWarningsDisabled = false;
 
-                foreach (FieldInfo field in asmType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+                foreach (FieldInfo field in asmType.GetFields(BindingFlags.Public | BindingFlags.NonPublic |
+                                                              BindingFlags.Instance))
                 {
                     uint valAddress = program.SymbolTable.GetAddressFromSymbol(field.Name);
 
@@ -657,7 +647,7 @@ namespace UdonSharp.Compiler
 
                     if (fieldValue == null)
                         continue;
-                    
+
                     if (UdonSharpUtils.IsUserJaggedArray(fieldValue.GetType()))
                     {
                         Serializer serializer = Serializer.CreatePooled(fieldValue.GetType());
@@ -674,14 +664,7 @@ namespace UdonSharp.Compiler
                 }
 
                 rootBinding.assembly = generatedUasm;
-
-                context.PhaseProgress = progressCounter++ / (float) bindings.Length;
             }
-            // #if !SINGLE_THREAD_BUILD
-            //     );
-            // #endif
-        
-            PrintStageTime("Assemble", assembleTimer);
         }
     }
 }
