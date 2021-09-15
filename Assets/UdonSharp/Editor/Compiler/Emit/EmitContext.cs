@@ -181,7 +181,7 @@ namespace UdonSharp.Compiler.Emit
                 
                 foreach (var methodSymbol in setToEmit)
                 {
-                    if (!emittedSet.Contains(methodSymbol))
+                    if (!emittedSet.Contains(methodSymbol) && (methodSymbol.RoslynSymbol == null || !methodSymbol.RoslynSymbol.IsAbstract))
                     {
                         if (methodSymbol.ContainingType.IsUdonSharpBehaviour) // Prevent other behaviour type's methods from leaking into this type from calls across behaviours
                         {
@@ -302,7 +302,7 @@ namespace UdonSharp.Compiler.Emit
                 return;
             }
 
-            MethodLinkage currentMethodLinkage = GetMethodLinkage(_currentEmitMethod);
+            MethodLinkage currentMethodLinkage = GetMethodLinkage(_currentEmitMethod, false);
 
             if (currentMethodLinkage.ReturnValue != null)
             {
@@ -319,8 +319,10 @@ namespace UdonSharp.Compiler.Emit
                 }
             }
             else
+            {
                 Emit(returnExpression);
-            
+            }
+
             EmitReturn();
         }
 
@@ -660,10 +662,12 @@ namespace UdonSharp.Compiler.Emit
         }
         #endregion
 
-        // todo: check private/protected usage of method and export
         public bool MethodNeedsExport(MethodSymbol methodSymbol)
         {
             if (methodSymbol.IsStatic)
+                return false;
+
+            if (GetMostDerivedMethod(methodSymbol) != methodSymbol)
                 return false;
             
             return methodSymbol.RoslynSymbol.DeclaredAccessibility == Accessibility.Public ||

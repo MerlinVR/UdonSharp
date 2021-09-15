@@ -1,4 +1,5 @@
 ﻿
+using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -9,6 +10,7 @@ using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Core;
 using UdonSharp.Localization;
+using NotSupportedException = UdonSharp.Core.NotSupportedException;
 
 namespace UdonSharp.Compiler.Symbols
 {
@@ -89,19 +91,78 @@ namespace UdonSharp.Compiler.Symbols
             
             IMethodSymbol methodSymbol = RoslynSymbol;
 
-            if (((MethodDeclarationSyntax) methodSymbol.DeclaringSyntaxReferences.First().GetSyntax()).Modifiers.Any(SyntaxKind.PartialKeyword))
+            if (methodSymbol.MethodKind != MethodKind.PropertyGet && methodSymbol.MethodKind != MethodKind.PropertySet &&
+                ((MethodDeclarationSyntax) methodSymbol.DeclaringSyntaxReferences.First().GetSyntax()).Modifiers.Any(SyntaxKind.PartialKeyword))
                 throw new NotSupportedException(LocStr.CE_PartialMethodsNotSupported, methodSymbol.DeclaringSyntaxReferences.FirstOrDefault());
 
             BinderSyntaxVisitor bodyVisitor = new BinderSyntaxVisitor(this, context);
 
-            MethodDeclarationSyntax methodSyntax = methodSymbol.DeclaringSyntaxReferences.First().GetSyntax() as MethodDeclarationSyntax;
+            SyntaxNode declaringSyntax = methodSymbol.DeclaringSyntaxReferences.First().GetSyntax();
 
-            if (methodSyntax.Body != null)
-                MethodBody = bodyVisitor.Visit(methodSyntax.Body);
-            else if (methodSyntax.ExpressionBody != null)
-                MethodBody = bodyVisitor.VisitExpression(methodSyntax.ExpressionBody, ReturnType);
+            if (declaringSyntax is MethodDeclarationSyntax methodSyntax)
+            {
+                if (methodSyntax.Body != null)
+                    MethodBody = bodyVisitor.Visit(methodSyntax.Body);
+                else if (methodSyntax.ExpressionBody != null)
+                    MethodBody = bodyVisitor.VisitExpression(methodSyntax.ExpressionBody, ReturnType);
+                else
+                    throw new CompilerException("No method body or expression body found", methodSyntax.GetLocation());
+            }
+            else if (declaringSyntax is AccessorDeclarationSyntax propertySyntax)
+            {
+                if (propertySyntax.Body != null)
+                    MethodBody = bodyVisitor.Visit(propertySyntax.Body);
+                else if (propertySyntax.ExpressionBody != null)
+                    MethodBody = bodyVisitor.VisitExpression(propertySyntax.ExpressionBody, ReturnType);
+                else if (methodSymbol.MethodKind == MethodKind.PropertySet)
+                    MethodBody = GeneratePropertyAutoSetter(context, propertySyntax);
+                else if (methodSymbol.MethodKind == MethodKind.PropertyGet)
+                    MethodBody = GeneratePropertyAutoGetter(context, propertySyntax);
+                else
+                    throw new CompilerException("No method body or expression body found", propertySyntax.GetLocation());
+            }
+            else if (declaringSyntax is ArrowExpressionClauseSyntax arrowExpression)
+            {
+                MethodBody = bodyVisitor.VisitExpression(arrowExpression.Expression, ReturnType);
+            }
             else
-                throw new CompilerException("No method body or expression body found", methodSyntax.GetLocation());
+            {
+                throw new Exception($"Declaring syntax {declaringSyntax.Kind()} was not a method or property");
+            }
+        }
+
+        private BoundNode GeneratePropertyAutoSetter(BindContext context, SyntaxNode node)
+        {
+            FieldSymbol autoField = GetAutoField(context);
+            
+            if (autoField == null)
+                return null;
+
+            return new BoundAssignmentExpression(node, BoundAccessExpression.BindAccess(context, node, autoField, null),
+                BoundAccessExpression.BindAccess(context, node, Parameters[0], null));
+        }
+        
+        private BoundNode GeneratePropertyAutoGetter(BindContext context, SyntaxNode node)
+        {
+            FieldSymbol autoField = GetAutoField(context);
+
+            if (autoField == null)
+                return null;
+
+            return new BoundReturnStatement(node, BoundAccessExpression.BindAccess(context, node, autoField, null));
+        }
+
+        private FieldSymbol GetAutoField(BindContext context)
+        {
+            PropertySymbol containingProperty = (PropertySymbol)context.GetSymbol(RoslynSymbol.AssociatedSymbol);
+            foreach (var field in ContainingType.GetMembers<FieldSymbol>(context))
+            {
+                if (field.RoslynSymbol.AssociatedSymbol != null &&
+                    field.RoslynSymbol.AssociatedSymbol.Equals(containingProperty.RoslynSymbol))
+                    return field;
+            }
+
+            return null;
         }
 
         public virtual void Emit(EmitContext context)

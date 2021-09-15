@@ -98,6 +98,11 @@ namespace UdonSharp.Compiler.Binder
                     }
                 }
             }
+            
+            if (IsPropertySetter)
+            {
+                return GetParameterValues(context).Last();
+            }
 
             if (Method.ReturnType != null)
             {

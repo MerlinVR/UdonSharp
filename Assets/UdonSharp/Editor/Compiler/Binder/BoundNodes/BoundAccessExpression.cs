@@ -14,6 +14,8 @@ namespace UdonSharp.Compiler.Binder
             : base(node, sourceExpression)
         {
         }
+        
+        public virtual void MarkForcedBaseCall() {}
 
         /// <summary>
         /// Emits a set operation on this access

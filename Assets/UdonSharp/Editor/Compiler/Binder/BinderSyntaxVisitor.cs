@@ -80,7 +80,11 @@ namespace UdonSharp.Compiler.Binder
                     if (lhsExpression == null && !nodeSymbol.IsStatic)
                         lhsExpression = BoundAccessExpression.BindThisAccess(OwningSymbol.ContainingType);
                     
-                    return BoundAccessExpression.BindAccess(Context, node, nodeSymbol, lhsExpression);
+                    var access = BoundAccessExpression.BindAccess(Context, node, nodeSymbol, lhsExpression);
+                    if (accessExpressionSyntax.Expression.Kind() == SyntaxKind.BaseExpression)
+                        access.MarkForcedBaseCall();
+
+                    return access;
                 }
             }
             
@@ -141,6 +145,9 @@ namespace UdonSharp.Compiler.Binder
         public BoundExpression VisitExpression(SyntaxNode node, TypeSymbol expectedType, bool explicitCast = false)
         {
             BoundExpression boundExpression = VisitExpression(node);
+
+            if (expectedType == null)
+                return boundExpression;
 
             return ConvertExpression(node, boundExpression, expectedType, explicitCast);
         }

@@ -142,8 +142,9 @@ namespace UdonSharp.Compiler
             }
             
             UdonSharpEditorManager.RunPostBuildSceneFixup();
-            
-            Debug.Log($"[<color=#0c824c>UdonSharp</color>] Compile of {CurrentJob.Context.ModuleBindings.Length} scripts finished in {CurrentJob.CompileTimer.Elapsed:mm\\:ss\\.fff}");
+
+            int scriptCount = CurrentJob.Context.ModuleBindings.Count(e => e.programAsset != null);
+            Debug.Log($"[<color=#0c824c>UdonSharp</color>] Compile of {scriptCount} script{(scriptCount != 1 ? "s" : "")} finished in {CurrentJob.CompileTimer.Elapsed:mm\\:ss\\.fff}");
             
             CleanupCompile();
 
@@ -641,7 +642,7 @@ namespace UdonSharp.Compiler
                 foreach (FieldInfo field in asmType.GetFields(BindingFlags.Public | BindingFlags.NonPublic |
                                                               BindingFlags.Instance))
                 {
-                    uint valAddress = program.SymbolTable.GetAddressFromSymbol(field.Name);
+                    uint valAddress = program.SymbolTable.GetAddressFromSymbol(field.Name.Replace("<", "_").Replace(">", "_"));
 
                     object fieldValue = field.GetValue(component);
 

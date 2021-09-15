@@ -77,13 +77,13 @@ namespace UdonSharp.Compiler.Symbols
 
             var members = RoslynSymbol.GetMembers();
 
-            foreach (var member in members.Where(member => !member.IsImplicitlyDeclared))
+            foreach (var member in members.Where(member => (!member.IsImplicitlyDeclared || member.Kind == SymbolKind.Field)))
             {
                 switch (member)
                 {
                     case IFieldSymbol _:
                     case IPropertySymbol _:
-                    case IMethodSymbol methodSymbol when methodSymbol.MethodKind != MethodKind.PropertyGet && methodSymbol.MethodKind != MethodKind.PropertySet:
+                    case IMethodSymbol _:
                         Symbol boundSymbol = context.GetSymbol(member);
                         
                         if (!boundSymbol.IsBound)

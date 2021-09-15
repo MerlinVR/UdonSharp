@@ -1,5 +1,5 @@
 ﻿
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
 
@@ -11,7 +11,7 @@ namespace UdonSharp.Compiler.Binder
 
         public override TypeSymbol ValueType => SourceExpression.ValueType;
 
-        public BoundAssignmentExpression(AssignmentExpressionSyntax node, BoundAccessExpression assignmentTarget, BoundExpression assignmentSource)
+        public BoundAssignmentExpression(SyntaxNode node, BoundAccessExpression assignmentTarget, BoundExpression assignmentSource)
             : base(node, assignmentSource)
         {
             TargetExpression = assignmentTarget;

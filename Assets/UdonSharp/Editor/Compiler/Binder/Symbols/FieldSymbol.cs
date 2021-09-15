@@ -53,7 +53,9 @@ namespace UdonSharp.Compiler.Symbols
             if (IsBound)
                 return;
             
-            InitializerSyntax = (RoslynSymbol.DeclaringSyntaxReferences.First().GetSyntax() as VariableDeclaratorSyntax)?.Initializer?.Value;
+            if (!RoslynSymbol.IsImplicitlyDeclared)
+                InitializerSyntax = (RoslynSymbol.DeclaringSyntaxReferences.First().GetSyntax() as VariableDeclaratorSyntax)?.Initializer?.Value;
+            
             // Re-get the type symbol to register it as a dependency in the bind context
             TypeSymbol fieldType = context.GetTypeSymbol(RoslynSymbol.Type);
 

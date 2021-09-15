@@ -29,11 +29,7 @@ namespace UdonSharp.Compiler.Emit
             /// <summary>
             /// Variable declared by the user as a public field on a class
             /// </summary>
-            Public = 1 << 2,
-            /// <summary>
-            /// Variable declared by the user as a private field on a class
-            /// </summary>
-            Private = 1 << 3,
+            Field = 1 << 2,
             /// <summary>
             /// Declared by the user as a variable local to a specific scope
             /// </summary>
@@ -82,8 +78,6 @@ namespace UdonSharp.Compiler.Emit
         public string UniqueID { get; }
         
         public ValueFlags Flags { get; private set; }
-
-        public bool IsPublic => (Flags & ValueFlags.Public) != 0;
         public bool IsConstant => (Flags & ValueFlags.Constant) != 0;
         public bool IsLocal => (Flags & ValueFlags.Local) != 0;
         public bool IsInternal => (Flags & ValueFlags.Internal) != 0 || (Flags & ValueFlags.InternalGlobal) != 0;

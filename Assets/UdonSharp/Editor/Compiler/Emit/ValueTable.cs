@@ -120,23 +120,6 @@ namespace UdonSharp.Compiler.Emit
             return GlobalTable.CreateValueInternal(type, null, Value.ValueFlags.UdonThis);
         }
 
-        public Value CreateFieldValue(FieldSymbol field)
-        {
-            Value.ValueFlags flags;
-
-            switch (field.RoslynSymbol.DeclaredAccessibility)
-            {
-                case Accessibility.Public:
-                    flags = Value.ValueFlags.Public;
-                    break;
-                default:
-                    flags = Value.ValueFlags.Private;
-                    break;
-            }
-            
-            return CreateValueInternal(field.Type, field, flags);
-        }
-
         public Value GetUserValue(Symbol userSymbol)
         {
             Value userValue = FindUserValue(userSymbol);
@@ -150,10 +133,7 @@ namespace UdonSharp.Compiler.Emit
                     userValue = CreateValueInternal(localSymbol.Type, userSymbol, Value.ValueFlags.Local, userSymbol.Name);
                     break;
                 case FieldSymbol fieldSymbol:
-                    userValue = GlobalTable.CreateValueInternal(fieldSymbol.Type, userSymbol,
-                        fieldSymbol.RoslynSymbol.DeclaredAccessibility == Accessibility.Public
-                            ? Value.ValueFlags.Public : Value.ValueFlags.Private, userSymbol.Name);
-                    
+                    userValue = GlobalTable.CreateValueInternal(fieldSymbol.Type, userSymbol, Value.ValueFlags.Field, userSymbol.Name);
                     GlobalTable._userValues.Add(userSymbol, userValue);
                     
                     userValue.SetAssociatedSymbol(userSymbol);
@@ -204,8 +184,9 @@ namespace UdonSharp.Compiler.Emit
         {
             string uniqueName;
 
-            if ((flags & Value.ValueFlags.Public) != 0 || 
-                (flags & Value.ValueFlags.Private) != 0 ||
+            symbolName = symbolName?.Replace("<", "_")?.Replace(">", "_");
+
+            if ((flags & Value.ValueFlags.Field) != 0 || 
                 (flags & Value.ValueFlags.Parameter) != 0 ||
                 (flags & Value.ValueFlags.Reflection) != 0)
             {

@@ -18,7 +18,10 @@ namespace UdonSharp.Compiler.Binder
         private BoundExpression[] ParameterExpressions { get; }
 
         public override TypeSymbol ValueType => Property.Type;
-        
+
+        private bool _isBaseCall;
+        public override void MarkForcedBaseCall() => _isBaseCall = true;
+
         protected BoundPropertyAccessExpression(AbstractPhaseContext context, SyntaxNode node, PropertySymbol property, BoundExpression sourceExpression, BoundExpression[] parameterExpressions)
             : base(node, sourceExpression)
         {
@@ -60,6 +63,9 @@ namespace UdonSharp.Compiler.Binder
             if (SourceExpression == null)
                 return null;
 
+            if (SourceExpression.IsThis)
+                return SourceExpression;
+
             Value.CowValue[] instance = context.GetExpressionCowValues(this, "propertyInstance");
 
             if (instance == null)
@@ -76,6 +82,9 @@ namespace UdonSharp.Compiler.Binder
             var invocationExpression = BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode, Property.GetMethod,
                 GetInstanceExpression(context), GetParameters(context));
 
+            if (_isBaseCall)
+                invocationExpression.MarkForcedBaseCall();
+            
             return context.EmitValue(invocationExpression);
         }
 
@@ -85,9 +94,17 @@ namespace UdonSharp.Compiler.Binder
                 Property.SetMethod,
                 GetInstanceExpression(context), GetParameters(context, valueExpression));
             
-            invocationExpression.MarkPropertySetter();
+            if (_isBaseCall)
+                invocationExpression.MarkForcedBaseCall();
             
-            return context.EmitValue(invocationExpression);
+            invocationExpression.MarkPropertySetter();
+
+            var resultVal = context.EmitValue(invocationExpression);
+            
+            if (resultVal == null)
+                throw new NullReferenceException();
+            
+            return resultVal;
         }
 
         private static readonly HashSet<Type> _allowedConstantPropertyTypes = new HashSet<Type>()
@@ -124,8 +141,16 @@ namespace UdonSharp.Compiler.Binder
                 
                 return new BoundExternPropertyAccessExpression(context, node, externProperty, sourceExpression, parameterExpressions);
             }
+            
+            return new BoundUserPropertyAccessExpression(context, node, propertySymbol, sourceExpression, parameterExpressions);
+        }
 
-            throw new NotImplementedException();
+        private sealed class BoundUserPropertyAccessExpression : BoundPropertyAccessExpression
+        {
+            public BoundUserPropertyAccessExpression(AbstractPhaseContext context, SyntaxNode node, PropertySymbol property, BoundExpression sourceExpression, BoundExpression[] parameterExpressions) 
+                :base(context, node, property, sourceExpression, parameterExpressions)
+            {
+            }
         }
 
         private sealed class BoundExternPropertyAccessExpression : BoundPropertyAccessExpression

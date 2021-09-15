@@ -293,7 +293,7 @@ namespace UdonSharp.Compiler.Binder
 
             if (symbol is UdonSharpBehaviourMethodSymbol udonSharpBehaviourMethodSymbol)
             {
-                if (instanceExpression != null)
+                if (instanceExpression != null && !instanceExpression.IsThis)
                     udonSharpBehaviourMethodSymbol.MarkNeedsReferenceExport();
                 
                 return new BoundUdonSharpBehaviourInvocationExpression(node, symbol, instanceExpression,
@@ -464,8 +464,14 @@ namespace UdonSharp.Compiler.Binder
                 Value returnValue = context.GetReturnValue(TargetExpression.ValueType);
 
                 context.EmitValueAssignment(returnValue, TargetExpression);
+                
+                Type targetType = TargetExpression.ValueType.UdonType.SystemType;
+                IConstantValue incrementValue = (IConstantValue) Activator.CreateInstance(
+                    typeof(ConstantValue<>).MakeGenericType(targetType), Convert.ChangeType(1, targetType));
+                var expression = CreateBoundInvocation(context, null, InternalExpression.Method, null,
+                    new BoundExpression[] {BoundAccessExpression.BindAccess(returnValue), new BoundConstantExpression(incrementValue, TargetExpression.ValueType, SyntaxNode)});
 
-                context.EmitSet(TargetExpression, InternalExpression);
+                context.EmitSet(TargetExpression, expression);
                 
                 return returnValue;
             }
