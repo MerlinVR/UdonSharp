@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
+using UdonSharp.Core;
 
 namespace UdonSharp.Compiler.Binder
 {
@@ -141,6 +142,9 @@ namespace UdonSharp.Compiler.Binder
             {
                 if (SourceExpression == null || SourceExpression.IsThis)
                     return context.EmitValueAssignment(context.GetUserValue(Field), valueExpression);
+
+                if (Field.HasAttribute<FieldChangeCallbackAttribute>())
+                    throw new CompilerException("Cannot set field on U# behaviour by reference when that field has a FieldChangeCallback attribute.");
                 
                 TypeSymbol stringType = context.GetTypeSymbol(SpecialType.System_String);
                 MethodSymbol setProgramVariableMethod = context.GetTypeSymbol(typeof(UdonSharpBehaviour))

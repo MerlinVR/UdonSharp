@@ -64,6 +64,8 @@ namespace UdonSharp.Compiler.Symbols
                 BinderSyntaxVisitor bodyVisitor = new BinderSyntaxVisitor(this, context);
                 InitializerExpression = bodyVisitor.VisitExpression(InitializerSyntax, fieldType);
             }
+            
+            SetupAttributes(context);
 
             _resolved = true;
         }

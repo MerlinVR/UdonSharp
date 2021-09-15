@@ -89,14 +89,12 @@ namespace UdonSharp.Compiler.Symbols
                         if (!boundSymbol.IsBound)
                             using (context.OpenMemberBindScope(boundSymbol))
                                 boundSymbol.Bind(context);
-
-                        boundSymbol.SetAttributes(SetupAttributes(context, boundSymbol));
                         
                         break;
                 }
             }
             
-            SetAttributes(SetupAttributes(context, this));
+            SetupAttributes(context);
 
             _bound = true;
         }
@@ -239,45 +237,6 @@ namespace UdonSharp.Compiler.Symbols
 
             systemType = null;
             return false;
-        }
-
-        protected static ImmutableArray<Attribute> SetupAttributes(BindContext context, Symbol symbol)
-        {
-            var attribData = symbol.RoslynSymbol.GetAttributes();
-            Attribute[] attributes = new Attribute[attribData.Length];
-
-            for (int i = 0; i < attributes.Length; ++i)
-            {
-                AttributeData attribute = attribData[i];
-                
-                TypeSymbol type = context.GetTypeSymbol(attribute.AttributeClass);
-
-                object[] attributeArgs = new object[attribute.ConstructorArguments.Length];
-
-                for (int j = 0; j < attributeArgs.Length; ++j)
-                {
-                    object attribValue;
-
-                    var constructorArg = attribute.ConstructorArguments[j];
-                    
-                    if (constructorArg.Type != null &&
-                        constructorArg.Type.TypeKind == TypeKind.Enum)
-                    {
-                        TypeSymbol typeSymbol = context.GetTypeSymbol(constructorArg.Type);
-                        attribValue = Enum.ToObject(typeSymbol.UdonType.SystemType, constructorArg.Value);
-                    }
-                    else
-                    {
-                        attribValue = attribute.ConstructorArguments[j].Value;
-                    }
-
-                    attributeArgs[j] = attribValue;
-                }
-
-                attributes[i] = (Attribute)Activator.CreateInstance(type.UdonType.SystemType, attributeArgs);
-            }
-
-            return attributes.ToImmutableArray();
         }
 
         /// <summary>

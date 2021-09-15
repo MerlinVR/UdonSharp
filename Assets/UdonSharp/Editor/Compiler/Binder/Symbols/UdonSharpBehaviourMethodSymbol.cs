@@ -47,6 +47,24 @@ namespace UdonSharp.Compiler.Symbols
         public override void Emit(EmitContext context)
         {
             EmitContext.MethodLinkage methodLinkage = context.GetMethodLinkage(this, false);
+
+            if (RoslynSymbol.MethodKind == MethodKind.PropertySet)
+            {
+                UdonSharpBehaviourPropertySymbol owningProperty = context.GetSymbol(RoslynSymbol.AssociatedSymbol) as UdonSharpBehaviourPropertySymbol;
+
+                if (owningProperty != null && 
+                    owningProperty.CallbackSymbol != null)
+                {
+                    context.Module.AddFieldChangeExportTag(owningProperty.CallbackSymbol);
+
+                    Value fieldValue = context.GetUserValue(owningProperty.CallbackSymbol);
+                    Value oldValueVal = context.TopTable.CreateParameterValue($"_old_{fieldValue.UniqueID}", fieldValue.UserType);
+                    Value methodValueParam = context.GetMethodLinkage(this, false).ParameterValues[0];
+
+                    context.Module.AddCopy(fieldValue, methodValueParam);
+                    context.Module.AddCopy(oldValueVal, fieldValue);
+                }
+            }
             
             if (context.MethodNeedsExport(this))
             {

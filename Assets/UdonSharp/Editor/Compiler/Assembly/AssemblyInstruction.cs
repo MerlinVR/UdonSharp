@@ -105,6 +105,32 @@ namespace UdonSharp.Compiler.Assembly
             }
         }
         
+        internal class FieldCallbackExportTag : AssemblyInstruction
+        {
+            public override InstructionKind GetKind() => InstructionKind.ExportTag;
+            public override uint Size => 0;
+
+            public UdonSharpBehaviourFieldSymbol ExportedField { get; }
+            
+            public FieldCallbackExportTag(UdonSharpBehaviourFieldSymbol fieldSymbol)
+            {
+                ExportedField = fieldSymbol;
+            }
+            
+            public override void WriteAssembly(StringBuilder builder)
+            {
+                string fieldChangeName = $"_onVarChange_{ExportedField.Name}";
+                
+                WriteIndentedLine($".export {fieldChangeName}", builder, 1);
+                WriteIndentedLine($"{fieldChangeName}:", builder, 1);
+            }
+            
+            public override string ToString()
+            {
+                return "export field change" + ExportedField.Name;
+            }
+        }
+        
         internal class SyncTag : AssemblyInstruction
         {
             public override InstructionKind GetKind() => InstructionKind.SyncTag;

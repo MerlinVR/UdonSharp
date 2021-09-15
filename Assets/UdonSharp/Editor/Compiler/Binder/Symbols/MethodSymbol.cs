@@ -129,6 +129,8 @@ namespace UdonSharp.Compiler.Symbols
             {
                 throw new Exception($"Declaring syntax {declaringSyntax.Kind()} was not a method or property");
             }
+
+            SetupAttributes(context);
         }
 
         private BoundNode GeneratePropertyAutoSetter(BindContext context, SyntaxNode node)

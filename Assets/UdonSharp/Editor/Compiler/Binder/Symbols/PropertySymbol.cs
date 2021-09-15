@@ -1,4 +1,5 @@
 ﻿
+using System;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -16,6 +17,8 @@ namespace UdonSharp.Compiler.Symbols
         
         public MethodSymbol GetMethod { get; protected set; }
         public MethodSymbol SetMethod { get; protected set; }
+
+        public virtual void MarkFieldCallback(FieldSymbol symbol) => throw new NotImplementedException();
 
         protected PropertySymbol(IPropertySymbol sourceSymbol, AbstractPhaseContext context)
             :base(sourceSymbol, context)
@@ -45,6 +48,8 @@ namespace UdonSharp.Compiler.Symbols
             
             if (SetMethod != null)
                 SetMethod.Bind(context);
+            
+            SetupAttributes(context);
         }
     }
 }

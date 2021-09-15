@@ -69,6 +69,11 @@ namespace UdonSharp.Compiler.Assembly
             AddInstruction(new ExportTag(exportMethod));
         }
 
+        public void AddFieldChangeExportTag(UdonSharpBehaviourFieldSymbol fieldSymbol)
+        {
+            AddInstruction(new FieldCallbackExportTag(fieldSymbol));
+        }
+
         public void AddSyncTag(Value syncValue, UdonSyncMode syncMode)
         {
             AddInstruction(new SyncTag(syncValue, syncMode));
