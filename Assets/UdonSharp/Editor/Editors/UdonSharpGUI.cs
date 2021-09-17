@@ -333,12 +333,6 @@ namespace UdonSharpEditor
 
             if (!udonBehaviour)
             {
-                EditorGUI.BeginChangeCheck();
-                programAsset.isV1Root = EditorGUILayout.Toggle("Is v1 root", programAsset.isV1Root);
-
-                if (EditorGUI.EndChangeCheck())
-                    EditorUtility.SetDirty(programAsset);
-
                 if (GUILayout.Button(Loc.Get(LocStr.UI_CompileProgram)))
                 {
                     programAsset.CompileCsProgram();

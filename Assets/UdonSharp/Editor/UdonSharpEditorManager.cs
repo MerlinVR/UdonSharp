@@ -894,9 +894,6 @@ namespace UdonSharpEditor
             {
                 if (behaviour.programSource == null || !(behaviour.programSource is UdonSharpProgramAsset programAsset))
                     continue;
-                
-                if (!programAsset.isV1Root)
-                    continue;
 
                 int originalUpdateCount = updatedBehaviourVariables;
 
