@@ -70,6 +70,10 @@ namespace UdonSharp.Tests
             }
         }
 
+        public int[] GetArray => new [] { 1, 2, 3 };
+
+        public PropertyTestReferenceScript referenceSource;
+
         public void ExecuteTests()
         {
             PropertyTest self = this;
@@ -156,6 +160,14 @@ namespace UdonSharp.Tests
             SetProgramVariable(nameof(_GOCallbackTest), null);
 
             tester.TestAssertion("Property callback modification count", goCallbackCounter == 4);
+
+            tester.TestAssertion("Property in other user script 1", referenceSource.Value == 1);
+            referenceSource._value = 2;
+            tester.TestAssertion("Property in other user script 2", referenceSource.Value == 2);
+            referenceSource.Value = 3;
+            tester.TestAssertion("Property in other user script 3", referenceSource.Value == 3);
+            
+            tester.TestAssertion("Array type maintained", GetArray.Length == 3);
         }
     }
 }

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using UdonSharp.Compiler;
 using UdonSharp.Lib.Internal;
@@ -246,8 +247,50 @@ namespace UdonSharp
                 _programAssetCache = new UdonSharpProgramAsset[udonSharpDataAssets.Length];
 
                 for (int i = 0; i < _programAssetCache.Length; ++i)
-                {
                     _programAssetCache[i] = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(udonSharpDataAssets[i]));
+
+                bool neededFallback = false;
+                var fallbackAssets1 = Resources.FindObjectsOfTypeAll<UdonProgramAsset>().OfType<UdonSharpProgramAsset>();
+
+                foreach (UdonSharpProgramAsset fallbackAsset in fallbackAssets1)
+                {
+                    if (!_programAssetCache.Contains(fallbackAsset))
+                    {
+                        Debug.LogWarning($"Repairing program asset {fallbackAsset} which Unity has broken");
+                        neededFallback = true;
+                        
+                        AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(fallbackAsset), ImportAssetOptions.ForceUpdate);
+                    }
+                }
+
+                if (!neededFallback)
+                {
+                    var fallbackAssets2 = AssetDatabase.FindAssets($"t:{nameof(UdonProgramAsset)}").Select(e => AssetDatabase.LoadAssetAtPath<UdonProgramAsset>(AssetDatabase.GUIDToAssetPath(e))).OfType<UdonSharpProgramAsset>();
+                    foreach (UdonSharpProgramAsset fallbackAsset in fallbackAssets2)
+                    {
+                        if (!_programAssetCache.Contains(fallbackAsset))
+                        {
+                            Debug.LogWarning($"Repairing program asset {fallbackAsset} which Unity has broken pass 2");
+                            neededFallback = true;
+
+                            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(fallbackAsset),
+                                ImportAssetOptions.ForceUpdate);
+                        }
+                    }
+                }
+
+                if (neededFallback)
+                {
+                    udonSharpDataAssets = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}");
+
+                    _programAssetCache = new UdonSharpProgramAsset[udonSharpDataAssets.Length];
+
+                    for (int i = 0; i < _programAssetCache.Length; ++i)
+                    {
+                        _programAssetCache[i] =
+                            AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(
+                                AssetDatabase.GUIDToAssetPath(udonSharpDataAssets[i]));
+                    }
                 }
             }
 

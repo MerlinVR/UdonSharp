@@ -10,6 +10,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using VRC.SDKBase;
 using VRC.Udon;
 using VRC.Udon.Common;
 using VRC.Udon.Common.Interfaces;
@@ -466,6 +467,9 @@ namespace UdonSharpEditor
                 {
                     CreateProxyBehaviours(GetAllUdonBehaviours());
                 }
+                
+                if (state == PlayModeStateChange.ExitingEditMode)
+                    RunAllUpdates();
             }
 
             if (state == PlayModeStateChange.EnteredEditMode)
@@ -496,6 +500,8 @@ namespace UdonSharpEditor
             if (allBehaviours == null)
                 allBehaviours = GetAllUdonBehaviours();
 
+            RepairPrefabProgramAssets(allBehaviours);
+            RepairProgramAssetLinks(allBehaviours);
             UpdateSerializedProgramAssets(allBehaviours);
             UpdatePublicVariables(allBehaviours);
             UpdateSyncModes(allBehaviours);
@@ -563,6 +569,165 @@ namespace UdonSharpEditor
             return behaviourList;
         }
 
+        static void RepairPrefabProgramAssets(List<UdonBehaviour> dependencyRoots)
+        {
+            Dictionary<AbstractSerializedUdonProgramAsset, UdonSharpProgramAsset> udonSharpProgramAssetLookup =
+                new Dictionary<AbstractSerializedUdonProgramAsset, UdonSharpProgramAsset>();
+
+            foreach (UdonSharpProgramAsset programAsset in UdonSharpProgramAsset.GetAllUdonSharpPrograms())
+                udonSharpProgramAssetLookup.Add(programAsset.SerializedProgramAsset, programAsset);
+
+            FieldInfo serializedAssetField = typeof(UdonBehaviour).GetField("serializedProgramAsset", BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo serializedObjectReferencesField = typeof(UdonBehaviour).GetField("publicVariablesUnityEngineObjects", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            HashSet<UnityEngine.Object> dependencies = new HashSet<UnityEngine.Object>();
+            
+            // Yes, this is not as thorough as AssetDatabase.GetDependencies, it is however much faster and catches the important cases.
+            // Notably does not gather indirect UdonBehaviour dependencies when one behaviour references a prefab and that prefab references another prefab, mostly because I'm too lazy to handle it at the moment
+            // Also does not gather any dependencies from Unity component's that reference game objects since that is not something that people should be using for prefab references anyways
+            foreach (UdonBehaviour dependencyRoot in dependencyRoots)
+            {
+                dependencies.Add(dependencyRoot.gameObject);
+                
+                var behaviourDependencies = ((List<UnityEngine.Object>)serializedObjectReferencesField.GetValue(dependencyRoot))?.Where(e => e != null);
+                
+                if (behaviourDependencies != null)
+                    dependencies.UnionWith(behaviourDependencies);
+            }
+            
+            HashSet<string> prefabsToRepair = new HashSet<string>();
+            List<UdonBehaviour> foundBehaviours = new List<UdonBehaviour>();
+
+            foreach (UnityEngine.Object dependencyObject in dependencies)
+            {
+                if (!PrefabUtility.IsPartOfAnyPrefab(dependencyObject))
+                    continue;
+                
+                GameObject prefabRoot = null;
+
+                if (PrefabUtility.IsPartOfPrefabAsset(dependencyObject))
+                {
+                    prefabRoot = dependencyObject as GameObject;
+                }
+                else if (dependencyObject is GameObject dependencyGameObject)
+                {
+                    if (PrefabUtility.IsAnyPrefabInstanceRoot(dependencyGameObject))
+                    {
+                        prefabRoot = PrefabUtility.GetCorrespondingObjectFromSource(dependencyGameObject);
+                    }
+                    else if (PrefabUtility.IsPartOfPrefabInstance(dependencyObject))
+                    {
+                        prefabRoot = PrefabUtility.GetCorrespondingObjectFromSource(PrefabUtility.GetNearestPrefabInstanceRoot(dependencyObject));
+                    }
+                }
+
+                if (prefabRoot)
+                    prefabRoot.GetComponentsInChildren<UdonBehaviour>(true, foundBehaviours);
+                else
+                    foundBehaviours.Clear();
+                
+                if (foundBehaviours.Count == 0)
+                    continue;
+
+                foreach (UdonBehaviour behaviour in foundBehaviours)
+                {
+                    if (behaviour.programSource != null)
+                        continue;
+
+                    if (serializedAssetField.GetValue(behaviour) != null)
+                    {
+                        prefabsToRepair.Add(AssetDatabase.GetAssetPath(prefabRoot));
+                        break;
+                    }
+                }
+            }
+            
+            foundBehaviours.Clear();
+
+            foreach (string repairPrefab in prefabsToRepair)
+            {
+                GameObject prefabRoot = PrefabUtility.LoadPrefabContents(repairPrefab);
+                
+                if (PrefabUtility.IsPartOfImmutablePrefab(prefabRoot))
+                {
+                    PrefabUtility.UnloadPrefabContents(prefabRoot);
+                    continue;
+                }
+
+                try
+                {
+                    prefabRoot.GetComponentsInChildren<UdonBehaviour>(true, foundBehaviours);
+
+                    foreach (UdonBehaviour behaviour in foundBehaviours)
+                    {
+                        if (behaviour.programSource != null)
+                            continue;
+                        
+                        AbstractSerializedUdonProgramAsset serializedUdonProgramAsset =
+                            (AbstractSerializedUdonProgramAsset) serializedAssetField.GetValue(behaviour);
+                        
+                        if (serializedUdonProgramAsset == null)
+                            continue;
+                        
+                        if (udonSharpProgramAssetLookup.TryGetValue(serializedUdonProgramAsset,
+                            out UdonSharpProgramAsset foundProgramAsset))
+                        {
+                            SerializedObject serializedBehaviour = new SerializedObject(behaviour);
+                            serializedBehaviour.FindProperty(nameof(UdonBehaviour.programSource)).objectReferenceValue = foundProgramAsset;
+                            serializedBehaviour.ApplyModifiedPropertiesWithoutUndo();
+                        
+                            Debug.LogWarning($"Repaired reference to {foundProgramAsset} on prefab {prefabRoot}", prefabRoot);
+                        }
+                    }
+                    
+                    PrefabUtility.SaveAsPrefabAsset(prefabRoot, repairPrefab);
+                }
+                finally
+                {
+                    PrefabUtility.UnloadPrefabContents(prefabRoot);
+                }
+            }
+        }
+
+        static void RepairProgramAssetLinks(List<UdonBehaviour> udonBehaviours)
+        {
+            Dictionary<AbstractSerializedUdonProgramAsset, UdonSharpProgramAsset> udonSharpProgramAssetLookup =
+                new Dictionary<AbstractSerializedUdonProgramAsset, UdonSharpProgramAsset>();
+
+            foreach (UdonSharpProgramAsset programAsset in UdonSharpProgramAsset.GetAllUdonSharpPrograms())
+                udonSharpProgramAssetLookup.Add(programAsset.SerializedProgramAsset, programAsset);
+
+            foreach (UdonBehaviour behaviour in udonBehaviours)
+            {
+                if (behaviour.programSource != null)
+                    continue;
+                
+                SerializedObject serializedBehaviour = new SerializedObject(behaviour);
+                SerializedProperty serializedProgramProperty = serializedBehaviour.FindProperty("serializedProgramAsset");
+
+                AbstractSerializedUdonProgramAsset serializedUdonProgramAsset =
+                    (AbstractSerializedUdonProgramAsset) serializedProgramProperty.objectReferenceValue;
+
+                if (serializedUdonProgramAsset != null)
+                {
+                    if (udonSharpProgramAssetLookup.TryGetValue(serializedUdonProgramAsset,
+                        out UdonSharpProgramAsset foundProgramAsset))
+                    {
+                        serializedBehaviour.FindProperty(nameof(UdonBehaviour.programSource)).objectReferenceValue = foundProgramAsset;
+                        serializedBehaviour.ApplyModifiedPropertiesWithoutUndo();
+                        
+                        Debug.LogWarning($"Repaired reference to {foundProgramAsset} on {behaviour}");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"Empty UdonBehaviour found on {behaviour.gameObject}", behaviour);
+                }
+                
+                PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+            }
+        }
+
         static FieldInfo _serializedAssetField;
         static void UpdateSerializedProgramAssets(List<UdonBehaviour> udonBehaviours)
         {
@@ -601,15 +766,27 @@ namespace UdonSharpEditor
 
                 behaviourGameObjects.Add(behaviour.gameObject);
 
-                if (behaviour.Reliable == true && programAsset.behaviourSyncMode == BehaviourSyncMode.Continuous)
+                if (programAsset.behaviourSyncMode == BehaviourSyncMode.Any ||
+                    programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
+                    continue;
+                
+                if (behaviour.SyncMethod == Networking.SyncType.None && programAsset.behaviourSyncMode != BehaviourSyncMode.None ||
+                    behaviour.SyncMethod == Networking.SyncType.Continuous && programAsset.behaviourSyncMode != BehaviourSyncMode.Continuous ||
+                    behaviour.SyncMethod == Networking.SyncType.Manual && programAsset.behaviourSyncMode != BehaviourSyncMode.Manual)
                 {
-                    behaviour.Reliable = false;
-                    modificationCount++;
-                    PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
-                }
-                else if (behaviour.Reliable == false && programAsset.behaviourSyncMode == BehaviourSyncMode.Manual)
-                {
-                    behaviour.Reliable = true;
+                    switch (programAsset.behaviourSyncMode)
+                    {
+                        case BehaviourSyncMode.Continuous:
+                            behaviour.SyncMethod = Networking.SyncType.Continuous;
+                            break;
+                        case BehaviourSyncMode.Manual:
+                            behaviour.SyncMethod = Networking.SyncType.Manual;
+                            break;
+                        case BehaviourSyncMode.None:
+                            behaviour.SyncMethod = Networking.SyncType.None;
+                            break;
+                    }
+
                     modificationCount++;
                     PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
                 }
@@ -634,9 +811,9 @@ namespace UdonSharpEditor
                         continue;
                     }
 
-                    if (objectBehaviour.Reliable)
+                    if (objectBehaviour.SyncMethod == Networking.SyncType.Manual)
                         hasManual = true;
-                    else
+                    else if (objectBehaviour.SyncMethod == Networking.SyncType.Continuous)
                         hasContinuous = true;
 
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -676,16 +853,16 @@ namespace UdonSharpEditor
                     {
                         if (behaviour.programSource is UdonSharpProgramAsset programAsset && programAsset.behaviourSyncMode == BehaviourSyncMode.NoVariableSync)
                         {
-                            if (hasManual && !behaviour.Reliable)
+                            if (hasManual && behaviour.SyncMethod != Networking.SyncType.Manual)
                             {
-                                behaviour.Reliable = true;
+                                behaviour.SyncMethod = Networking.SyncType.Manual;
                                 modificationCount++;
 
                                 PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
                             }
-                            else if (behaviour.Reliable)
+                            else if (behaviour.SyncMethod == Networking.SyncType.Manual)
                             {
-                                behaviour.Reliable = false;
+                                behaviour.SyncMethod = Networking.SyncType.Continuous;
                                 modificationCount++;
 
                                 PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
