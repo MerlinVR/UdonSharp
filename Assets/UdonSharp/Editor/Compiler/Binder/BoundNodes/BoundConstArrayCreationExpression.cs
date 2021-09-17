@@ -24,9 +24,27 @@ namespace UdonSharp.Compiler.Binder
 
         public override Value EmitValue(EmitContext context)
         {
-            Value returnValue = context.CreateGlobalInternalValue(ArrayType);
-            returnValue.DefaultValue = Activator.CreateInstance(ArrayType.UdonType.SystemType, Initializers.Length);
-            
+            Value returnValue;
+
+            if (context.IsRecursiveMethodEmit)
+            {
+                using (context.InterruptAssignmentScope())
+                {
+                    returnValue = context.EmitValue(new BoundArrayCreationExpression(SyntaxNode, context, ArrayType,
+                        new BoundExpression[]
+                        {
+                            BoundAccessExpression.BindAccess(
+                                context.GetConstantValue(context.GetTypeSymbol(SpecialType.System_Int32),
+                                    Initializers.Length))
+                        }, null));
+                }
+            }
+            else
+            {
+                returnValue = context.CreateGlobalInternalValue(ArrayType);
+                returnValue.DefaultValue = Activator.CreateInstance(ArrayType.UdonType.SystemType, Initializers.Length);
+            }
+
             BoundAccessExpression arrayAccess = BoundAccessExpression.BindAccess(returnValue);
             TypeSymbol intType = context.GetTypeSymbol(SpecialType.System_Int32);
             

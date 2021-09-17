@@ -32,15 +32,18 @@ namespace UdonSharp.Compiler.Binder
             PropertySymbol lengthProperty = transformType.GetMember<PropertySymbol>("childCount", context);
             
             Value iteratorValue = context.EmitValue(IteratorSource);
+            iteratorValue.MarkUsedRecursively();
             var iteratorAccess = BoundAccessExpression.BindAccess(iteratorValue);
 
             Value arraySize = context.CreateInternalValue(intType);
+            arraySize.MarkUsedRecursively();
             
             BoundAccessExpression getLength = BoundAccessExpression.BindAccess(context, SyntaxNode, lengthProperty, iteratorAccess);
             context.EmitValueAssignment(arraySize, getLength);
 
             // Declare and reset incrementor value
             Value incrementorValue = context.CreateInternalValue(intType);
+            incrementorValue.MarkUsedRecursively();
             context.EmitValueAssignment(incrementorValue, BoundAccessExpression.BindAccess(context.GetConstantValue(intType, 0)));
 
             JumpLabel loopLabel = context.Module.CreateLabel();

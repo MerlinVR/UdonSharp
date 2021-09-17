@@ -25,7 +25,9 @@ namespace UdonSharp.Compiler.Binder
 
         public override Value EmitValue(EmitContext context)
         {
+            var assignmentInterrupt = context.InterruptAssignmentScope();
             Value conditionValue = context.EmitValue(ConditionExpression);
+            assignmentInterrupt.Dispose();
 
             JumpLabel conditionJump = context.Module.CreateLabel();
             JumpLabel exitTrueJump = context.Module.CreateLabel();

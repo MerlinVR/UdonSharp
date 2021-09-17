@@ -5,6 +5,7 @@ using System.Linq;
 using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
 using UdonSharp.Compiler.Udon;
@@ -353,6 +354,141 @@ namespace UdonSharp.Compiler.Binder
             }
 
             return instanceValue[0];
+        }
+        
+        protected void CheckStackSize(Value valueCount, EmitContext context)
+        {
+            using (context.InterruptAssignmentScope())
+            {
+                Value stack = context.RecursiveStackValue;
+                BoundAccessExpression stackAccess = BoundAccessExpression.BindAccess(stack);
+                Value stackAddr = context.RecursiveStackAddressValue;
+                BoundAccessExpression stackAddrAccess = BoundAccessExpression.BindAccess(stackAddr);
+
+                TypeSymbol arrayType = context.GetTypeSymbol(SpecialType.System_Array);
+
+                context.Module.AddCommentTag("Stack size check");
+
+                // Check stack size and double it if it's not enough
+                // We know that doubling once will always be enough since the default size of the stack is the max number of stack values pushed in any method
+                PropertySymbol arraySizeProperty = arrayType.GetMember<PropertySymbol>("Length", context);
+
+                TypeSymbol intType = context.GetTypeSymbol(SpecialType.System_Int32);
+
+                Value arraySize =
+                    context.EmitValue(BoundAccessExpression.BindAccess(context, SyntaxNode, arraySizeProperty,
+                        stackAccess));
+                BoundAccessExpression arraySizeAccess = BoundAccessExpression.BindAccess(arraySize);
+
+                Value targetSize = context.EmitValue(CreateBoundInvocation(context, SyntaxNode,
+                    new ExternSynthesizedOperatorSymbol(BuiltinOperatorType.Addition, intType, context), null,
+                    new BoundExpression[] { stackAddrAccess, BoundAccessExpression.BindAccess(valueCount) }));
+
+                Value isSizeGreaterThan = context.EmitValue(CreateBoundInvocation(context, SyntaxNode,
+                    new ExternSynthesizedOperatorSymbol(BuiltinOperatorType.GreaterThanOrEqual, intType, context), null,
+                    new BoundExpression[]
+                    {
+                        BoundAccessExpression.BindAccess(targetSize),
+                        arraySizeAccess,
+                    }));
+
+                JumpLabel skipResizeLabel = context.Module.CreateLabel();
+
+                context.Module.AddJumpIfFalse(skipResizeLabel, isSizeGreaterThan);
+
+                // Resize logic
+                Value constantTwo = context.GetConstantValue(intType, 2);
+                Value newSize = context.EmitValue(CreateBoundInvocation(context, SyntaxNode,
+                    new ExternSynthesizedOperatorSymbol(BuiltinOperatorType.Multiplication, intType, context), null,
+                    new BoundExpression[]
+                    {
+                        arraySizeAccess,
+                        BoundAccessExpression.BindAccess(constantTwo),
+                    }));
+
+                Value newArray = context.EmitValue(new BoundArrayCreationExpression(SyntaxNode, context,
+                    context.GetTypeSymbol(SpecialType.System_Object).MakeArrayType(context),
+                    new BoundExpression[] { BoundAccessExpression.BindAccess(newSize) }, null));
+
+                MethodSymbol arrayCopyMethod = arrayType.GetMembers<MethodSymbol>("Copy", context)
+                    .First(e => e.Parameters.Length == 3 && e.Parameters[2].Type == intType);
+
+                context.Emit(CreateBoundInvocation(context, null, arrayCopyMethod, null,
+                    new BoundExpression[]
+                    {
+                        stackAccess,
+                        BoundAccessExpression.BindAccess(newArray),
+                        BoundAccessExpression.BindAccess(arraySize)
+                    }));
+
+                context.Module.AddCopy(newArray, stack);
+
+                context.Module.LabelJump(skipResizeLabel);
+                
+                context.Module.AddCommentTag("Stack size check end");
+            }
+        }
+        
+        protected void PushRecursiveValues(Value[] values, EmitContext context)
+        {
+            if (values.Length == 0)
+                return;
+            
+            Value stack = context.RecursiveStackValue;
+            BoundAccessExpression stackAccess = BoundAccessExpression.BindAccess(stack);
+            Value stackAddr = context.RecursiveStackAddressValue;
+            BoundAccessExpression stackAddrAccess = BoundAccessExpression.BindAccess(stackAddr);
+            
+            context.Module.AddCommentTag("Recursive stack push");
+            
+            // Now we start copying values over to the stack
+            BoundInvocationExpression incrementExpression = new BoundPrefixOperatorExpression(context, SyntaxNode,
+                stackAddrAccess, new ExternSynthesizedOperatorSymbol(BuiltinOperatorType.Addition, context.GetTypeSymbol(SpecialType.System_Int32), context));
+
+            foreach (var valueToPush in values)
+            {
+                BoundArrayAccessExpression arraySet = new BoundArrayAccessExpression(null, context, stackAccess,
+                    new BoundExpression[] { stackAddrAccess });
+
+                context.EmitSet(arraySet, BoundAccessExpression.BindAccess(valueToPush));
+                
+                context.Emit(incrementExpression);
+            }
+            
+            context.Module.AddCommentTag("Recursive stack push end");
+        }
+        
+        protected void PopRecursiveValues(Value[] values, EmitContext context)
+        {
+            if (values.Length == 0)
+                return;
+            
+            Value stack = context.RecursiveStackValue;
+            Value stackAddr = context.RecursiveStackAddressValue;
+            BoundAccessExpression stackAddrAccess = BoundAccessExpression.BindAccess(stackAddr);
+            TypeSymbol intType = context.GetTypeSymbol(SpecialType.System_Int32);
+            TypeSymbol objectType = context.GetTypeSymbol(SpecialType.System_Object);
+            TypeSymbol objectArrayType = objectType.MakeArrayType(context);
+            
+            context.Module.AddCommentTag("Recursive stack pop");
+            
+            BoundInvocationExpression decrementExpression = new BoundPrefixOperatorExpression(context, SyntaxNode,
+                stackAddrAccess, new ExternSynthesizedOperatorSymbol(BuiltinOperatorType.Subtraction, intType, context));
+
+            foreach (var valueToPop in values.Reverse())
+            {
+                context.Emit(decrementExpression);
+                
+                ExternSynthesizedMethodSymbol arrayGetMethod = new ExternSynthesizedMethodSymbol(context, "Get",
+                    objectArrayType, new [] { intType }, objectType, false);
+
+                context.Module.AddPush(stack);
+                context.Module.AddPush(stackAddr);
+                context.Module.AddPush(valueToPop);
+                context.Module.AddExtern(arrayGetMethod);
+            }
+            
+            context.Module.AddCommentTag("Recursive stack pop end");
         }
 
         private sealed class BoundBuiltinOperatorInvocationExpression : BoundExternInvocation

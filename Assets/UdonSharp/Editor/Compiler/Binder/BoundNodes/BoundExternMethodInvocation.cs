@@ -18,14 +18,13 @@ namespace UdonSharp.Compiler.Binder
         {
             var module = context.Module;
 
-            bool hasInstance = false;
+            Value.CowValue instanceValue = null;
             
             using (context.InterruptAssignmentScope())
             {
                 if (!Method.IsStatic && !Method.IsConstructor)
                 {
-                    GetInstanceValue(context);
-                    hasInstance = true;
+                    instanceValue = GetInstanceValue(context);
 
                     // Prevent mutating a value constant if you call a method on the constant for some reason
                     // todo: fix for use with the cowvalues
@@ -41,18 +40,31 @@ namespace UdonSharp.Compiler.Binder
 
             Value[] parameterValues = GetParameterValues(context);
 
-            if (hasInstance)
-            {
-                Value.CowValue instanceValue = GetInstanceValue(context);
+            if (instanceValue != null)
                 module.AddPush(instanceValue.Value);
-                instanceValue.Dispose();
-            }
 
+            Value[] recursiveValues = null;
+            
             string methodName = Method.Name;
+            
             if (methodName == "SendCustomEvent" ||
                 methodName == "SendCustomNetworkEvent" ||
                 methodName == "RunProgram")
+            {
+                if (context.IsRecursiveMethodEmit)
+                {
+                    recursiveValues = context.CollectRecursiveValues();
+                    CheckStackSize(context.GetConstantValue(context.GetTypeSymbol(SpecialType.System_Int32), recursiveValues.Length), context);
+                    PushRecursiveValues(recursiveValues, context);
+                    context.UpdateRecursiveStackMaxSize(recursiveValues.Length);
+                }
+                else
+                {
+                    instanceValue?.Dispose();
+                }
+
                 context.TopTable.DirtyAllValues();
+            }
 
             foreach (Value value in parameterValues)
                 module.AddPush(value);
@@ -72,6 +84,9 @@ namespace UdonSharp.Compiler.Binder
             }
 
             module.AddExtern((ExternMethodSymbol) Method);
+            
+            if (recursiveValues != null)
+                PopRecursiveValues(recursiveValues, context);
 
             return returnValue;
         }

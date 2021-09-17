@@ -39,8 +39,8 @@ namespace UdonSharp.Compiler.Emit
         private Value _returnValue;
         private Value _udonReturnValue;
 
-        private MethodSymbol _currentEmitMethod;
-        
+        internal MethodSymbol CurrentEmitMethod { get; private set; }
+
         public ImmutableArray<FieldSymbol> DeclaredFields { get; private set; }
         public AssemblyDebugInfo DebugInfo { get; }
 
@@ -66,7 +66,7 @@ namespace UdonSharp.Compiler.Emit
             {
                 _method = method;
                 _context = context;
-                context._currentEmitMethod = method;
+                context.CurrentEmitMethod = method;
                 
                 context.DebugInfo.StartMethodEmit(method, _context);
             }
@@ -74,9 +74,11 @@ namespace UdonSharp.Compiler.Emit
             public void Dispose()
             {
                 _context.DebugInfo.FinalizeMethodEmit(_context);
-                _context._currentEmitMethod = null;
+                _context.CurrentEmitMethod = null;
             }
         }
+
+        public bool IsRecursiveMethodEmit => CurrentEmitMethod?.HasAttribute<RecursiveMethodAttribute>() ?? false;
 
         public void Emit()
         {
@@ -214,6 +216,9 @@ namespace UdonSharp.Compiler.Emit
 
                 setToEmit = newEmitSet;
             }
+
+            if (_recursiveStackVal != null)
+                _recursiveStackVal.DefaultValue = new object[_maxRecursiveStackPush];
             
             DebugInfo.FinalizeAssemblyInfo();
         }
@@ -264,6 +269,69 @@ namespace UdonSharp.Compiler.Emit
             return TopTable.CreateInternalValue(type);
         }
 
+        public Value[] CollectRecursiveValues()
+        {
+            HashSet<Value> visitedValues = new HashSet<Value>();
+            List<Value> values = new List<Value>();
+
+            ValueTable currentTable = TopTable;
+
+            while (currentTable != null)
+            {
+                foreach (var currentValue in currentTable.Values)
+                {
+                    if (currentValue.IsConstant || visitedValues.Contains(currentValue))
+                        continue;
+
+                    if (currentValue.IsLocal || currentValue.UsedRecursively || currentValue.HasCOWReferences())
+                    {
+                        values.Add(currentValue);
+                        visitedValues.Add(currentValue);
+                    }
+                }
+
+                currentTable = currentTable.ParentTable;
+            }
+
+            // values.AddRange(GetMethodLinkage(CurrentEmitMethod, false).ParameterValues);
+            values.AddRange(_openCows.Where(e => e.Value != null && e.ReferenceCount > 0 && !e.Value.IsConstant && !visitedValues.Contains(e.Value)).Select(e => e.Value));
+            
+            return values.ToArray();
+        }
+
+        private Value _recursiveStackVal;
+        private Value _recursiveStackAddressVal;
+        private int _maxRecursiveStackPush;
+
+        public Value RecursiveStackValue
+        {
+            get
+            {
+                if (_recursiveStackVal != null)
+                    return _recursiveStackVal;
+                
+                _recursiveStackVal = RootTable.CreateGlobalInternalValue(GetTypeSymbol(SpecialType.System_Object).MakeArrayType(this));
+                return _recursiveStackVal;
+            }
+        }
+        
+        public Value RecursiveStackAddressValue
+        {
+            get
+            {
+                if (_recursiveStackAddressVal != null)
+                    return _recursiveStackAddressVal;
+                
+                _recursiveStackAddressVal = RootTable.CreateGlobalInternalValue(GetTypeSymbol(SpecialType.System_Int32));
+                return _recursiveStackAddressVal;
+            }
+        }
+
+        public void UpdateRecursiveStackMaxSize(int maxSize)
+        {
+            _maxRecursiveStackPush = (maxSize > _maxRecursiveStackPush) ? maxSize : _maxRecursiveStackPush;
+        }
+
         public Value GetConstantValue(TypeSymbol type, object value)
         {
             return RootTable.GetConstantValue(type, value);
@@ -302,15 +370,15 @@ namespace UdonSharp.Compiler.Emit
                 return;
             }
 
-            MethodLinkage currentMethodLinkage = GetMethodLinkage(_currentEmitMethod, false);
+            MethodLinkage currentMethodLinkage = GetMethodLinkage(CurrentEmitMethod, false);
 
             if (currentMethodLinkage.ReturnValue != null)
             {
                 EmitValueAssignment(currentMethodLinkage.ReturnValue, returnExpression);
 
-                if (_currentEmitMethod.Name == "OnOwnershipRequest" &&
-                    !_currentEmitMethod.IsExtern && 
-                    GetMostDerivedMethod(_currentEmitMethod) == _currentEmitMethod)
+                if (CurrentEmitMethod.Name == "OnOwnershipRequest" &&
+                    !CurrentEmitMethod.IsExtern && 
+                    GetMostDerivedMethod(CurrentEmitMethod) == CurrentEmitMethod)
                 {
                     if (_udonReturnValue == null)
                         _udonReturnValue = RootTable.CreateParameterValue("__returnValue", GetTypeSymbol(SpecialType.System_Object));
@@ -751,7 +819,7 @@ namespace UdonSharp.Compiler.Emit
         /// <param name="methodSymbol">The method symbol to get the linkage for</param>
         /// <param name="useVirtual">Whether this is a virtual call where we want the most derived method to be called</param>
         /// <returns></returns>
-        public MethodLinkage GetMethodLinkage(MethodSymbol methodSymbol, bool useVirtual = true)
+        public MethodLinkage GetMethodLinkage(MethodSymbol methodSymbol, bool useVirtual)
         {
             if (!useVirtual && _directLinkages.TryGetValue(methodSymbol, out var linkage))
                 return linkage;
@@ -826,11 +894,38 @@ namespace UdonSharp.Compiler.Emit
             }
         }
 
+        private int _cowScopeDepth;
+        private List<Value.CowValueInternalTracker> _openCows = new List<Value.CowValueInternalTracker>();
+
+        private void EnterCowScope()
+        {
+            ++_cowScopeDepth;
+        }
+
+        private void ExitCowScope()
+        {
+            if (--_cowScopeDepth == 0)
+                _openCows.Clear();
+        }
+
+        public void AddOpenCow(Value.CowValueInternalTracker cow)
+        {
+            if (_cowScopeDepth > 0)
+                _openCows.Add(cow);
+        }
+
         public void Emit(BoundNode node)
         {
             UpdateNode(node);
+
+            bool isExpression = node is BoundExpression;
+            if (isExpression)
+                EnterCowScope();
             
             node.Emit(this);
+            
+            if (isExpression)
+                ExitCowScope();
             
             if (node is BoundExpression boundExpression)
                 boundExpression.ReleaseCowReferences(this);
@@ -840,7 +935,9 @@ namespace UdonSharp.Compiler.Emit
         {
             UpdateNode(expression);
             
+            EnterCowScope();
             Value result = expression.EmitValue(this);
+            ExitCowScope();
             expression.ReleaseCowReferences(this);
             
             return result;
@@ -850,14 +947,20 @@ namespace UdonSharp.Compiler.Emit
         {
             UpdateNode(expression);
             
-            return expression.EmitValue(this);
+            EnterCowScope();
+            var expressionVal = expression.EmitValue(this);
+            ExitCowScope();
+
+            return expressionVal;
         }
 
         public Value EmitSet(BoundAccessExpression targetExpression, BoundExpression sourceExpression)
         {
             UpdateNode(targetExpression);
             
+            EnterCowScope();
             Value resultVal = targetExpression.EmitSet(this, sourceExpression);
+            ExitCowScope();
             targetExpression.ReleaseCowReferences(this);
 
             return resultVal;

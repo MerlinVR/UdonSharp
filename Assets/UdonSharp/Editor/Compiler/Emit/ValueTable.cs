@@ -1,7 +1,6 @@
 ﻿
 using System;
 using System.Collections.Generic;
-using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Symbols;
 using UnityEngine;
@@ -43,6 +42,8 @@ namespace UdonSharp.Compiler.Emit
         private Dictionary<Symbol, Value> _userValues;
 
         private HashSet<string> _nameCollisionCheckSet;
+
+        public List<Value> Values => _values ?? new List<Value>();
 
         public ValueTable(AssemblyModule module, ValueTable parent)
         {

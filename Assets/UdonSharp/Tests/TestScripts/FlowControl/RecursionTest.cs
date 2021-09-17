@@ -280,6 +280,10 @@ namespace UdonSharp.Tests
 
             return true;
         }
+        
+        private int memory;
+        [RecursiveMethod]
+        private int Sum() => memory == 0 ? 0 : memory-- + Sum();
 
         [RecursiveMethod] // Just here to test calling out to other types from recursive methods
         public void ExecuteTests()
@@ -287,51 +291,54 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Basic recursion 4!", Factorial(4) == 24);
             tester.TestAssertion("Basic recursion 5!", Factorial(5) == 120);
             tester.TestAssertion("Basic recursion 12!", Factorial(12) == 479001600);
-
+            
             int arraySize = Random.Range(10000, 11000);
             int[] shuffleArray = InitTestArray(arraySize); // Fuzz a little
-
+            
             ShuffleArray(shuffleArray);
             QuickSort(shuffleArray, 0, shuffleArray.Length - 1);
-
+            
             bool sorted = IsSorted(shuffleArray);
             if (!sorted)
                 Debug.LogWarning($"Array size that failed {arraySize}");
-
+            
             tester.TestAssertion("Quicksort recursion", sorted);
-
+            
             RecursionTest self = this;
-
+            
             ShuffleArray(shuffleArray);
             self.QuickSort(shuffleArray, 0, shuffleArray.Length - 1);
-
+            
             tester.TestAssertion("Quicksort external call", IsSorted(shuffleArray));
-
+            
             tester.TestAssertion("Function parameter swap recursion", CombineStrings(6, "a", "b") == "abababababababababababababababababababababababababababababababa");
-
+            
             tester.TestAssertion("Function parameter swap recursion external call", self.CombineStringsExtern(6, "a", "b") == "abababababababababababababababababababababababababababababababa");
             tester.TestAssertion("Params array recursion", CombineStringsParams(4, "a", "b", "c", "d", "e") == "aeaeaaaaeaeeeeeaeeeeeaeeeeeaeeeeaeaeeeeaeaaaaaeaaaaaeaaaaaeaaaaaeaeeeeaeaaaaaeaaaaaeaaaaaeaaaaaeaeeeeaeaaaaaeaaaaaeaaaaaeaaaaaeaeeeeaeaaaaaeaaaaaeaaaaaeaaaa");
             tester.TestAssertion("Nested call recursion", CombineStringsNested(3, "a", "b") == "abaccbcccabccacccccbaccbccccccabccacccbaccbcccccabccaccccccc");
-
+            
             tester.TestAssertion("Count children recursively foreach", CountChildren(transform) == 20);
             tester.TestAssertion("Count children recursively foreach expression", CountChildrenForeachExpression(transform) == 20);
             tester.TestAssertion("Count children recursively foreach access", CountChildrenForeachAccessExpression(transform) == 20);
-
+            
             externChildCount = 0;
             CountChildrenExternalCount(transform);
-
+            
             tester.TestAssertion("Count children recursively foreach external counter", externChildCount == 20);
-
+            
             customEventCounter = 4;
             CustomEventExternRecursion();
-
+            
             tester.TestAssertion("SendCustomEvent extern recursion", customEventCounter == 24);
-
+            
             customEventCounter = 4;
             CustomEventRecursion();
             tester.TestAssertion("SendCustomEvent recursion", customEventCounter == 24);
-
+            
             tester.TestAssertion("Recursive short circuit operators", ShortCircuitRecursion(true, 2, true) == false);
+
+            memory = 10;
+            tester.TestAssertion("Postfix recursion", Sum() == 55);
         }
     }
 }
