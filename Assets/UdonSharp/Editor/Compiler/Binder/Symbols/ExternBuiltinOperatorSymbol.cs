@@ -5,6 +5,39 @@ using UdonSharp.Compiler.Udon;
 
 namespace UdonSharp.Compiler.Symbols
 {
+    internal enum BuiltinOperatorType
+    {
+        // -- Math
+        Addition,
+        Subtraction,
+        Multiplication,
+        Division,
+        Remainder,
+        LeftShift,
+        RightShift,
+        // UnaryPlus // This should be discarded before it gets to this point. I don't think there are any types that are relevant in Udon where this would matter
+        UnaryMinus,
+        // These operators are not present in Udon so we should handle them at a higher level, and we need handling for prefix vs postfix
+        //  UnaryIncrement,
+        //  UnaryDecrement,
+        // -- Comparison
+        GreaterThan,
+        GreaterThanOrEqual,
+        LessThan,
+        LessThanOrEqual, 
+        Equality,
+        Inequality, 
+        // -- Boolean operators
+        UnaryNegation,
+        ConditionalAnd, 
+        ConditionalOr, 
+        // -- Bitwise operators
+        LogicalAnd, 
+        LogicalOr, 
+        LogicalXor,
+        BitwiseNot, // Now has hack workaround handling
+    }
+    
     internal sealed class ExternBuiltinOperatorSymbol : ExternMethodSymbol
     {
         public BuiltinOperatorType OperatorType { get; }

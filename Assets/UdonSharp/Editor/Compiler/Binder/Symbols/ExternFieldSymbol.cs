@@ -17,11 +17,11 @@ namespace UdonSharp.Compiler.Symbols
         public override bool IsBound => true;
 
         private string _externSetSignature;
-        public string ExternSetSignature => _externSetSignature ?? (_externSetSignature = CompilerUdonInterface.GetUdonAccessorName(this, Type, FieldAccessorType.Set));
+        public string ExternSetSignature => _externSetSignature ?? (_externSetSignature = CompilerUdonInterface.GetUdonAccessorName(this, Type, CompilerUdonInterface.FieldAccessorType.Set));
 
         private string _externGetSignature;
 
-        public string ExternGetSignature => _externGetSignature ?? (_externGetSignature = CompilerUdonInterface.GetUdonAccessorName(this, Type, FieldAccessorType.Get));
+        public string ExternGetSignature => _externGetSignature ?? (_externGetSignature = CompilerUdonInterface.GetUdonAccessorName(this, Type, CompilerUdonInterface.FieldAccessorType.Get));
 
         
     }

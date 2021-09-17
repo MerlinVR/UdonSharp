@@ -109,6 +109,12 @@ namespace UdonSharp.Compiler.Udon
             
             return GetUdonTypeName(externSymbol.UdonType.SystemType);
         }
+
+        internal enum FieldAccessorType
+        {
+            Get,
+            Set,
+        }
         
         public static string GetUdonAccessorName(Symbol symbol, TypeSymbol fieldType, FieldAccessorType accessorType)
         {

@@ -9,12 +9,6 @@ namespace UdonSharp.Compiler
     [System.Serializable]
     public class FieldDefinition
     {
-        public FieldDefinition(SymbolDefinition symbol)
-        {
-            fieldSymbol = symbol;
-            fieldAttributes = new List<System.Attribute>();
-        }
-
         public FieldDefinition(string name, Type userType, Type systemType, UdonSyncMode? syncMode, bool isSerialized, List<Attribute> attributes)
         {
             Name = name;
@@ -24,8 +18,6 @@ namespace UdonSharp.Compiler
             IsSerialized = isSerialized;
             fieldAttributes = attributes;
         }
-
-        public SymbolDefinition fieldSymbol;
         
         [field: SerializeField]
         public string Name { get; }
@@ -74,7 +66,5 @@ namespace UdonSharp.Compiler
         public UnityEditor.MonoScript classScript;
 
         public List<FieldDefinition> fieldDefinitions = new List<FieldDefinition>();
-        public List<MethodDefinition> methodDefinitions = new List<MethodDefinition>();
-        public List<PropertyDefinition> propertyDefinitions = new List<PropertyDefinition>();
     }
 }

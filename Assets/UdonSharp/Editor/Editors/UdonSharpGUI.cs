@@ -1045,7 +1045,7 @@ namespace UdonSharpEditor
             bool shouldDraw = true;
             bool isArray = variableType.IsArray;
 
-            FieldDefinition symbolField;
+            FieldDefinition symbolField = null;
             if (programAsset.fieldDefinitions != null && programAsset.fieldDefinitions.TryGetValue(symbol, out symbolField))
             {
                 HideInInspector hideAttribute = symbolField.GetAttribute<HideInInspector>();
@@ -1070,10 +1070,6 @@ namespace UdonSharpEditor
                         GUILayout.Space((attribute as SpaceAttribute).height);
                     }
                 }
-            }
-            else
-            {
-                symbolField = new FieldDefinition(null);
             }
 
             if (shouldDraw)
