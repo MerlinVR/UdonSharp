@@ -31,31 +31,34 @@ namespace UdonSharp.Compiler.Binder
 
         private BoundExpression[] GetParameters(EmitContext context, BoundExpression valueExpression = null)
         {
-            Value.CowValue[] propertyParams = context.GetExpressionCowValues(this, "propertyParams");
-
-            if (propertyParams == null)
+            using (context.InterruptAssignmentScope())
             {
-                if (ParameterExpressions != null)
-                {
-                    propertyParams = new Value.CowValue[ParameterExpressions.Length];
+                Value.CowValue[] propertyParams = context.GetExpressionCowValues(this, "propertyParams");
 
-                    for (int i = 0; i < propertyParams.Length; ++i)
-                        propertyParams[i] = context.EmitValue(ParameterExpressions[i]).GetCowValue(context);
-                }
-                else
+                if (propertyParams == null)
                 {
-                    propertyParams = new Value.CowValue[0];
+                    if (ParameterExpressions != null)
+                    {
+                        propertyParams = new Value.CowValue[ParameterExpressions.Length];
+
+                        for (int i = 0; i < propertyParams.Length; ++i)
+                            propertyParams[i] = context.EmitValue(ParameterExpressions[i]).GetCowValue(context);
+                    }
+                    else
+                    {
+                        propertyParams = Array.Empty<Value.CowValue>();
+                    }
+
+                    context.RegisterCowValues(propertyParams, this, "propertyParams");
                 }
 
-                context.RegisterCowValues(propertyParams, this, "propertyParams");
+                var expressions = new List<BoundExpression>();
+                expressions.AddRange(propertyParams.Select(BindAccess));
+                if (valueExpression != null)
+                    expressions.Add(valueExpression);
+
+                return expressions.ToArray();
             }
-
-            var expressions = new List<BoundExpression>();
-            expressions.AddRange(propertyParams.Select(BindAccess));
-            if (valueExpression != null)
-                expressions.Add(valueExpression);
-
-            return expressions.ToArray();
         }
 
         private BoundExpression GetInstanceExpression(EmitContext context)
@@ -70,7 +73,8 @@ namespace UdonSharp.Compiler.Binder
 
             if (instance == null)
             {
-                instance = new[] {context.EmitValue(SourceExpression).GetCowValue(context)};
+                using (context.InterruptAssignmentScope())
+                    instance = new[] {context.EmitValue(SourceExpression).GetCowValue(context)};
                 context.RegisterCowValues(instance, this, "propertyInstance");
             }
 

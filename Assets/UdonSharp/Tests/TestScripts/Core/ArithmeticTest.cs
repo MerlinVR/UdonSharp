@@ -30,7 +30,7 @@ namespace UdonSharp.Tests
             UintBitOps();
             StringAddition();
             DecimalOps();
-            // BitwiseNot();
+            BitwiseNot();
         }
 
         void IntBinaryOps()
@@ -382,25 +382,25 @@ namespace UdonSharp.Tests
             s += string.Format("{0:x2}", 0x42);
             tester.TestAssertion("String addition", s == "abcdef42");
         }
-        //
-        // void BitwiseNot()
-        // {
-        //     int positiveInt = 30;
-        //
-        //     int resultInt = ~positiveInt;
-        //     tester.TestAssertion("Int bitwise not positive", resultInt == -31);
-        //     tester.TestAssertion("Int bitwise not positive 2", ~positiveInt == -31);
-        //     
-        //     int negativeInt = -30;
-        //
-        //     resultInt = ~negativeInt;
-        //     tester.TestAssertion("Int bitwise not negative", resultInt == 29);
-        //     tester.TestAssertion("Int bitwise not negative 2", ~negativeInt == 29);
-        //
-        //     uint uintTest = 40;
-        //     uint resultUint = ~uintTest;
-        //     tester.TestAssertion("uint bitwise not", ~uintTest == 4294967255);
-        //     tester.TestAssertion("uint bitwise not 2", resultUint == 4294967255);
-        // }
+        
+        void BitwiseNot()
+        {
+            int positiveInt = 30;
+        
+            int resultInt = ~positiveInt;
+            tester.TestAssertion("Int bitwise not positive", resultInt == -31);
+            tester.TestAssertion("Int bitwise not positive 2", ~positiveInt == -31);
+            
+            int negativeInt = -30;
+        
+            resultInt = ~negativeInt;
+            tester.TestAssertion("Int bitwise not negative", resultInt == 29);
+            tester.TestAssertion("Int bitwise not negative 2", ~negativeInt == 29);
+        
+            uint uintTest = 40;
+            uint resultUint = ~uintTest;
+            tester.TestAssertion("uint bitwise not", ~uintTest == 4294967255);
+            tester.TestAssertion("uint bitwise not 2", resultUint == 4294967255);
+        }
     }
 }

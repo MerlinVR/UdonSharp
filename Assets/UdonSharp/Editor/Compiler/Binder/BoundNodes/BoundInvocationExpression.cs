@@ -252,6 +252,11 @@ namespace UdonSharp.Compiler.Binder
                     return new BoundUdonSharpBehaviourInvocationExpression(node, symbol, instanceExpression, parameterExpressions);
                 
                 var doExposureCheck = (!symbol.IsOperator || (symbol.ContainingType == null || !symbol.ContainingType.IsEnum));
+
+                if (symbol.IsOperator && symbol is ExternBuiltinOperatorSymbol operatorSymbol &&
+                    operatorSymbol.OperatorType == BuiltinOperatorType.BitwiseNot)
+                    doExposureCheck = false;
+                
                 if (doExposureCheck && !CompilerUdonInterface.IsExposedToUdon(((ExternMethodSymbol) symbol).ExternSignature))
                     throw new NotExposedException(LocStr.CE_UdonMethodNotExposed, node, $"{symbol.RoslynSymbol?.ToDisplayString() ?? symbol.ToString()}, sig: {((ExternMethodSymbol) symbol).ExternSignature}");
 
@@ -278,6 +283,10 @@ namespace UdonSharp.Compiler.Binder
                     if (node is AssignmentExpressionSyntax)
                         return new BoundCompoundAssignmentExpression(context, node, (BoundAccessExpression) parameterExpressions[0], symbol, parameterExpressions[1]);
 
+                    if (symbol is ExternBuiltinOperatorSymbol externBuiltinOperatorSymbol &&
+                        externBuiltinOperatorSymbol.OperatorType == BuiltinOperatorType.BitwiseNot)
+                        return new BoundBitwiseNotExpression(node, parameterExpressions[0]);
+                    
                     if (parameterExpressions.Length == 2 || symbol.Name == "op_UnaryNegation" || symbol.Name == "op_LogicalNot")
                     {
                         return new BoundBuiltinOperatorInvocationExpression(node, symbol, parameterExpressions);
