@@ -621,8 +621,6 @@ namespace UdonSharpEditor
                 udonBehaviour.SynchronizePosition = false;
                 udonBehaviour.AllowCollisionOwnershipTransfer = false;
 #pragma warning restore CS0618 // Type or member is obsolete
-
-                udonBehaviour.Reliable = programAsset.behaviourSyncMode == BehaviourSyncMode.Manual;
                 
 
                 //if (shouldUndo)

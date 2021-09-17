@@ -578,6 +578,14 @@ namespace UdonSharp.Compiler
                     return;
                 }
 
+                BehaviourSyncMode syncMode = BehaviourSyncMode.Any;
+                UdonBehaviourSyncModeAttribute syncModeAttribute = moduleEmitContext.EmitType.GetAttribute<UdonBehaviourSyncModeAttribute>();
+
+                if (syncModeAttribute != null)
+                    syncMode = syncModeAttribute.behaviourSyncMode;
+
+                moduleBinding.programAsset.behaviourSyncMode = syncMode;
+                    
                 Dictionary<string, FieldDefinition> fieldDefinitions = new Dictionary<string, FieldDefinition>();
 
                 foreach (FieldSymbol symbol in moduleEmitContext.DeclaredFields)
