@@ -346,7 +346,7 @@ namespace UdonSharp
                 assemblyError.SetValue(this, e.Message);
                 Debug.LogException(e);
 
-                return false;
+                throw;
             }
 
             return true;

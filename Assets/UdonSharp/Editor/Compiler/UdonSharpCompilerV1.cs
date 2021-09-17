@@ -595,8 +595,15 @@ namespace UdonSharp.Compiler
                 
                 if (moduleEmitContext.DebugInfo != null)
                     UdonSharpEditorCache.Instance.SetDebugInfo(moduleBinding.programAsset, CurrentJob.CompileOptions.IsEditorBuild ? UdonSharpEditorCache.DebugInfoType.Editor : UdonSharpEditorCache.DebugInfoType.Client, moduleEmitContext.DebugInfo);
-                
-                AssembleProgram(binding, assembly);
+
+                try
+                {
+                    AssembleProgram(binding, assembly);
+                }
+                catch (Exception e)
+                {
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, moduleEmitContext.CurrentNode, e.ToString());
+                }
             }
         #if !SINGLE_THREAD_BUILD
             );
