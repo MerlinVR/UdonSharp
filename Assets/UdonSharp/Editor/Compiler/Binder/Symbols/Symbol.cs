@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using UdonSharp.Compiler.Binder;
+using UnityEngine;
 
 namespace UdonSharp.Compiler.Symbols
 {
@@ -125,9 +126,9 @@ namespace UdonSharp.Compiler.Symbols
         protected void SetupAttributes(BindContext context)
         {
             var attribData = RoslynSymbol.GetAttributes();
-            Attribute[] attributes = new Attribute[attribData.Length];
+            List<Attribute> attributes = new List<Attribute>();
 
-            for (int i = 0; i < attributes.Length; ++i)
+            for (int i = 0; i < attribData.Length; ++i)
             {
                 AttributeData attribute = attribData[i];
                 
@@ -147,6 +148,10 @@ namespace UdonSharp.Compiler.Symbols
                         TypeSymbol typeSymbol = context.GetTypeSymbol(constructorArg.Type);
                         attribValue = Enum.ToObject(typeSymbol.UdonType.SystemType, constructorArg.Value);
                     }
+                    else if (constructorArg.Value is ITypeSymbol typeSymbol)
+                    {
+                        attribValue = context.GetTypeSymbol(typeSymbol).UdonType.SystemType;
+                    }
                     else
                     {
                         attribValue = attribute.ConstructorArguments[j].Value;
@@ -155,7 +160,14 @@ namespace UdonSharp.Compiler.Symbols
                     attributeArgs[j] = attribValue;
                 }
 
-                attributes[i] = (Attribute)Activator.CreateInstance(type.UdonType.SystemType, attributeArgs);
+                try
+                {
+                    attributes.Add((Attribute)Activator.CreateInstance(type.UdonType.SystemType, attributeArgs));
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
             }
 
             SetAttributes(attributes.ToImmutableArray());
