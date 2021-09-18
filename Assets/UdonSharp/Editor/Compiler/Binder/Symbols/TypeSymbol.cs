@@ -74,6 +74,8 @@ namespace UdonSharp.Compiler.Symbols
         {
             if (_bound)
                 return;
+            
+            SetupAttributes(context);
 
             var members = RoslynSymbol.GetMembers();
 
@@ -93,8 +95,6 @@ namespace UdonSharp.Compiler.Symbols
                         break;
                 }
             }
-            
-            SetupAttributes(context);
 
             _bound = true;
         }

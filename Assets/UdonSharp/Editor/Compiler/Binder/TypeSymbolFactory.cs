@@ -1,5 +1,6 @@
 ﻿
 
+using System;
 using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Symbols;
 
@@ -31,13 +32,26 @@ namespace UdonSharp.Compiler.Binder
                         currentArrayType = currentArrayType.ElementType as IArrayTypeSymbol;
                     }
 
-                    INamedTypeSymbol rootType = (INamedTypeSymbol)currentArrayType.ElementType;
-                
-                    if (rootType.IsExternType())
-                        return new ExternTypeSymbol(arrayType, context);
+                    INamedTypeSymbol rootType;
 
-                    if (rootType.IsUdonSharpBehaviour())
-                        return new UdonSharpBehaviourTypeSymbol(arrayType, context);
+                    if (currentArrayType.ElementType is INamedTypeSymbol namedSymbol)
+                    {
+                        rootType = namedSymbol;
+                
+                        if (rootType.IsExternType())
+                            return new ExternTypeSymbol(arrayType, context);
+
+                        if (rootType.IsUdonSharpBehaviour())
+                            return new UdonSharpBehaviourTypeSymbol(arrayType, context);
+                    }
+                    else if (currentArrayType.ElementType is ITypeParameterSymbol typeParameterSymbol)
+                    {
+                        return new TypeParameterSymbol(typeParameterSymbol, context);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
 
                     return new ImportedUdonSharpTypeSymbol(arrayType, context);
                 }

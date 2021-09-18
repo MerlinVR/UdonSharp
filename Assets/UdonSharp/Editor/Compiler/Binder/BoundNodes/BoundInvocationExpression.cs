@@ -219,6 +219,26 @@ namespace UdonSharp.Compiler.Binder
             createdInvocation = null;
             return false;
         }
+        
+        private static bool TryCreateArrayMethodInvocation(AbstractPhaseContext context, SyntaxNode node,
+            MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
+            out BoundInvocationExpression createdInvocation)
+        {
+            if ((symbol.Name == "IndexOf" || symbol.Name == "BinarySearch" || symbol.Name == "LastIndexOf" || symbol.Name == "Reverse") &&
+                symbol.ContainingType == context.GetTypeSymbol(typeof(Array)))
+            {
+                MethodSymbol arrayMethod = context.GetTypeSymbol(typeof(Array))
+                    .GetMembers<MethodSymbol>(symbol.Name, context)
+                    .First(e => !e.RoslynSymbol.IsGenericMethod && e.Parameters.Length == symbol.Parameters.Length);
+
+                createdInvocation = new BoundExternInvocation(node, arrayMethod, instanceExpression,
+                    parameterExpressions);
+                return true;
+            }
+
+            createdInvocation = null;
+            return false;
+        }
 
         private static bool TryCreateShimInvocation(AbstractPhaseContext context, SyntaxNode node,
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
@@ -234,6 +254,9 @@ namespace UdonSharp.Compiler.Binder
                 return true;
             
             if (TryCreateSetProgramVariableInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
+                return true;
+            
+            if (TryCreateArrayMethodInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
                 return true;
 
             return false;
