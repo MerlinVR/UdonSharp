@@ -20,6 +20,7 @@ using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
+using UdonSharp.Compiler.Udon;
 using UdonSharp.Internal;
 using UdonSharp.Lib.Internal;
 using UdonSharp.Serialization;
@@ -205,6 +206,8 @@ namespace UdonSharp.Compiler
             EditorApplication.LockReloadAssemblies();
             
             Localization.Loc.InitLocalization();
+            CompilerUdonInterface.CacheInit();
+
             var allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
             
             var rootProgramLookup = new Dictionary<string, UdonSharpProgramAsset>();

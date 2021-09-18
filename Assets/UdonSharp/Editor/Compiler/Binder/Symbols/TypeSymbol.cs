@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using UdonSharp.Compiler.Binder;
+using UdonSharp.Compiler.Udon;
 
 namespace UdonSharp.Compiler.Symbols
 {
@@ -223,6 +224,16 @@ namespace UdonSharp.Compiler.Symbols
             string typeName = GetFullTypeName(currentType.RoslynSymbol);
 
             Type foundType = _gameScriptAssembly.GetType(typeName);
+
+            if (foundType == null)
+            {
+                foreach (var udonSharpAssembly in CompilerUdonInterface.UdonSharpAssemblies)
+                {
+                    foundType = udonSharpAssembly.GetType(typeName);
+                    if (foundType != null)
+                        break;
+                }
+            }
 
             if (foundType != null)
             {

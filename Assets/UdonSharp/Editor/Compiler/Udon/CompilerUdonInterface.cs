@@ -3,31 +3,33 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection;
-using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Symbols;
+using UdonSharpEditor;
+using UnityEditor;
 using UnityEngine;
 using VRC.Udon.Editor;
 using VRC.Udon.Graph;
+using VRC.Udon.Serialization.OdinSerializer.Utilities;
 
 namespace UdonSharp.Compiler.Udon
 {
-    internal class CompilerUdonInterface
+    internal static class CompilerUdonInterface
     {
         private static HashSet<string> _nodeDefinitionLookup;
 
         private static Dictionary<string, string> _builtinEventLookup;
         private static Dictionary<string, ImmutableArray<(string, Type)>> _builtinEventArgumentsLookup;
         private static bool _cacheInitRan;
-        private static readonly object CacheInitLock = new object();
+        private static readonly object _cacheInitLock = new object();
+        public static ImmutableArray<System.Reflection.Assembly> UdonSharpAssemblies { get; private set; }
 
-        private static void CacheInit()
+        public static void CacheInit()
         {
             if (_cacheInitRan)
                 return;
 
-            lock (CacheInitLock)
+            lock (_cacheInitLock)
             {
                 if (_cacheInitRan)
                     return;
@@ -65,6 +67,35 @@ namespace UdonSharp.Compiler.Udon
                     else
                         Debug.LogWarning($"Duplicate event node {nodeDefinition.fullName} found");
                 }
+
+                string[] assemblyDefinitionPaths = AssetDatabase.FindAssets($"t:{nameof(UdonSharpAssemblyDefinition)}").Select(AssetDatabase.GUIDToAssetPath).ToArray();
+                List<System.Reflection.Assembly> assemblies = new List<System.Reflection.Assembly>();
+
+                System.Reflection.Assembly[] allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+                foreach (string definitionPath in assemblyDefinitionPaths)
+                {
+                    var assemblyDefinition = AssetDatabase.LoadAssetAtPath<UdonSharpAssemblyDefinition>(definitionPath);
+                    if (assemblyDefinition == null || assemblyDefinition.sourceAssembly == null) 
+                        continue;
+                    
+                    var sourceAssembly = assemblyDefinition.sourceAssembly;
+
+                    foreach (var assembly in allAssemblies)
+                    {
+                        if (assembly.IsDynamic || assembly.Location.Length <= 0 ||
+                            assembly.Location.StartsWith("data")) 
+                            continue;
+
+                        if (assembly.GetName().Name != sourceAssembly.name) 
+                            continue;
+                            
+                        assemblies.Add(assembly);
+                        break;
+                    }
+                }
+
+                UdonSharpAssemblies = assemblies.ToImmutableArray();
 
                 _cacheInitRan = true;
             }
