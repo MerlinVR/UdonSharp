@@ -688,6 +688,15 @@ namespace UdonSharp.Compiler
 
                         program.Heap.SetHeapVariable<object[]>(valAddress, arrayStorage.Value);
                     }
+                    else if (UdonSharpUtils.IsUserDefinedType(fieldValue.GetType()))
+                    {
+                        Serializer serializer = Serializer.CreatePooled(fieldValue.GetType());
+
+                        IValueStorage typeStorage = (IValueStorage)Activator.CreateInstance(typeof(SimpleValueStorage<>).MakeGenericType(serializer.GetUdonStorageType()), null);
+                        serializer.WriteWeak(typeStorage, fieldValue);
+
+                        program.Heap.SetHeapVariable(valAddress, typeStorage.Value, typeStorage.Value.GetType());
+                    }
                     else
                     {
                         program.Heap.SetHeapVariable(valAddress, fieldValue, field.FieldType);
