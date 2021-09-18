@@ -239,6 +239,25 @@ namespace UdonSharp.Compiler.Binder
             createdInvocation = null;
             return false;
         }
+        
+        private static bool TryCreateTMPMethodInvocation(AbstractPhaseContext context, SyntaxNode node,
+            MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
+            out BoundInvocationExpression createdInvocation)
+        {
+            if (symbol.ContainingType != null && 
+                symbol.ContainingType.ToString() == "TMPro.TMP_Text")
+            {
+                createdInvocation = new BoundExternInvocation(node, 
+                    new ExternSynthesizedMethodSymbol(context, symbol.Name, instanceExpression.ValueType, symbol.Parameters.Select(e => e.Type).ToArray(), symbol.ReturnType, symbol.IsStatic), 
+                    instanceExpression,
+                    parameterExpressions);
+                
+                return true;
+            }
+
+            createdInvocation = null;
+            return false;
+        }
 
         private static bool TryCreateShimInvocation(AbstractPhaseContext context, SyntaxNode node,
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
@@ -257,6 +276,9 @@ namespace UdonSharp.Compiler.Binder
                 return true;
             
             if (TryCreateArrayMethodInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
+                return true;
+            
+            if (TryCreateTMPMethodInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
                 return true;
 
             return false;

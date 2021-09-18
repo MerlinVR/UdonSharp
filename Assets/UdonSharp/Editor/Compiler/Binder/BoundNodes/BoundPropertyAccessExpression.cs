@@ -139,9 +139,10 @@ namespace UdonSharp.Compiler.Binder
                 }
 
                 if (propertySymbol.ToString() == "UnityEngine.Behaviour.enabled")
-                {
                     return new BoundEnabledPropertyExternAccessExpression(context, node, sourceExpression);
-                }
+
+                if (propertySymbol.ContainingType.ToString() == "TMPro.TMP_Text")
+                    return new BoundTMPPropertyExternAccessExpression(context, node, externProperty, sourceExpression);
                 
                 return new BoundExternPropertyAccessExpression(context, node, externProperty, sourceExpression, parameterExpressions);
             }
@@ -218,6 +219,32 @@ namespace UdonSharp.Compiler.Binder
                     new[] {boolType}, null, false);
                 MethodSymbol getMethod = new ExternSynthesizedMethodSymbol(context, "get_enabled", propertyType,
                     new TypeSymbol[] {}, boolType, false);
+
+                return new SynthesizedPropertySymbol(context, getMethod, setMethod);
+            }
+        }
+        
+        private sealed class BoundTMPPropertyExternAccessExpression : BoundPropertyAccessExpression
+        {
+            public override TypeSymbol ValueType { get; }
+
+            public BoundTMPPropertyExternAccessExpression(AbstractPhaseContext context, SyntaxNode node, PropertySymbol propertySymbol, BoundExpression sourceExpression) 
+                : base(context, node, BuildProperty(context, sourceExpression, propertySymbol), sourceExpression, null)
+            {
+                ValueType = propertySymbol.Type;
+            }
+            
+            private static PropertySymbol BuildProperty(AbstractPhaseContext context, BoundExpression sourceExpression, PropertySymbol propertySymbol)
+            {
+                TypeSymbol propertyType = sourceExpression.ValueType;
+
+                if (propertyType.UdonType.ExternSignature == "VRCUdonUdonBehaviour")
+                    propertyType = context.GetTypeSymbol(typeof(IUdonEventReceiver));
+                
+                MethodSymbol setMethod = new ExternSynthesizedMethodSymbol(context, $"set_{propertySymbol.Name}", propertyType,
+                    new[] {propertySymbol.Type}, null, false);
+                MethodSymbol getMethod = new ExternSynthesizedMethodSymbol(context, $"get_{propertySymbol.Name}", propertyType,
+                    new TypeSymbol[] {}, propertySymbol.Type, false);
 
                 return new SynthesizedPropertySymbol(context, getMethod, setMethod);
             }
