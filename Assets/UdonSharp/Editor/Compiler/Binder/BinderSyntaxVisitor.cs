@@ -460,6 +460,34 @@ namespace UdonSharp.Compiler.Binder
             return new BoundLocalDeclarationStatement(node, (BoundVariableDeclarationStatement)VisitVariableDeclaration(node.Declaration));
         }
 
+        public BoundExpression VisitVariableInitializer(ExpressionSyntax expressionSyntax, TypeSymbol type)
+        {
+            if (expressionSyntax == null)
+                return null;
+
+            if (expressionSyntax.Kind() == SyntaxKind.ArrayInitializerExpression)
+            {
+                InitializerExpressionSyntax initializerExpressionSyntax = (InitializerExpressionSyntax)expressionSyntax;
+                
+                var initializerExpressions = initializerExpressionSyntax.Expressions;
+                BoundExpression[] elementCounts =
+                {
+                    new BoundConstantExpression(new ConstantValue<int>(initializerExpressions.Count),
+                        Context.GetTypeSymbol(SpecialType.System_Int32), expressionSyntax)
+                };
+                BoundExpression[] initializers = new BoundExpression[initializerExpressions.Count];
+
+                TypeSymbol elementType = type.ElementType;
+
+                for (int i = 0; i < initializers.Length; ++i)
+                    initializers[i] = VisitExpression(initializerExpressions[i], elementType);
+
+                return new BoundArrayCreationExpression(expressionSyntax, Context, type, elementCounts, initializers);
+            }
+
+            return VisitExpression(expressionSyntax, type);
+        }
+
         public override BoundNode VisitVariableDeclaration(VariableDeclarationSyntax node)
         {
             BoundVariableDeclaratorStatement[] boundDeclarations =
@@ -483,7 +511,7 @@ namespace UdonSharp.Compiler.Binder
                         throw new InvalidOperationException("Invalid variable declaration");
                 }
                 
-                boundDeclarations[idx++] = new BoundVariableDeclaratorStatement(declaration, declaredSymbol, declaration.Initializer != null ? VisitExpression(declaration.Initializer.Value, declarationType) : null);
+                boundDeclarations[idx++] = new BoundVariableDeclaratorStatement(declaration, declaredSymbol, VisitVariableInitializer(declaration.Initializer?.Value, declarationType));
             }
 
             return new BoundVariableDeclarationStatement(node, boundDeclarations);

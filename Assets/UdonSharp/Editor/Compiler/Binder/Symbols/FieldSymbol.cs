@@ -62,7 +62,7 @@ namespace UdonSharp.Compiler.Symbols
             if (InitializerSyntax != null)
             {
                 BinderSyntaxVisitor bodyVisitor = new BinderSyntaxVisitor(this, context);
-                InitializerExpression = bodyVisitor.VisitExpression(InitializerSyntax, fieldType);
+                InitializerExpression = bodyVisitor.VisitVariableInitializer(InitializerSyntax, fieldType);
             }
             
             SetupAttributes(context);
