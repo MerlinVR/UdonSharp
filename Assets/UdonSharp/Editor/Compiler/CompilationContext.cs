@@ -15,6 +15,8 @@ using UdonSharp.Compiler.Udon;
 
 namespace UdonSharp.Compiler
 {
+    using SyntaxTree = Microsoft.CodeAnalysis.SyntaxTree;
+
     internal enum DiagnosticSeverity
     {
         Log,
