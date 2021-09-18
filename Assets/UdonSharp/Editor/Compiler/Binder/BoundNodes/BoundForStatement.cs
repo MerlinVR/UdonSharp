@@ -8,14 +8,16 @@ namespace UdonSharp.Compiler.Binder
     internal sealed class BoundForStatement : BoundStatement
     {
         private BoundVariableDeclarationStatement Declaration { get; }
+        private BoundExpression[] Initializers { get; }
         private BoundExpression Condition { get; }
         private BoundExpression[] Incrementors { get; }
         private BoundStatement Body { get; }
         
-        public BoundForStatement(SyntaxNode node, BoundVariableDeclarationStatement declaration, BoundExpression condition, BoundExpression[] incrementors, BoundStatement body)
+        public BoundForStatement(SyntaxNode node, BoundVariableDeclarationStatement declaration, BoundExpression[] initializers, BoundExpression condition, BoundExpression[] incrementors, BoundStatement body)
             :base(node)
         {
             Declaration = declaration;
+            Initializers = initializers;
             Condition = condition;
             Incrementors = incrementors;
             Body = body;
@@ -27,6 +29,9 @@ namespace UdonSharp.Compiler.Binder
             {
                 if (Declaration != null)
                     context.Emit(Declaration);
+
+                foreach (var initializer in Initializers)
+                    context.Emit(initializer);
 
                 JumpLabel continueLabel = context.PushContinueLabel();
                 JumpLabel breakLabel = context.PushBreakLabel();

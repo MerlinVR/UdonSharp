@@ -49,7 +49,7 @@ namespace UdonSharp.Compiler.Binder
 
         public override BoundNode VisitParenthesizedExpression(ParenthesizedExpressionSyntax node)
         {
-            return Visit(node.Expression);
+            return VisitExpression(node.Expression);
         }
 
         public override BoundNode VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
@@ -731,6 +731,11 @@ namespace UdonSharp.Compiler.Binder
             if (node.Declaration != null)
                 declaration = (BoundVariableDeclarationStatement)VisitVariableDeclaration(node.Declaration);
 
+            BoundExpression[] initializers = new BoundExpression[node.Initializers.Count];
+
+            for (int i = 0; i < initializers.Length; ++i)
+                initializers[i] = VisitExpression(node.Initializers[i]);
+
             BoundExpression conditionExpression = null;
             if (node.Condition != null)
                 conditionExpression = VisitExpression(node.Condition, typeof(bool));
@@ -741,7 +746,7 @@ namespace UdonSharp.Compiler.Binder
 
             var body = VisitStatement(node.Statement);
 
-            return new BoundForStatement(node, declaration, conditionExpression, incrementors, body);
+            return new BoundForStatement(node, declaration, initializers, conditionExpression, incrementors, body);
         }
 
         public override BoundNode VisitWhileStatement(WhileStatementSyntax node)
