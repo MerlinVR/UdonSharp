@@ -132,7 +132,11 @@ namespace UdonSharp.Compiler.Symbols
             {
                 AttributeData attribute = attribData[i];
                 
-                TypeSymbol type = context.GetTypeSymbol(attribute.AttributeClass);
+                // Skip marking attributes as referenced types by using the bind context
+                TypeSymbol type = context.CompileContext.GetTypeSymbol(attribute.AttributeClass, context);
+
+                if (!type.IsExtern)
+                    continue;
 
                 object[] attributeArgs = new object[attribute.ConstructorArguments.Length];
 
@@ -162,7 +166,8 @@ namespace UdonSharp.Compiler.Symbols
 
                 try
                 {
-                    attributes.Add((Attribute)Activator.CreateInstance(type.UdonType.SystemType, attributeArgs));
+                    if (type.IsExtern)
+                        attributes.Add((Attribute)Activator.CreateInstance(type.UdonType.SystemType, attributeArgs));
                 }
                 catch (Exception)
                 {

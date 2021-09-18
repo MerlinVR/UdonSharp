@@ -75,7 +75,8 @@ namespace UdonSharp.Compiler.Symbols
             if (_bound)
                 return;
             
-            SetupAttributes(context);
+            if (IsUdonSharpBehaviour)
+                SetupAttributes(context);
 
             var members = RoslynSymbol.GetMembers();
 
