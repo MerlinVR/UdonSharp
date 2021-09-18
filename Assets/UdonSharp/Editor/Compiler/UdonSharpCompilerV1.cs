@@ -210,7 +210,21 @@ namespace UdonSharp.Compiler
             var rootProgramLookup = new Dictionary<string, UdonSharpProgramAsset>();
             foreach (var udonSharpProgram in allPrograms)
             {
-                rootProgramLookup.Add(AssetDatabase.GetAssetPath(udonSharpProgram.sourceCsScript).Replace('\\', '/'), udonSharpProgram);
+                if (udonSharpProgram.sourceCsScript == null)
+                {
+                    Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] Source C# script on {udonSharpProgram} is null", udonSharpProgram);
+                    continue;
+                }
+
+                string assetPath = AssetDatabase.GetAssetPath(udonSharpProgram.sourceCsScript);
+                
+                if (string.IsNullOrEmpty(assetPath))
+                {
+                    Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] Source C# script on {udonSharpProgram} is null", udonSharpProgram);
+                    continue;
+                }
+                
+                rootProgramLookup.Add(assetPath.Replace('\\', '/'), udonSharpProgram);
             }
             
             // var allSourcePaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Where(e => e.isV1Root).Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
