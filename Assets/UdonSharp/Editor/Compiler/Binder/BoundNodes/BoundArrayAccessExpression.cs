@@ -2,6 +2,7 @@
 using System;
 using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Symbols;
+using UdonSharp.Compiler.Udon;
 
 namespace UdonSharp.Compiler.Binder
 {
@@ -25,11 +26,14 @@ namespace UdonSharp.Compiler.Binder
                 arrayType = context.GetTypeSymbol(SpecialType.System_Object).MakeArrayType(context);
             }
 
+            string arrayTypeName = CompilerUdonInterface.GetMethodTypeName(arrayType.UdonType);
+            string arrayElementTypeName = CompilerUdonInterface.GetUdonTypeName(arrayType.UdonType.ElementType);
+            
             TypeSymbol intType = context.GetTypeSymbol(SpecialType.System_Int32);
-            MethodSymbol setMethod = new ExternSynthesizedMethodSymbol(context, "Set", arrayType,
-                new[] {intType, arrayType.UdonType.ElementType}, null, false);
-            MethodSymbol getMethod = new ExternSynthesizedMethodSymbol(context, "Get", arrayType,
-                new[] {intType}, arrayType.UdonType.ElementType, false);
+            MethodSymbol setMethod = new ExternSynthesizedMethodSymbol(context, $"{arrayTypeName}.__Set__SystemInt32_{arrayElementTypeName}__SystemVoid",
+                new[] {intType, arrayType.ElementType}, null, false);
+            MethodSymbol getMethod = new ExternSynthesizedMethodSymbol(context, $"{arrayTypeName}.__Get__SystemInt32__{arrayElementTypeName}",
+                new[] {intType}, arrayType.ElementType, false);
 
             return new SynthesizedPropertySymbol(context, getMethod, setMethod);
         }

@@ -144,6 +144,15 @@ namespace UdonSharp.Compiler.Udon
                 .Replace("+", "");
         }
 
+        public static string GetMethodTypeName(TypeSymbol type)
+        {
+            Type methodSourceType = type.UdonType.SystemType;
+
+            methodSourceType = UdonSharpUtils.RemapBaseType(methodSourceType);
+
+            return CompilerUdonInterface.SanitizeTypeName(methodSourceType.FullName ?? methodSourceType.Namespace + methodSourceType.Name).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
+        }
+
         private static string GetUdonTypeName(Type externType)
         {
             string externTypeName = externType.GetNameWithoutGenericArity();
