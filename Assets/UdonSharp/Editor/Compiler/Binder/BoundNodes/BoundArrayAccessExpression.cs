@@ -18,6 +18,7 @@ namespace UdonSharp.Compiler.Binder
         private static PropertySymbol BuildProperty(AbstractPhaseContext context, BoundExpression sourceExpression)
         {
             TypeSymbol arrayType = sourceExpression.ValueType;
+            TypeSymbol elementType = arrayType.ElementType;
             
             Type systemType = arrayType.ElementType.UdonType.SystemType;
             if (systemType == typeof(UnityEngine.Object) ||
@@ -31,9 +32,9 @@ namespace UdonSharp.Compiler.Binder
             
             TypeSymbol intType = context.GetTypeSymbol(SpecialType.System_Int32);
             MethodSymbol setMethod = new ExternSynthesizedMethodSymbol(context, $"{arrayTypeName}.__Set__SystemInt32_{arrayElementTypeName}__SystemVoid",
-                new[] {intType, arrayType.ElementType}, null, false);
+                new[] {intType, elementType}, null, false);
             MethodSymbol getMethod = new ExternSynthesizedMethodSymbol(context, $"{arrayTypeName}.__Get__SystemInt32__{arrayElementTypeName}",
-                new[] {intType}, arrayType.ElementType, false);
+                new[] {intType}, elementType, false);
 
             return new SynthesizedPropertySymbol(context, getMethod, setMethod);
         }
