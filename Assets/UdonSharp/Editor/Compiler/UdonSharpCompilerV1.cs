@@ -31,6 +31,8 @@ using Debug = UnityEngine.Debug;
 
 namespace UdonSharp.Compiler
 {
+    using SyntaxTree = Microsoft.CodeAnalysis.SyntaxTree;
+
     public class UdonSharpCompileOptions
     {
         public bool IsEditorBuild { get; set; } = true;
