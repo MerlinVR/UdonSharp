@@ -8,7 +8,7 @@ UdonSharp is a compiler that compiles C# to Udon assembly. UdonSharp is not curr
 
 ## C# features supported
 - Flow control
-  - Supports: `if` `else` `while` `for` `do` `foreach` ~~`switch`~~ `return` `break` `continue` `ternary operator (condition ? true : false)` `??`
+  - Supports: `if` `else` `while` `for` `do` `foreach` `switch` `return` `break` `continue` `ternary operator (condition ? true : false)` `??`
 - Implicit and explicit type conversions
 - Arrays and array indexers
 - All builtin arithmetic operators
@@ -16,7 +16,7 @@ UdonSharp is a compiler that compiles C# to Udon assembly. UdonSharp is not curr
 - `typeof()`
 - Extern methods with out or ref parameters (such as many variants of `Physics.Raycast()`)
 - User defined methods with parameters and return values, supports out/ref, extension methods, and `params`
-- ~~User defined properties~~ support in the next few days
+- User defined properties
 - Static user methods
 - UdonSharpBehaviour inheritence, virtual methods, etc. Will support interfaces on UdonSharpBehaviours in the next couple weeks.
 - Unity/Udon event callbacks with arguments. For instance, registering a OnPlayerJoined event with a VRCPlayerApi argument is valid.
@@ -24,7 +24,7 @@ UdonSharp is a compiler that compiles C# to Udon assembly. UdonSharp is not curr
 - Field initializers
 - Jagged arrays
 - Referencing other custom classes, accessing fields, and calling methods on them
-- ~~Recursive method calls are supported via the `[RecursiveMethod]` attribute~~ temporarily disabled for 1.0, will be added in the next week or so
+- Recursive method calls are supported via the `[RecursiveMethod]` attribute
 
 #### See the [Project Board](https://github.com/MerlinVR/UdonSharp/projects/1) for what's planned to be added in the next couple months
 
