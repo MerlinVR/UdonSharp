@@ -8,6 +8,7 @@ using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Symbols;
 using UdonSharp.Compiler.Udon;
+using UdonSharp.Core;
 using UnityEngine;
 using NotSupportedException = UdonSharp.Core.NotSupportedException;
 
@@ -83,6 +84,18 @@ namespace UdonSharp.Compiler.Emit
         public void Emit()
         {
             _returnValue = RootTable.CreateInternalValue(GetTypeSymbol(SpecialType.System_UInt32), "returnJump");
+
+            CurrentNode = EmitType.RoslynSymbol.DeclaringSyntaxReferences.First().GetSyntax();
+            
+            DefaultExecutionOrder executionOrder = EmitType.GetAttribute<DefaultExecutionOrder>();
+            if (executionOrder != null)
+            {
+                if (executionOrder.order < (int.MinValue + 1000000))
+                    throw new CompilerException($"Execution orders below int.MinValue + 1000000 are reserved for internal use in U#");
+                    
+                Module.ExecutionOrder = executionOrder.order;
+            }
+
             TypeSymbol udonSharpBehaviourType = GetTypeSymbol(typeof(UdonSharpBehaviour));
             
             Stack<TypeSymbol> emitTypeBases = new Stack<TypeSymbol>();

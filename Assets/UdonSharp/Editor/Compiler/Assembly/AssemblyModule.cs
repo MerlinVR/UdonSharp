@@ -19,9 +19,11 @@ namespace UdonSharp.Compiler.Assembly
         
         private List<AssemblyInstruction> _instructions = new List<AssemblyInstruction>();
         private List<JumpLabel> _jumpLabels = new List<JumpLabel>();
-        private uint _currentAddress = 0;
+        private uint _currentAddress;
 
         public uint CurrentAddress => _currentAddress;
+        
+        public int ExecutionOrder { get; set; }
 
         public ValueTable RootTable { get; }
 
@@ -206,6 +208,9 @@ namespace UdonSharp.Compiler.Assembly
         private void BuildInstructionUasm(StringBuilder builder)
         {
             builder.Append(".code_start\n");
+
+            if (ExecutionOrder != 0)
+                builder.Append($".update_order {ExecutionOrder}\n");
             
             foreach (var instruction in _instructions)
                 instruction.WriteAssembly(builder);
