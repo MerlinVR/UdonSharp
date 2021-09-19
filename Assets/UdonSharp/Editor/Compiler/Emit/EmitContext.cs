@@ -198,7 +198,7 @@ namespace UdonSharp.Compiler.Emit
                 {
                     if (!emittedSet.Contains(methodSymbol) && (methodSymbol.RoslynSymbol == null || !methodSymbol.RoslynSymbol.IsAbstract))
                     {
-                        if (methodSymbol.ContainingType.IsUdonSharpBehaviour) // Prevent other behaviour type's methods from leaking into this type from calls across behaviours
+                        if (!methodSymbol.IsStatic && methodSymbol.ContainingType.IsUdonSharpBehaviour) // Prevent other behaviour type's methods from leaking into this type from calls across behaviours
                         {
                             TypeSymbol topType = EmitType;
                             bool foundType = false;
