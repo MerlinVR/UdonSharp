@@ -148,6 +148,11 @@ namespace UdonSharp.Tests
             SetStr("");
 
             tester.TestAssertion("Basic string arg clear", targetVal == "");
+            
+            tester.TestAssertion("Interpolated str 1 arg",$"My interpolated string {1}" == "My interpolated string 1");
+            tester.TestAssertion("Interpolated str 2 args",$"My interpolated string {1} {2}" == "My interpolated string 1 2");
+            tester.TestAssertion("Interpolated str 3 args",$"My interpolated string {1} {2} {3}" == "My interpolated string 1 2 3");
+            tester.TestAssertion("Interpolated str 4 args",$"My interpolated string {1} {2} {3} {4}" == "My interpolated string 1 2 3 4");
         }
 
 #pragma warning disable CS0649

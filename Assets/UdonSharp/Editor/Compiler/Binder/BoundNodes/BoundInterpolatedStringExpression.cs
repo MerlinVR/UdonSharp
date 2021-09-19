@@ -28,35 +28,38 @@ namespace UdonSharp.Compiler.Binder
 
             ObjectArr = context.GetTypeSymbol(SpecialType.System_Object).MakeArrayType(context);
 
-            // todo: use non-params versions of Format when possible
-            StringFormatMethod = ValueType.GetMembers<ExternMethodSymbol>("Format", context).First(e =>
-                e.Parameters[0].Type == ValueType && e.Parameters[1].Type == ObjectArr);
+            if (interpolatedExpressions.Length > 3)
+            {
+                StringFormatMethod = ValueType.GetMembers<ExternMethodSymbol>("Format", context).First(e =>
+                    e.Parameters[0].Type == ValueType && e.Parameters[1].Type == ObjectArr);
+            }
+            else
+            {
+                StringFormatMethod = ValueType.GetMembers<ExternMethodSymbol>("Format", context).First(e =>
+                    e.Parameters[0].Type == ValueType && e.Parameters.Length == interpolatedExpressions.Length + 1);
+            }
         }
 
         public override Value EmitValue(EmitContext context)
         {
-            Value interpolationArr = context.CreateGlobalInternalValue(ObjectArr);
+            BoundInvocationExpression formatInvoke;
 
-            interpolationArr.DefaultValue = new object[InterpolationExpressions.Length];
-
-            BoundAccessExpression arrayAccess = BoundAccessExpression.BindAccess(interpolationArr);
-
-            TypeSymbol intType = context.GetTypeSymbol(SpecialType.System_Int32);
-
-            using (context.InterruptAssignmentScope())
+            if (InterpolationExpressions.Length > 3)
             {
-                // This is quite wasteful for allocations in the compile, todo: look at caching these safely
-                for (int i = 0; i < InterpolationExpressions.Length; ++i)
-                {
-                    BoundAccessExpression elementAccess = BoundAccessExpression.BindElementAccess(context, SyntaxNode,
-                        arrayAccess,
-                        new BoundExpression[]
-                            {new BoundConstantExpression(new ConstantValue<int>(i), intType, SyntaxNode)});
-                    context.EmitSet(elementAccess, InterpolationExpressions[i]);
-                }
-            }
+                BoundConstArrayCreationExpression interpolationArray =
+                    new BoundConstArrayCreationExpression(SyntaxNode, ObjectArr, InterpolationExpressions);
 
-            BoundInvocationExpression formatInvoke = BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode, StringFormatMethod, null, new BoundExpression[]{ BuiltStr, arrayAccess });
+                BoundAccessExpression arrayAccess =
+                    BoundAccessExpression.BindAccess(context.EmitValue(interpolationArray));
+
+                formatInvoke = BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode, StringFormatMethod,
+                    null, new BoundExpression[] { BuiltStr, arrayAccess });
+            }
+            else
+            {
+                formatInvoke = BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode, StringFormatMethod,
+                    null, new BoundExpression[] {BuiltStr}.Concat(InterpolationExpressions).ToArray());
+            }
 
             return context.EmitValue(formatInvoke);
         }
