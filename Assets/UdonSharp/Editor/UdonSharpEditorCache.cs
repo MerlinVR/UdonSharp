@@ -32,11 +32,11 @@ namespace UdonSharp
         public static UdonSharpEditorCache Instance => GetInstance();
 
         static UdonSharpEditorCache _instance;
-        static readonly object instanceLock = new object();
+        static readonly object _instanceLock = new object();
 
         private static UdonSharpEditorCache GetInstance()
         {
-            lock (instanceLock)
+            lock (_instanceLock)
             {
                 if (_instance != null)
                     return _instance;
@@ -342,8 +342,8 @@ namespace UdonSharp
             return null;
         }
 
-        HashSet<AssemblyDebugInfo> dirtyDebugInfos = new HashSet<AssemblyDebugInfo>(new ReferenceEqualityComparer<AssemblyDebugInfo>());
-        object setDebugInfoLock = new object();
+        private HashSet<AssemblyDebugInfo> dirtyDebugInfos = new HashSet<AssemblyDebugInfo>(new ReferenceEqualityComparer<AssemblyDebugInfo>());
+        private readonly object setDebugInfoLock = new object();
 
         public void SetDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType, AssemblyDebugInfo debugInfo)
         {
@@ -366,18 +366,21 @@ namespace UdonSharp
 
         void FlushDirtyDebugInfos()
         {
-            foreach (var sourceProgramInfos in _classDebugInfoLookup)
+            lock (setDebugInfoLock)
             {
-                foreach (var debugInfo in sourceProgramInfos.Value)
+                foreach (var sourceProgramInfos in _classDebugInfoLookup)
                 {
-                    if (dirtyDebugInfos.Contains(debugInfo.Value))
+                    foreach (var debugInfo in sourceProgramInfos.Value)
                     {
-                        SaveDebugInfo(sourceProgramInfos.Key, debugInfo.Key, debugInfo.Value);
+                        if (dirtyDebugInfos.Contains(debugInfo.Value))
+                        {
+                            SaveDebugInfo(sourceProgramInfos.Key, debugInfo.Key, debugInfo.Value);
+                        }
                     }
                 }
-            }
 
-            dirtyDebugInfos.Clear();
+                dirtyDebugInfos.Clear();
+            }
         }
         #endregion
 
@@ -385,18 +388,21 @@ namespace UdonSharp
         const string UASM_DIR_PATH = "Library/UdonSharpCache/UASM/";
 
         // UdonSharpProgramAsset GUID to uasm lookup
-        Dictionary<string, string> _uasmCache = new Dictionary<string, string>();
+        private Dictionary<string, string> _uasmCache = new Dictionary<string, string>();
 
         void FlushUasmCache()
         {
-            if (!Directory.Exists(UASM_DIR_PATH))
-                Directory.CreateDirectory(UASM_DIR_PATH);
-
-            foreach (var uasmCacheEntry in _uasmCache)
+            lock (_uasmSetLock)
             {
-                string filePath = $"{UASM_DIR_PATH}{uasmCacheEntry.Key}.uasm";
+                if (!Directory.Exists(UASM_DIR_PATH))
+                    Directory.CreateDirectory(UASM_DIR_PATH);
 
-                File.WriteAllText(filePath, uasmCacheEntry.Value);
+                foreach (var uasmCacheEntry in _uasmCache)
+                {
+                    string filePath = $"{UASM_DIR_PATH}{uasmCacheEntry.Key}.uasm";
+
+                    File.WriteAllText(filePath, uasmCacheEntry.Value);
+                }
             }
         }
 
@@ -426,10 +432,10 @@ namespace UdonSharp
             return "";
         }
 
-        static object uasmSetLock = new object();
+        private static readonly object _uasmSetLock = new object();
         public void SetUASMStr(UdonSharpProgramAsset programAsset, string uasm)
         {
-            lock (uasmSetLock)
+            lock (_uasmSetLock)
             {
                 if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string guid, out long _))
                     return;
