@@ -331,7 +331,9 @@ namespace UdonSharp.Compiler
                 foreach (Symbol symbol in currentBuildType.GetMembers(context))
                 {
                     if (symbol is MethodSymbol methodSymbol && 
-                        (methodSymbol.OverridenMethod == null || methodSymbol.OverridenMethod.ContainingType == _udonSharpBehaviourType))
+                        (methodSymbol.OverridenMethod == null || 
+                         methodSymbol.OverridenMethod.ContainingType == _udonSharpBehaviourType || 
+                         methodSymbol.OverridenMethod.ContainingType.IsExtern))
                     {
                         layouts.Add(methodSymbol, BuildMethodLayout(methodSymbol, idCounters));
                     }
@@ -354,7 +356,8 @@ namespace UdonSharp.Compiler
                 _udonSharpBehaviourType = GetTypeSymbol(typeof(UdonSharpBehaviour), context);
             
             while (method.OverridenMethod != null && 
-                   method.OverridenMethod.ContainingType != _udonSharpBehaviourType)
+                   method.OverridenMethod.ContainingType != _udonSharpBehaviourType && 
+                   !method.OverridenMethod.ContainingType.IsExtern)
                 method = method.OverridenMethod;
 
             lock (_layoutLock)
