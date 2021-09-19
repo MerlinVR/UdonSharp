@@ -233,6 +233,12 @@ namespace UdonSharp.Compiler
             // var allSourcePaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Where(e => e.isV1Root).Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
             HashSet<string> allSourcePaths = new HashSet<string>(GetAllFilteredSourcePaths());
 
+            if (!ValidateUdonSharpBehaviours(allPrograms, allSourcePaths))
+            {
+                EditorApplication.UnlockReloadAssemblies();
+                return;
+            }
+
             CompilationContext compilationContext = new CompilationContext();
             string[] defines = UdonSharpUtils.GetProjectDefines(options.IsEditorBuild);
 
@@ -240,6 +246,30 @@ namespace UdonSharp.Compiler
             CurrentJob = new CompileJob() { Context = compilationContext, Task = compileTask, CompileTimer = Stopwatch.StartNew(), CompileOptions = options };
             
             compileTask.Start();
+        }
+
+        private static bool ValidateUdonSharpBehaviours(UdonSharpProgramAsset[] allProgramAssets, HashSet<string> allSourcePaths)
+        {
+            bool succeeded = true;
+            
+            foreach (var programAsset in allProgramAssets)
+            {
+                if (programAsset.sourceCsScript == null)
+                    continue;
+
+                string sourcePath = AssetDatabase.GetAssetPath(programAsset.sourceCsScript);
+                
+                if (string.IsNullOrEmpty(sourcePath))
+                    continue;
+
+                if (!allSourcePaths.Contains(sourcePath))
+                {
+                    succeeded = false;
+                    Debug.LogError($"[<color=#FF00FF>UdonSharp</color>] Script '{sourcePath}' does not belong to a U# assembly, have you made a U# assembly definition for the assembly the script is a part of?", programAsset.sourceCsScript);
+                }
+            }
+
+            return succeeded;
         }
 
         private static void Compile(CompilationContext compilationContext, Dictionary<string, UdonSharpProgramAsset> rootProgramLookup, IEnumerable<string> allSourcePaths, string[] scriptingDefines)
@@ -402,7 +432,7 @@ namespace UdonSharp.Compiler
             if (_udonSharpAssemblyNames == null)
             {
                 _udonSharpAssemblyNames = new HashSet<string>();
-                foreach (UdonSharpAssemblyDefinition asmDef in GetUdonSharpAssemblyDefinitions())
+                foreach (UdonSharpAssemblyDefinition asmDef in CompilerUdonInterface.UdonSharpAssemblyDefinitions)
                 {
                     _udonSharpAssemblyNames.Add(asmDef.sourceAssembly.name);
                 }

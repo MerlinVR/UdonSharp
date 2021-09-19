@@ -23,6 +23,7 @@ namespace UdonSharp.Compiler.Udon
         private static bool _cacheInitRan;
         private static readonly object _cacheInitLock = new object();
         public static ImmutableArray<System.Reflection.Assembly> UdonSharpAssemblies { get; private set; }
+        public static ImmutableArray<UdonSharpAssemblyDefinition> UdonSharpAssemblyDefinitions { get; private set; }
 
         public static void CacheInit()
         {
@@ -70,6 +71,7 @@ namespace UdonSharp.Compiler.Udon
 
                 string[] assemblyDefinitionPaths = AssetDatabase.FindAssets($"t:{nameof(UdonSharpAssemblyDefinition)}").Select(AssetDatabase.GUIDToAssetPath).ToArray();
                 List<System.Reflection.Assembly> assemblies = new List<System.Reflection.Assembly>();
+                List<UdonSharpAssemblyDefinition> assemblyDefinitions = new List<UdonSharpAssemblyDefinition>();
 
                 System.Reflection.Assembly[] allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
 
@@ -78,6 +80,8 @@ namespace UdonSharp.Compiler.Udon
                     var assemblyDefinition = AssetDatabase.LoadAssetAtPath<UdonSharpAssemblyDefinition>(definitionPath);
                     if (assemblyDefinition == null || assemblyDefinition.sourceAssembly == null) 
                         continue;
+                    
+                    assemblyDefinitions.Add(assemblyDefinition);
                     
                     var sourceAssembly = assemblyDefinition.sourceAssembly;
 
@@ -96,6 +100,7 @@ namespace UdonSharp.Compiler.Udon
                 }
 
                 UdonSharpAssemblies = assemblies.ToImmutableArray();
+                UdonSharpAssemblyDefinitions = assemblyDefinitions.ToImmutableArray();
 
                 _cacheInitRan = true;
             }
