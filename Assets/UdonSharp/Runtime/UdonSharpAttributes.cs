@@ -91,8 +91,6 @@ namespace UdonSharp
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public class RecursiveMethodAttribute : Attribute
     {
-        public RecursiveMethodAttribute()
-        { }
     }
 
     /// <summary>
@@ -112,5 +110,13 @@ namespace UdonSharp
             CallbackPropertyName = targetPropertyName;
         }
     }
+
+    /// <summary>
+    /// Marks a field to only run its initializer at compile time. This may be used on particularly expensive initializers, or initializers that run code which is not currently valid in Udon.
+    /// </summary>
+    [PublicAPI]
+    [AttributeUsage(AttributeTargets.Field)]
+    public class CompileInitAttribute : Attribute
+    {}
 }
 

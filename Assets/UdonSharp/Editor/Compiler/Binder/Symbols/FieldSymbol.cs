@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using UdonSharp.Compiler.Binder;
 using UnityEngine;
+using VRC.SDKBase;
 using VRC.Udon.Serialization.OdinSerializer;
 
 namespace UdonSharp.Compiler.Symbols
@@ -56,16 +57,20 @@ namespace UdonSharp.Compiler.Symbols
             if (!RoslynSymbol.IsImplicitlyDeclared)
                 InitializerSyntax = (RoslynSymbol.DeclaringSyntaxReferences.First().GetSyntax() as VariableDeclaratorSyntax)?.Initializer?.Value;
             
+            SetupAttributes(context);
+            
             // Re-get the type symbol to register it as a dependency in the bind context
             TypeSymbol fieldType = context.GetTypeSymbol(RoslynSymbol.Type);
+            Type fieldSystemType = fieldType.UdonType.SystemType;
 
-            if (InitializerSyntax != null)
+            if (InitializerSyntax != null && 
+                (!HasAttribute<CompileInitAttribute>() && 
+                 fieldSystemType != typeof(VRCUrl) && 
+                 fieldSystemType != typeof(VRCUrl[])))
             {
                 BinderSyntaxVisitor bodyVisitor = new BinderSyntaxVisitor(this, context);
                 InitializerExpression = bodyVisitor.VisitVariableInitializer(InitializerSyntax, fieldType);
             }
-            
-            SetupAttributes(context);
 
             _resolved = true;
         }
