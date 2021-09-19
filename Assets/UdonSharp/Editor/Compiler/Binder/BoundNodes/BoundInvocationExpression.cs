@@ -577,7 +577,12 @@ namespace UdonSharp.Compiler.Binder
                 var invocation = CreateBoundInvocation(context, null, OperatorMethod, null,
                     new[] {BoundAccessExpression.BindAccess(targetValue), AssignmentSource});
                 
-                Value setResult = context.EmitSet(TargetExpression, invocation);
+                Value setResult;
+                
+                if (TargetExpression.ValueType != OperatorMethod.ReturnType)
+                    setResult = context.EmitSet(TargetExpression, new BoundCastExpression(null, invocation, ValueType, true));
+                else
+                    setResult = context.EmitSet(TargetExpression, invocation);
 
                 return setResult;
             }
@@ -658,9 +663,12 @@ namespace UdonSharp.Compiler.Binder
                 Type targetType = TargetExpression.ValueType.UdonType.SystemType;
                 IConstantValue incrementValue = (IConstantValue) Activator.CreateInstance(
                     typeof(ConstantValue<>).MakeGenericType(targetType), Convert.ChangeType(1, targetType));
-                var expression = CreateBoundInvocation(context, null, InternalExpression.Method, null,
+                BoundExpression expression = CreateBoundInvocation(context, null, InternalExpression.Method, null,
                     new BoundExpression[] {BoundAccessExpression.BindAccess(returnValue), new BoundConstantExpression(incrementValue, TargetExpression.ValueType, SyntaxNode)});
 
+                if (InternalExpression.Method.ReturnType != TargetExpression.ValueType)
+                    expression = new BoundCastExpression(null, expression, ValueType, true);
+                
                 context.EmitSet(TargetExpression, expression);
                 
                 return returnValue;
@@ -673,7 +681,10 @@ namespace UdonSharp.Compiler.Binder
             /// <param name="context"></param>
             public override void Emit(EmitContext context)
             {
-                context.EmitSet(TargetExpression, InternalExpression);
+                if (InternalExpression.Method.ReturnType != TargetExpression.ValueType)
+                    context.EmitSet(TargetExpression, new BoundCastExpression(null, InternalExpression, ValueType, true));
+                else
+                    context.EmitSet(TargetExpression, InternalExpression);
             }
         }
 
@@ -698,6 +709,9 @@ namespace UdonSharp.Compiler.Binder
 
             public override Value EmitValue(EmitContext context)
             {
+                if (InternalExpression.Method.ReturnType != TargetExpression.ValueType)
+                    return context.EmitSet(TargetExpression, new BoundCastExpression(null, InternalExpression, ValueType, true));
+                
                 return context.EmitSet(TargetExpression, InternalExpression);
             }
         }
