@@ -189,7 +189,7 @@ namespace UdonSharp.Compiler.Udon
             return CompilerUdonInterface.SanitizeTypeName(methodSourceType.FullName ?? methodSourceType.Namespace + methodSourceType.Name).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
         }
 
-        private static string GetUdonTypeName(Type externType)
+        public static string GetUdonTypeName(Type externType)
         {
             string externTypeName = externType.GetNameWithoutGenericArity();
             while (externType.IsArray || externType.IsByRef)

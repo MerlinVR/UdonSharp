@@ -56,7 +56,13 @@ namespace UdonSharp.Compiler.Symbols
 
             if (!methodSymbol.IsConstructor)
             {
-                returnStr = $"__{CompilerUdonInterface.GetUdonTypeName(context.GetTypeSymbol(roslynSymbol.ReturnType))}";
+                TypeSymbol returnType = context.GetTypeSymbol(roslynSymbol.ReturnType);
+
+                if (returnType.IsExtern &&
+                    returnType.RoslynSymbol?.ContainingNamespace?.ToString() == "VRC.SDKBase")
+                    returnStr = $"__{CompilerUdonInterface.GetUdonTypeName(((ExternTypeSymbol)returnType).SystemType)}";
+                else
+                    returnStr = $"__{CompilerUdonInterface.GetUdonTypeName(returnType)}";
             }
             else
             {

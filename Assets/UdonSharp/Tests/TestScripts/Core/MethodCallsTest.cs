@@ -128,6 +128,13 @@ namespace UdonSharp.Tests
 
             DisableInteractive = false;
             tester.TestAssertion("DisableInteractive false 2", !DisableInteractive);
+
+            VRCPlayerApi player = null;
+
+            if (Utilities.IsValid(player))
+            {
+                player.GetPickupInHand(VRC_Pickup.PickupHand.Left);
+            }
         }
     }
 }
