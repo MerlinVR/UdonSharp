@@ -401,6 +401,12 @@ namespace UdonSharp.Tests
             uint resultUint = ~uintTest;
             tester.TestAssertion("uint bitwise not", ~uintTest == 4294967255);
             tester.TestAssertion("uint bitwise not 2", resultUint == 4294967255);
+
+            long la = (long)0x1111111111111111;
+            long lb = (long)~la;
+
+            tester.TestAssertion("Long bitwise NOT 1", lb == -0x1111111111111112);
+            tester.TestAssertion("Long bitwise NOT 2", ~lb == la);
         }
     }
 }
