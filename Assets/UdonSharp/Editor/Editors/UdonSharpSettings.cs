@@ -53,6 +53,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
             "Assets/Procedural Worlds/", // Gaia
             "Assets/Pavo Studio/", // Muscle editor
             "Assets/Plugins/RootMotion/", // FinalIK
+            "Assets/CyanEmu/", // References VRC stuff that's excluded
         };
 
         // Compiler settings
@@ -175,8 +176,6 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         public static IEnumerable<string> FilterBlacklistedPaths(IEnumerable<string> paths)
         {
-            //return paths; // For now we want to just allow everything so we can be more certain that everything is parsed correctly
-
             // todo: use hashset instead of n*m comparisons
             List<string> filteredPaths = new List<string>();
             string[] blacklist = GetScannerBlacklist();

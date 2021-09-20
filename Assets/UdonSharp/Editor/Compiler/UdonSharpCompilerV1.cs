@@ -231,7 +231,7 @@ namespace UdonSharp.Compiler
             }
             
             // var allSourcePaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Where(e => e.isV1Root).Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
-            HashSet<string> allSourcePaths = new HashSet<string>(GetAllFilteredSourcePaths());
+            HashSet<string> allSourcePaths = new HashSet<string>(GetAllFilteredSourcePaths(options.IsEditorBuild));
 
             if (!ValidateUdonSharpBehaviours(allPrograms, allSourcePaths))
             {
@@ -389,40 +389,17 @@ namespace UdonSharp.Compiler
             EmitAllPrograms(rootTypes, compilationContext, assembly);
         }
 
-        private static IEnumerable<string> GetAllFilteredSourcePaths()
+        private static IEnumerable<string> GetAllFilteredSourcePaths(bool isEditorBuild)
         {
-            var allScripts = UdonSharpSettings.FilterBlacklistedPaths(Directory.GetFiles("Assets/", "*.cs", SearchOption.AllDirectories));
-
             HashSet<string> assemblySourcePaths = new HashSet<string>();
 
-            foreach (UnityEditor.Compilation.Assembly asm in CompilationPipeline.GetAssemblies(AssembliesType.Player))
+            foreach (UnityEditor.Compilation.Assembly asm in CompilationPipeline.GetAssemblies(isEditorBuild ? AssembliesType.Editor : AssembliesType.PlayerWithoutTestAssemblies))
             {
-                if (asm.name != "Assembly-CSharp" && !IsUdonSharpAssembly(asm.name)) // We only want the root Unity script assembly for user scripts at the moment
+                if (asm.name == "Assembly-CSharp" || IsUdonSharpAssembly(asm.name))
                     assemblySourcePaths.UnionWith(asm.sourceFiles);
             }
-            
-            List<string> filteredPaths = new List<string>();
 
-            foreach (string path in allScripts)
-            {
-                if (!assemblySourcePaths.Contains(path))
-                    filteredPaths.Add(path);
-            }
-
-            return filteredPaths;
-        }
-
-        private static List<UdonSharpAssemblyDefinition> _udonSharpAssemblies;
-        private static List<UdonSharpAssemblyDefinition> GetUdonSharpAssemblyDefinitions()
-        {
-            if (_udonSharpAssemblies != null)
-                return _udonSharpAssemblies;
-
-            _udonSharpAssemblies = AssetDatabase.FindAssets($"t:{nameof(UdonSharpAssemblyDefinition)}")
-                                                .Select(e => AssetDatabase.LoadAssetAtPath<UdonSharpAssemblyDefinition>(AssetDatabase.GUIDToAssetPath(e)))
-                                                .ToList();
-
-            return _udonSharpAssemblies;
+            return UdonSharpSettings.FilterBlacklistedPaths(assemblySourcePaths);
         }
 
         private static HashSet<string> _udonSharpAssemblyNames;
