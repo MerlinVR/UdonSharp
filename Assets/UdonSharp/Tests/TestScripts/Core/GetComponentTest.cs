@@ -81,6 +81,10 @@ namespace UdonSharp.Tests
             VRCStation station;
             station = (VRCStation)GetComponent(typeof(VRCStation));
 
+            // Should compile
+            GetComponents<Collider>()[0].enabled = false;
+            GetComponents<Collider>()[0].enabled = true;
+
             // Debug.Log(getBehaviour.GetUdonTypeID());
             // Debug.Log(getBehaviour.GetUdonTypeName());
 

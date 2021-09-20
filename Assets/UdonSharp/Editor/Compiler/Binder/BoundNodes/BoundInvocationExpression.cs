@@ -619,6 +619,9 @@ namespace UdonSharp.Compiler.Binder
                 : base(node, BuildMethod(context, methodSymbol), sourceExpression, GetParameterExpressions(context, methodSymbol, parametersExpressions))
             {
                 ValueType = methodSymbol.TypeArguments[0];
+
+                if (methodSymbol.ReturnType.IsArray)
+                    ValueType = ValueType.MakeArrayType(context);
             }
 
             private static BoundExpression[] GetParameterExpressions(AbstractPhaseContext context, MethodSymbol symbol, BoundExpression[] parameters)
