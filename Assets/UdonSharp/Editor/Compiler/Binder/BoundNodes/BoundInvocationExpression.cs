@@ -258,6 +258,26 @@ namespace UdonSharp.Compiler.Binder
             createdInvocation = null;
             return false;
         }
+        
+        private static bool TryCreateBaseEnumMethodInvocation(AbstractPhaseContext context, SyntaxNode node,
+            MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
+            out BoundInvocationExpression createdInvocation)
+        {
+            if ((symbol.Name == "ToString" || symbol.Name == "GetHashCode" || symbol.Name == "Equals") &&
+                symbol.ContainingType != null &&
+                symbol.ContainingType == context.GetTypeSymbol(SpecialType.System_Enum))
+            {
+                createdInvocation = new BoundExternInvocation(node, 
+                    context.GetTypeSymbol(SpecialType.System_Object).GetMember<MethodSymbol>(symbol.Name, context), 
+                    instanceExpression,
+                    parameterExpressions);
+                
+                return true;
+            }
+
+            createdInvocation = null;
+            return false;
+        }
 
         private static bool TryCreateShimInvocation(AbstractPhaseContext context, SyntaxNode node,
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
@@ -279,6 +299,9 @@ namespace UdonSharp.Compiler.Binder
                 return true;
             
             if (TryCreateTMPMethodInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
+                return true;
+            
+            if (TryCreateBaseEnumMethodInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
                 return true;
 
             return false;
