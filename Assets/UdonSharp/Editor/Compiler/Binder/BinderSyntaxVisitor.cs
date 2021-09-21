@@ -534,11 +534,13 @@ namespace UdonSharp.Compiler.Binder
 
                 // Apparently Roslyn returns string + string for string += char, but returns string + object for string + char /shrug
                 // Do ToString here if the constant folding can't convert the char
-                if (!rhsExpression.IsConstant &&
-                    assignmentTarget.ValueType == Context.GetTypeSymbol(SpecialType.System_String) &&
+                if (assignmentTarget.ValueType == Context.GetTypeSymbol(SpecialType.System_String) &&
                     rhsExpression.ValueType == Context.GetTypeSymbol(SpecialType.System_Char))
                 {
-                    rhsExpression = BoundInvocationExpression.CreateBoundInvocation(Context, node, Context.GetTypeSymbol(SpecialType.System_Char).GetMember<MethodSymbol>("ToString", Context), rhsExpression, new BoundExpression[0]);
+                    if (rhsExpression.IsConstant)
+                        rhsExpression = new BoundConstantExpression(rhsExpression.ConstantValue.Value.ToString(), Context.GetTypeSymbol(SpecialType.System_String));
+                    else
+                        rhsExpression = BoundInvocationExpression.CreateBoundInvocation(Context, node, Context.GetTypeSymbol(SpecialType.System_Char).GetMember<MethodSymbol>("ToString", Context), rhsExpression, Array.Empty<BoundExpression>());
                 }
                 if (operatorSymbol is ExternBuiltinOperatorSymbol builtinOperatorSymbol)
                 {

@@ -373,6 +373,8 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Decimal addition", (x + 5) == 9);
             tester.TestAssertion("Decimal mul", (3 * 0.5m) == 1.5m);
         }
+
+        private char stringChar = 'b';
         
         void StringAddition()
         {
@@ -381,6 +383,12 @@ namespace UdonSharp.Tests
             s += "ef";
             s += string.Format("{0:x2}", 0x42);
             tester.TestAssertion("String addition", s == "abcdef42");
+
+            s += 'a';
+            tester.TestAssertion("Char addition", s == "abcdef42a");
+            
+            s += stringChar;
+            tester.TestAssertion("Char addition non const", s == "abcdef42ab");
         }
         
         void BitwiseNot()
