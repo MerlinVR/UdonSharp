@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using UdonSharp.Compiler.Binder;
+using UdonSharp.Core;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon.Serialization.OdinSerializer;
@@ -49,13 +50,34 @@ namespace UdonSharp.Compiler.Symbols
         public UdonSyncMode? SyncMode => GetAttribute<UdonSyncedAttribute>()?.NetworkSyncType;
         public bool IsSynced => SyncMode != null;
 
+        private void CheckHiddenFields(BindContext context)
+        {
+            if (ContainingType.BaseType.IsExtern)
+                return;
+
+            TypeSymbol currentType = ContainingType.BaseType;
+
+            while (!currentType.IsExtern)
+            {
+                if (currentType.GetMember<FieldSymbol>(Name, context) != null)
+                    throw new CompilerException($"U# does not yet support hiding base fields");
+
+                currentType = currentType.BaseType;
+            }
+        }
+
         public override void Bind(BindContext context)
         {
             if (IsBound)
                 return;
             
             if (!RoslynSymbol.IsImplicitlyDeclared)
-                InitializerSyntax = (RoslynSymbol.DeclaringSyntaxReferences.First().GetSyntax() as VariableDeclaratorSyntax)?.Initializer?.Value;
+            {
+                context.CurrentNode = RoslynSymbol.DeclaringSyntaxReferences.First().GetSyntax();
+                InitializerSyntax = (context.CurrentNode as VariableDeclaratorSyntax)?.Initializer?.Value;
+            }
+            
+            CheckHiddenFields(context);
             
             SetupAttributes(context);
             
