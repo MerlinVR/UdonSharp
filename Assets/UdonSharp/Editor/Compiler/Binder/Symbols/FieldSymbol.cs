@@ -59,7 +59,8 @@ namespace UdonSharp.Compiler.Symbols
 
             while (!currentType.IsExtern)
             {
-                if (currentType.GetMember<FieldSymbol>(Name, context) != null)
+                FieldSymbol foundSymbol = currentType.GetMember<FieldSymbol>(Name, context);
+                if (foundSymbol != null && !foundSymbol.IsConst)
                     throw new CompilerException($"U# does not yet support hiding base fields");
 
                 currentType = currentType.BaseType;
