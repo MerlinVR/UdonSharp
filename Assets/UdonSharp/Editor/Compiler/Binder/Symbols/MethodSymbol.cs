@@ -81,23 +81,47 @@ namespace UdonSharp.Compiler.Symbols
 
         public bool HasOverrides => _overrides != null && _overrides.Count > 0;
 
+        private void CheckHiddenMethods(BindContext context)
+        {
+            if (OverridenMethod != null || ContainingType.BaseType.IsExtern)
+                return;
+
+            List<MethodSymbol> foundNamedMethods = new List<MethodSymbol>();
+
+            TypeSymbol currentType = ContainingType.BaseType;
+
+            while (!currentType.IsExtern)
+            {
+                foundNamedMethods.AddRange(currentType.GetMembers<MethodSymbol>(Name, context));
+                currentType = currentType.BaseType;
+            }
+
+            foreach (MethodSymbol foundMethod in foundNamedMethods)
+            {
+                if (foundMethod.Parameters.Length == Parameters.Length && foundMethod.Parameters.Select(e => e.Type).SequenceEqual(Parameters.Select(e => e.Type))) 
+                    throw new CompilerException($"U# does not yet support hiding base methods, did you intend to override '{RoslynSymbol.Name}'?");
+            }
+        }
+        
         public override void Bind(BindContext context)
         {
+            IMethodSymbol methodSymbol = RoslynSymbol;
+            SyntaxNode declaringSyntax = methodSymbol.DeclaringSyntaxReferences.First().GetSyntax();
+            context.CurrentNode = declaringSyntax;
+            
+            CheckHiddenMethods(context);
+            
             if (OverridenMethod != null)
                 OverridenMethod.AddOverride(this);
-
+            
             foreach (ParameterSymbol param in Parameters)
                 param.Bind(context);
-            
-            IMethodSymbol methodSymbol = RoslynSymbol;
 
             if (methodSymbol.MethodKind != MethodKind.PropertyGet && methodSymbol.MethodKind != MethodKind.PropertySet &&
                 ((MethodDeclarationSyntax) methodSymbol.DeclaringSyntaxReferences.First().GetSyntax()).Modifiers.Any(SyntaxKind.PartialKeyword))
                 throw new NotSupportedException(LocStr.CE_PartialMethodsNotSupported, methodSymbol.DeclaringSyntaxReferences.FirstOrDefault());
 
             BinderSyntaxVisitor bodyVisitor = new BinderSyntaxVisitor(this, context);
-
-            SyntaxNode declaringSyntax = methodSymbol.DeclaringSyntaxReferences.First().GetSyntax();
 
             if (declaringSyntax is MethodDeclarationSyntax methodSyntax)
             {
