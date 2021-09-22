@@ -24,6 +24,8 @@ namespace UdonSharp.Tests
             }
             
             tester.TestAssertion("Inherited methods", resultStr == "ABBC");
+            tester.TestAssertion("Inherited methods 2", testClasses[0].GetClassID() == 1);
+            
         }
     }
 }

@@ -105,6 +105,9 @@ namespace UdonSharp.Compiler.Symbols
         
         public override void Bind(BindContext context)
         {
+            if (RoslynSymbol.IsAbstract)
+                return;
+            
             IMethodSymbol methodSymbol = RoslynSymbol;
             SyntaxNode declaringSyntax = methodSymbol.DeclaringSyntaxReferences.First().GetSyntax();
             context.CurrentNode = declaringSyntax;

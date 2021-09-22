@@ -7,5 +7,10 @@ namespace UdonSharp.Tests
         {
             return "B";
         }
+
+        public override int GetClassID()
+        {
+            return 2;
+        }
     }
 }

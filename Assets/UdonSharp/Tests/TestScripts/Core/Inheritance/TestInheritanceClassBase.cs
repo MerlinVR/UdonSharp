@@ -6,11 +6,13 @@ using VRC.Udon;
 
 namespace UdonSharp.Tests
 {
-    public class TestInheritanceClassBase : UdonSharpBehaviour
+    public abstract class TestInheritanceClassBase : UdonSharpBehaviour
     {
         public virtual string GetClassName()
         {
             return "Base";
         }
+
+        public abstract int GetClassID();
     }
 }
