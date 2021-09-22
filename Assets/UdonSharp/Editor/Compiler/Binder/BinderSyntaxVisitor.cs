@@ -52,6 +52,11 @@ namespace UdonSharp.Compiler.Binder
             return VisitExpression(node.Expression);
         }
 
+        public override BoundNode VisitEmptyStatement(EmptyStatementSyntax node)
+        {
+            return new BoundBlock(node);
+        }
+
         public override BoundNode VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
         {
             throw new System.NotImplementedException();
