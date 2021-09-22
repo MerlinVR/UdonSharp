@@ -358,6 +358,12 @@ namespace UdonSharp.Compiler
                 {
                     if (model.GetDeclaredSymbol(classDecl) is INamedTypeSymbol classType && classType.IsUdonSharpBehaviour())
                     {
+                        if (classType.IsAbstract && module.programAsset != null)
+                        {
+                            compilationContext.AddDiagnostic(DiagnosticSeverity.Error, classType.DeclaringSyntaxReferences.First().GetSyntax(), "Abstract U# behaviours cannot have an associated U# program asset");
+                            return;
+                        }
+                        
                         rootUdonSharpTypes.Add((classType, module));
                     }
                 }
