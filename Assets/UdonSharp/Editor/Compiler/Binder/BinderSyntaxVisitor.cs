@@ -719,9 +719,11 @@ namespace UdonSharp.Compiler.Binder
             
             // Convert switches over enums to ints to prevent a ton of .Equals calls and allow easy jump table optimizations for enums
             if (switchType.IsEnum && switchType.IsExtern)
-            {
                 switchType = Context.GetTypeSymbol(((INamedTypeSymbol)switchType.RoslynSymbol).EnumUnderlyingType);
-            }
+
+            // If switch type is on object, we don't want to convert any of the case label values, and we don't need to cast string values
+            if (switchType == Context.GetTypeSymbol(SpecialType.System_Object) || switchType == Context.GetTypeSymbol(SpecialType.System_String))
+                switchType = null;
             
             BoundExpression switchExpression = VisitExpression(node.Expression, switchType);
             

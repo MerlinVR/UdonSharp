@@ -46,6 +46,7 @@ namespace UdonSharp.Tests
             tester.TestAssertion("String switch 1", StringSwitch("testVal") == "the testVal");
             tester.TestAssertion("String switch 2", StringSwitch("testVal2") == "the testVal2");
             tester.TestAssertion("String switch 3", StringSwitch("aaaaa") == "no switch val found");
+            tester.TestAssertion("String switch 4", StringSwitch(null) == "null str");
             
             tester.TestAssertion("Float switch 1", FloatSwitch(1) == "one");
             tester.TestAssertion("Float switch 2", FloatSwitch(2) == "two");
@@ -58,6 +59,11 @@ namespace UdonSharp.Tests
             tester.TestAssertion("User enum jump table switch 5", TestUserJumpTableEnumSwitch(MySwitchEnum.E) == "C");
             tester.TestAssertion("User enum jump table switch 6", TestUserJumpTableEnumSwitch(MySwitchEnum.F) == "f");
             tester.TestAssertion("User enum jump table switch 7", TestUserJumpTableEnumSwitch(MySwitchEnum.G) == "C");
+            
+            tester.TestAssertion("Object switch 1", ObjectSwitch(null) == "no switch val found");
+            tester.TestAssertion("Object switch 2", ObjectSwitch(2) == "two");
+            tester.TestAssertion("Object switch 3", ObjectSwitch(2L) == "two long");
+            tester.TestAssertion("Object switch 4", ObjectSwitch("testVal") == "the testVal");
         }
 
         private string TestSwitch(int switchVal)
@@ -139,6 +145,23 @@ namespace UdonSharp.Tests
                     return "the testVal";
                 case "testVal" + "2":
                     return "the testVal2";
+                case null:
+                    return "null str";
+            }
+
+            return "no switch val found";
+        }
+        
+        private string ObjectSwitch(object val)
+        {
+            switch (val)
+            {
+                case "testVal":
+                    return "the testVal";
+                case 2:
+                    return "two";
+                case 2L:
+                    return "two long";
             }
 
             return "no switch val found";

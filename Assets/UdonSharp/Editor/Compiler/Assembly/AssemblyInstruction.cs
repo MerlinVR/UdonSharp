@@ -253,8 +253,8 @@ namespace UdonSharp.Compiler.Assembly
             public override InstructionKind GetKind() => InstructionKind.JumpIfFalse;
             public override uint Size => 16;
             
-            public JumpLabel JumpTarget { get; private set; }
-            public Value ConditionValue { get; private set; }
+            public JumpLabel JumpTarget { get; }
+            public Value ConditionValue { get; }
 
             public JumpIfFalseInstruction(JumpLabel jumpTarget, Value conditionValue)
             {
@@ -264,6 +264,9 @@ namespace UdonSharp.Compiler.Assembly
             
             public override void WriteAssembly(StringBuilder builder)
             {
+                if (JumpTarget.Address == uint.MaxValue)
+                    throw new InvalidOperationException($"Cannot jump to uninitialized jump label!" + (JumpTarget.DebugMethod == null ? "" : $" Target method: {JumpTarget.DebugMethod}"));
+                
                 WriteIndentedLine($"PUSH, {ConditionValue.UniqueID}", builder);
                 WriteIndentedLine($"JUMP_IF_FALSE, 0x{JumpTarget.Address:x8}", builder);
             }
@@ -279,7 +282,7 @@ namespace UdonSharp.Compiler.Assembly
             public override InstructionKind GetKind() => InstructionKind.JumpIndirect;
             public override uint Size => 8;
             
-            public Value JumpTargetValue { get; private set; }
+            public Value JumpTargetValue { get; }
 
             public JumpIndirectInstruction(Value jumpTargetValue)
             {

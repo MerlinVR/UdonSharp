@@ -39,6 +39,23 @@ namespace UdonSharp.Compiler.Binder
             Value switchConditionVal = context.EmitValue(SwitchExpression);
             var conditionAccess = BoundAccessExpression.BindAccess(switchConditionVal);
 
+            TypeSymbol objectType = context.GetTypeSymbol(SpecialType.System_Object);
+            MethodSymbol objectEqualityMethod = null;
+            
+            // If switch is over object we need to check if it's null first and jump to the default if it is
+            if (SwitchExpression.ValueType == objectType)
+            {
+                objectEqualityMethod = objectType.GetMember<MethodSymbol>("Equals", context);
+                
+                Value conditionCheck = context.EmitValue(BoundInvocationExpression.CreateBoundInvocation(
+                    context, SyntaxNode,
+                    new ExternSynthesizedOperatorSymbol(BuiltinOperatorType.Inequality,
+                        objectType, context), null,
+                    new BoundExpression[] { conditionAccess, BoundAccessExpression.BindAccess(context.GetConstantValue(objectType, null)) }));
+                
+                context.Module.AddJumpIfFalse(defaultLabel, conditionCheck);
+            }
+
             JumpLabel nextLabel = context.Module.CreateLabel();
 
             using (context.OpenBlockScope())
@@ -54,12 +71,23 @@ namespace UdonSharp.Compiler.Binder
 
                         nextLabel = context.Module.CreateLabel();
                         
-                        Value conditionCheck = context.EmitValue(BoundInvocationExpression.CreateBoundInvocation(
-                            context, SyntaxNode,
-                            new ExternSynthesizedOperatorSymbol(BuiltinOperatorType.Equality,
-                                switchConditionVal.UdonType, context), null,
-                            new [] { conditionAccess, labelExpression }));
-                        
+                        Value conditionCheck;
+
+                        if (SwitchExpression.ValueType == objectType)
+                        {
+                            conditionCheck = context.EmitValue(BoundInvocationExpression.CreateBoundInvocation(
+                                context, SyntaxNode, objectEqualityMethod, conditionAccess,
+                                new[] { labelExpression }));
+                        }
+                        else
+                        {
+                            conditionCheck = context.EmitValue(BoundInvocationExpression.CreateBoundInvocation(
+                                context, SyntaxNode,
+                                new ExternSynthesizedOperatorSymbol(BuiltinOperatorType.Equality,
+                                    switchConditionVal.UdonType, context), null,
+                                new[] { conditionAccess, labelExpression }));
+                        }
+
                         context.Module.AddJumpIfFalse(nextLabel, conditionCheck);
                         
                         if (section.Item1.Count > 1)
@@ -81,6 +109,8 @@ namespace UdonSharp.Compiler.Binder
                 
                 if (DefaultSectionIdx != -1)
                     context.Module.AddJump(defaultLabel);
+                else
+                    context.Module.LabelJump(defaultLabel);
                 
                 context.Module.LabelJump(breakLabel);
             }
