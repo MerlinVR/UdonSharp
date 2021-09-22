@@ -772,8 +772,7 @@ namespace UdonSharp.Compiler.Emit
             }
         }
 
-        private Dictionary<MethodSymbol, MethodLinkage> _virtualLinkages = new Dictionary<MethodSymbol,MethodLinkage>();
-        private Dictionary<MethodSymbol, MethodLinkage> _directLinkages = new Dictionary<MethodSymbol,MethodLinkage>();
+        private Dictionary<MethodSymbol, MethodLinkage> _linkages = new Dictionary<MethodSymbol,MethodLinkage>();
 
         /// <summary>
         /// Gets the most derived method of a given method symbol in the current emit type's context.
@@ -834,17 +833,13 @@ namespace UdonSharp.Compiler.Emit
         /// <returns></returns>
         public MethodLinkage GetMethodLinkage(MethodSymbol methodSymbol, bool useVirtual)
         {
-            if (!useVirtual && _directLinkages.TryGetValue(methodSymbol, out var linkage))
-                return linkage;
-            
-            MethodSymbol mostBaseMethod = methodSymbol;
-            while (mostBaseMethod.OverridenMethod != null)
-                mostBaseMethod = mostBaseMethod.OverridenMethod;
-            
-            if (useVirtual && _virtualLinkages.TryGetValue(mostBaseMethod, out linkage))
+            if (!useVirtual && _linkages.TryGetValue(methodSymbol, out var linkage))
                 return linkage;
             
             MethodSymbol derivedMethod = GetMostDerivedMethod(methodSymbol);
+            
+            if (useVirtual && _linkages.TryGetValue(derivedMethod, out linkage))
+                return linkage;
 
             MethodLinkage newLinkage;
 
@@ -862,16 +857,11 @@ namespace UdonSharp.Compiler.Emit
                     Module.RootTable.CreateParameterValue(layout.ReturnExportName, derivedMethod.ReturnType);
 
                 for (int i = 0; i < parameterValues.Length; ++i)
-                {
                     parameterValues[i] = Module.RootTable.CreateParameterValue(layout.ParameterExportNames[i], methodSymbol.Parameters[i].Type);
-                }
 
                 newLinkage = new MethodLinkage(methodLabel, layout.ExportMethodName, returnValue, parameterValues);
                 
-                _virtualLinkages.Add(mostBaseMethod, newLinkage);
-                
-                if (methodSymbol == derivedMethod)
-                    _directLinkages.Add(methodSymbol, newLinkage);
+                _linkages.Add(derivedMethod, newLinkage);
             }
             else
             {
@@ -888,10 +878,7 @@ namespace UdonSharp.Compiler.Emit
 
                 newLinkage = new MethodLinkage(methodLabel, null, returnValue, parameterValues);
                 
-                _directLinkages.Add(methodSymbol, newLinkage);
-                
-                if (methodSymbol == derivedMethod)
-                    _virtualLinkages.Add(methodSymbol, newLinkage);
+                _linkages.Add(methodSymbol, newLinkage);
             }
 
             return newLinkage;
