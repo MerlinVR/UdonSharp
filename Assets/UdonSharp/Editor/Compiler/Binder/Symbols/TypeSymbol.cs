@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Udon;
+using UdonSharp.Core;
 
 namespace UdonSharp.Compiler.Symbols
 {
@@ -75,9 +76,16 @@ namespace UdonSharp.Compiler.Symbols
         {
             if (_bound)
                 return;
-            
+
+            context.CurrentNode = RoslynSymbol.DeclaringSyntaxReferences.First().GetSyntax();
+
             if (IsUdonSharpBehaviour)
+            {
+                if (RoslynSymbol.AllInterfaces.Length > 1) // Be lazy and ignore the serialization callback receiver since this is temporary
+                    throw new NotImplementedException("Interfaces are not yet handled by U#");
+                
                 SetupAttributes(context);
+            }
 
             var members = RoslynSymbol.GetMembers();
 

@@ -105,6 +105,9 @@ namespace UdonSharp.Compiler.Symbols
         
         public override void Bind(BindContext context)
         {
+            if (IsBound)
+                return;
+            
             if (RoslynSymbol.IsAbstract)
                 return;
             
