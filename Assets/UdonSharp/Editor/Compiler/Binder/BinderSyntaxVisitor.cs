@@ -434,7 +434,9 @@ namespace UdonSharp.Compiler.Binder
                     paramExpressions[idx++] = VisitExpression(argumentsList[i].Expression);
                 }
 
-                if (paramCount == 1 && paramExpressions[0].ValueType == methodSymbol.Parameters.Last().Type)
+                if (paramCount == 1 && (paramExpressions[0].ValueType == methodSymbol.Parameters.Last().Type || 
+                                        // Handling for covariant conversion of reference type arrays to object arrays, this may need better handling like IsAssignableTo type checks
+                                        (!paramExpressions[0].ValueType.IsValueType && methodSymbol.Parameters.Last().Type == Context.GetTypeSymbol(SpecialType.System_Object).MakeArrayType(Context)))) 
                 {
                     boundArguments[boundArguments.Length - 1] = paramExpressions[0];
                 }
