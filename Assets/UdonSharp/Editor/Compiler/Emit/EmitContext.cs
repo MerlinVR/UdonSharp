@@ -846,7 +846,8 @@ namespace UdonSharp.Compiler.Emit
             JumpLabel methodLabel = Module.CreateLabel();
             Value[] parameterValues = new Value[methodSymbol.Parameters.Length];
             
-            if ((useVirtual || derivedMethod == methodSymbol) && methodSymbol is UdonSharpBehaviourMethodSymbol)
+            if ((useVirtual || derivedMethod == methodSymbol) && 
+                !methodSymbol.IsStatic && methodSymbol is UdonSharpBehaviourMethodSymbol)
             {
                 methodLabel.DebugMethod = derivedMethod;
                 

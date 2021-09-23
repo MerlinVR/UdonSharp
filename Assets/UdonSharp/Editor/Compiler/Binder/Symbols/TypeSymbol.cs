@@ -3,11 +3,9 @@ using System;
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Udon;
-using UdonSharp.Core;
 
 namespace UdonSharp.Compiler.Symbols
 {
