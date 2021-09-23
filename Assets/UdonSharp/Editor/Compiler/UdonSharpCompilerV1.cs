@@ -202,13 +202,14 @@ namespace UdonSharp.Compiler
                 _queuedOptions = options;
                 return;
             }
-
-            EditorApplication.LockReloadAssemblies();
             
             Localization.Loc.InitLocalization();
             CompilerUdonInterface.CacheInit();
 
             var allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
+
+            if (!ValidateProgramAssetCollisions(allPrograms))
+                return;
             
             var rootProgramLookup = new Dictionary<string, UdonSharpProgramAsset>();
             foreach (var udonSharpProgram in allPrograms)
@@ -234,18 +235,54 @@ namespace UdonSharp.Compiler
             HashSet<string> allSourcePaths = new HashSet<string>(GetAllFilteredSourcePaths(options.IsEditorBuild));
 
             if (!ValidateUdonSharpBehaviours(allPrograms, allSourcePaths))
-            {
-                EditorApplication.UnlockReloadAssemblies();
                 return;
-            }
 
             CompilationContext compilationContext = new CompilationContext();
             string[] defines = UdonSharpUtils.GetProjectDefines(options.IsEditorBuild);
+
+            EditorApplication.LockReloadAssemblies();
 
             var compileTask = new Task(() => Compile(compilationContext, rootProgramLookup, allSourcePaths, defines));
             CurrentJob = new CompileJob() { Context = compilationContext, Task = compileTask, CompileTimer = Stopwatch.StartNew(), CompileOptions = options };
             
             compileTask.Start();
+        }
+
+        private static bool ValidateProgramAssetCollisions(UdonSharpProgramAsset[] allProgramAssets)
+        {
+            Dictionary<MonoScript, List<UdonSharpProgramAsset>> scriptToAssetMap = new Dictionary<MonoScript, List<UdonSharpProgramAsset>>();
+
+            foreach (UdonSharpProgramAsset programAsset in allProgramAssets)
+            {
+                if (programAsset == null || programAsset.sourceCsScript == null)
+                    continue;
+
+                // Add program asset to map to check if there are any duplicate program assets that point to the same script
+                List<UdonSharpProgramAsset> programAssetList;
+                if (!scriptToAssetMap.TryGetValue(programAsset.sourceCsScript, out programAssetList))
+                {
+                    programAssetList = new List<UdonSharpProgramAsset>();
+                    scriptToAssetMap.Add(programAsset.sourceCsScript, programAssetList);
+                }
+
+                programAssetList.Add(programAsset);
+            }
+
+            int errorCount = 0;
+            
+            foreach (var scriptAssetMapping in scriptToAssetMap)
+            {
+                if (scriptAssetMapping.Value.Count > 1)
+                {
+                    Debug.LogError($"[<color=#FF00FF>UdonSharp</color>] Script {Path.GetFileName(AssetDatabase.GetAssetPath(scriptAssetMapping.Key))} is referenced by {scriptAssetMapping.Value.Count} UdonSharpProgramAssets, scripts should only be referenced by 1 program asset.\n" +
+                                     "Referenced program assets:\n" +
+                                     string.Join(",\n", scriptAssetMapping.Value.Select(AssetDatabase.GetAssetPath)));
+
+                    errorCount++;
+                }
+            }
+
+            return errorCount == 0;
         }
 
         private static bool ValidateUdonSharpBehaviours(UdonSharpProgramAsset[] allProgramAssets, HashSet<string> allSourcePaths)
