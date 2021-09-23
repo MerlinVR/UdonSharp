@@ -439,17 +439,34 @@ namespace UdonSharp.Compiler.Binder
                     paramExpressions[idx++] = VisitExpression(argumentsList[i].Expression);
                 }
 
-                if (paramCount == 1 && (paramExpressions[0].ValueType == methodSymbol.Parameters.Last().Type || 
-                                        // Handling for covariant conversion of reference type arrays to object arrays, this may need better handling like IsAssignableTo type checks
-                                        (!paramExpressions[0].ValueType.IsValueType && methodSymbol.Parameters.Last().Type == Context.GetTypeSymbol(SpecialType.System_Object).MakeArrayType(Context)))) 
-                {
-                    boundArguments[boundArguments.Length - 1] = paramExpressions[0];
-                }
-                else
+                void SetParamsArray()
                 {
                     TypeSymbol paramType = methodSymbol.Parameters.Last().Type;
                     boundArguments[boundArguments.Length - 1] = new BoundConstArrayCreationExpression(node, paramType,
                         paramExpressions.Select(e => ConvertExpression(node, e, paramType.ElementType)).ToArray());
+                }
+
+                void SetDirectParam()
+                {
+                    boundArguments[boundArguments.Length - 1] = paramExpressions[0];
+                }
+                
+                if (paramCount != 1)
+                {
+                    SetParamsArray();
+                }
+                else if (paramExpressions[0].ValueType == methodSymbol.Parameters.Last().Type)
+                {
+                    SetDirectParam();
+                }
+                else
+                {
+                    Conversion conversion = Context.CompileContext.RoslynCompilation.ClassifyConversion(paramExpressions[0].ValueType.RoslynSymbol, methodSymbol.Parameters.Last().Type.RoslynSymbol);
+
+                    if (conversion.IsImplicit) // Covariant array param conversion
+                        SetDirectParam();
+                    else
+                        SetParamsArray();
                 }
             }
 

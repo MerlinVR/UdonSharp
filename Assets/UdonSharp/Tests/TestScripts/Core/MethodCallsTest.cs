@@ -15,6 +15,16 @@ namespace UdonSharp.Tests
 
         string[] splitStrs = new string[] { "aaaa", "a b c d", "e f g h i" };
 
+        private string MyParamsMethod(int a, params object[] elements)
+        {
+            return a + elements[0].ToString();
+        }
+        
+        private string MyParamsMethod(int a, params UnityEngine.Object[] elements)
+        {
+            return a + elements[0].ToString();
+        }
+
         public void ExecuteTests()
         {
             string testStr = string.Concat("a", "bc", "d", "e", "fg", "hij", "klmn", "opq", "rstuv", "wx", "yz");
@@ -28,6 +38,15 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Param parameter without expanding", joinedStr == "Hello, test, join");
             tester.TestAssertion("Param parameter with expanding", joinedStr2 == "Hello, test, join");
             tester.TestAssertion("Param parameter without expanding, object array", joinedStr3 == "MethodCalls (UnityEngine.GameObject), MethodCalls (UnityEngine.GameObject)");
+
+            int intVal = 20;
+            string joinedStr4 = string.Join(", ", intVal.ToString());
+            tester.TestAssertion("Param parameter single param", joinedStr4 == "20");
+            
+            tester.TestAssertion("User method params single parameter", MyParamsMethod(10, intVal.ToString()) == "1020");
+            
+            tester.TestAssertion("User method params array covariant conversion", MyParamsMethod(10, new [] {gameObject}) == "10MethodCalls (UnityEngine.GameObject)");
+            tester.TestAssertion("User method params covariant conversion", MyParamsMethod(10, gameObject) == "10MethodCalls (UnityEngine.GameObject)");
 
             string formatStr = string.Format("{0}, {1}", this, this);
             tester.TestAssertion("FormatStr 1", formatStr == "MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour)");
