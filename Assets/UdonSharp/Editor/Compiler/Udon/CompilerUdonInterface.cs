@@ -10,7 +10,6 @@ using UnityEditor;
 using UnityEngine;
 using VRC.Udon.Editor;
 using VRC.Udon.Graph;
-using VRC.Udon.Serialization.OdinSerializer.Utilities;
 
 namespace UdonSharp.Compiler.Udon
 {
@@ -22,10 +21,23 @@ namespace UdonSharp.Compiler.Udon
         private static Dictionary<string, ImmutableArray<(string, Type)>> _builtinEventArgumentsLookup;
         private static bool _cacheInitRan;
         private static readonly object _cacheInitLock = new object();
-        public static ImmutableArray<System.Reflection.Assembly> UdonSharpAssemblies { get; private set; }
+        
+        private static ImmutableArray<System.Reflection.Assembly> _udonSharpAssemblies;
+
+        public static ImmutableArray<System.Reflection.Assembly> UdonSharpAssemblies
+        {
+            get
+            {
+                CacheInit();
+                return _udonSharpAssemblies;
+            }
+            private set => _udonSharpAssemblies = value;
+        }
+        
+        private static ImmutableHashSet<System.Reflection.Assembly> ExternAssemblySet { get; set; }
         public static ImmutableArray<UdonSharpAssemblyDefinition> UdonSharpAssemblyDefinitions { get; private set; }
 
-        public static void CacheInit()
+        internal static void CacheInit()
         {
             if (_cacheInitRan)
                 return;
@@ -98,18 +110,36 @@ namespace UdonSharp.Compiler.Udon
                         break;
                     }
                 }
+                
+                assemblies.Add(allAssemblies.First(e => e.GetName().Name == "Assembly-CSharp"));
 
                 UdonSharpAssemblies = assemblies.ToImmutableArray();
                 UdonSharpAssemblyDefinitions = assemblyDefinitions.ToImmutableArray();
+                var udonSharpAssemblySet = new HashSet<System.Reflection.Assembly>(_udonSharpAssemblies);
+
+                HashSet<System.Reflection.Assembly> externAssemblies = new HashSet<System.Reflection.Assembly>();
+
+                foreach (var assembly in allAssemblies)
+                {
+                    if (assembly.IsDynamic || assembly.Location.Length <= 0 || 
+                        assembly.Location.StartsWith("data")) 
+                        continue;
+
+                    if (!udonSharpAssemblySet.Contains(assembly))
+                        externAssemblies.Add(assembly);
+                }
+
+                ExternAssemblySet = externAssemblies.ToImmutableHashSet();
 
                 _cacheInitRan = true;
             }
         }
 
-        public static bool IsValidUdonExtern(string externStr)
+        public static bool IsExternType(Type type)
         {
             CacheInit();
-            return _nodeDefinitionLookup.Contains(externStr);
+
+            return ExternAssemblySet.Contains(type.Assembly);
         }
 
         public static bool IsUdonEvent(string eventName)

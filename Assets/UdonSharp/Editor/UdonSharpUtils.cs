@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using UdonSharp.Compiler.Udon;
 using UnityEditor;
 using UnityEngine;
 using VRC.Udon;
@@ -423,10 +424,16 @@ namespace UdonSharp
             return type.IsArray && type.GetElementType().IsArray;
         }
 
+        public static bool IsUserDefinedEnum(System.Type type)
+        {
+            return type.IsEnum && !CompilerUdonInterface.IsExternType(type);
+        }
+
         public static bool IsUserDefinedType(System.Type type)
         {
             return IsUserDefinedBehaviour(type) ||
-                   IsUserJaggedArray(type);
+                   IsUserJaggedArray(type) ||
+                   IsUserDefinedEnum(type);
         }
 
         public static bool IsUdonWorkaroundType(System.Type type)
