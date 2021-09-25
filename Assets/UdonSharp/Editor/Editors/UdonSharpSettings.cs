@@ -204,10 +204,9 @@ public class <TemplateClassName> : UdonSharpBehaviour
         }
     }
     
-    public class UdonSharpSettingsProvider
+    public static class UdonSharpSettingsProvider
     {
         private static readonly GUIContent autoCompileLabel = new GUIContent("Auto compile on modify", "Trigger a compile whenever a U# source file is modified.");
-        private static readonly GUIContent compileAllLabel = new GUIContent("Compile all scripts", "Compile all scripts when a script is modified. This prevents some potential for weird issues where classes don't match");
         private static readonly GUIContent waitForFocusLabel = new GUIContent("Compile on focus", "Waits for application focus to compile any changed U# scripts");
         private static readonly GUIContent disableUploadCompileLabel = new GUIContent("Disable compile on upload", "Disables U# compile step on upload. This is not recommended unless you absolutely cannot deal with the compile on upload step.");
         private static readonly GUIContent templateOverrideLabel = new GUIContent("Script template override", "A custom override file to use as a template for newly created U# files. Put \"<TemplateClassName>\" in place of a class name for it to automatically populate with the file name.");
@@ -273,13 +272,6 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
                     EditorGUI.BeginChangeCheck();
                     EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.autoCompileOnModify)), autoCompileLabel);
-                    
-                    if (settings.autoCompileOnModify)
-                    {
-                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.compileAllScripts)), compileAllLabel);
-                        if (!settings.compileAllScripts)
-                            EditorGUILayout.HelpBox("Only compiling the script that has been modified can cause issues if you have multiple scripts communicating via methods.", MessageType.Warning);
-                    }
 
                     EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.waitForFocus)), waitForFocusLabel);
 
