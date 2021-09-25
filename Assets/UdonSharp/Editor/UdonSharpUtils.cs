@@ -426,7 +426,8 @@ namespace UdonSharp
 
         public static bool IsUserDefinedEnum(System.Type type)
         {
-            return type.IsEnum && !CompilerUdonInterface.IsExternType(type);
+            return (type.IsEnum && !CompilerUdonInterface.IsExternType(type)) || 
+                   (type.IsArray && type.GetElementType().IsEnum && !CompilerUdonInterface.IsExternType(type.GetElementType()));
         }
 
         public static bool IsUserDefinedType(System.Type type)
@@ -528,7 +529,10 @@ namespace UdonSharp
                 {
                     if (!type.GetElementType().IsArray)
                     {
-                        udonType = typeof(UnityEngine.Component[]);// Hack because VRC doesn't expose the array type of UdonBehaviour
+                        if (IsUserDefinedEnum(type))
+                            udonType = type.GetElementType().GetEnumUnderlyingType().MakeArrayType();
+                        else
+                            udonType = typeof(UnityEngine.Component[]);// Hack because VRC doesn't expose the array type of UdonBehaviour
                     }
                     else // Jagged arrays
                     {
