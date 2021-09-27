@@ -1,4 +1,5 @@
 ﻿
+using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace UdonSharp.Compiler.Symbols
@@ -62,6 +63,17 @@ namespace UdonSharp.Compiler.Symbols
                     operatorType = BuiltinOperatorType.Inequality;
                 
                 return new ExternSynthesizedOperatorSymbol(operatorType, parameterType.UdonType, context);
+            }
+
+            if (methodSymbol.IsGenericMethod)
+            {
+                if (methodSymbol.TypeArguments.Any(e => e is ITypeParameterSymbol))
+                {
+                    var typeArguments = methodSymbol.TypeArguments.Select(context.GetTypeSymbol).ToArray();
+                    var newMethod = new ImportedUdonSharpMethodSymbol(methodSymbol.OriginalDefinition.Construct(typeArguments.Select(e => e.RoslynSymbol).ToArray()), context);
+
+                    return newMethod;
+                }
             }
 
             return new ImportedUdonSharpMethodSymbol(methodSymbol, context);

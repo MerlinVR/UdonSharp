@@ -3,6 +3,7 @@ using System;
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Udon;
@@ -40,16 +41,33 @@ namespace UdonSharp.Compiler.Symbols
         }
         
         public TypeSymbol BaseType { get; }
+        public ImmutableArray<TypeSymbol> TypeArguments { get; }
 
-        protected TypeSymbol(ISymbol sourceSymbol, AbstractPhaseContext bindContext)
-            : base(sourceSymbol, bindContext)
+        protected TypeSymbol(ISymbol sourceSymbol, AbstractPhaseContext context)
+            : base(sourceSymbol, context)
         {
             // ReSharper disable once VirtualMemberCallInConstructor
             if (RoslynSymbol.BaseType != null && !IsExtern) // We don't use the base type on extern types and if we bind the base here, it can cause loops due to how Udon maps types
-                BaseType = bindContext.GetTypeSymbol(RoslynSymbol.BaseType);
+                BaseType = context.GetTypeSymbol(RoslynSymbol.BaseType);
             
             if (IsArray)
-                ElementType = bindContext.GetTypeSymbol(((IArrayTypeSymbol)sourceSymbol).ElementType);
+                ElementType = context.GetTypeSymbol(((IArrayTypeSymbol)sourceSymbol).ElementType);
+
+            if (sourceSymbol is INamedTypeSymbol sourceNamedType)
+            {
+                TypeArguments = sourceNamedType.TypeArguments.Length > 0
+                    ? sourceNamedType.TypeArguments.Select(context.GetTypeSymbol).ToImmutableArray()
+                    : ImmutableArray<TypeSymbol>.Empty;
+
+                if (RoslynSymbol.OriginalDefinition != RoslynSymbol)
+                    OriginalSymbol = context.GetSymbol(RoslynSymbol.OriginalDefinition);
+                else
+                    OriginalSymbol = this;
+            }
+            else
+            {
+                TypeArguments = ImmutableArray<TypeSymbol>.Empty;
+            }
         }
 
         private void InitSymbolDict()
@@ -75,6 +93,18 @@ namespace UdonSharp.Compiler.Symbols
             if (_bound)
                 return;
 
+            if (IsArray)
+            {
+                _bound = true;
+                return;
+            }
+
+            if (TypeArguments.Length > 0 && this == OriginalSymbol)
+            {
+                _bound = true;
+                return;
+            }
+            
             context.CurrentNode = RoslynSymbol.DeclaringSyntaxReferences.First().GetSyntax();
 
             if (IsUdonSharpBehaviour)
@@ -92,8 +122,8 @@ namespace UdonSharp.Compiler.Symbols
                 switch (member)
                 {
                     case IFieldSymbol _:
-                    case IPropertySymbol _:
-                    case IMethodSymbol _:
+                    case IPropertySymbol property when !property.IsStatic && IsUdonSharpBehaviour:
+                    case IMethodSymbol method when !method.IsStatic && IsUdonSharpBehaviour:
                         Symbol boundSymbol = context.GetSymbol(member);
                         
                         if (!boundSymbol.IsBound)
@@ -107,21 +137,48 @@ namespace UdonSharp.Compiler.Symbols
             _bound = true;
         }
 
-        public IEnumerable<TypeSymbol> CollectReferencedUnboundTypes(AbstractPhaseContext context)
+        public Dictionary<TypeSymbol, HashSet<Symbol>> CollectReferencedUnboundSymbols(BindContext context, IEnumerable<Symbol> extraBindMembers)
         {
-            HashSet<TypeSymbol> referencedTypes = new HashSet<TypeSymbol>();
+            Dictionary<TypeSymbol, HashSet<Symbol>> referencedTypes = new Dictionary<TypeSymbol, HashSet<Symbol>>();
 
-            foreach (Symbol member in GetMembers(context))
+            IEnumerable<Symbol> allMembers = GetMembers(context).Concat(extraBindMembers);
+
+            foreach (Symbol member in allMembers)
             {
                 if (member.DirectDependencies == null)
                     continue;
-                
-                referencedTypes.UnionWith(member.DirectDependencies.Where(e => !e.IsBound).OfType<TypeSymbol>()
-                    .Where(e => !e.IsArray));
+
+                foreach (Symbol dependency in member.DirectDependencies.Where(e => !e.IsBound))
+                {
+                    if (dependency is TypeSymbol typeSymbol)
+                    {
+                        if (!referencedTypes.ContainsKey(typeSymbol))
+                            referencedTypes.Add(typeSymbol, new HashSet<Symbol>());
+                    }
+                    else
+                    {
+                        TypeSymbol containingType = dependency.ContainingType;
+                        if (!referencedTypes.ContainsKey(containingType))
+                            referencedTypes.Add(containingType, new HashSet<Symbol>());
+
+                        referencedTypes[containingType].Add(dependency);
+                    }
+                }
             }
 
-            if (BaseType != null && !BaseType.IsBound)
-                referencedTypes.Add(BaseType);
+            if (BaseType != null && !BaseType.IsBound && 
+                !referencedTypes.ContainsKey(BaseType))
+                referencedTypes.Add(BaseType, new HashSet<Symbol>());
+
+            if (IsArray)
+            {
+                TypeSymbol currentSymbol = ElementType;
+                while (currentSymbol.IsArray)
+                    currentSymbol = currentSymbol.ElementType;
+                
+                if (!referencedTypes.ContainsKey(currentSymbol))
+                    referencedTypes.Add(currentSymbol, new HashSet<Symbol>());
+            }
 
             return referencedTypes;
         }

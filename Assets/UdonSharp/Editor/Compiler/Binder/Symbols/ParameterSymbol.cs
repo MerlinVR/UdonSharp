@@ -7,7 +7,7 @@ namespace UdonSharp.Compiler.Symbols
 {
     internal class ParameterSymbol : Symbol
     {
-        public TypeSymbol Type { get; }
+        public TypeSymbol Type { get; private set; }
         public IConstantValue DefaultValue { get; }
         public bool IsParams => RoslynSymbol.IsParams;
         public RefKind RefKind => RoslynSymbol.RefKind;
@@ -25,6 +25,9 @@ namespace UdonSharp.Compiler.Symbols
             :base(sourceSymbol, context)
         {
             Type = context.GetTypeSymbol(RoslynSymbol.Type);
+            
+            if (RoslynSymbol.OriginalDefinition != RoslynSymbol)
+                OriginalSymbol = context.GetSymbol(RoslynSymbol.OriginalDefinition);
 
             if (RoslynSymbol.HasExplicitDefaultValue)
             {
@@ -51,6 +54,7 @@ namespace UdonSharp.Compiler.Symbols
 
         public override void Bind(BindContext context)
         {
+            Type = context.GetTypeSymbol(RoslynSymbol.Type);
             ContainingSymbol = (MethodSymbol)context.GetSymbol(RoslynSymbol.ContainingSymbol);
         }
     }

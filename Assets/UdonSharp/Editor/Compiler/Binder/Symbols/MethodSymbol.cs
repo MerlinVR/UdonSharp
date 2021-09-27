@@ -49,23 +49,23 @@ namespace UdonSharp.Compiler.Symbols
                     Parameters = ImmutableArray<ParameterSymbol>.Empty;
                 }
 
-                if (sourceSymbol.TypeArguments.Length > 0)
-                    TypeArguments = sourceSymbol.TypeArguments.Select(context.GetTypeSymbol).ToImmutableArray();
-                else
-                    TypeArguments = ImmutableArray<TypeSymbol>.Empty;
+                TypeArguments = sourceSymbol.TypeArguments.Length > 0 ? sourceSymbol.TypeArguments.Select(context.GetTypeSymbol).ToImmutableArray() : ImmutableArray<TypeSymbol>.Empty;
 
                 if (RoslynSymbol.IsOverride && RoslynSymbol.OverriddenMethod != null) // abstract methods can be overrides, but not have overriden methods
                     OverridenMethod = (MethodSymbol) context.GetSymbol(RoslynSymbol.OverriddenMethod);
 
                 IsOperator = RoslynSymbol.MethodKind == MethodKind.BuiltinOperator ||
                              RoslynSymbol.MethodKind == MethodKind.UserDefinedOperator;
+
+                if (RoslynSymbol.OriginalDefinition != RoslynSymbol)
+                    OriginalSymbol = context.GetSymbol(RoslynSymbol.OriginalDefinition);
             }
         }
 
         public bool IsConstructor { get; protected set; }
         public TypeSymbol ReturnType { get; protected set; }
         public ImmutableArray<ParameterSymbol> Parameters { get; protected set; }
-        public ImmutableArray<TypeSymbol> TypeArguments { get; }
+        public ImmutableArray<TypeSymbol> TypeArguments { get; private set; }
 
         public override bool IsStatic => base.RoslynSymbol.IsStatic;
         
@@ -77,9 +77,25 @@ namespace UdonSharp.Compiler.Symbols
         
         public BoundNode MethodBody { get; private set; }
 
-        public override bool IsBound => MethodBody != null;
+        public override bool IsBound => MethodBody != null || RoslynSymbol.IsAbstract || IsUntypedGenericMethod;
+
+        public bool IsUntypedGenericMethod
+        {
+            get
+            {
+                return (RoslynSymbol.IsGenericMethod && RoslynSymbol.OriginalDefinition == RoslynSymbol) || 
+                        TypeArguments.Any(e => e is TypeParameterSymbol) ||
+                        ContainingType.TypeArguments.Any(e => e is TypeParameterSymbol);
+            }
+        }
 
         public bool HasOverrides => _overrides != null && _overrides.Count > 0;
+        public bool IsGenericMethod => RoslynSymbol.IsGenericMethod;
+
+        public MethodSymbol ConstructGenericMethod(AbstractPhaseContext context, TypeSymbol[] typeArguments)
+        {
+            return (MethodSymbol)context.GetSymbol(RoslynSymbol.Construct(typeArguments.Select(e => e.RoslynSymbol).ToArray()));
+        }
 
         private void CheckHiddenMethods(BindContext context)
         {
@@ -108,9 +124,12 @@ namespace UdonSharp.Compiler.Symbols
             if (IsBound)
                 return;
             
+            foreach (ParameterSymbol param in Parameters)
+                param.Bind(context);
+
             if (RoslynSymbol.IsAbstract)
                 return;
-            
+
             IMethodSymbol methodSymbol = RoslynSymbol;
             SyntaxNode declaringSyntax = methodSymbol.DeclaringSyntaxReferences.First().GetSyntax();
             context.CurrentNode = declaringSyntax;
@@ -119,9 +138,6 @@ namespace UdonSharp.Compiler.Symbols
             
             if (OverridenMethod != null)
                 OverridenMethod.AddOverride(this);
-            
-            foreach (ParameterSymbol param in Parameters)
-                param.Bind(context);
 
             if (methodSymbol.MethodKind != MethodKind.PropertyGet && methodSymbol.MethodKind != MethodKind.PropertySet &&
                 ((MethodDeclarationSyntax) methodSymbol.DeclaringSyntaxReferences.First().GetSyntax()).Modifiers.Any(SyntaxKind.PartialKeyword))

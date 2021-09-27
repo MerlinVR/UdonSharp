@@ -12,25 +12,126 @@ namespace UdonSharp.Compiler.Binder
     internal class BindContext : AbstractPhaseContext
     {
         private ITypeSymbol BindSymbol { get; }
+        private IEnumerable<Symbol> TypeSymbolsToBind { get; }
 
         private Symbol _currentBindSymbol;
         private HashSet<Symbol> _currentReferencedSymbols;
         
-        public BindContext(CompilationContext context, ITypeSymbol bindSymbol)
-        :base(context)
+        public BindContext(CompilationContext context, ITypeSymbol bindSymbol, IEnumerable<Symbol> referencedTypeSymbolsToBind)
+            :base(context)
         {
             BindSymbol = bindSymbol;
+            TypeSymbolsToBind = referencedTypeSymbolsToBind;
         }
 
         public void Bind()
-        { 
-            GetTypeSymbol(BindSymbol).Bind(this);
+        {
+            TypeSymbol containingType = GetTypeSymbol(BindSymbol);
+            
+            if (!containingType.IsBound)
+                containingType.Bind(this);
+
+            foreach (var symbol in TypeSymbolsToBind)
+            {
+                if (symbol.IsBound)
+                    continue;
+                
+                using (OpenMemberBindScope(symbol))
+                    symbol.Bind(this);
+            }
         }
 
         protected override void OnSymbolRetrieved(Symbol symbol)
         {
             if (_currentBindSymbol != null && !symbol.IsExtern)
                 _currentReferencedSymbols.Add(symbol);
+        }
+
+        private TypeSymbol MakeArraySymbol(TypeSymbol element, int depth)
+        {
+            if (element is TypeParameterSymbol)
+                return element;
+            
+            TypeSymbol currentSymbol = element;
+
+            while (depth-- > 0)
+                currentSymbol = currentSymbol.MakeArrayType(this);
+
+            return currentSymbol;
+        }
+
+        protected override Symbol RedirectTypeSymbol(Symbol symbol)
+        {
+            if (_currentBindSymbol == null || !(symbol is TypeParameterSymbol)) 
+                return symbol;
+
+            TypeSymbol parameterSymbol = (TypeSymbol)symbol;
+
+            int typeIdx = -1;
+            int arrayDepth = 0;
+
+            while (parameterSymbol.IsArray)
+            {
+                arrayDepth++;
+                parameterSymbol = parameterSymbol.ElementType;
+            }
+
+            if (arrayDepth > 0)
+                return MakeArraySymbol((TypeSymbol)RedirectTypeSymbol(parameterSymbol), arrayDepth);
+            
+            if (_currentBindSymbol is MethodSymbol currentMethodSymbol)
+            {
+                if (currentMethodSymbol.TypeArguments.Length > 0 && currentMethodSymbol.OriginalSymbol != null)
+                {
+                    MethodSymbol originalMethod = (MethodSymbol)currentMethodSymbol.OriginalSymbol;
+
+                    for (int i = 0; i < originalMethod.TypeArguments.Length; ++i)
+                    {
+                        if (!parameterSymbol.Equals(originalMethod.TypeArguments[i])) continue;
+                        typeIdx = i;
+                        break;
+                    }
+
+                    if (typeIdx != -1)
+                        return currentMethodSymbol.TypeArguments[typeIdx];
+                }
+            }
+
+            TypeSymbol containingType = _currentBindSymbol.ContainingType;
+
+            if (containingType.TypeArguments.Length > 0 && containingType.OriginalSymbol != null)
+            {
+                TypeSymbol originalType = (TypeSymbol)containingType.OriginalSymbol;
+                        
+                for (int i = 0; i < originalType.TypeArguments.Length; ++i)
+                {
+                    if (!parameterSymbol.Equals(originalType.TypeArguments[i])) continue;
+                    typeIdx = i;
+                    break;
+                }
+                        
+                if (typeIdx != -1)
+                    return containingType.TypeArguments[typeIdx];
+            }
+
+            return symbol;
+        }
+
+        protected override Symbol RedirectParameterSymbol(Symbol symbol)
+        {
+            if (_currentBindSymbol == null || !(symbol is ParameterSymbol))
+                return symbol;
+
+            if (_currentBindSymbol is MethodSymbol methodSymbol && methodSymbol.RoslynSymbol != methodSymbol.RoslynSymbol.OriginalDefinition)
+            {
+                foreach (var methodParam in methodSymbol.Parameters)
+                {
+                    if (methodParam.OriginalSymbol.Equals(symbol))
+                        return methodParam;
+                }
+            }
+            
+            return symbol;
         }
 
         public IDisposable OpenMemberBindScope(Symbol boundSymbol)

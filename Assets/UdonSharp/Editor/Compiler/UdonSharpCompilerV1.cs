@@ -1,5 +1,5 @@
 ﻿
-// #define SINGLE_THREAD_BUILD
+#define SINGLE_THREAD_BUILD
 
 using System;
 using System.Collections.Concurrent;
@@ -401,11 +401,14 @@ namespace UdonSharp.Compiler
                             return;
                         }
                         
-                        if (classType.IsAbstract && module.programAsset != null)
+                        if (classType.IsAbstract && module.programAsset != null && classType.Name == Path.GetFileNameWithoutExtension(module.filePath))
                         {
                             compilationContext.AddDiagnostic(DiagnosticSeverity.Error, classType.DeclaringSyntaxReferences.First().GetSyntax(), "Abstract U# behaviours cannot have an associated U# program asset");
                             return;
                         }
+                        
+                        if (classType.IsAbstract)
+                            continue;
                         
                         rootUdonSharpTypes.Add((classType, module));
                     }
@@ -512,30 +515,25 @@ namespace UdonSharp.Compiler
         private static void BindAllPrograms((INamedTypeSymbol, ModuleBinding)[] bindings, CompilationContext compilationContext)
         {
             Stopwatch bindTimer = Stopwatch.StartNew();
-            
-            HashSet<TypeSymbol> symbolsToBind = new HashSet<TypeSymbol>();
-            object hashSetLock = new object();
+
+            Dictionary<TypeSymbol, HashSet<Symbol>> symbolsToBind = new Dictionary<TypeSymbol, HashSet<Symbol>>();
+            object referencedSymbolsLock = new object();
 
             int currentIterationDivisor = 2;
             compilationContext.PhaseProgress = 0f;
 
+            var bindSet = symbolsToBind;
+
         #if SINGLE_THREAD_BUILD
             foreach (var rootTypeSymbol in bindings)
-            {
-                BindContext bindContext = new BindContext(compilationContext, rootTypeSymbol.Item1);
-                bindContext.Bind();
-            
-                rootTypeSymbol.Item2.binding = bindContext;
-                
-                symbolsToBind.UnionWith(bindContext.GetTypeSymbol(rootTypeSymbol.Item1).CollectReferencedUnboundTypes(bindContext));
-            }
         #else
             Parallel.ForEach(bindings, new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM},rootTypeSymbol =>
+        #endif
             {
                 if (compilationContext.ErrorCount > 0)
                     return;
                 
-                BindContext bindContext = new BindContext(compilationContext, rootTypeSymbol.Item1);
+                BindContext bindContext = new BindContext(compilationContext, rootTypeSymbol.Item1, Array.Empty<Symbol>());
                 
                 try
                 {
@@ -549,43 +547,34 @@ namespace UdonSharp.Compiler
 
                 rootTypeSymbol.Item2.binding = bindContext;
 
-                var referencedTypes = bindContext.GetTypeSymbol(rootTypeSymbol.Item1)
-                    .CollectReferencedUnboundTypes(bindContext).ToArray();
+                var referencedTypes = bindContext.GetTypeSymbol(rootTypeSymbol.Item1).CollectReferencedUnboundSymbols(bindContext, Array.Empty<Symbol>());
 
-                lock (hashSetLock)
+                lock (referencedSymbolsLock)
                 {
-                    // ReSharper disable once AccessToModifiedClosure
-                    symbolsToBind.UnionWith(referencedTypes);
+                    UnionSymbols(referencedTypes, bindSet);
                     compilationContext.PhaseProgress += (1f / bindings.Length) / currentIterationDivisor;
                 }
-            });
+            }
+        #if !SINGLE_THREAD_BUILD
+            );
         #endif
             
             while (symbolsToBind.Count > 0)
             {
                 currentIterationDivisor *= 2;
                 
-                HashSet<TypeSymbol> newSymbols = new HashSet<TypeSymbol>();
+                Dictionary<TypeSymbol, HashSet<Symbol>> newSymbols = new Dictionary<TypeSymbol, HashSet<Symbol>>();
                 
             #if SINGLE_THREAD_BUILD
-                foreach (TypeSymbol symbolToBind in symbolsToBind)
-                {
-                    if (!symbolToBind.IsBound)
-                    {
-                        BindContext bindContext = new BindContext(compilationContext, symbolToBind.RoslynSymbol);
-                
-                        bindContext.Bind();
-                
-                        newSymbols.UnionWith(symbolToBind.CollectReferencedUnboundTypes(bindContext));
-                    }
-                }
+                foreach (var typeSymbol in symbolsToBind)
             #else
-                Parallel.ForEach(symbolsToBind.Where(e => !e.IsBound), new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM}, typeSymbol =>
+                Parallel.ForEach(symbolsToBind, new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM}, typeSymbol =>
+            #endif
                 {
                     if (compilationContext.ErrorCount > 0)
                         return;
                     
-                    BindContext bindContext = new BindContext(compilationContext, typeSymbol.RoslynSymbol);
+                    BindContext bindContext = new BindContext(compilationContext, typeSymbol.Key.RoslynSymbol, typeSymbol.Value);
                     
                     try
                     {
@@ -597,20 +586,33 @@ namespace UdonSharp.Compiler
                         return;
                     }
                     
-                    var referencedSymbols = typeSymbol.CollectReferencedUnboundTypes(bindContext).ToArray();
+                    var referencedSymbols = typeSymbol.Key.CollectReferencedUnboundSymbols(bindContext, typeSymbol.Value);
 
-                    lock (hashSetLock)
+                    lock (referencedSymbolsLock)
                     {
-                        newSymbols.UnionWith(referencedSymbols);
+                        UnionSymbols(referencedSymbols, newSymbols);
                         compilationContext.PhaseProgress += (1f / symbolsToBind.Count) / currentIterationDivisor;
                     }
-                });
+                }
+            #if !SINGLE_THREAD_BUILD
+                );
             #endif
 
                 symbolsToBind = newSymbols;
             }
             
             PrintStageTime("U# Bind", bindTimer);
+        }
+
+        private static void UnionSymbols(Dictionary<TypeSymbol, HashSet<Symbol>> mergeSet, Dictionary<TypeSymbol, HashSet<Symbol>> bindSet)
+        {
+            foreach (var referencedTypeSymbols in mergeSet)
+            {
+                if (bindSet.TryGetValue(referencedTypeSymbols.Key, out var typeSymbols))
+                    typeSymbols.UnionWith(referencedTypeSymbols.Value);
+                else
+                    bindSet.Add(referencedTypeSymbols.Key, referencedTypeSymbols.Value);
+            }
         }
 
         private static void EmitAllPrograms((INamedTypeSymbol, ModuleBinding)[] bindings, CompilationContext compilationContext, System.Reflection.Assembly assembly)
@@ -725,8 +727,16 @@ namespace UdonSharp.Compiler
                 Type asmType = assembly.GetType(typeName);
 
                 UdonSharpEditorManager.ConstructorWarningsDisabled = true;
-                object component = Activator.CreateInstance(asmType);
-                UdonSharpEditorManager.ConstructorWarningsDisabled = false;
+                object component;
+                
+                try
+                {
+                    component = Activator.CreateInstance(asmType);
+                }
+                finally
+                {
+                    UdonSharpEditorManager.ConstructorWarningsDisabled = false;
+                }
 
                 foreach (FieldInfo field in asmType.GetFields(BindingFlags.Public | BindingFlags.NonPublic |
                                                               BindingFlags.Instance))

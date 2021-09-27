@@ -7,9 +7,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Linq;
 using System.Text;
 using UdonSharp.Compiler.Symbols;
+using UdonSharp.Core;
 using UdonSharp.Localization;
 using UnityEngine;
-using VRC.Udon.Compiler;
 using NotSupportedException = UdonSharp.Core.NotSupportedException;
 
 namespace UdonSharp.Compiler.Binder
@@ -22,7 +22,7 @@ namespace UdonSharp.Compiler.Binder
 
         public BinderSyntaxVisitor(Symbol owningSymbol, BindContext context)
         {
-            this.OwningSymbol = owningSymbol;
+            OwningSymbol = owningSymbol;
             Context = context;
 
             SymbolLookupModel = context.CompileContext.GetSemanticModel(owningSymbol.RoslynSymbol.DeclaringSyntaxReferences.First().SyntaxTree);
@@ -404,6 +404,11 @@ namespace UdonSharp.Compiler.Binder
 
             if (instanceExpression != null && methodSymbol.RoslynSymbol.IsExtensionMethod)
             {
+                // Roslyn seems to fail to resolve the correct generic method type on extension methods
+                // I'm not sure if this is an issue or intended behavior, but I'm leaning towards not intended since the method overload finding seems to take a different path in Roslyn's internals for extension methods.
+                if (methodSymbol.IsGenericMethod)
+                    throw new CompilerException("Generic extension method calls are not yet supported by U#, consider calling the method as a static method.");
+                
                 boundArguments[0] = instanceExpression;
                 instanceExpression = null;
                 startIdx = 1;
@@ -593,7 +598,7 @@ namespace UdonSharp.Compiler.Binder
 
         public override BoundNode VisitCastExpression(CastExpressionSyntax node)
         {
-            TypeSymbol castType = (TypeSymbol)GetSymbol(node.Type);
+            TypeSymbol castType = GetTypeSymbol(node.Type);
 
             return VisitExpression(node.Expression, castType, true);
         }

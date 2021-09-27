@@ -44,9 +44,9 @@ namespace UdonSharp.Compiler.Binder
                         if (rootType.IsUdonSharpBehaviour())
                             return new UdonSharpBehaviourTypeSymbol(arrayType, context);
                     }
-                    else if (currentArrayType.ElementType is ITypeParameterSymbol typeParameterSymbol)
+                    else if (currentArrayType.ElementType is ITypeParameterSymbol)
                     {
-                        return new TypeParameterSymbol(typeParameterSymbol, context);
+                        return new TypeParameterSymbol(arrayType, context);
                     }
                     else
                     {

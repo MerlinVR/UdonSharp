@@ -42,6 +42,9 @@ namespace UdonSharp.Compiler.Symbols
                 throw new NotSupportedException(LocStr.CE_UdonSharpBehaviourGenericMethodsNotSupported, symbol.Locations.FirstOrDefault());
 
             base.Bind(context);
+            
+            if (IsUntypedGenericMethod)
+                throw new NotSupportedException(LocStr.CE_UdonSharpBehaviourGenericMethodsNotSupported, symbol.Locations.FirstOrDefault());
         }
 
         public override void Emit(EmitContext context)

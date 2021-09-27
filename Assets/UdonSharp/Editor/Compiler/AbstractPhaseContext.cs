@@ -20,6 +20,7 @@ namespace UdonSharp.Compiler
         public TypeSymbol GetTypeSymbol(ITypeSymbol type)
         {
             var typeSymbol = CompileContext.GetTypeSymbol(type, this);
+            typeSymbol = (TypeSymbol)RedirectTypeSymbol(typeSymbol);
             OnSymbolRetrieved(typeSymbol);
 
             return typeSymbol;
@@ -28,6 +29,7 @@ namespace UdonSharp.Compiler
         public TypeSymbol GetUdonTypeSymbol(ITypeSymbol type)
         {
             var typeSymbol = CompileContext.GetUdonTypeSymbol(type, this);
+            typeSymbol = (TypeSymbol)RedirectTypeSymbol(typeSymbol);
             OnSymbolRetrieved(typeSymbol);
 
             return typeSymbol;
@@ -36,6 +38,7 @@ namespace UdonSharp.Compiler
         public TypeSymbol GetTypeSymbol(Type systemType)
         {
             var typeSymbol = CompileContext.GetTypeSymbol(systemType, this);
+            typeSymbol = (TypeSymbol)RedirectTypeSymbol(typeSymbol);
             OnSymbolRetrieved(typeSymbol);
 
             return typeSymbol;
@@ -44,6 +47,7 @@ namespace UdonSharp.Compiler
         public TypeSymbol GetTypeSymbol(SpecialType type)
         {
             var typeSymbol = CompileContext.GetTypeSymbol(type, this);
+            typeSymbol = (TypeSymbol)RedirectTypeSymbol(typeSymbol);
             OnSymbolRetrieved(typeSymbol);
 
             return typeSymbol;
@@ -52,6 +56,8 @@ namespace UdonSharp.Compiler
         public Symbol GetSymbol(ISymbol sourceSymbol)
         {
             var symbol = CompileContext.GetSymbol(sourceSymbol, this);
+            symbol = RedirectTypeSymbol(symbol);
+            symbol = RedirectParameterSymbol(symbol);
             OnSymbolRetrieved(symbol);
 
             return symbol;
@@ -65,5 +71,8 @@ namespace UdonSharp.Compiler
         protected virtual void OnSymbolRetrieved(Symbol symbol)
         {
         }
+
+        protected virtual Symbol RedirectTypeSymbol(Symbol symbol) => symbol;
+        protected virtual Symbol RedirectParameterSymbol(Symbol symbol) => symbol;
     }
 }

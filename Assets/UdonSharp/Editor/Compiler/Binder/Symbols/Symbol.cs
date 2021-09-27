@@ -3,9 +3,7 @@ using System;
 using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using UdonSharp.Compiler.Binder;
-using UnityEngine;
 
 namespace UdonSharp.Compiler.Symbols
 {
@@ -22,7 +20,7 @@ namespace UdonSharp.Compiler.Symbols
         /// <summary>
         /// Used to retrieve the non-generic-typed version of this symbol, for instance if you're getting a symbol for DoThing<int>(), will return DoThing<>()
         /// </summary>
-        public virtual Symbol OriginalSymbol => null;
+        public Symbol OriginalSymbol { get; protected set; }
 
         /// <summary>
         /// The source Roslyn-generated symbol for this U# symbol
@@ -55,7 +53,7 @@ namespace UdonSharp.Compiler.Symbols
         {
             RoslynSymbol = sourceSymbol;
 
-            if (sourceSymbol?.ContainingType != null)
+            if (sourceSymbol?.ContainingType != null && !(sourceSymbol is ITypeParameterSymbol))
                 ContainingType = context.GetTypeSymbol(sourceSymbol.ContainingType);
         }
 

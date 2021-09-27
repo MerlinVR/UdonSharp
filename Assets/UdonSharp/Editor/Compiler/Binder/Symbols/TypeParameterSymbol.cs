@@ -12,6 +12,11 @@ namespace UdonSharp.Compiler.Symbols
         {
         }
 
+        public TypeParameterSymbol(IArrayTypeSymbol arraySymbol, AbstractPhaseContext context)
+            :base(arraySymbol, context)
+        {
+        }
+
         public override void Bind(BindContext context)
         {
         }
