@@ -29,6 +29,9 @@ namespace UdonSharp.Compiler.Symbols
                 case null:
                     throw new System.NullReferenceException("Source symbol cannot be null");
                 case IMethodSymbol methodSymbol:
+                    if (methodSymbol.IsStatic)
+                        return new ImportedUdonSharpMethodSymbol(methodSymbol, context);
+                        
                     return new UdonSharpBehaviourMethodSymbol(methodSymbol, context);
                 case IFieldSymbol fieldSymbol:
                     return new UdonSharpBehaviourFieldSymbol(fieldSymbol, context);

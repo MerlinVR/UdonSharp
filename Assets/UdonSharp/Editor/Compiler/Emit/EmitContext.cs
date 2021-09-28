@@ -472,6 +472,9 @@ namespace UdonSharp.Compiler.Emit
 
         private void CastValue(Value sourceValue, Value targetValue, bool explicitCast)
         {
+            if (targetValue.UserType is TypeParameterSymbol)
+                throw new InvalidOperationException("Target cast type cannot be a generic type parameter");
+            
             if (sourceValue == targetValue)
                 return;
 
@@ -592,6 +595,9 @@ namespace UdonSharp.Compiler.Emit
 
         public Value CastValue(Value sourceValue, TypeSymbol targetType, bool explicitCast)
         {
+            if (targetType is TypeParameterSymbol)
+                throw new InvalidOperationException("Target cast type cannot be a generic type parameter");
+            
             if (IsTriviallyAssignableTo(sourceValue.UdonType, targetType))
                 return sourceValue;
             

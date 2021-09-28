@@ -62,7 +62,7 @@ namespace UdonSharp.Compiler.Symbols
                              RoslynSymbol.MethodKind == MethodKind.UserDefinedOperator;
 
                 if (RoslynSymbol.OriginalDefinition != RoslynSymbol)
-                    OriginalSymbol = context.GetSymbol(RoslynSymbol.OriginalDefinition);
+                    OriginalSymbol = context.GetSymbolNoRedirect(RoslynSymbol.OriginalDefinition);
             }
         }
 
@@ -98,7 +98,7 @@ namespace UdonSharp.Compiler.Symbols
 
         public MethodSymbol ConstructGenericMethod(AbstractPhaseContext context, TypeSymbol[] typeArguments)
         {
-            return (MethodSymbol)context.GetSymbol(RoslynSymbol.Construct(typeArguments.Select(e => e.RoslynSymbol).ToArray()));
+            return (MethodSymbol)context.GetSymbol(RoslynSymbol.OriginalDefinition.Construct(typeArguments.Select(e => e.RoslynSymbol).ToArray()));
         }
 
         private void CheckHiddenMethods(BindContext context)

@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Symbols;
 
@@ -60,7 +61,7 @@ namespace UdonSharp.Compiler.Binder
             return currentSymbol;
         }
 
-        protected override Symbol RedirectTypeSymbol(Symbol symbol)
+        public override Symbol RedirectTypeSymbol(Symbol symbol)
         {
             if (_currentBindSymbol == null || !(symbol is TypeParameterSymbol)) 
                 return symbol;
@@ -131,6 +132,21 @@ namespace UdonSharp.Compiler.Binder
                 }
             }
             
+            return symbol;
+        }
+
+        protected override Symbol RedirectMethodSymbol(Symbol symbol)
+        {
+            if (symbol is MethodSymbol methodSymbol 
+                && methodSymbol.IsGenericMethod
+                && methodSymbol.IsUntypedGenericMethod)
+            {
+                TypeSymbol[] typeSymbols = methodSymbol.TypeArguments.Select(e => (TypeSymbol)RedirectTypeSymbol(e)).ToArray();
+                
+                if (!typeSymbols.Any(e => e is TypeParameterSymbol))
+                    return methodSymbol.ConstructGenericMethod(this, typeSymbols);
+            }
+
             return symbol;
         }
 

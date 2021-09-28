@@ -66,6 +66,15 @@ namespace UdonSharp.Compiler
             var symbol = CompileContext.GetSymbol(sourceSymbol, this);
             symbol = RedirectTypeSymbol(symbol);
             symbol = RedirectParameterSymbol(symbol);
+            symbol = RedirectMethodSymbol(symbol);
+            OnSymbolRetrieved(symbol);
+
+            return symbol;
+        }
+        
+        public Symbol GetSymbolNoRedirect(ISymbol sourceSymbol)
+        {
+            var symbol = CompileContext.GetSymbol(sourceSymbol, this);
             OnSymbolRetrieved(symbol);
 
             return symbol;
@@ -80,7 +89,8 @@ namespace UdonSharp.Compiler
         {
         }
 
-        protected virtual Symbol RedirectTypeSymbol(Symbol symbol) => symbol;
+        public virtual Symbol RedirectTypeSymbol(Symbol symbol) => symbol;
+        protected virtual Symbol RedirectMethodSymbol(Symbol symbol) => symbol;
         protected virtual Symbol RedirectParameterSymbol(Symbol symbol) => symbol;
     }
 }
