@@ -191,8 +191,13 @@ namespace UdonSharp.Compiler.Symbols
             if (symbol is IMethodSymbol methodSymbol &&
                 methodSymbol.IsExtensionMethod &&
                 methodSymbol.ReducedFrom != null)
+            {
                 symbol = methodSymbol.ReducedFrom;
-            
+
+                if (methodSymbol.IsGenericMethod)
+                    symbol = ((IMethodSymbol)symbol).Construct(methodSymbol.TypeArguments.ToArray());
+            }
+
             return _typeSymbols.GetOrAdd(symbol, (key) => CreateSymbol(symbol, context));
         }
 

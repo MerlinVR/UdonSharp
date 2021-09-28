@@ -404,11 +404,6 @@ namespace UdonSharp.Compiler.Binder
 
             if (instanceExpression != null && methodSymbol.RoslynSymbol.IsExtensionMethod)
             {
-                // Roslyn seems to fail to resolve the correct generic method type on extension methods
-                // I'm not sure if this is an issue or intended behavior, but I'm leaning towards not intended since the method overload finding seems to take a different path in Roslyn's internals for extension methods.
-                if (methodSymbol.IsGenericMethod)
-                    throw new CompilerException("Generic extension method calls are not yet supported by U#, consider calling the method as a static method.");
-                
                 boundArguments[0] = instanceExpression;
                 instanceExpression = null;
                 startIdx = 1;
