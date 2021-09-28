@@ -1,5 +1,5 @@
 ﻿
-#define SINGLE_THREAD_BUILD
+// #define SINGLE_THREAD_BUILD
 
 using System;
 using System.Collections.Concurrent;

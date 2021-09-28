@@ -9,9 +9,11 @@ namespace UdonSharp.Lib.Internal
     {
         #region GetComponent
         [UsedImplicitly]
-        internal static Component GetComponent(Component instance, long behaviourType)
+        internal static T GetComponent<T>(Component instance) where T : UdonSharpBehaviour
         {
             UdonBehaviour[] udonBehaviours = (UdonBehaviour[])instance.GetComponents(typeof(UdonBehaviour));
+            long targetID = UdonSharpBehaviour.GetUdonTypeID<T>();
+            
             foreach (UdonBehaviour behaviour in udonBehaviours)
             {
             #if UNITY_EDITOR
@@ -19,16 +21,18 @@ namespace UdonSharp.Lib.Internal
                     continue;
             #endif
                 object idValue = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
-                if (idValue != null && (long) idValue == behaviourType)
-                    return behaviour;
+                if (idValue != null && (long) idValue == targetID)
+                    return (T)(Component)behaviour;
             }
             return null;
         }
         
         [UsedImplicitly]
-        internal static Component GetComponentInChildren(Component instance, long behaviourType)
+        internal static T GetComponentInChildren<T>(Component instance) where T : UdonSharpBehaviour
         {
             UdonBehaviour[] udonBehaviours = (UdonBehaviour[])instance.GetComponentsInChildren(typeof(UdonBehaviour));
+            long targetID = UdonSharpBehaviour.GetUdonTypeID<T>();
+            
             foreach (UdonBehaviour behaviour in udonBehaviours)
             {
             #if UNITY_EDITOR
@@ -36,33 +40,38 @@ namespace UdonSharp.Lib.Internal
                     continue;
             #endif
                 object idValue = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
-                if (idValue != null && (long) idValue == behaviourType)
-                    return behaviour;
+                if (idValue != null && (long) idValue == targetID)
+                    return (T)(Component)behaviour;
             }
             return null;
         }
         
         [UsedImplicitly]
-        internal static Component GetComponentInChildren(Component instance, long behaviourType, bool includeInactive)
+        internal static T GetComponentInChildren<T>(Component instance, bool includeInactive) where T : UdonSharpBehaviour
         {
             UdonBehaviour[] udonBehaviours = (UdonBehaviour[])instance.GetComponentsInChildren(typeof(UdonBehaviour), includeInactive);
+            long targetID = UdonSharpBehaviour.GetUdonTypeID<T>();
+            
             foreach (UdonBehaviour behaviour in udonBehaviours)
             {
             #if UNITY_EDITOR
                 if (behaviour.GetProgramVariableType(CompilerConstants.UsbTypeIDHeapKey) == null)
                     continue;
             #endif
+                
                 object idValue = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
-                if (idValue != null && (long) idValue == behaviourType)
-                    return behaviour;
+                if (idValue != null && (long) idValue == targetID)
+                    return (T)(Component)behaviour;
             }
             return null;
         }
         
         [UsedImplicitly]
-        internal static Component GetComponentInParent(Component instance, long behaviourType)
+        internal static T GetComponentInParent<T>(Component instance) where T : UdonSharpBehaviour
         {
             UdonBehaviour[] udonBehaviours = (UdonBehaviour[])instance.GetComponentsInParent(typeof(UdonBehaviour));
+            long targetID = UdonSharpBehaviour.GetUdonTypeID<T>();
+            
             foreach (UdonBehaviour behaviour in udonBehaviours)
             {
             #if UNITY_EDITOR
@@ -70,16 +79,18 @@ namespace UdonSharp.Lib.Internal
                     continue;
             #endif
                 object idValue = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
-                if (idValue != null && (long) idValue == behaviourType)
-                    return behaviour;
+                if (idValue != null && (long) idValue == targetID)
+                    return (T)(Component)behaviour;
             }
             return null;
         }
         
         [UsedImplicitly]
-        internal static Component GetComponentInParent(Component instance, long behaviourType, bool includeInactive)
+        internal static T GetComponentInParent<T>(Component instance, bool includeInactive) where T : UdonSharpBehaviour
         {
             UdonBehaviour[] udonBehaviours = (UdonBehaviour[])instance.GetComponentsInParent(typeof(UdonBehaviour), includeInactive);
+            long targetID = UdonSharpBehaviour.GetUdonTypeID<T>();
+            
             foreach (UdonBehaviour behaviour in udonBehaviours)
             {
             #if UNITY_EDITOR
@@ -87,8 +98,8 @@ namespace UdonSharp.Lib.Internal
                     continue;
             #endif
                 object idValue = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
-                if (idValue != null && (long) idValue == behaviourType)
-                    return behaviour;
+                if (idValue != null && (long) idValue == targetID)
+                    return (T)(Component)behaviour;
             }
             return null;
         }
@@ -96,8 +107,10 @@ namespace UdonSharp.Lib.Internal
 
         #region GetComponents
 
-        private static UdonBehaviour[] GetComponentsOfType(long behaviourType, UdonBehaviour[] inputArray)
+        private static T[] GetComponentsOfType<T>(UdonBehaviour[] inputArray) where T : UdonSharpBehaviour
         {
+            long targetID = UdonSharpBehaviour.GetUdonTypeID<T>();
+            
             int arraySize = 0;
             foreach (UdonBehaviour behaviour in inputArray)
             {
@@ -106,11 +119,11 @@ namespace UdonSharp.Lib.Internal
                     continue;
             #endif
                 object typeID = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
-                if (typeID != null && (long) typeID == behaviourType)
+                if (typeID != null && (long) typeID == targetID)
                     arraySize++;
             }
 
-            UdonBehaviour[] foundBehaviours = new UdonBehaviour[arraySize];
+            Component[] foundBehaviours = new Component[arraySize];
             int targetIdx = 0;
             
             foreach (UdonBehaviour behaviour in inputArray)
@@ -120,46 +133,46 @@ namespace UdonSharp.Lib.Internal
                     continue;
             #endif
                 object typeID = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
-                if (typeID != null && (long) typeID == behaviourType)
+                if (typeID != null && (long) typeID == targetID)
                     foundBehaviours[targetIdx++] = behaviour;
             }
 
-            return foundBehaviours;
+            return (T[])foundBehaviours;
         }
 
         [UsedImplicitly]
-        internal static UdonBehaviour[] GetComponents(Component instance, long behaviourType)
+        internal static T[] GetComponents<T>(Component instance) where T : UdonSharpBehaviour
         {
             UdonBehaviour[] instanceBehaviours = (UdonBehaviour[])instance.GetComponents(typeof(UdonBehaviour));
-            return GetComponentsOfType(behaviourType, instanceBehaviours);
+            return GetComponentsOfType<T>(instanceBehaviours);
         }
         
         [UsedImplicitly]
-        internal static UdonBehaviour[] GetComponentsInChildren(Component instance, long behaviourType)
+        internal static T[] GetComponentsInChildren<T>(Component instance) where T : UdonSharpBehaviour
         {
             UdonBehaviour[] instanceBehaviours = (UdonBehaviour[])instance.GetComponentsInChildren(typeof(UdonBehaviour));
-            return GetComponentsOfType(behaviourType, instanceBehaviours);
+            return GetComponentsOfType<T>(instanceBehaviours);
         }
         
         [UsedImplicitly]
-        internal static UdonBehaviour[] GetComponentsInChildren(Component instance, long behaviourType, bool includeInactive)
+        internal static T[] GetComponentsInChildren<T>(Component instance, bool includeInactive) where T : UdonSharpBehaviour
         {
             UdonBehaviour[] instanceBehaviours = (UdonBehaviour[])instance.GetComponentsInChildren(typeof(UdonBehaviour), includeInactive);
-            return GetComponentsOfType(behaviourType, instanceBehaviours);
+            return GetComponentsOfType<T>(instanceBehaviours);
         }
         
         [UsedImplicitly]
-        internal static UdonBehaviour[] GetComponentsInParent(Component instance, long behaviourType)
+        internal static T[] GetComponentsInParent<T>(Component instance) where T : UdonSharpBehaviour
         {
             UdonBehaviour[] instanceBehaviours = (UdonBehaviour[])instance.GetComponentsInParent(typeof(UdonBehaviour));
-            return GetComponentsOfType(behaviourType, instanceBehaviours);
+            return GetComponentsOfType<T>(instanceBehaviours);
         }
         
         [UsedImplicitly]
-        internal static UdonBehaviour[] GetComponentsInParent(Component instance, long behaviourType, bool includeInactive)
+        internal static T[] GetComponentsInParent<T>(Component instance, bool includeInactive) where T : UdonSharpBehaviour
         {
             UdonBehaviour[] instanceBehaviours = (UdonBehaviour[])instance.GetComponentsInParent(typeof(UdonBehaviour), includeInactive);
-            return GetComponentsOfType(behaviourType, instanceBehaviours);
+            return GetComponentsOfType<T>(instanceBehaviours);
         }
 
         #endregion

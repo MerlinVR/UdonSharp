@@ -26,6 +26,14 @@ namespace UdonSharp.Compiler
             return typeSymbol;
         }
 
+        public TypeSymbol GetTypeSymbolWithoutRedirect(ITypeSymbol type)
+        {
+            var typeSymbol = CompileContext.GetTypeSymbol(type, this);
+            OnSymbolRetrieved(typeSymbol);
+
+            return typeSymbol;
+        }
+
         public TypeSymbol GetUdonTypeSymbol(ITypeSymbol type)
         {
             var typeSymbol = CompileContext.GetUdonTypeSymbol(type, this);

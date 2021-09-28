@@ -58,7 +58,7 @@ namespace UdonSharp.Compiler.Binder
         };
 
         private static bool TryCreateUdonSharpMetadataInvocation(AbstractPhaseContext context, SyntaxNode node,
-            MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
+            MethodSymbol symbol, BoundExpression instanceExpression,
             out BoundInvocationExpression createdInvocation)
         {
             if (symbol.Name == "GetUdonTypeID" || symbol.Name == "GetUdonTypeName")
@@ -69,15 +69,17 @@ namespace UdonSharp.Compiler.Binder
                 {
                     IConstantValue constantValue;
                     TypeSymbol constantType;
+
+                    var typeArgs = symbol.TypeArguments.Select(e => context.GetTypeSymbol(e.RoslynSymbol)).ToArray();
                     
                     if (symbol.Name == "GetUdonTypeID")
                     {
-                        constantValue = new ConstantValue<long>(UdonSharpInternalUtility.GetTypeID(TypeSymbol.GetFullTypeName(symbol.TypeArguments[0].RoslynSymbol)));
+                        constantValue = new ConstantValue<long>(UdonSharpInternalUtility.GetTypeID(TypeSymbol.GetFullTypeName(typeArgs[0].RoslynSymbol)));
                         constantType = context.GetTypeSymbol(SpecialType.System_Int64);
                     }
                     else
                     {
-                        constantValue = new ConstantValue<string>(TypeSymbol.GetFullTypeName(symbol.TypeArguments[0].RoslynSymbol));
+                        constantValue = new ConstantValue<string>(TypeSymbol.GetFullTypeName(typeArgs[0].RoslynSymbol));
                         constantType = context.GetTypeSymbol(SpecialType.System_String);
                     }
 
@@ -132,12 +134,12 @@ namespace UdonSharp.Compiler.Binder
                 {
                     MethodSymbol getComponentMethodShim = context.GetTypeSymbol(typeof(GetUserComponentShim))
                         .GetMembers<MethodSymbol>(symbol.Name, context)
-                        .First(e => e.Parameters.Length == parameterExpressions.Length + 2);
-
-                    string typeName = symbol.TypeArguments[0].RoslynSymbol.ToDisplayString(new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces));
-                    var boundConstant = new BoundConstantExpression(UdonSharpInternalUtility.GetTypeID(typeName), context.GetTypeSymbol(SpecialType.System_Int64));
+                        .First(e => e.Parameters.Length == parameterExpressions.Length + 1);
+                    
+                    getComponentMethodShim = getComponentMethodShim.ConstructGenericMethod(context, new [] { symbol.TypeArguments[0] });
+                    
                     createdInvocation = new BoundStaticUserMethodInvocation(node, getComponentMethodShim,
-                        new [] {instanceExpression, boundConstant}.Concat(parameterExpressions).ToArray());
+                        new [] {instanceExpression}.Concat(parameterExpressions).ToArray());
                     
                     context.MarkSymbolReferenced(getComponentMethodShim);
 
@@ -283,7 +285,7 @@ namespace UdonSharp.Compiler.Binder
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
             out BoundInvocationExpression createdInvocation)
         {
-            if (TryCreateUdonSharpMetadataInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
+            if (TryCreateUdonSharpMetadataInvocation(context, node, symbol, instanceExpression, out createdInvocation))
                 return true;
             
             if (TryCreateGetComponentInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
@@ -760,7 +762,7 @@ namespace UdonSharp.Compiler.Binder
             public override Value EmitValue(EmitContext context)
             {
                 Value returnVal = context.GetReturnValue(ValueType);
-
+                
                 context.EmitValueAssignment(returnVal,
                     BoundAccessExpression.BindAccess(context.GetConstantValue(ValueType, ConstantValue.Value)));
 

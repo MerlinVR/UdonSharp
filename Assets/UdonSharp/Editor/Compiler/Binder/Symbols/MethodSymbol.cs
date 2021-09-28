@@ -10,6 +10,7 @@ using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Core;
 using UdonSharp.Localization;
+using UnityEngine;
 using NotSupportedException = UdonSharp.Core.NotSupportedException;
 
 namespace UdonSharp.Compiler.Symbols
@@ -49,7 +50,10 @@ namespace UdonSharp.Compiler.Symbols
                     Parameters = ImmutableArray<ParameterSymbol>.Empty;
                 }
 
-                TypeArguments = sourceSymbol.TypeArguments.Length > 0 ? sourceSymbol.TypeArguments.Select(context.GetTypeSymbol).ToImmutableArray() : ImmutableArray<TypeSymbol>.Empty;
+                if (!IsGenericMethod && RoslynSymbol != RoslynSymbol.OriginalDefinition)
+                    TypeArguments = sourceSymbol.TypeArguments.Length > 0 ? sourceSymbol.TypeArguments.Select(context.GetTypeSymbol).ToImmutableArray() : ImmutableArray<TypeSymbol>.Empty;
+                else
+                    TypeArguments = sourceSymbol.TypeArguments.Length > 0 ? sourceSymbol.TypeArguments.Select(context.GetTypeSymbolWithoutRedirect).ToImmutableArray() : ImmutableArray<TypeSymbol>.Empty;
 
                 if (RoslynSymbol.IsOverride && RoslynSymbol.OverriddenMethod != null) // abstract methods can be overrides, but not have overriden methods
                     OverridenMethod = (MethodSymbol) context.GetSymbol(RoslynSymbol.OverriddenMethod);
@@ -65,7 +69,7 @@ namespace UdonSharp.Compiler.Symbols
         public bool IsConstructor { get; protected set; }
         public TypeSymbol ReturnType { get; protected set; }
         public ImmutableArray<ParameterSymbol> Parameters { get; protected set; }
-        public ImmutableArray<TypeSymbol> TypeArguments { get; private set; }
+        public ImmutableArray<TypeSymbol> TypeArguments { get; }
 
         public override bool IsStatic => base.RoslynSymbol.IsStatic;
         
@@ -123,9 +127,12 @@ namespace UdonSharp.Compiler.Symbols
         {
             if (IsBound)
                 return;
-            
-            foreach (ParameterSymbol param in Parameters)
-                param.Bind(context);
+
+            if (!IsUntypedGenericMethod)
+            {
+                foreach (ParameterSymbol param in Parameters)
+                    param.Bind(context);
+            }
 
             if (RoslynSymbol.IsAbstract)
                 return;

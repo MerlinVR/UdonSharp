@@ -129,7 +129,7 @@ namespace UdonSharp
             return GetUdonTypeID(GetType());
         }
 
-        public static long GetUdonTypeID<T>()
+        public static long GetUdonTypeID<T>() where T : UdonSharpBehaviour
         {
             return GetUdonTypeID(typeof(T));
         }
@@ -144,7 +144,7 @@ namespace UdonSharp
             return GetUdonTypeName(GetType());
         }
 
-        public static string GetUdonTypeName<T>()
+        public static string GetUdonTypeName<T>() where T : UdonSharpBehaviour
         {
             return GetUdonTypeName(typeof(T));
         }
