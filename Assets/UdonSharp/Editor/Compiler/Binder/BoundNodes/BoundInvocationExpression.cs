@@ -280,6 +280,27 @@ namespace UdonSharp.Compiler.Binder
             createdInvocation = null;
             return false;
         }
+        
+        private static bool TryCreateCompareToInvocation(AbstractPhaseContext context, SyntaxNode node,
+            MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
+            out BoundInvocationExpression createdInvocation)
+        {
+            if (symbol.Name == "CompareTo" &&
+                symbol.ContainingType != null &&
+                symbol.ContainingType == context.GetTypeSymbol(typeof(IComparable)))
+            {
+                createdInvocation = new BoundExternInvocation(node,
+                    new ExternSynthesizedMethodSymbol(context, "CompareTo", instanceExpression.ValueType,
+                        new [] { instanceExpression.ValueType },
+                        context.GetTypeSymbol(SpecialType.System_Int32), false),
+                    instanceExpression, parameterExpressions);
+                
+                return true;
+            }
+
+            createdInvocation = null;
+            return false;
+        }
 
         private static bool TryCreateShimInvocation(AbstractPhaseContext context, SyntaxNode node,
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
@@ -304,6 +325,9 @@ namespace UdonSharp.Compiler.Binder
                 return true;
             
             if (TryCreateBaseEnumMethodInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
+                return true;
+            
+            if (TryCreateCompareToInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
                 return true;
 
             return false;

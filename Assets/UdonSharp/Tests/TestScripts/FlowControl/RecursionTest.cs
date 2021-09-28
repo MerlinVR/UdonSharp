@@ -1,8 +1,10 @@
 ﻿
+using System;
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
+using Random = UnityEngine.Random;
 
 namespace UdonSharp.Tests
 {
@@ -21,23 +23,22 @@ namespace UdonSharp.Tests
             return input * Factorial(input - 1);
         }
 
-        int Partition(int[] arr, int left, int right)
+        private static int Partition<T>(T[] arr, int left, int right) where T : IComparable
         {
-            int pivot;
-            pivot = arr[left];
+            T pivot = arr[left];
             while (true)
             {
-                while (arr[left] < pivot)
+                while (arr[left].CompareTo(pivot) < 0)
                 {
                     left++;
                 }
-                while (arr[right] > pivot)
+                while (arr[right].CompareTo(pivot) > 0)
                 {
                     right--;
                 }
                 if (left < right)
                 {
-                    int temp = arr[right];
+                    T temp = arr[right];
                     arr[right] = arr[left];
                     arr[left] = temp;
                 }
@@ -50,7 +51,7 @@ namespace UdonSharp.Tests
 
         // Copy paste from https://www.tutorialspoint.com/chash-program-to-perform-quick-sort-using-recursion
         [RecursiveMethod]
-        public void QuickSort(int[] arr, int left, int right)
+        private void QuickSort(int[] arr, int left, int right)
         {
             int pivot;
             if (left < right)
@@ -62,6 +63,24 @@ namespace UdonSharp.Tests
 
                 if (pivot + 1 < right)
                     QuickSort(arr, pivot + 1, right);
+            }
+
+            arr = null; // Just throw a curveball with something that should be handled, but could break stuff if it isn't handled
+        }
+        
+        [RecursiveMethod]
+        private static void QuickSortStatic<T>(T[] arr, int left, int right) where T : IComparable
+        {
+            int pivot;
+            if (left < right)
+            {
+                pivot = Partition(arr, left, right);
+
+                if (pivot > 1)
+                    QuickSortStatic(arr, left, pivot - 1);
+
+                if (pivot + 1 < right)
+                    QuickSortStatic(arr, pivot + 1, right);
             }
 
             arr = null; // Just throw a curveball with something that should be handled, but could break stuff if it isn't handled
@@ -296,7 +315,7 @@ namespace UdonSharp.Tests
             int[] shuffleArray = InitTestArray(arraySize); // Fuzz a little
             
             ShuffleArray(shuffleArray);
-            QuickSort(shuffleArray, 0, shuffleArray.Length - 1);
+            QuickSortStatic(shuffleArray, 0, shuffleArray.Length - 1);
             
             bool sorted = IsSorted(shuffleArray);
             if (!sorted)
