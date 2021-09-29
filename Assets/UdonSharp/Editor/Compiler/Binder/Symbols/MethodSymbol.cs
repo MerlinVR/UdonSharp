@@ -94,7 +94,7 @@ namespace UdonSharp.Compiler.Symbols
         }
 
         public bool HasOverrides => _overrides != null && _overrides.Count > 0;
-        public bool IsGenericMethod => RoslynSymbol.IsGenericMethod;
+        public bool IsGenericMethod => RoslynSymbol?.IsGenericMethod ?? false;
 
         public MethodSymbol ConstructGenericMethod(AbstractPhaseContext context, TypeSymbol[] typeArguments)
         {
