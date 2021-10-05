@@ -1,0 +1,29 @@
+{
+	"name" : "com.merlinvr.udonsharp",
+	"displayName" : "UdonSharp",
+	"version" : "1.0.0",
+	"unity" : "2019.4",
+	"description" : "An experimental compiler for compiling C# to Udon assembly",
+	"gitDependencies" : {
+		"com.vrchat.base" : "https://github.com/vrchat/com.vrchat.base.git",
+        "com.vrchat.avatars" : "https://github.com/vrchat/com.vrchat.avatars.git"
+	},
+	"url" : "https://github.com/MerlinVR/UdonSharp.git?path=Assets/UdonSharp#1.0-dev",
+	"samples" : [
+			{
+				"displayName" : "CustomInspectors",
+				"description" : "Custom Inspector Example",
+				"path" : "Samples~/CustomInspectors"
+			},
+			{
+				"displayName" : "Tutorials",
+				"description" : "Tutorials Example",
+				"path" : "Samples~/Tutorials"
+			},
+			{
+				"displayName" : "Utilities",
+				"description" : "Utilities Example",
+				"path" : "Samples~/Utilities"
+			}
+		]
+}
