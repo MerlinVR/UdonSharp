@@ -90,7 +90,7 @@ namespace UdonSharp.Updater
             foreach (string sourceFile in sourceFiles)
             {
                 string targetFilePath = sourceFile.Replace(sourcePath, destinationPath);
-                File.Copy(sourceFile, targetFilePath);
+                File.Copy(sourceFile, targetFilePath, true);
                 new FileInfo(targetFilePath).IsReadOnly = false;
             }
         }
