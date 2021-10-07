@@ -19,11 +19,6 @@
       "displayName": "Tutorials",
       "description": "Tutorials Example",
       "path": "Samples~/Tutorials"
-    },
-    {
-      "displayName": "Utilities",
-      "description": "Utilities Example",
-      "path": "Samples~/Utilities"
     }
   ]
 }

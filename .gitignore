@@ -78,6 +78,12 @@ Assets/Merlin.meta
 Assets/Merlin/Editor.meta
 Assets/Merlin/Editor/EasyEventEditor.cs
 Assets/Merlin/Editor/EasyEventEditor.cs.meta
+Assets/UdonSharp/Settings
+Assets/UdonSharp/Settings.meta
+Assets/UdonSharp/UtilityScripts
+Assets/UdonSharp/UtilityScripts.meta
+Assets/UdonSharp/UdonSharpDataLocator.asset
+Assets/UdonSharp/UdonSharpDataLocator.asset.meta
 
 # Package stuff
 Assets/Resources

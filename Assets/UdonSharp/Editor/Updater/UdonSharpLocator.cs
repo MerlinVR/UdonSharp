@@ -16,7 +16,7 @@ namespace UdonSharp.Updater
     //[CreateAssetMenu(menuName = "U# Locator", fileName = "UdonSharpLocator")]
     public class UdonSharpLocator : ScriptableObject
     {
-        private static string cachedLocation = null;
+        private static string _cachedLocation;
 
         /// <summary>
         /// Gets the install path for the root of UdonSharp, with a standard install this will be "Assets/UdonSharp"
@@ -25,10 +25,10 @@ namespace UdonSharp.Updater
         public static string GetInstallPath()
         {
 #if UNITY_EDITOR
-            if (cachedLocation != null)
-                return cachedLocation;
+            if (_cachedLocation != null)
+                return _cachedLocation;
             
-            string[] foundLocatorGuids = AssetDatabase.FindAssets($"t:{typeof(UdonSharpLocator).Name}");
+            string[] foundLocatorGuids = AssetDatabase.FindAssets($"t:{nameof(UdonSharpLocator)}");
             List<UdonSharpLocator> foundLocators = new List<UdonSharpLocator>();
 
             foreach (string locatorGuid in foundLocatorGuids)
@@ -43,16 +43,14 @@ namespace UdonSharp.Updater
             {
                 throw new System.Exception("Could not find UdonSharp locator, make sure you have installed U# following the install instructions.");
             }
-            else if (foundLocators.Count > 1)
+            
+            if (foundLocators.Count > 1)
             {
                 throw new System.Exception("Multiple UdonSharp locators found, make sure you do not have multiple installations of UdonSharp.");
             }
-            else
-            {
-                cachedLocation = Path.GetDirectoryName(AssetDatabase.GetAssetPath(foundLocators[0]));
-
-                return cachedLocation;
-            }
+            
+            _cachedLocation = Path.GetDirectoryName(AssetDatabase.GetAssetPath(foundLocators[0]));
+            return _cachedLocation;
 #else
             throw new System.PlatformNotSupportedException("Cannot get UdonSharp installation path outside of the Editor runtime");
 #endif
@@ -71,18 +69,29 @@ namespace UdonSharp.Updater
         {
             return Path.Combine(GetResourcesPath(), "Localization");
         }
+
+        public static string GetSettingsPath()
+        {
+            return Path.Combine(UdonSharpDataLocator.GetDataPath(), "Settings", "UdonSharpSettings.asset");
+        }
+        
+        public static string GetSamplesPath()
+        {
+            return Path.Combine(GetInstallPath(), "Samples~");
+        }
     }
 
 #if UNITY_EDITOR
     [CustomEditor(typeof(UdonSharpLocator))]
-    public class UdonSharpLocatorEditor : Editor
+    internal class UdonSharpLocatorEditor : Editor
     {
         public override void OnInspectorGUI()
         {
             EditorGUILayout.HelpBox("Do not delete or move this file! This is used by UdonSharp to locate its installation directory, if you delete it U# will break!", MessageType.Error);
             EditorGUILayout.HelpBox($"Path: {UdonSharpLocator.GetInstallPath()}\n" +
                 $"Resources Path: {UdonSharpLocator.GetResourcesPath()}\n" +
-                $"Localization Path: {UdonSharpLocator.GetLocalizationPath()}", MessageType.Info);
+                $"Localization Path: {UdonSharpLocator.GetLocalizationPath()}\n" +
+                $"Settings Path: {UdonSharpLocator.GetSettingsPath()}", MessageType.Info);
         }
     }
 #endif

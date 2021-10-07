@@ -2,7 +2,6 @@
 #define UDONSHARP_LOC_DEBUG
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml.Linq;

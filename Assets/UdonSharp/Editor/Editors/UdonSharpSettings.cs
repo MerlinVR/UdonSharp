@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UdonSharp.Updater;
 using UnityEditor;
 using UnityEngine;
 
@@ -16,8 +17,6 @@ namespace UdonSharpEditor
             AllLogs,
             Prefix,
         }
-
-        private const string SettingsSavePath = "Assets/UdonSharp/UdonSharpSettings.asset";
 
         private const string DefaultProgramTemplate = @"
 using UdonSharp;
@@ -34,8 +33,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
 }
 ";
 
-        private static readonly string[] BuiltinScanningBlacklist = new string[]
-        {
+        private static readonly string[] BuiltinScanningBlacklist = {
             "Assets/Udon/Editor/",
             "Assets/Udon/Serialization/",
             "Assets/Udon/ProgramSources/",
@@ -81,18 +79,22 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         public static UdonSharpSettings GetSettings()
         {
-            UdonSharpSettings settings = AssetDatabase.LoadAssetAtPath<UdonSharpSettings>(SettingsSavePath);
+            UdonSharpSettings settings = AssetDatabase.LoadAssetAtPath<UdonSharpSettings>(UdonSharpLocator.GetSettingsPath());
             
             return settings;
         }
 
         internal static UdonSharpSettings GetOrCreateSettings()
         {
-            UdonSharpSettings settings = AssetDatabase.LoadAssetAtPath<UdonSharpSettings>(SettingsSavePath);
+            string settingsPath = UdonSharpLocator.GetSettingsPath();
+            UdonSharpSettings settings = AssetDatabase.LoadAssetAtPath<UdonSharpSettings>(settingsPath);
             if (settings == null)
             {
-                settings = ScriptableObject.CreateInstance<UdonSharpSettings>();
-                AssetDatabase.CreateAsset(settings, SettingsSavePath);
+                if (!AssetDatabase.IsValidFolder(Path.GetDirectoryName(settingsPath)))
+                    Directory.CreateDirectory(Path.GetDirectoryName(settingsPath));
+                
+                settings = CreateInstance<UdonSharpSettings>();
+                AssetDatabase.CreateAsset(settings, settingsPath);
                 AssetDatabase.SaveAssets();
             }
 
