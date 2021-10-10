@@ -124,10 +124,24 @@ namespace UdonSharp.Compiler
                 }
             }
 
+            if (CurrentJob.Task.IsFaulted)
+            {
+                Debug.LogError("[<color=#FF00FF>UdonSharp</color>] internal compiler error, dumping exceptions. Please report to Merlin");
+
+                if (CurrentJob.Task.Exception != null)
+                {
+                    foreach (var innerException in CurrentJob.Task.Exception.InnerExceptions)
+                    {
+                        Debug.LogError(innerException);
+                    }
+                }
+
+                CleanupCompile();
+                return;
+            }
+
             if (CurrentJob.Context.ErrorCount > 0)
             {
-                // Debug.LogError($"[<color=#FF00FF>UdonSharp</color>] Compile Failed!");
-                
                 CleanupCompile();
                 return;
             }
@@ -313,7 +327,7 @@ namespace UdonSharp.Compiler
         {
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.Setup;
             var syntaxTrees = compilationContext.LoadSyntaxTreesAndCreateModules(allSourcePaths, scriptingDefines);
-
+            
             foreach (ModuleBinding binding in syntaxTrees)
             {
                 foreach (var diag in binding.tree.GetDiagnostics())
