@@ -414,8 +414,8 @@ namespace UdonSharp.Compiler.Emit
 
         private MethodSymbol GetNumericConversionMethod(TypeSymbol sourceType, TypeSymbol targetType)
         {
-            MethodSymbol convertMethod = GetTypeSymbol(typeof(Convert)).GetMembers<MethodSymbol>($"To{targetType.Name}", this)
-                .First(e => e.Parameters[0].Type == sourceType);
+            MethodSymbol convertMethod = GetTypeSymbol(typeof(Convert)).GetMembers<MethodSymbol>($"To{targetType.UdonType.Name}", this)
+                .First(e => e.Parameters[0].Type == sourceType.UdonType);
 
             return convertMethod;
         }
@@ -680,7 +680,7 @@ namespace UdonSharp.Compiler.Emit
         {
         #if UDONSHARP_DEBUG
             _scopeDepth -= 1;
-            Debug.Assert(scopeDepth >= 0, "Incorrect scope pairing");
+            Debug.Assert(_scopeDepth >= 0, "Incorrect scope pairing");
         #endif
 
             _valueTableStack.Pop();

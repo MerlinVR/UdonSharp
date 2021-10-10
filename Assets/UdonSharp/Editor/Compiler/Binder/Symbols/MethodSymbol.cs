@@ -138,6 +138,10 @@ namespace UdonSharp.Compiler.Symbols
                 return;
 
             IMethodSymbol methodSymbol = RoslynSymbol;
+
+            if (methodSymbol.DeclaringSyntaxReferences.IsEmpty)
+                throw new CompilerException($"Could not find syntax reference for {methodSymbol}");
+            
             SyntaxNode declaringSyntax = methodSymbol.DeclaringSyntaxReferences.First().GetSyntax();
             context.CurrentNode = declaringSyntax;
             

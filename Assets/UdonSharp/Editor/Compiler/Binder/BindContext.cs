@@ -176,6 +176,7 @@ namespace UdonSharp.Compiler.Binder
                 this.context = context;
                 context._currentBindSymbol = bindSymbol;
                 context._currentReferencedSymbols = new HashSet<Symbol>();
+                context.CurrentNode = context._currentBindSymbol.RoslynSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
             }
             
             public void Dispose()
