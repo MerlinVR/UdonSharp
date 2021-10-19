@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
-using Codice.Client.BaseCommands.Fileinfo;
 using FileInfo = System.IO.FileInfo;
 
 #if UNITY_EDITOR
@@ -47,14 +46,15 @@ namespace UdonSharp.Updater
             throw new System.PlatformNotSupportedException("Cannot get UdonSharp data path outside of the Editor runtime");
 #endif
         }
-
+        
+    #if UNITY_EDITOR
         private static string GetUtilitiesPath(UdonSharpDataLocator locator)
         {
             string locatorPath = AssetDatabase.GetAssetPath(locator);
 
             return Path.Combine(Path.GetDirectoryName(locatorPath), "UtilityScripts");
         }
-
+        
         private static UdonSharpDataLocator InitializeUdonSharpData()
         {
             if (!AssetDatabase.IsValidFolder(Path.GetDirectoryName(DEFAULT_DATA_PATH)))
@@ -75,6 +75,7 @@ namespace UdonSharp.Updater
 
             return locator;
         }
+    #endif
 
         private static void DeepCopyDirectory(string sourcePath, string destinationPath)
         {
