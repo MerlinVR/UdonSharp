@@ -66,7 +66,7 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Vector4 get indexer", new Vector4(1f, 2f)[1] == 2f);
             tester.TestAssertion("Matrix4x4 get indexer", Matrix4x4.identity[0] == 1f && Matrix4x4.identity[1] == 0f);
             tester.TestAssertion("Vector2Int get indexer", new Vector2Int(1, 2)[1] == 2);
-            tester.TestAssertion("Vector3Int get indexer", new Vector3Int(1, 2)[1] == 2);
+            tester.TestAssertion("Vector3Int get indexer", new Vector3Int(1, 2, 3)[1] == 2);
 
             Vector2 vec2Test = new Vector2(1f, 2f);
             vec2Test[0] = 4f;
