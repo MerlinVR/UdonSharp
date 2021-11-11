@@ -592,6 +592,16 @@ namespace UdonSharp.Compiler
                     visitorContext.uasmBuilder.AddPush(arraySymbol);
                     visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
                 }
+                else if (arraySymbolType == typeof(Vector2Int) ||
+                         arraySymbolType == typeof(Vector3Int))
+                {
+                    elementType = typeof(int);
+
+                    getIndexerUdonName = visitorContext.resolverContext.GetUdonMethodName(arraySymbolType.GetMethods(BindingFlags.Public | BindingFlags.Instance).First(e => e.Name == "get_Item" && e.GetParameters().Length == 1));
+
+                    visitorContext.uasmBuilder.AddPush(arraySymbol);
+                    visitorContext.uasmBuilder.AddPush(arrayIndexerIndexValue.symbol);
+                }
                 else
                 {
                     // udon-workaround: VRC scans UnityEngine.Object arrays in their respective methods, so those methods are useless since they get disproportionately expensive the larger the array is.
@@ -763,7 +773,9 @@ namespace UdonSharp.Compiler
                 System.Type arraySymbolType = arraySymbol.symbolCsType;
 
                 if (arraySymbolType == typeof(Vector2) ||
+                    arraySymbolType == typeof(Vector2Int) ||
                     arraySymbolType == typeof(Vector3) ||
+                    arraySymbolType == typeof(Vector3Int) ||
                     arraySymbolType == typeof(Vector4) ||
                     arraySymbolType == typeof(Matrix4x4))
                 {
@@ -2245,6 +2257,10 @@ namespace UdonSharp.Compiler
                     arraySymbol.symbolCsType == typeof(Matrix4x4))
                     return typeof(float);
 
+                if (arraySymbol.symbolCsType == typeof(Vector2Int) ||
+                    arraySymbol.symbolCsType == typeof(Vector3Int))
+                    return typeof(int);
+
                 if (!arraySymbol.symbolCsType.IsArray)
                     throw new System.Exception("Type is not an array type");
 
@@ -2891,7 +2907,9 @@ namespace UdonSharp.Compiler
             if (!returnType.IsArray && 
                 returnType != typeof(string) && // We have hacky handling for strings now
                 returnType != typeof(Vector2) &&
+                returnType != typeof(Vector2Int) &&
                 returnType != typeof(Vector3) &&
+                returnType != typeof(Vector3Int) &&
                 returnType != typeof(Vector4) &&
                 returnType != typeof(Matrix4x4))
                 throw new System.Exception("Can only run array indexers on array types");
