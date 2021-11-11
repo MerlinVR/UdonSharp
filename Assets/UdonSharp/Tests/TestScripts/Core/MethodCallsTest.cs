@@ -62,7 +62,9 @@ namespace UdonSharp.Tests
             tester.TestAssertion("String indexer", testStr2[0] == 'h' && testStr2[1] == 'e' && testStr2[2] == 'l');
 
             tester.TestAssertion("Vector2 get indexer", new Vector2(1f, 2f)[1] == 2f);
+            tester.TestAssertion("Vector2Int get indexer", new Vector2Int(1, 2)[1] == 2);
             tester.TestAssertion("Vector3 get indexer", new Vector3(1f, 2f)[1] == 2f);
+            tester.TestAssertion("Vector3Int get indexer", new Vector3Int(1, 2)[1] == 2);
             tester.TestAssertion("Vector4 get indexer", new Vector4(1f, 2f)[1] == 2f);
             tester.TestAssertion("Matrix4x4 get indexer", Matrix4x4.identity[0] == 1f && Matrix4x4.identity[1] == 0f);
 
@@ -70,9 +72,17 @@ namespace UdonSharp.Tests
             vec2Test[0] = 4f;
             tester.TestAssertion("Vector2 set indexer", vec2Test[0] == 4f);
 
+            Vector2Int vec2IntTest = new Vector2Int(1, 2);
+            vec2Test[0] = 4f;
+            tester.TestAssertion("Vector2Int set indexer", vec2IntTest[0] == 4);
+
             Vector3 vec3Test = new Vector3(1f, 2f, 3f);
             vec3Test[0] = 4f;
             tester.TestAssertion("Vector3 set indexer", vec3Test[0] == 4f);
+
+            Vector3Int vec3IntTest = new Vector3Int(1, 2, 3);
+            vec3Test[0] = 4f;
+            tester.TestAssertion("Vector3Int set indexer", vec3IntTest[0] == 4);
 
             Vector4 vec4Test = new Vector4(1f, 2f, 3f, 4f);
             vec4Test[0] = 4f;
