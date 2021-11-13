@@ -887,9 +887,17 @@ namespace UdonSharpEditor
             {
                 return EditorGUILayout.Vector2Field(fieldLabel, (Vector2?)value ?? default);
             }
+            else if (declaredType == typeof(Vector2Int))
+            {
+                return EditorGUILayout.Vector2IntField(fieldLabel, (Vector2Int?)value ?? default);
+            }
             else if (declaredType == typeof(Vector3))
             {
                 return EditorGUILayout.Vector3Field(fieldLabel, (Vector3?)value ?? default);
+            }
+            else if (declaredType == typeof(Vector3Int))
+            {
+                return EditorGUILayout.Vector3IntField(fieldLabel, (Vector3Int?)value ?? default);
             }
             else if (declaredType == typeof(Vector4))
             {
