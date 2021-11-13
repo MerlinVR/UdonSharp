@@ -257,7 +257,7 @@ namespace UdonSharp
 
                 foreach (UdonSharpProgramAsset fallbackAsset in fallbackAssets1)
                 {
-                    if (!_programAssetCache.Contains(fallbackAsset))
+                    if (_programAssetCache != null && fallbackAsset != null && !_programAssetCache.Contains(fallbackAsset))
                     {
                         Debug.LogWarning($"Repairing program asset {fallbackAsset} which Unity has broken");
                         neededFallback = true;
@@ -271,7 +271,7 @@ namespace UdonSharp
                     var fallbackAssets2 = AssetDatabase.FindAssets($"t:{nameof(UdonProgramAsset)}").Select(e => AssetDatabase.LoadAssetAtPath<UdonProgramAsset>(AssetDatabase.GUIDToAssetPath(e))).OfType<UdonSharpProgramAsset>();
                     foreach (UdonSharpProgramAsset fallbackAsset in fallbackAssets2)
                     {
-                        if (!_programAssetCache.Contains(fallbackAsset))
+                        if (_programAssetCache != null && fallbackAsset != null && !_programAssetCache.Contains(fallbackAsset))
                         {
                             Debug.LogWarning($"Repairing program asset {fallbackAsset} which Unity has broken pass 2");
                             neededFallback = true;
@@ -298,6 +298,56 @@ namespace UdonSharp
             }
 
             return (UdonSharpProgramAsset[])_programAssetCache.Clone();
+        }
+
+        [MenuItem("Window/Udon Sharp/Refresh All UdonSharp Assets")]
+        static public void UdonSharpCheckAbsent()
+        {
+            Debug.Log( "Checking Absent" );
+            
+            int cycles = -1;
+            int lastNumAssets;
+            int currentNumAssets;
+            string[] udonSharpDataAssets;
+
+            // Loop until we stop picking up assets.
+            do
+            {
+                udonSharpDataAssets = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}");
+                lastNumAssets = udonSharpDataAssets.Length;
+                string[] udonSharpNames = new string[udonSharpDataAssets.Length];
+                Debug.Log( $"Found {udonSharpDataAssets.Length} assets." );
+
+                _programAssetCache = new UdonSharpProgramAsset[udonSharpDataAssets.Length];
+
+                for (int i = 0; i < _programAssetCache.Length; ++i)
+                {
+                    udonSharpDataAssets[i] = AssetDatabase.GUIDToAssetPath(udonSharpDataAssets[i]);
+                }
+
+                foreach(string s in AssetDatabase.GetAllAssetPaths() )
+                {
+                    if(!udonSharpDataAssets.Contains(s))
+                    {
+                        Type t = AssetDatabase.GetMainAssetTypeAtPath(s);
+                        if (t != null && t.FullName == "UdonSharp.UdonSharpProgramAsset")
+                        {
+                            Debug.Log( $"Trying to recover {s}" );
+                            Selection.activeObject = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(s);
+                        }
+                    }
+                }
+
+                ClearProgramAssetCache();
+
+                GetAllUdonSharpPrograms();
+
+                currentNumAssets = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}").Length;
+                Debug.Log( $"Checking to see if we need to re-run. Last: {lastNumAssets}, This: {currentNumAssets}" );
+                cycles++;
+            } while( lastNumAssets != currentNumAssets );
+            
+            Debug.Log( $"Completed {cycles} refresh cycles, found {lastNumAssets} assets." );
         }
 
         [PublicAPI]
