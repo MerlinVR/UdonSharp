@@ -503,7 +503,7 @@ namespace UdonSharp.Editors
                         assembly.FullName.Contains("CodeAnalysis"))
                         continue;
 
-                    System.Type[] assemblyTypes = assembly.GetTypes();
+                    System.Type[] assemblyTypes = assembly.GetTypesSafe();
 
                     List<System.Type> types = new List<System.Type>();
 

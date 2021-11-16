@@ -75,7 +75,7 @@ namespace UdonSharpEditor
 
             foreach (Assembly assembly in UdonSharpUtils.GetLoadedEditorAssemblies())
             {
-                foreach (System.Type type in assembly.GetTypes())
+                foreach (System.Type type in assembly.GetTypesSafe())
                 {
                     if (type != typeof(UdonSharpBehaviour) && type.IsSubclassOf(typeof(UdonSharpBehaviour)))
                         udonSharpBehaviourTypes.Add(type);
@@ -388,7 +388,7 @@ namespace UdonSharpEditor
 
                 try
                 {
-                    types = assembly.GetTypes();
+                    types = assembly.GetTypesSafe();
                 }
                 catch (ReflectionTypeLoadException e)
                 {

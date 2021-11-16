@@ -257,7 +257,7 @@ namespace UdonSharpEditor
 
             foreach (Assembly asm in UdonSharpUtils.GetLoadedEditorAssemblies())
             {
-                foreach (Type editorType in asm.GetTypes())
+                foreach (Type editorType in asm.GetTypesSafe())
                 {
                     IEnumerable<CustomEditor> editorAttributes = editorType.GetCustomAttributes<CustomEditor>();
 
