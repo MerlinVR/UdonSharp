@@ -27,7 +27,7 @@ namespace UdonSharp.Compiler.Binder
         private BoundExpression[] Initializers { get; }
 
         public BoundArrayCreationExpression(SyntaxNode node, AbstractPhaseContext context, TypeSymbol arrayType, BoundExpression[] rankSizes, BoundExpression[] initializers)
-            : base(node, new ArrayConstructorExtern(context, arrayType), null, rankSizes)
+            : base(node, context, new ArrayConstructorExtern(context, arrayType), null, rankSizes)
         {
             ArrayType = arrayType;
             Initializers = initializers;
