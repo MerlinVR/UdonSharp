@@ -164,7 +164,7 @@ namespace UdonSharp.Compiler.Binder
             switch (symbol.Name)
             {
                 case "Instantiate_Extern" when symbol.ContainingType == context.GetTypeSymbol(typeof(InstantiationShim)):
-                    createdInvocation = new BoundExternInvocation(node,
+                    createdInvocation = new BoundExternInvocation(node, context,
                         new ExternSynthesizedMethodSymbol(context,
                             "VRCInstantiate.__Instantiate__UnityEngineGameObject__UnityEngineGameObject",
                             parameterExpressions.Select(e => e.ValueType).ToArray(),
@@ -213,7 +213,7 @@ namespace UdonSharp.Compiler.Binder
                     .GetMembers<MethodSymbol>("SetProgramVariable", context)
                     .First(e => !e.RoslynSymbol.IsGenericMethod);
 
-                createdInvocation = new BoundExternInvocation(node, setProgramVarObjMethod, instanceExpression,
+                createdInvocation = new BoundExternInvocation(node, context, setProgramVarObjMethod, instanceExpression,
                     parameterExpressions);
                 return true;
             }
@@ -233,7 +233,7 @@ namespace UdonSharp.Compiler.Binder
                     .GetMembers<MethodSymbol>(symbol.Name, context)
                     .First(e => !e.RoslynSymbol.IsGenericMethod && e.Parameters.Length == symbol.Parameters.Length);
 
-                createdInvocation = new BoundExternInvocation(node, arrayMethod, instanceExpression,
+                createdInvocation = new BoundExternInvocation(node, context, arrayMethod, instanceExpression,
                     parameterExpressions);
                 return true;
             }
@@ -249,7 +249,7 @@ namespace UdonSharp.Compiler.Binder
             if (symbol.ContainingType != null && 
                 symbol.ContainingType.ToString() == "TMPro.TMP_Text")
             {
-                createdInvocation = new BoundExternInvocation(node, 
+                createdInvocation = new BoundExternInvocation(node, context,
                     new ExternSynthesizedMethodSymbol(context, symbol.Name, instanceExpression.ValueType, symbol.Parameters.Select(e => e.Type).ToArray(), symbol.ReturnType, symbol.IsStatic), 
                     instanceExpression,
                     parameterExpressions);
@@ -269,7 +269,7 @@ namespace UdonSharp.Compiler.Binder
                 symbol.ContainingType != null &&
                 symbol.ContainingType == context.GetTypeSymbol(SpecialType.System_Enum))
             {
-                createdInvocation = new BoundExternInvocation(node, 
+                createdInvocation = new BoundExternInvocation(node, context,
                     context.GetTypeSymbol(SpecialType.System_Object).GetMember<MethodSymbol>(symbol.Name, context), 
                     instanceExpression,
                     parameterExpressions);
@@ -289,7 +289,7 @@ namespace UdonSharp.Compiler.Binder
                 symbol.ContainingType != null &&
                 symbol.ContainingType == context.GetTypeSymbol(typeof(IComparable)))
             {
-                createdInvocation = new BoundExternInvocation(node,
+                createdInvocation = new BoundExternInvocation(node, context,
                     new ExternSynthesizedMethodSymbol(context, "CompareTo", instanceExpression.ValueType,
                         new [] { instanceExpression.ValueType },
                         context.GetTypeSymbol(SpecialType.System_Int32), false),
@@ -344,15 +344,6 @@ namespace UdonSharp.Compiler.Binder
                 if (CompilerUdonInterface.IsUdonEvent(symbol.Name) &&
                     symbol.ContainingType == context.GetTypeSymbol(typeof(UdonSharpBehaviour))) // Pass through for making base calls on the U# behaviour type return noop
                     return new BoundUdonSharpBehaviourInvocationExpression(node, symbol, instanceExpression, parameterExpressions);
-                
-                var doExposureCheck = (!symbol.IsOperator || (symbol.ContainingType == null || !symbol.ContainingType.IsEnum));
-
-                if (symbol.IsOperator && symbol is ExternBuiltinOperatorSymbol operatorSymbol &&
-                    operatorSymbol.OperatorType == BuiltinOperatorType.BitwiseNot)
-                    doExposureCheck = false;
-                
-                if (doExposureCheck && !CompilerUdonInterface.IsExposedToUdon(((ExternMethodSymbol) symbol).ExternSignature))
-                    throw new NotExposedException(LocStr.CE_UdonMethodNotExposed, node, $"{symbol.RoslynSymbol?.ToDisplayString() ?? symbol.ToString()}, sig: {((ExternMethodSymbol) symbol).ExternSignature}");
 
                 if (symbol.IsOperator)
                 {
@@ -371,7 +362,7 @@ namespace UdonSharp.Compiler.Binder
                             BuiltinOperatorType.UnaryNegation, context.GetTypeSymbol(SpecialType.System_Boolean),
                             context);
 
-                        return new BoundExternInvocation(node, boolNotOperator, null, new BoundExpression[] {boundEqualsInvocation});
+                        return new BoundExternInvocation(node, context, boolNotOperator, null, new BoundExpression[] {boundEqualsInvocation});
                     }
                     
                     if (node is AssignmentExpressionSyntax)
@@ -383,13 +374,13 @@ namespace UdonSharp.Compiler.Binder
                     
                     if (parameterExpressions.Length == 2 || symbol.Name == "op_UnaryNegation" || symbol.Name == "op_LogicalNot")
                     {
-                        return new BoundBuiltinOperatorInvocationExpression(node, symbol, parameterExpressions);
+                        return new BoundBuiltinOperatorInvocationExpression(node, context, symbol, parameterExpressions);
                     }
 
                     throw new NotSupportedException("Operator expressions must have either 1 or 2 parameters", node.GetLocation());
                 }
                 
-                return new BoundExternInvocation(node, symbol, instanceExpression, parameterExpressions);
+                return new BoundExternInvocation(node, context, symbol, instanceExpression, parameterExpressions);
             }
 
             if (symbol.IsStatic)
@@ -596,8 +587,8 @@ namespace UdonSharp.Compiler.Binder
 
         private sealed class BoundBuiltinOperatorInvocationExpression : BoundExternInvocation
         {
-            public BoundBuiltinOperatorInvocationExpression(SyntaxNode node, MethodSymbol method, BoundExpression[] operandExpressions)
-                :base(node, method, null, operandExpressions)
+            public BoundBuiltinOperatorInvocationExpression(SyntaxNode node, AbstractPhaseContext context, MethodSymbol method, BoundExpression[] operandExpressions)
+                :base(node, context, method, null, operandExpressions)
             {
             }
         }
@@ -642,7 +633,7 @@ namespace UdonSharp.Compiler.Binder
             public override TypeSymbol ValueType { get; }
 
             public BoundGetUnityEngineComponentInvocation(AbstractPhaseContext context, SyntaxNode node, MethodSymbol methodSymbol, BoundExpression sourceExpression, BoundExpression[] parametersExpressions) 
-                : base(node, BuildMethod(context, methodSymbol), sourceExpression, GetParameterExpressions(context, methodSymbol, parametersExpressions))
+                : base(node, context, BuildMethod(context, methodSymbol), sourceExpression, GetParameterExpressions(context, methodSymbol, parametersExpressions))
             {
                 ValueType = methodSymbol.TypeArguments[0];
 
