@@ -12,13 +12,7 @@ namespace UdonSharp.Lib.Internal
         [UsedImplicitly]
         public static GameObject Instantiate(GameObject original)
         {
-            Transform originalTransform = original.transform;
-            Vector3 originalPosition = originalTransform.position;
-            Quaternion originalRotation = originalTransform.rotation;
-            GameObject instantiatedObject = Instantiate_Extern(original);
-            instantiatedObject.transform.SetPositionAndRotation(originalPosition, originalRotation);
-
-            return instantiatedObject;
+            return Instantiate_Extern(original);
         }
 
         private static GameObject InstantiateNoPositionFix(GameObject original)
@@ -39,7 +33,7 @@ namespace UdonSharp.Lib.Internal
         [UsedImplicitly]
         public static GameObject Instantiate(GameObject original, Transform parent)
         {
-            GameObject instantiatedObject = Instantiate(original);
+            GameObject instantiatedObject = Instantiate_Extern(original);
             Transform objectTransform = instantiatedObject.transform;
             objectTransform.SetParent(parent, false);
 
@@ -49,9 +43,18 @@ namespace UdonSharp.Lib.Internal
         [UsedImplicitly]
         public static GameObject Instantiate(GameObject original, Transform parent, bool worldPositionStays)
         {
-            GameObject instantiatedObject = Instantiate(original);
+            GameObject instantiatedObject = Instantiate_Extern(original);
             Transform objectTransform = instantiatedObject.transform;
             objectTransform.SetParent(parent, worldPositionStays);
+
+            if (worldPositionStays)
+            {
+                Transform originalTransform = original.transform;
+                Vector3 originalPosition = originalTransform.position;
+                Quaternion originalRotation = originalTransform.rotation;
+                instantiatedObject.transform.SetPositionAndRotation(originalPosition, originalRotation);
+                instantiatedObject.transform.localScale = originalTransform.localScale;// May not behave the same as C#
+            }
 
             return instantiatedObject;
         }
