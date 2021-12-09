@@ -342,8 +342,6 @@ namespace UdonSharp.Compiler.Emit
                     
                     foreach (Value val in iterationArray)
                     {
-                        if (val.UserType != null || val.UdonType != null)
-                            continue;
                         if (val.IsConstant || val.IsLocal || val.IsInternal)
                             continue;
 
