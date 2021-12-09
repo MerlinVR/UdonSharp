@@ -25,6 +25,8 @@ namespace UdonSharp.Compiler.Binder
 
         public override Value EmitValue(EmitContext context)
         {
+            context.TopTable.DirtyAllValues();
+
             var assignmentInterrupt = context.InterruptAssignmentScope();
             Value conditionValue = context.EmitValue(ConditionExpression);
             assignmentInterrupt.Dispose();
