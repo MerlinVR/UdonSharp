@@ -96,17 +96,10 @@ public class RotatingCubeBehaviour : UdonSharpBehaviour
 For more example scripts take a look at the wiki page for [examples](https://github.com/Merlin-san/UdonSharp/wiki/examples), the Examples folder included with U#, or the [community resources](https://github.com/Merlin-san/UdonSharp/wiki/community-resources) page on the wiki.
 
 ## Credits
-[**Toocanzs**](https://github.com/Toocanzs) - Implementing field initializers and helping with miscellaneous things
-
-[**PhaxeNor**](https://github.com/PhaxeNor) - Help with wiki and documentation
-
-[**bd_**](https://github.com/bdunderscore) - Significant optimizations to compiled code
   
-[**mika-f**](https://github.com/mika-f/) - Implementation of user defined property support
+- See [CONTRIBUTORS.md](https://github.com/vrchat-community/UdonSharp/blob/master/CONTRIBUTORS.md) for people who have helped provide improvments to UdonSharp
+- The open source project [Harmony](https://github.com/pardeike/Harmony) helps Udonsharp provide a better editor experience
 
-[**UdonPie Compiler**](https://github.com/zz-roba/UdonPieCompiler) - For demonstrating how straightforward it can be to write a compiler for Udon
 
-## Links
- [![Discord](https://img.shields.io/badge/Discord-My%20Discord%20Server-blueviolet?logo=discord)](https://discord.gg/Ub2n8ZA) - For support and bug reports
- 
- <a href="https://www.patreon.com/MerlinVR"><img src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fmerlin-patreon.herokuapp.com%2FMerlinVR" alt="Patreon donate button" /> </a> -  Support the development of UdonSharp
+# 
+[![Discord](https://img.shields.io/badge/Discord-Merlin%27s%20Discord%20Server-blueviolet?logo=discord)](https://discord.gg/Ub2n8ZA)
