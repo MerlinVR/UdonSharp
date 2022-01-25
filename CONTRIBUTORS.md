@@ -6,6 +6,10 @@
 * [**PhaxeNor**](https://github.com/PhaxeNor) - Help with wiki and documentation
 * [**bd_**](https://github.com/bdunderscore) - Significant optimizations to compiled code
 * [**mika-f**](https://github.com/mika-f/) - Implementation of user defined property support
+* [**ureishi**](https://github.com/ureishi)
+* [**CNLohr**](https://github.com/cnlohr)
+* [**FairlySadPanda**](https://github.com/FairlySadPanda)
+* [**ChanyaVRC**](https://github.com/ChanyaVRC)
 
 ## I would like to contribute, how can I help the project?
 
