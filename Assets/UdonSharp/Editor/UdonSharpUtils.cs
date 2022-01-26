@@ -490,7 +490,7 @@ namespace UdonSharp
                 
                 Dictionary<System.Type, System.Type> typeMap = new Dictionary<System.Type, System.Type>();
 
-                IEnumerable<System.Type> typeList = System.AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == "VRCSDK3").GetTypes().Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
+                IEnumerable<System.Type> typeList = System.AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == "VRCSDK3").GetTypesSafe().Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
 
                 foreach (System.Type childType in typeList)
                 {
@@ -718,10 +718,28 @@ namespace UdonSharp
             return (Assembly[])getLoadedAssembliesProp.GetValue(null);
         }
 
+        internal static Type[] GetTypesSafe(this Assembly assembly)
+        {
+            // See:
+            // https://docs.microsoft.com/en-us/dotnet/api/system.reflection.assembly.gettypes
+            // https://docs.microsoft.com/en-us/dotnet/api/system.reflection.reflectiontypeloadexception.types
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException e)
+            {
+                string[] innerErrors = e.LoaderExceptions.Where(x => x != null).Select(x => $"{x.GetType()}: {x.Message}" ).ToArray();
+                string joinedErrors = string.Join("\n", innerErrors);
+                UnityEngine.Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] Assembly {assembly.FullName} contains {innerErrors.Length} types that can not be loaded: {e.Message}\n{joinedErrors}");
+                return e.Types.Where(t => t != null).ToArray();
+            }
+        }
+
         /// <summary>
         /// Used to prevent Odin's DefaultSerializationBinder from getting a callback to register an assembly in specific cases where it will explode due to https://github.com/mono/mono/issues/20968
         /// </summary>
-        internal class UdonSharpAssemblyLoadStripScope : IDisposable
+    internal class UdonSharpAssemblyLoadStripScope : IDisposable
         {
             Delegate[] originalDelegates;
 

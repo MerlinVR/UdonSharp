@@ -192,7 +192,7 @@ namespace UdonSharp.Compiler
 
                 foreach (Assembly assembly in System.AppDomain.CurrentDomain.GetAssemblies())
                 {
-                    allLinkedNamespaces.UnionWith(assembly.GetTypes().Select(e => e.Namespace).Distinct());
+                    allLinkedNamespaces.UnionWith(assembly.GetTypesSafe().Select(e => e.Namespace).Distinct());
                 }
 
                 namespacesInit = true;
