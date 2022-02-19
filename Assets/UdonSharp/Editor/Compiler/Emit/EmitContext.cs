@@ -415,7 +415,7 @@ namespace UdonSharp.Compiler.Emit
         private MethodSymbol GetNumericConversionMethod(TypeSymbol sourceType, TypeSymbol targetType)
         {
             MethodSymbol convertMethod = GetTypeSymbol(typeof(Convert)).GetMembers<MethodSymbol>($"To{targetType.UdonType.Name}", this)
-                .First(e => e.Parameters[0].Type == sourceType.UdonType);
+                .FirstOrDefault(e => e.Parameters[0].Type == sourceType.UdonType);
 
             return convertMethod;
         }

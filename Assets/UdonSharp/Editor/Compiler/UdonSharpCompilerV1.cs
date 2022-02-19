@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -26,7 +27,6 @@ using UdonSharp.Lib.Internal;
 using UdonSharp.Serialization;
 using UdonSharpEditor;
 using UnityEditor;
-using UnityEditor.Compilation;
 using VRC.Udon.Common.Interfaces;
 using Debug = UnityEngine.Debug;
 
@@ -39,6 +39,7 @@ namespace UdonSharp.Compiler
         public bool IsEditorBuild { get; set; } = true;
         // public bool BuildDebugInfo { get; set; } = true;
         public bool DisableLogging { get; set; } = false;
+        public bool ConcurrentBuild { get; set; } = true;
     }
     
     [InitializeOnLoad]
@@ -89,7 +90,7 @@ namespace UdonSharp.Compiler
                 float totalProgress = (phaseProgress / (int) CompilationContext.CompilePhase.Count) +
                                       ((int) currentPhase / (float)(int)CompilationContext.CompilePhase.Count);
                 
-                UdonSharpUtils.ShowAsyncProgressBar("U#: " + currentPhase, totalProgress);
+                UdonSharpUtils.ShowAsyncProgressBar($"U#: {currentPhase}", totalProgress);
                 return;
             }
 
@@ -115,15 +116,35 @@ namespace UdonSharp.Compiler
                             UdonSharpUtils.LogBuildError(diagnostic.Message, filePath, line, character);
                             break;
                         case DiagnosticSeverity.Warning:
-                            Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] {logStr}");
+                            UdonSharpUtils.LogWarning(logStr);
                             break;
                         case DiagnosticSeverity.Log:
-                            Debug.Log($"[<color=#0c824c>UdonSharp</color>] {logStr}");
+                            UdonSharpUtils.Log(logStr);
                             break;
                     }
                 }
             }
+            
+            // Translate the diagnostic types and apply them to the cache, todo: consider merging the two structures
+            UdonSharpEditorCache.CompileDiagnostic[] diagnostics = new UdonSharpEditorCache.CompileDiagnostic[CurrentJob.Context.Diagnostics.Count];
+            CompilationContext.CompileDiagnostic[] compileDiagnostics = CurrentJob.Context.Diagnostics.ToArray();
 
+            for (int i = 0; i < diagnostics.Length; ++i)
+            {
+                var diagLine = compileDiagnostics[i].Location.GetLineSpan().StartLinePosition;
+                
+                diagnostics[i] = new UdonSharpEditorCache.CompileDiagnostic()
+                {
+                    severity = compileDiagnostics[i].Severity,
+                    message = compileDiagnostics[i].Message,
+                    file = CurrentJob.Context.TranslateLocationToFileName(compileDiagnostics[i].Location) ?? "",
+                    line = diagLine.Line,
+                    character = diagLine.Character,
+                };
+            }
+
+            UdonSharpEditorCache.Instance.LastCompileDiagnostics = diagnostics.ToImmutableArray();
+            
             if (CurrentJob.Task.IsFaulted)
             {
                 Debug.LogError("[<color=#FF00FF>UdonSharp</color>] internal compiler error, dumping exceptions. Please report to Merlin");
@@ -155,13 +176,28 @@ namespace UdonSharp.Compiler
                 
                 UdonSharpEditorCache.Instance.SetUASMStr(rootBinding.programAsset, rootBinding.assembly);
                 UdonSharpEditorCache.Instance.UpdateSourceHash(rootBinding.programAsset, rootBinding.sourceText);
+                
+                rootBinding.programAsset.CompiledVersion = UdonSharpProgramVersion.CurrentVersion;
                 EditorUtility.SetDirty(rootBinding.programAsset);
             }
-            
-            UdonSharpEditorManager.RunPostBuildSceneFixup();
 
+            try
+            {
+                UdonSharpEditorManager.RunPostBuildSceneFixup();
+            }
+            catch (Exception e)
+            {
+                UdonSharpUtils.LogError($"Exception while running post build fixup:\n{e}");
+                CleanupCompile();
+                return;
+            }
+
+            UdonSharpEditorCache.Instance.LastBuildType = CurrentJob.CompileOptions.IsEditorBuild
+                ? UdonSharpEditorCache.DebugInfoType.Editor
+                : UdonSharpEditorCache.DebugInfoType.Client;
+            
             int scriptCount = CurrentJob.Context.ModuleBindings.Count(e => e.programAsset != null);
-            Debug.Log($"[<color=#0c824c>UdonSharp</color>] Compile of {scriptCount} script{(scriptCount != 1 ? "s" : "")} finished in {CurrentJob.CompileTimer.Elapsed:mm\\:ss\\.fff}");
+            UdonSharpUtils.Log($"Compile of {scriptCount} script{(scriptCount != 1 ? "s" : "")} finished in {CurrentJob.CompileTimer.Elapsed:mm\\:ss\\.fff}");
             
             CleanupCompile();
 
@@ -173,7 +209,7 @@ namespace UdonSharp.Compiler
             }
         }
 
-        private static void WaitForCompile()
+        internal static void WaitForCompile()
         {
             if (CurrentJob == null) return;
             
@@ -200,6 +236,7 @@ namespace UdonSharp.Compiler
         [PublicAPI]
         public static void CompileSync(UdonSharpCompileOptions options = null)
         {
+            WaitForCompile();
             Compile(options);
             WaitForCompile();
         }
@@ -209,6 +246,18 @@ namespace UdonSharp.Compiler
         {
             if (options == null)
                 options = new UdonSharpCompileOptions();
+
+            if (UdonSharpUtils.DoesUnityProjectHaveCompileErrors())
+            {
+                UdonSharpUtils.LogError("All Unity C# compiler errors must be resolved before running an UdonSharp compile.");
+                return;
+            }
+
+            if (EditorApplication.isCompiling)
+            {
+                UdonSharpUtils.LogError("Cannot start a UdonSharp compile while Unity is compiling, wait for Unity to finish compiling before initiating a U# compile.");
+                return;
+            }
             
             if (CurrentJob != null)
             {
@@ -218,19 +267,21 @@ namespace UdonSharp.Compiler
             }
             
             Localization.Loc.InitLocalization();
-            CompilerUdonInterface.CacheInit();
 
             var allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
 
             if (!ValidateProgramAssetCollisions(allPrograms))
                 return;
+
+            // if (!ValidateScriptClasses(allPrograms))
+            //     return;
             
             var rootProgramLookup = new Dictionary<string, UdonSharpProgramAsset>();
             foreach (var udonSharpProgram in allPrograms)
             {
                 if (udonSharpProgram.sourceCsScript == null)
                 {
-                    Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] Source C# script on {udonSharpProgram} is null", udonSharpProgram);
+                    UdonSharpUtils.LogWarning($"Source C# script on {udonSharpProgram} is null", udonSharpProgram);
                     continue;
                 }
 
@@ -238,7 +289,7 @@ namespace UdonSharp.Compiler
                 
                 if (string.IsNullOrEmpty(assetPath))
                 {
-                    Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] Source C# script on {udonSharpProgram} is null", udonSharpProgram);
+                    UdonSharpUtils.LogWarning($"Source C# script on {udonSharpProgram} is null", udonSharpProgram);
                     continue;
                 }
                 
@@ -246,12 +297,12 @@ namespace UdonSharp.Compiler
             }
             
             // var allSourcePaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Where(e => e.isV1Root).Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
-            HashSet<string> allSourcePaths = new HashSet<string>(GetAllFilteredSourcePaths(options.IsEditorBuild));
+            HashSet<string> allSourcePaths = new HashSet<string>(CompilationContext.GetAllFilteredSourcePaths(options.IsEditorBuild));
 
             if (!ValidateUdonSharpBehaviours(allPrograms, allSourcePaths))
                 return;
 
-            CompilationContext compilationContext = new CompilationContext();
+            CompilationContext compilationContext = new CompilationContext(options);
             string[] defines = UdonSharpUtils.GetProjectDefines(options.IsEditorBuild);
 
             EditorApplication.LockReloadAssemblies();
@@ -272,8 +323,7 @@ namespace UdonSharp.Compiler
                     continue;
 
                 // Add program asset to map to check if there are any duplicate program assets that point to the same script
-                List<UdonSharpProgramAsset> programAssetList;
-                if (!scriptToAssetMap.TryGetValue(programAsset.sourceCsScript, out programAssetList))
+                if (!scriptToAssetMap.TryGetValue(programAsset.sourceCsScript, out var programAssetList))
                 {
                     programAssetList = new List<UdonSharpProgramAsset>();
                     scriptToAssetMap.Add(programAsset.sourceCsScript, programAssetList);
@@ -288,10 +338,29 @@ namespace UdonSharp.Compiler
             {
                 if (scriptAssetMapping.Value.Count > 1)
                 {
-                    Debug.LogError($"[<color=#FF00FF>UdonSharp</color>] Script {Path.GetFileName(AssetDatabase.GetAssetPath(scriptAssetMapping.Key))} is referenced by {scriptAssetMapping.Value.Count} UdonSharpProgramAssets, scripts should only be referenced by 1 program asset.\n" +
-                                     "Referenced program assets:\n" +
-                                     string.Join(",\n", scriptAssetMapping.Value.Select(AssetDatabase.GetAssetPath)));
+                    UdonSharpUtils.LogError($"Script {Path.GetFileName(AssetDatabase.GetAssetPath(scriptAssetMapping.Key))} is referenced by {scriptAssetMapping.Value.Count} UdonSharpProgramAssets, scripts should only be referenced by 1 program asset.\n" +
+                                            "Referenced program assets:\n" +
+                                            string.Join(",\n", scriptAssetMapping.Value.Select(AssetDatabase.GetAssetPath)));
 
+                    errorCount++;
+                }
+            }
+
+            return errorCount == 0;
+        }
+
+        private static bool ValidateScriptClasses(UdonSharpProgramAsset[] allProgramAssets)
+        {
+            int errorCount = 0;
+
+            foreach (var programAsset in allProgramAssets)
+            {
+                if (programAsset.sourceCsScript == null)
+                    continue;
+
+                if (programAsset.sourceCsScript.GetClass() == null)
+                {
+                    UdonSharpUtils.LogError($"Could not retrieve class for script '{AssetDatabase.GetAssetPath(programAsset.sourceCsScript)}'", programAsset);
                     errorCount++;
                 }
             }
@@ -316,7 +385,7 @@ namespace UdonSharp.Compiler
                 if (!allSourcePaths.Contains(sourcePath))
                 {
                     succeeded = false;
-                    Debug.LogError($"[<color=#FF00FF>UdonSharp</color>] Script '{sourcePath}' does not belong to a U# assembly, have you made a U# assembly definition for the assembly the script is a part of?", programAsset.sourceCsScript);
+                    UdonSharpUtils.LogError($"Script '{sourcePath}' does not belong to a U# assembly, have you made a U# assembly definition for the assembly the script is a part of?", programAsset.sourceCsScript);
                 }
             }
 
@@ -325,9 +394,14 @@ namespace UdonSharp.Compiler
 
         private static void Compile(CompilationContext compilationContext, Dictionary<string, UdonSharpProgramAsset> rootProgramLookup, IEnumerable<string> allSourcePaths, string[] scriptingDefines)
         {
+            Stopwatch setupTimer = Stopwatch.StartNew();
+            
+            CompilerUdonInterface.CacheInit();
+            CompilerUdonInterface.AssemblyCacheInit();
+            
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.Setup;
             var syntaxTrees = compilationContext.LoadSyntaxTreesAndCreateModules(allSourcePaths, scriptingDefines);
-            
+
             foreach (ModuleBinding binding in syntaxTrees)
             {
                 foreach (var diag in binding.tree.GetDiagnostics())
@@ -352,6 +426,8 @@ namespace UdonSharp.Compiler
                 }
             }
             
+            PrintStageTime("U# Setup", setupTimer);
+            
             Stopwatch roslynCompileTimer = Stopwatch.StartNew();
 
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.RoslynCompile;
@@ -360,8 +436,8 @@ namespace UdonSharp.Compiler
             CSharpCompilation compilation = CSharpCompilation.Create(
                 $"UdonSharpRoslynCompileAssembly{_assemblyCounter++}",
                 syntaxTrees.Select(e => e.tree),
-                GetMetadataReferences(),
-                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+                CompilationContext.GetMetadataReferences(),
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, concurrentBuild: compilationContext.Options.ConcurrentBuild));
 
             PrintStageTime("Roslyn Compile", roslynCompileTimer);
 
@@ -414,14 +490,30 @@ namespace UdonSharp.Compiler
                             compilationContext.AddDiagnostic(DiagnosticSeverity.Error, classType.DeclaringSyntaxReferences.First().GetSyntax(), "UdonSharpBehaviour classes must have the same name as their containing .cs file");
                             return;
                         }
+
+                        // if (module.programAsset.sourceCsScript != null &&
+                        //     module.programAsset.sourceCsScript.GetClass() == null)
+                        // {
+                        //     compilationContext.AddDiagnostic(DiagnosticSeverity.Error, classType.DeclaringSyntaxReferences.First().GetSyntax(), "Could not retrieve C# class, make sure the MonoBehaviour class name matches the name of the .cs file and Unity has had a chance to compile the C# script.");
+                        //     return;
+                        // }
                         
-                        if (classType.IsAbstract && module.programAsset != null && classType.Name == Path.GetFileNameWithoutExtension(module.filePath))
+                        if (module.programAsset != null && classType.Name == Path.GetFileNameWithoutExtension(module.filePath))
                         {
-                            compilationContext.AddDiagnostic(DiagnosticSeverity.Error, classType.DeclaringSyntaxReferences.First().GetSyntax(), "Abstract U# behaviours cannot have an associated U# program asset");
-                            return;
+                            if (classType.IsAbstract)
+                            {
+                                compilationContext.AddDiagnostic(DiagnosticSeverity.Error, classType.DeclaringSyntaxReferences.First().GetSyntax(), "Abstract U# behaviours cannot have an associated U# program asset");
+                                return;
+                            }
+                            
+                            if (classType.IsGenericType)
+                            {
+                                compilationContext.AddDiagnostic(DiagnosticSeverity.Error, classType.DeclaringSyntaxReferences.First().GetSyntax(), "Generic U# behaviours cannot have an associated U# program asset");
+                                return;
+                            }
                         }
                         
-                        if (classType.IsAbstract)
+                        if (classType.IsAbstract || classType.IsGenericType)
                             continue;
                         
                         rootUdonSharpTypes.Add((classType, module));
@@ -455,77 +547,6 @@ namespace UdonSharp.Compiler
             EmitAllPrograms(rootTypes, compilationContext, assembly);
         }
 
-        private static IEnumerable<string> GetAllFilteredSourcePaths(bool isEditorBuild)
-        {
-            HashSet<string> assemblySourcePaths = new HashSet<string>();
-
-            foreach (UnityEditor.Compilation.Assembly asm in CompilationPipeline.GetAssemblies(isEditorBuild ? AssembliesType.Editor : AssembliesType.PlayerWithoutTestAssemblies))
-            {
-                if (asm.name == "Assembly-CSharp" || IsUdonSharpAssembly(asm.name))
-                    assemblySourcePaths.UnionWith(asm.sourceFiles);
-            }
-
-            return UdonSharpSettings.FilterBlacklistedPaths(assemblySourcePaths);
-        }
-
-        private static HashSet<string> _udonSharpAssemblyNames;
-
-        private static bool IsUdonSharpAssembly(string assemblyName)
-        {
-            if (_udonSharpAssemblyNames == null)
-            {
-                _udonSharpAssemblyNames = new HashSet<string>();
-                foreach (UdonSharpAssemblyDefinition asmDef in CompilerUdonInterface.UdonSharpAssemblyDefinitions)
-                {
-                    _udonSharpAssemblyNames.Add(asmDef.sourceAssembly.name);
-                }
-            }
-
-            return _udonSharpAssemblyNames.Contains(assemblyName);
-        }
-
-        private static List<MetadataReference> _metadataReferences;
-
-        private static IEnumerable<MetadataReference> GetMetadataReferences()
-        {
-            if (_metadataReferences != null) return _metadataReferences;
-            
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            _metadataReferences = new List<MetadataReference>();
-
-            foreach (var assembly in assemblies)
-            {
-                if (assembly.IsDynamic || assembly.Location.Length <= 0 ||
-                    assembly.Location.StartsWith("data")) 
-                    continue;
-                
-                if (assembly.GetName().Name == "Assembly-CSharp" ||
-                    assembly.GetName().Name == "Assembly-CSharp-Editor")
-                {
-                    continue;
-                }
-
-                if (IsUdonSharpAssembly(assembly.GetName().Name))
-                    continue;
-
-                PortableExecutableReference executableReference = null;
-
-                try
-                {
-                    executableReference = MetadataReference.CreateFromFile(assembly.Location);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError($"Unable to locate assembly {assembly.Location} Exception: {e}");
-                }
-
-                if (executableReference != null)
-                    _metadataReferences.Add(executableReference);
-            }
-
-            return _metadataReferences;
-        }
-
         private static void BindAllPrograms((INamedTypeSymbol, ModuleBinding)[] bindings, CompilationContext compilationContext)
         {
             Stopwatch bindTimer = Stopwatch.StartNew();
@@ -541,7 +562,7 @@ namespace UdonSharp.Compiler
         #if SINGLE_THREAD_BUILD
             foreach (var rootTypeSymbol in bindings)
         #else
-            Parallel.ForEach(bindings, new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM},rootTypeSymbol =>
+            Parallel.ForEach(bindings, new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM},rootTypeSymbol => 
         #endif
             {
                 if (compilationContext.ErrorCount > 0)
@@ -653,9 +674,11 @@ namespace UdonSharp.Compiler
                 EmitContext moduleEmitContext = new EmitContext(assemblyModule, rootTypeSymbol);
 
                 string typeName = TypeSymbol.GetFullTypeName(rootTypeSymbol);
+
+                long typeID = UdonSharpInternalUtility.GetTypeID(typeName);
                 
                 moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeIDHeapKey,
-                    moduleEmitContext.GetTypeSymbol(SpecialType.System_Int64), UdonSharpInternalUtility.GetTypeID(typeName));
+                    moduleEmitContext.GetTypeSymbol(SpecialType.System_Int64), typeID);
                 moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeNameHeapKey,
                     moduleEmitContext.GetTypeSymbol(SpecialType.System_String), typeName);
 
@@ -683,7 +706,7 @@ namespace UdonSharp.Compiler
                 {
                     if (!symbol.Type.TryGetSystemType(out var symbolSystemType))
                         Debug.LogError($"Could not get type for field {symbol.Name}");
-                    
+
                     fieldDefinitions.Add(symbol.Name, new FieldDefinition(symbol.Name, symbolSystemType, symbol.Type.UdonType.SystemType, symbol.SyncMode, symbol.IsSerialized, symbol.SymbolAttributes.ToList()));
                 }
 
@@ -695,6 +718,8 @@ namespace UdonSharp.Compiler
                 if (moduleEmitContext.DebugInfo != null)
                     UdonSharpEditorCache.Instance.SetDebugInfo(moduleBinding.programAsset, CurrentJob.CompileOptions.IsEditorBuild ? UdonSharpEditorCache.DebugInfoType.Editor : UdonSharpEditorCache.DebugInfoType.Client, moduleEmitContext.DebugInfo);
 
+                moduleBinding.programAsset.scriptID = typeID;
+                
                 try
                 {
                     AssembleProgram(binding, assembly);
@@ -716,30 +741,29 @@ namespace UdonSharp.Compiler
         private static void AssembleProgram((INamedTypeSymbol, ModuleBinding) binding,
             System.Reflection.Assembly assembly)
         {
+            INamedTypeSymbol rootTypeSymbol = binding.Item1;
+            ModuleBinding rootBinding = binding.Item2;
+            List<Value> assemblyValues = rootBinding.assemblyModule.RootTable.GetAllUniqueChildValues();
+            string generatedUasm = rootBinding.assemblyModule.BuildUasmStr();
+
+            rootBinding.programAsset.AssembleCsProgram(generatedUasm, rootBinding.assemblyModule.GetHeapSize());
+            rootBinding.programAsset.SetUdonAssembly("");
+
+            IUdonProgram program = rootBinding.programAsset.GetRealProgram();
+
+            foreach (Value val in assemblyValues)
+            {
+                if (val.DefaultValue == null) continue;
+                uint valAddress = program.SymbolTable.GetAddressFromSymbol(val.UniqueID);
+                program.Heap.SetHeapVariable(valAddress, val.DefaultValue, val.UdonType.SystemType);
+            }
+
+            string typeName = TypeSymbol.GetFullTypeName(rootTypeSymbol);
+
+            Type asmType = assembly.GetType(typeName);
+            
             lock (_assembleLock)
             {
-                INamedTypeSymbol rootTypeSymbol = binding.Item1;
-                ModuleBinding rootBinding = binding.Item2;
-                List<Value> assemblyValues = rootBinding.assemblyModule.RootTable.GetAllUniqueChildValues();
-                string generatedUasm = rootBinding.assemblyModule.BuildUasmStr();
-
-                rootBinding.programAsset.SetUdonAssembly(generatedUasm);
-                rootBinding.programAsset.AssembleCsProgram(rootBinding.assemblyModule.GetHeapSize());
-                rootBinding.programAsset.SetUdonAssembly("");
-
-                IUdonProgram program = rootBinding.programAsset.GetRealProgram();
-
-                foreach (Value val in assemblyValues)
-                {
-                    if (val.DefaultValue == null) continue;
-                    uint valAddress = program.SymbolTable.GetAddressFromSymbol(val.UniqueID);
-                    program.Heap.SetHeapVariable(valAddress, val.DefaultValue, val.UdonType.SystemType);
-                }
-
-                string typeName = TypeSymbol.GetFullTypeName(rootTypeSymbol);
-
-                Type asmType = assembly.GetType(typeName);
-
                 UdonSharpEditorManager.ConstructorWarningsDisabled = true;
                 object component;
                 

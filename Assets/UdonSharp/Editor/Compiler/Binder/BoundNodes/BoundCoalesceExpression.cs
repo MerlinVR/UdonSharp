@@ -22,6 +22,9 @@ namespace UdonSharp.Compiler.Binder
 
         public override Value EmitValue(EmitContext context)
         {
+            // We don't want any references outside the flow control to be dirtied conditionally
+            context.TopTable.DirtyAllValues();
+            
             Value returnValue = context.GetReturnValue(ValueType);
 
             context.EmitValueAssignment(returnValue, Lhs);

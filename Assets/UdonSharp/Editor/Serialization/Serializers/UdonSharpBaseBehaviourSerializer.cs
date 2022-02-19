@@ -15,7 +15,7 @@ namespace UdonSharp.Serialization
             return typeof(UdonBehaviour);
         }
 
-        public override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
+        protected override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
         {
             VerifyTypeCheckSanity();
             return typeMetadata.cSharpType == typeof(UdonSharpBehaviour);
@@ -32,9 +32,9 @@ namespace UdonSharp.Serialization
                 return;
             }
 
-            System.Type behaviourType = UdonSharpProgramAsset.GetBehaviourClass(sourceBehaviour);
+            Type behaviourType = UdonSharpProgramAsset.GetBehaviourClass(sourceBehaviour);
 
-            Serializer behaviourSerializer = Serializer.CreatePooled(behaviourType);
+            Serializer behaviourSerializer = CreatePooled(behaviourType);
 
             object behaviourRef = targetObject;
             behaviourSerializer.ReadWeak(ref behaviourRef, sourceObject);
@@ -51,7 +51,7 @@ namespace UdonSharp.Serialization
                 return;
             }
 
-            Serializer behaviourSerializer = Serializer.CreatePooled(sourceObject.GetType());
+            Serializer behaviourSerializer = CreatePooled(sourceObject.GetType());
             
             behaviourSerializer.WriteWeak(targetObject, sourceObject);
         }

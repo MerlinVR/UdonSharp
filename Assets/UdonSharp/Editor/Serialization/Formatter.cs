@@ -21,14 +21,14 @@ namespace UdonSharp.Serialization
 
         public abstract void Write(IValueStorage targetObject, T sourceObject);
 
-        public void Read(ref object targetObject, IValueStorage sourceObject)
+        void IFormatter.Read(ref object targetObject, IValueStorage sourceObject)
         {
             T targetT = (T)targetObject;
             Read(ref targetT, sourceObject);
             targetObject = targetT;
         }
 
-        public void Write(IValueStorage targetObject, object sourceObject)
+        void IFormatter.Write(IValueStorage targetObject, object sourceObject)
         {
             Write(targetObject, (T)sourceObject);
         }

@@ -1,18 +1,24 @@
 ﻿
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using UdonSharp.Compiler.Binder;
+using System.Reflection;
 using UdonSharp.Compiler.Symbols;
 using UdonSharpEditor;
 using UnityEditor;
 using UnityEngine;
+using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Editor;
+using VRC.Udon.EditorBindings;
 using VRC.Udon.Graph;
+using VRC.Udon.UAssembly.Assembler;
+using VRC.Udon.UAssembly.Interfaces;
 
 namespace UdonSharp.Compiler.Udon
 {
+    [InitializeOnLoad]
     internal static class CompilerUdonInterface
     {
         private static HashSet<string> _nodeDefinitionLookup;
@@ -20,6 +26,7 @@ namespace UdonSharp.Compiler.Udon
         private static Dictionary<string, string> _builtinEventLookup;
         private static Dictionary<string, ImmutableArray<(string, Type)>> _builtinEventArgumentsLookup;
         private static bool _cacheInitRan;
+        private static bool _assemblyInitRan;
         private static readonly object _cacheInitLock = new object();
         
         private static ImmutableArray<System.Reflection.Assembly> _udonSharpAssemblies;
@@ -28,14 +35,33 @@ namespace UdonSharp.Compiler.Udon
         {
             get
             {
-                CacheInit();
+                AssemblyCacheInit();
                 return _udonSharpAssemblies;
             }
             private set => _udonSharpAssemblies = value;
         }
         
-        private static ImmutableHashSet<System.Reflection.Assembly> ExternAssemblySet { get; set; }
-        public static ImmutableArray<UdonSharpAssemblyDefinition> UdonSharpAssemblyDefinitions { get; private set; }
+        private static HashSet<System.Reflection.Assembly> ExternAssemblySet { get; set; }
+
+        private static ImmutableArray<UdonSharpAssemblyDefinition> _udonSharpAssemblyDefinitions;
+
+        public static ImmutableArray<UdonSharpAssemblyDefinition> UdonSharpAssemblyDefinitions
+        {
+            get
+            {
+                AssemblyCacheInit();
+                return _udonSharpAssemblyDefinitions;
+            }
+            private set => _udonSharpAssemblyDefinitions = value;
+        }
+        
+        private static UdonEditorInterface _editorInterfaceInstance;
+
+        static CompilerUdonInterface()
+        {
+            // AssemblyCacheInit();
+            // CacheInit();
+        }
 
         internal static void CacheInit()
         {
@@ -47,12 +73,19 @@ namespace UdonSharp.Compiler.Udon
                 if (_cacheInitRan)
                     return;
 
-                _nodeDefinitionLookup = new HashSet<string>(UdonEditorManager.Instance.GetNodeDefinitions().Select(e => e.fullName));
+                // Lock until editor interface initialized if it isn't to prevent race conditions setting up duplicate UdonEditorInterface for our use
+                UdonEditorManager.Instance.GetNodeRegistries();
+                
+                // The heap size is determined by the symbol count + the unique extern string count
+                _editorInterfaceInstance = new UdonEditorInterface();
+                _editorInterfaceInstance.AddTypeResolver(new UdonBehaviourTypeResolver()); // todo: can be removed with SDK's >= VRCSDK-UDON-2020.06.15.14.08_Public
+
+                _nodeDefinitionLookup = new HashSet<string>(_editorInterfaceInstance.GetNodeDefinitions().Select(e => e.fullName));
 
                 _builtinEventLookup = new Dictionary<string, string>();
                 _builtinEventArgumentsLookup = new Dictionary<string, ImmutableArray<(string, Type)>>();
 
-                foreach (UdonNodeDefinition nodeDefinition in UdonEditorManager.Instance.GetNodeDefinitions("Event_"))
+                foreach (UdonNodeDefinition nodeDefinition in _editorInterfaceInstance.GetNodeDefinitions("Event_"))
                 {
                     if (nodeDefinition.fullName == "Event_Custom")
                         continue;
@@ -81,6 +114,20 @@ namespace UdonSharp.Compiler.Udon
                         Debug.LogWarning($"Duplicate event node {nodeDefinition.fullName} found");
                 }
 
+                _cacheInitRan = true;
+            }
+        }
+
+        internal static void AssemblyCacheInit()
+        {
+            if (_assemblyInitRan)
+                return;
+
+            lock (_cacheInitLock)
+            {
+                if (_assemblyInitRan)
+                    return;
+                
                 string[] assemblyDefinitionPaths = AssetDatabase.FindAssets($"t:{nameof(UdonSharpAssemblyDefinition)}").Select(AssetDatabase.GUIDToAssetPath).ToArray();
                 List<System.Reflection.Assembly> assemblies = new List<System.Reflection.Assembly>();
                 List<UdonSharpAssemblyDefinition> assemblyDefinitions = new List<UdonSharpAssemblyDefinition>();
@@ -129,16 +176,44 @@ namespace UdonSharp.Compiler.Udon
                         externAssemblies.Add(assembly);
                 }
 
-                ExternAssemblySet = externAssemblies.ToImmutableHashSet();
+                ExternAssemblySet = externAssemblies;
 
-                _cacheInitRan = true;
+                _assemblyInitRan = true;
             }
+        }
+
+        private static ConcurrentBag<(IUAssemblyAssembler, UdonSharp.HeapFactory)> _usableAssemblers = new ConcurrentBag<(IUAssemblyAssembler, UdonSharp.HeapFactory)>();
+        private static readonly FieldInfo _typeResolverGroupField = typeof(UdonEditorInterface).GetField("_typeResolverGroup", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        public static IUdonProgram Assemble(string assembly, uint heapSize)
+        {
+            CacheInit();
+
+            IUAssemblyAssembler assembler;
+            UdonSharp.HeapFactory factory;
+            
+            if (_usableAssemblers.TryTake(out var foundAssembler))
+            {
+                assembler = foundAssembler.Item1;
+                factory = foundAssembler.Item2;
+            }
+            else
+            {
+                factory = new HeapFactory();
+                assembler = new UAssemblyAssembler(factory, (IUAssemblyTypeResolver)_typeResolverGroupField.GetValue(_editorInterfaceInstance));
+            }
+
+            factory.FactoryHeapSize = heapSize;
+            IUdonProgram program = assembler.Assemble(assembly);
+            
+            _usableAssemblers.Add((assembler, factory));
+
+            return program;
         }
 
         public static bool IsExternType(Type type)
         {
-            CacheInit();
-
+            AssemblyCacheInit();
             return ExternAssemblySet.Contains(type.Assembly);
         }
 
@@ -184,7 +259,10 @@ namespace UdonSharp.Compiler.Udon
         
         public static string GetUdonAccessorName(Symbol symbol, TypeSymbol fieldType, FieldAccessorType accessorType)
         {
-            Type containingType = UdonSharpUtils.RemapBaseType(symbol.RoslynSymbol.ContainingType.GetExternType());
+            if (!TypeSymbol.TryGetSystemType(symbol.RoslynSymbol.ContainingType, out var containingType))
+                throw new InvalidOperationException("Containing type must be a valid extern");
+            
+            containingType = UdonSharpUtils.RemapBaseType(containingType);
 
             string functionNamespace = SanitizeTypeName(containingType.FullName).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver").Replace("UdonSharpUdonSharpBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
             string methodName = $"__{(accessorType == FieldAccessorType.Get ? "get" : "set")}_{symbol.Name.Trim('_')}";

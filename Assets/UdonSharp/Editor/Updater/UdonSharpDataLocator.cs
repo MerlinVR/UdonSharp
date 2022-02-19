@@ -14,40 +14,45 @@ namespace UdonSharp.Updater
     internal class UdonSharpDataLocator : ScriptableObject
     {
         private const string DEFAULT_DATA_PATH = "Assets/UdonSharp/UdonSharpDataLocator.asset";
-        
-        private static string _cachedLocation;
 
-        public static string GetDataPath()
+        private static string _cachedDataLocation;
+
+        public static string DataPath
         {
-#if UNITY_EDITOR
-            if (_cachedLocation != null)
-                return _cachedLocation;
-            
-            string[] foundLocatorGuids = AssetDatabase.FindAssets($"t:{nameof(UdonSharpDataLocator)}");
-            List<UdonSharpDataLocator> foundLocators = new List<UdonSharpDataLocator>();
-
-            foreach (string locatorGuid in foundLocatorGuids)
+            get
             {
-                UdonSharpDataLocator locator = AssetDatabase.LoadAssetAtPath<UdonSharpDataLocator>(AssetDatabase.GUIDToAssetPath(locatorGuid));
+            #if UNITY_EDITOR
+                if (_cachedDataLocation != null)
+                    return _cachedDataLocation;
 
-                if (locator)
-                    foundLocators.Add(locator);
+                string[] foundLocatorGuids = AssetDatabase.FindAssets($"t:{nameof(UdonSharpDataLocator)}");
+                List<UdonSharpDataLocator> foundLocators = new List<UdonSharpDataLocator>();
+
+                foreach (string locatorGuid in foundLocatorGuids)
+                {
+                    UdonSharpDataLocator locator =
+                        AssetDatabase.LoadAssetAtPath<UdonSharpDataLocator>(AssetDatabase.GUIDToAssetPath(locatorGuid));
+
+                    if (locator)
+                        foundLocators.Add(locator);
+                }
+
+                if (foundLocators.Count > 1)
+                    throw new System.Exception(
+                        "Multiple UdonSharp data locators found, make sure you do not have multiple installations of UdonSharp and have not duplicated any UdonSharp directories");
+
+                if (foundLocators.Count == 0)
+                    foundLocators.Add(InitializeUdonSharpData());
+
+                _cachedDataLocation = Path.GetDirectoryName(AssetDatabase.GetAssetPath(foundLocators[0]));
+                return _cachedDataLocation;
+            #else
+                throw new System.PlatformNotSupportedException("Cannot get UdonSharp data path outside of the Editor runtime");
+            #endif
             }
-            
-            if (foundLocators.Count > 1)
-                throw new System.Exception("Multiple UdonSharp data locators found, make sure you do not have multiple installations of UdonSharp and have not duplicated any UdonSharp directories");
-
-            if (foundLocators.Count == 0)
-                foundLocators.Add(InitializeUdonSharpData());
-            
-            _cachedLocation = Path.GetDirectoryName(AssetDatabase.GetAssetPath(foundLocators[0]));
-            return _cachedLocation;
-#else
-            throw new System.PlatformNotSupportedException("Cannot get UdonSharp data path outside of the Editor runtime");
-#endif
         }
-        
-    #if UNITY_EDITOR
+
+#if UNITY_EDITOR
         private static string GetUtilitiesPath(UdonSharpDataLocator locator)
         {
             string locatorPath = AssetDatabase.GetAssetPath(locator);
@@ -65,7 +70,7 @@ namespace UdonSharp.Updater
 
             string utilsTargetPath = GetUtilitiesPath(locator);
 
-            string utilsSourcePath = Path.Combine(UdonSharpLocator.GetSamplesPath(), "Utilities");
+            string utilsSourcePath = Path.Combine(UdonSharpLocator.SamplesPath, "Utilities");
             
             DeepCopyDirectory(utilsSourcePath, utilsTargetPath);
             
@@ -115,7 +120,7 @@ namespace UdonSharp.Updater
             
             try
             {
-                UdonSharpDataLocator.GetDataPath(); // Implicitly initializes the data asset if it doesn't exist
+                string _ = UdonSharpDataLocator.DataPath; // Implicitly initializes the data asset if it doesn't exist
             }
             catch (Exception e)
             {

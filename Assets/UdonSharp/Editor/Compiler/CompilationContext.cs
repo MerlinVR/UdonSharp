@@ -12,6 +12,9 @@ using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Symbols;
 using UdonSharp.Compiler.Udon;
+using UdonSharpEditor;
+using UnityEditor.Compilation;
+using UnityEngine;
 
 namespace UdonSharp.Compiler
 {
@@ -67,22 +70,6 @@ namespace UdonSharp.Compiler
             /// Emitting the assembly modules' uasm instructions and serialized heap values for each program
             /// </summary>
             Emit,
-            /// <summary>
-            /// Linking jump points for methods, linking other behaviour's field/method addresses, and building vtables
-            /// </summary>
-            // Link,
-            /// <summary>
-            /// Running uasm assembler to generate bytecode that's usable by Udon and writing modified program asssets
-            /// </summary>
-            // Assemble,
-            /// <summary>
-            /// Linking behaviours to the UdonSharpRuntime manager object in the current scene
-            /// </summary>
-            // SceneLink,
-            /// <summary>
-            /// Validating that behaviours in the current scene are in a correct state
-            /// </summary>
-            Validation,
             Count,
         }
         
@@ -102,6 +89,13 @@ namespace UdonSharp.Compiler
         
         private ConcurrentDictionary<ITypeSymbol, TypeSymbol> _typeSymbolLookup = new ConcurrentDictionary<ITypeSymbol, TypeSymbol>();
 
+        public UdonSharpCompileOptions Options { get; }
+
+        public CompilationContext(UdonSharpCompileOptions options)
+        {
+            Options = options;
+        }
+
         public TypeSymbol GetTypeSymbol(ITypeSymbol type, AbstractPhaseContext context)
         {
             TypeSymbol typeSymbol = _typeSymbolLookup.GetOrAdd(type, (key) => TypeSymbolFactory.CreateSymbol(type, context));
@@ -111,12 +105,10 @@ namespace UdonSharp.Compiler
 
         public TypeSymbol GetUdonTypeSymbol(ITypeSymbol type, AbstractPhaseContext context)
         {
-            Type systemType;
-                
-            if (type.TypeKind == TypeKind.Array)
-                systemType = UdonSharpUtils.UserTypeToUdonType(((IArrayTypeSymbol) type).GetExternType());
-            else
-                systemType = UdonSharpUtils.UserTypeToUdonType(((INamedTypeSymbol) type).GetExternType());
+            if (!TypeSymbol.TryGetSystemType(type, out var systemType))
+                throw new InvalidOperationException("foundType should not be null");
+            
+            systemType = UdonSharpUtils.UserTypeToUdonType(systemType);
             
             return GetTypeSymbol(systemType, context);
         }
@@ -194,6 +186,77 @@ namespace UdonSharp.Compiler
             ModuleBindings = syntaxTrees.ToArray();
             
             return ModuleBindings;
+        }
+
+        public static IEnumerable<string> GetAllFilteredSourcePaths(bool isEditorBuild)
+        {
+            HashSet<string> assemblySourcePaths = new HashSet<string>();
+
+            foreach (UnityEditor.Compilation.Assembly asm in CompilationPipeline.GetAssemblies(isEditorBuild ? AssembliesType.Editor : AssembliesType.PlayerWithoutTestAssemblies))
+            {
+                if (asm.name == "Assembly-CSharp" || IsUdonSharpAssembly(asm.name))
+                    assemblySourcePaths.UnionWith(asm.sourceFiles);
+            }
+
+            return UdonSharpSettings.FilterBlacklistedPaths(assemblySourcePaths);
+        }
+
+        private static HashSet<string> _udonSharpAssemblyNames;
+
+        public static bool IsUdonSharpAssembly(string assemblyName)
+        {
+            if (_udonSharpAssemblyNames == null)
+            {
+                _udonSharpAssemblyNames = new HashSet<string>();
+                foreach (UdonSharpAssemblyDefinition asmDef in CompilerUdonInterface.UdonSharpAssemblyDefinitions)
+                {
+                    _udonSharpAssemblyNames.Add(asmDef.sourceAssembly.name);
+                }
+            }
+
+            return _udonSharpAssemblyNames.Contains(assemblyName);
+        }
+
+        private static List<MetadataReference> _metadataReferences;
+
+        public static IEnumerable<MetadataReference> GetMetadataReferences()
+        {
+            if (_metadataReferences != null) return _metadataReferences;
+            
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            _metadataReferences = new List<MetadataReference>();
+
+            foreach (var assembly in assemblies)
+            {
+                if (assembly.IsDynamic || assembly.Location.Length <= 0 ||
+                    assembly.Location.StartsWith("data")) 
+                    continue;
+                
+                if (assembly.GetName().Name == "Assembly-CSharp" ||
+                    assembly.GetName().Name == "Assembly-CSharp-Editor")
+                {
+                    continue;
+                }
+
+                if (IsUdonSharpAssembly(assembly.GetName().Name))
+                    continue;
+
+                PortableExecutableReference executableReference = null;
+
+                try
+                {
+                    executableReference = MetadataReference.CreateFromFile(assembly.Location);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Unable to locate assembly {assembly.Location} Exception: {e}");
+                }
+
+                if (executableReference != null)
+                    _metadataReferences.Add(executableReference);
+            }
+
+            return _metadataReferences;
         }
         
         public string TranslateLocationToFileName(Location location)

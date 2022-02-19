@@ -1,7 +1,10 @@
 ﻿
+using System;
 using JetBrains.Annotations;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using UdonSharp.Compiler;
 using UnityEditor;
 using UnityEngine;
@@ -16,24 +19,40 @@ namespace UdonSharp
     [InitializeOnLoad]
     internal class UdonSharpEditorCache
     {
-        #region Instance and serialization management
-        [System.Serializable]
-        struct SourceHashLookupStorage
+    #region Instance and serialization management
+        [Serializable]
+        public struct CompileDiagnostic
         {
-            [OdinSerialize, System.NonSerialized]
+            public DiagnosticSeverity severity;
+            public string file;
+            public int line;
+            public int character;
+            public string message;
+        }
+        
+        [Serializable]
+        private struct UdonSharpCacheStorage
+        {
+            public ProjectInfo info;
+            
+            [OdinSerialize, NonSerialized]
             public Dictionary<string, string> sourceFileHashLookup;
             
             public DebugInfoType lastScriptBuildType;
+
+            public CompileDiagnostic[] diagnostics;
         }
 
         private const string CACHE_DIR_PATH = "Library/UdonSharpCache/";
-        private const string CACHE_FILE_PATH = "Library/UdonSharpCache/UdonSharpEditorCache.asset";
+        private const string CACHE_FILE_PATH = "Library/UdonSharpCache/UdonSharpEditorCache.dat"; // Old cache ended in .asset
 
         public static UdonSharpEditorCache Instance => GetInstance();
 
-        static UdonSharpEditorCache _instance;
-        static readonly object _instanceLock = new object();
+        private static UdonSharpEditorCache _instance;
+        private static readonly object _instanceLock = new object();
 
+        private const int CURR_CACHE_VER = 1;
+        
         private static UdonSharpEditorCache GetInstance()
         {
             lock (_instanceLock)
@@ -42,12 +61,23 @@ namespace UdonSharp
                     return _instance;
 
                 _instance = new UdonSharpEditorCache();
+                _instance._info.version = CURR_CACHE_VER;
+                _instance._info.projectNeedsUpgrade = true;
 
-                if (File.Exists(CACHE_FILE_PATH))
+                if (!File.Exists(CACHE_FILE_PATH))
+                    return _instance;
+                
+                UdonSharpCacheStorage storage = SerializationUtility.DeserializeValue<UdonSharpCacheStorage>(File.ReadAllBytes(CACHE_FILE_PATH), DataFormat.Binary);
+                _instance.sourceFileHashLookup = storage.sourceFileHashLookup;
+                _instance.LastBuildType = storage.lastScriptBuildType;
+                _instance._info = storage.info;
+                _instance._diagnostics = storage.diagnostics?.ToImmutableArray() ?? ImmutableArray<CompileDiagnostic>.Empty;
+
+                // For now we just use this to see if we need to check for project serialization upgrade, may be extended later on. At the moment only used to avoid wasting time on extra validation when possible.
+                if (_instance._info.version < CURR_CACHE_VER)
                 {
-                    SourceHashLookupStorage storage = SerializationUtility.DeserializeValue<SourceHashLookupStorage>(File.ReadAllBytes(CACHE_FILE_PATH), DataFormat.Binary);
-                    _instance.sourceFileHashLookup = storage.sourceFileHashLookup;
-                    _instance.LastBuildType = storage.lastScriptBuildType;
+                    _instance._info.version = CURR_CACHE_VER;
+                    _instance._info.projectNeedsUpgrade = true;
                 }
 
                 return _instance;
@@ -60,7 +90,7 @@ namespace UdonSharp
         }
 
         // Saves cache on play mode exit/enter and once we've entered the target mode reload the state from disk to persist the changes across play/edit mode
-        static internal void SaveOnPlayExit(PlayModeStateChange state)
+        internal static void SaveOnPlayExit(PlayModeStateChange state)
         {
             if (state == PlayModeStateChange.ExitingPlayMode ||
                 state == PlayModeStateChange.ExitingEditMode)
@@ -69,7 +99,7 @@ namespace UdonSharp
             }
         }
 
-        static internal void SaveAllCache()
+        internal static void SaveAllCache()
         {
             if (_instance != null)
                 Instance.SaveAllCacheData();
@@ -80,7 +110,7 @@ namespace UdonSharp
             _instance = null;
         }
 
-        class UdonSharpEditorCacheWriter : UnityEditor.AssetModificationProcessor
+        private class UdonSharpEditorCacheWriter : UnityEditor.AssetModificationProcessor
         {
             public static string[] OnWillSaveAssets(string[] paths)
             {
@@ -99,7 +129,7 @@ namespace UdonSharp
                 }
                 else if(AssetDatabase.IsValidFolder(assetPath))
                 {
-                    string[] assetGuids = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}", new string[] { assetPath });
+                    string[] assetGuids = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}", new [] { assetPath });
 
                     foreach (string guid in assetGuids)
                     {
@@ -114,38 +144,113 @@ namespace UdonSharp
             }
         }
 
-        static void AssemblyReloadSave()
+        private static void AssemblyReloadSave()
         {
             Instance.SaveAllCacheData();
         }
 
-        void SaveAllCacheData()
+        private void SaveAllCacheData()
         {
-            if (!Directory.Exists(CACHE_DIR_PATH))
-                Directory.CreateDirectory(CACHE_DIR_PATH);
-            
-            if (_sourceDirty)
+            if (_sourceDirty || _infoDirty)
             {
-                SourceHashLookupStorage storage = new SourceHashLookupStorage() {
+                if (!Directory.Exists(CACHE_DIR_PATH))
+                    Directory.CreateDirectory(CACHE_DIR_PATH);
+
+                UdonSharpCacheStorage storage = new UdonSharpCacheStorage() {
                     sourceFileHashLookup = _instance.sourceFileHashLookup,
                     lastScriptBuildType = LastBuildType,
+                    info = _info,
+                    diagnostics = _diagnostics.ToArray(),
                 };
-                File.WriteAllBytes(CACHE_FILE_PATH, SerializationUtility.SerializeValue<SourceHashLookupStorage>(storage, DataFormat.Binary));
+                File.WriteAllBytes(CACHE_FILE_PATH, SerializationUtility.SerializeValue<UdonSharpCacheStorage>(storage, DataFormat.Binary));
                 _sourceDirty = false;
+                _infoDirty = false;
             }
 
             FlushDirtyDebugInfos();
             FlushUasmCache();
         }
-        #endregion
+    #endregion
 
-        #region Source file modification cache
-        bool _sourceDirty = false;
-        Dictionary<string, string> sourceFileHashLookup = new Dictionary<string, string>();
+    #region Project Global State
+        
+        [Serializable]
+        public struct ProjectInfo
+        {
+            [SerializeField]
+            internal int version;
+            
+            public bool projectNeedsUpgrade;
+        }
+
+        private bool _infoDirty;
+        private ProjectInfo _info;
+
+        public ProjectInfo Info
+        {
+            get => _info;
+            private set
+            {
+                _info = value;
+                _infoDirty = true;
+            }
+        }
+
+        public void QueueUpgradePass()
+        {
+            ProjectInfo info = Info;
+
+            info.projectNeedsUpgrade = true;
+
+            Info = info;
+        }
+        
+        public void ClearUpgradePassQueue()
+        {
+            ProjectInfo info = Info;
+
+            info.projectNeedsUpgrade = false;
+
+            Info = info;
+        }
+
+        private ImmutableArray<CompileDiagnostic> _diagnostics = ImmutableArray<CompileDiagnostic>.Empty;
+
+        internal ImmutableArray<CompileDiagnostic> LastCompileDiagnostics
+        {
+            get => _diagnostics;
+            set
+            {
+                _diagnostics = value;
+                
+                if (_diagnostics == null)
+                    _diagnostics = ImmutableArray<CompileDiagnostic>.Empty;
+
+                _infoDirty = true;
+            }
+        }
+
+        internal bool HasUdonSharpCompileError()
+        {
+            foreach (var diagnostic in LastCompileDiagnostics)
+            {
+                if (diagnostic.severity == DiagnosticSeverity.Error)
+                    return true;
+            }
+
+            return false;
+        }
+
+    #endregion
+
+    #region Source file modification cache
+
+        private bool _sourceDirty;
+        private Dictionary<string, string> sourceFileHashLookup = new Dictionary<string, string>();
          
         public bool IsSourceFileDirty(UdonSharpProgramAsset programAsset)
         {
-            if (programAsset?.sourceCsScript == null)
+            if (programAsset == null || programAsset.sourceCsScript == null)
                 return false;
             
             if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string programAssetGuid, out long _))
@@ -165,7 +270,7 @@ namespace UdonSharp
 
         public void UpdateSourceHash(UdonSharpProgramAsset programAsset, string sourceText)
         {
-            if (programAsset?.sourceCsScript == null)
+            if (programAsset == null || programAsset.sourceCsScript == null)
                 return;
             
             if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string programAssetGuid, out long _))
@@ -191,51 +296,44 @@ namespace UdonSharp
         /// Clears the source hash, this is used when a script hits a compile error in order to allow an undo to compile the scripts.
         /// </summary>
         /// <param name="programAsset"></param>
-        public void ClearSourceHash(UdonSharpProgramAsset programAsset)
+        private void ClearSourceHash(UdonSharpProgramAsset programAsset)
         {
-            if (programAsset?.sourceCsScript == null)
+            if (programAsset == null || programAsset.sourceCsScript == null)
                 return;
 
             if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string programAssetGuid, out long _))
                 return;
 
-            if (sourceFileHashLookup.ContainsKey(programAssetGuid))
-            {
-                if (sourceFileHashLookup[programAssetGuid] != "")
-                    _sourceDirty = true;
-
-                sourceFileHashLookup[programAssetGuid] = "";
-            }
-            else
-            {
-                sourceFileHashLookup.Add(programAssetGuid, "");
-                _sourceDirty = true;
-            }
+            if (!sourceFileHashLookup.ContainsKey(programAssetGuid)) 
+                return;
+            
+            sourceFileHashLookup.Remove(programAssetGuid);
+            _sourceDirty = true;
         }
 
         private static string HashSourceFile(MonoScript script)
         {
             string scriptPath = AssetDatabase.GetAssetPath(script);
-            string scriptText = "";
+            string scriptText;
 
             try
             {
                 scriptText = UdonSharpUtils.ReadFileTextSync(scriptPath);
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
-                scriptText = Random.value.ToString();
-                Debug.Log(e);
+                scriptText = "";
+                UdonSharpUtils.LogError($"Unable to read source file for hashing. Exception: {e}");
             }
 
             return UdonSharpUtils.HashString(scriptText);
         }
 
-        DebugInfoType _lastBuildType = DebugInfoType.Editor;
+        private DebugInfoType _lastBuildType = DebugInfoType.Editor;
         public DebugInfoType LastBuildType
         {
             get => _lastBuildType;
-            set
+            internal set
             {
                 if (_lastBuildType != value)
                     _sourceDirty = true;
@@ -244,9 +342,9 @@ namespace UdonSharp
             }
         }
 
-        #endregion
+    #endregion
 
-        #region Debug info cache
+    #region Debug info cache
         public enum DebugInfoType
         {
             Editor,
@@ -255,7 +353,7 @@ namespace UdonSharp
 
         private const string DEBUG_INFO_PATH = "Library/UdonSharpCache/DebugInfo/";
 
-        AssemblyDebugInfo LoadDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType)
+        private static AssemblyDebugInfo LoadDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType)
         {
             if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(sourceProgram, out string guid, out long _))
             {
@@ -282,7 +380,7 @@ namespace UdonSharp
             return debugInfo;
         }
 
-        void SaveDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType, AssemblyDebugInfo debugInfo)
+        private static void SaveDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType, AssemblyDebugInfo debugInfo)
         {
             if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(sourceProgram, out string guid, out long _))
             {
@@ -297,7 +395,7 @@ namespace UdonSharp
             File.WriteAllBytes(debugInfoPath, SerializationUtility.SerializeValue<AssemblyDebugInfo>(debugInfo, DataFormat.Binary));
         }
 
-        Dictionary<UdonSharpProgramAsset, Dictionary<DebugInfoType, AssemblyDebugInfo>> _classDebugInfoLookup = new Dictionary<UdonSharpProgramAsset, Dictionary<DebugInfoType, AssemblyDebugInfo>>();
+        private Dictionary<UdonSharpProgramAsset, Dictionary<DebugInfoType, AssemblyDebugInfo>> _classDebugInfoLookup = new Dictionary<UdonSharpProgramAsset, Dictionary<DebugInfoType, AssemblyDebugInfo>>();
 
         /// <summary>
         /// Gets the debug info for a given program asset. If debug info type for Client is specified when there is no client debug info, will fall back to Editor debug info.
@@ -308,38 +406,41 @@ namespace UdonSharp
         [PublicAPI]
         public AssemblyDebugInfo GetDebugInfo(UdonSharpProgramAsset sourceProgram, DebugInfoType debugInfoType)
         {
-            if (!_classDebugInfoLookup.TryGetValue(sourceProgram, out var debugInfo))
+            lock (setDebugInfoLock)
             {
-                debugInfo = new Dictionary<DebugInfoType, AssemblyDebugInfo>();
-                _classDebugInfoLookup.Add(sourceProgram, debugInfo);
-            }
+                if (!_classDebugInfoLookup.TryGetValue(sourceProgram, out var debugInfo))
+                {
+                    debugInfo = new Dictionary<DebugInfoType, AssemblyDebugInfo>();
+                    _classDebugInfoLookup.Add(sourceProgram, debugInfo);
+                }
 
-            if (debugInfo.TryGetValue(debugInfoType, out AssemblyDebugInfo info))
-            {
-                return info;
-            }
-
-            AssemblyDebugInfo loadedInfo = LoadDebugInfo(sourceProgram, debugInfoType);
-            if (loadedInfo != null)
-            {
-                debugInfo.Add(debugInfoType, loadedInfo);
-                return loadedInfo;
-            }
-
-            if (debugInfoType == DebugInfoType.Client)
-            {
-                if (debugInfo.TryGetValue(DebugInfoType.Editor, out info))
+                if (debugInfo.TryGetValue(debugInfoType, out AssemblyDebugInfo info))
+                {
                     return info;
+                }
 
-                loadedInfo = LoadDebugInfo(sourceProgram, DebugInfoType.Editor);
+                AssemblyDebugInfo loadedInfo = LoadDebugInfo(sourceProgram, debugInfoType);
                 if (loadedInfo != null)
                 {
-                    debugInfo.Add(DebugInfoType.Editor, loadedInfo);
+                    debugInfo.Add(debugInfoType, loadedInfo);
                     return loadedInfo;
                 }
-            }
 
-            return null;
+                if (debugInfoType == DebugInfoType.Client)
+                {
+                    if (debugInfo.TryGetValue(DebugInfoType.Editor, out info))
+                        return info;
+
+                    loadedInfo = LoadDebugInfo(sourceProgram, DebugInfoType.Editor);
+                    if (loadedInfo != null)
+                    {
+                        debugInfo.Add(DebugInfoType.Editor, loadedInfo);
+                        return loadedInfo;
+                    }
+                }
+
+                return null;
+            }
         }
 
         private HashSet<AssemblyDebugInfo> dirtyDebugInfos = new HashSet<AssemblyDebugInfo>(new ReferenceEqualityComparer<AssemblyDebugInfo>());
@@ -364,7 +465,7 @@ namespace UdonSharp
             }
         }
 
-        void FlushDirtyDebugInfos()
+        private void FlushDirtyDebugInfos()
         {
             lock (setDebugInfoLock)
             {
@@ -382,15 +483,17 @@ namespace UdonSharp
                 dirtyDebugInfos.Clear();
             }
         }
-        #endregion
+    #endregion
 
-        #region UASM cache
+    #region UASM cache
         const string UASM_DIR_PATH = "Library/UdonSharpCache/UASM/";
 
         // UdonSharpProgramAsset GUID to uasm lookup
         private Dictionary<string, string> _uasmCache = new Dictionary<string, string>();
 
-        void FlushUasmCache()
+        private static readonly object _uasmSetLock = new object();
+        
+        private void FlushUasmCache()
         {
             lock (_uasmSetLock)
             {
@@ -417,23 +520,23 @@ namespace UdonSharp
             if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string guid, out long _))
                 return "";
 
-            if (_uasmCache.TryGetValue(guid, out string uasm))
-                return uasm;
-
-            string filePath = $"{UASM_DIR_PATH}{guid}.uasm";
-            if (File.Exists(filePath))
+            lock (_uasmSetLock)
             {
+                if (_uasmCache.TryGetValue(guid, out string uasm))
+                    return uasm;
+
+                string filePath = $"{UASM_DIR_PATH}{guid}.uasm";
+                if (!File.Exists(filePath))
+                    return "";
+                
                 uasm = UdonSharpUtils.ReadFileTextSync(filePath);
 
                 _uasmCache.Add(guid, uasm);
                 return uasm;
             }
-
-            return "";
         }
-
-        private static readonly object _uasmSetLock = new object();
-        public void SetUASMStr(UdonSharpProgramAsset programAsset, string uasm)
+        
+        internal void SetUASMStr(UdonSharpProgramAsset programAsset, string uasm)
         {
             lock (_uasmSetLock)
             {
@@ -441,11 +544,15 @@ namespace UdonSharp
                     return;
 
                 if (_uasmCache.ContainsKey(guid))
+                {
                     _uasmCache[guid] = uasm;
+                }
                 else
+                {
                     _uasmCache.Add(guid, uasm);
+                }
             }
         }
-        #endregion
+    #endregion
     }
 }

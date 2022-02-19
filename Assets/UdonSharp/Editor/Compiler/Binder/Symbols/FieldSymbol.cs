@@ -37,11 +37,12 @@ namespace UdonSharp.Compiler.Symbols
         {
             get
             {
+                if (IsConst) return false;
                 if (IsStatic) return false;
                 if (RoslynSymbol.IsReadOnly) return false;
                 if (HasAttribute<OdinSerializeAttribute>()) return true; // OdinSerializeAttribute takes precedence over NonSerializedAttribute
                 if (HasAttribute<NonSerializedAttribute>()) return false;
-                return RoslynSymbol.DeclaredAccessibility == Accessibility.Public || HasAttribute<SerializeField>();
+                return RoslynSymbol.DeclaredAccessibility == Accessibility.Public || HasAttribute<SerializeField>() || HasAttribute<SerializeReference>();
             }
         }
 

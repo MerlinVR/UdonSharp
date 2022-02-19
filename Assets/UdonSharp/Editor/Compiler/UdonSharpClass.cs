@@ -1,12 +1,11 @@
 ﻿
-
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace UdonSharp.Compiler
 {
-    [System.Serializable]
+    [Serializable]
     public class FieldDefinition
     {
         public FieldDefinition(string name, Type userType, Type systemType, UdonSyncMode? syncMode, bool isSerialized, List<Attribute> attributes)
@@ -16,55 +15,49 @@ namespace UdonSharp.Compiler
             SystemType = systemType;
             SyncMode = syncMode;
             IsSerialized = isSerialized;
-            fieldAttributes = attributes;
+            _fieldAttributes = attributes;
         }
         
         [field: SerializeField]
         public string Name { get; }
+        
         [field: SerializeField]
-        public System.Type UserType { get; }
+        public Type UserType { get; }
+        
         [field: SerializeField]
-        public System.Type SystemType { get; }
+        public Type SystemType { get; }
+        
         [field: SerializeField]
         public UdonSyncMode? SyncMode { get; }
+        
         [field: SerializeField]
         public bool IsSerialized { get; }
-
-        public List<Attribute> fieldAttributes;
         
-        public UnityEditor.MonoScript userBehaviourSource;
+        [SerializeField]
+        private List<Attribute> _fieldAttributes;
 
-        public T GetAttribute<T>() where T : System.Attribute
+        public T GetAttribute<T>() where T : Attribute
         {
-            foreach (var attribute in fieldAttributes)
+            foreach (var attribute in _fieldAttributes)
             {
-                if (attribute is T)
-                    return (T)attribute;
+                if (attribute is T attributeT)
+                    return attributeT;
             }
 
             return null;
         }
 
-        public T[] GetAttributes<T>() where T : System.Attribute
+        public T[] GetAttributes<T>() where T : Attribute
         {
             List<T> attributes = new List<T>();
 
-            foreach (var attribute in fieldAttributes)
+            foreach (var attribute in _fieldAttributes)
             {
-                if (attribute is T)
-                    attributes.Add((T)attribute);
+                if (attribute is T attributeT)
+                    attributes.Add(attributeT);
             }
 
             return attributes.ToArray();
         }
-    }
-
-    public class ClassDefinition
-    {
-        // Methods and fields should *not* be reflected off of this type, it is not guaranteed to be up to date
-        public System.Type userClassType;
-        public UnityEditor.MonoScript classScript;
-
-        public List<FieldDefinition> fieldDefinitions = new List<FieldDefinition>();
     }
 }

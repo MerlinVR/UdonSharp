@@ -21,7 +21,7 @@ namespace UdonSharp.Serialization
             return typeof(object);
         }
 
-        public override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
+        protected override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
         {
             VerifyTypeCheckSanity();
             return typeMetadata.cSharpType == typeof(object);
@@ -42,6 +42,9 @@ namespace UdonSharp.Serialization
                 Debug.LogError($"Type {typeof(object)} not compatible with serializer {sourceObject}");
                 return;
             }
+            
+            if (UsbSerializationContext.CollectDependencies)
+                return;
 
             if (sourceObject.Value == null || 
                 (sourceObject.Value is UnityEngine.Object unityObject && unityObject == null))
@@ -77,6 +80,9 @@ namespace UdonSharp.Serialization
                 Debug.LogError($"Type {typeof(object)} not compatible with serializer {targetObject}");
                 return;
             }
+            
+            if (UsbSerializationContext.CollectDependencies)
+                return;
 
             if (sourceObject == null ||
                 (sourceObject is UnityEngine.Object unityObject && unityObject == null))

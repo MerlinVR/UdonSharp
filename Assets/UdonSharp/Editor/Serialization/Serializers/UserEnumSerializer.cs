@@ -16,7 +16,7 @@ namespace UdonSharp.Serialization
             return typeof(T).GetEnumUnderlyingType();
         }
 
-        public override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
+        protected override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
         {
             VerifyTypeCheckSanity();
 
@@ -32,6 +32,9 @@ namespace UdonSharp.Serialization
                 Debug.LogError($"Field for {typeof(T)} does not exist");
                 return;
             }
+            
+            if (UsbSerializationContext.CollectDependencies)
+                return;
 
             targetObject = (T)Enum.ToObject(typeof(T), sourceObject.Value);
         }
@@ -44,6 +47,9 @@ namespace UdonSharp.Serialization
                 Debug.LogError($"Field for {typeof(T)} does not exist");
                 return;
             }
+            
+            if (UsbSerializationContext.CollectDependencies)
+                return;
 
             targetObject.Value = Convert.ChangeType(sourceObject, GetUdonStorageType());
         }

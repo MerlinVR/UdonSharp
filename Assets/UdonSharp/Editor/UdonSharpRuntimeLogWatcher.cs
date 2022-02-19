@@ -38,7 +38,7 @@ namespace UdonSharpEditor
             Application.logMessageReceived += OnLog;
         }
 
-        static bool ShouldListenForVRC()
+        private static bool ShouldListenForVRC()
         {
             UdonSharpSettings udonSharpSettings = UdonSharpSettings.GetSettings();
 
@@ -83,39 +83,20 @@ namespace UdonSharpEditor
                 return true;
 
             scriptLookup = new Dictionary<long, (string, UdonSharpProgramAsset)>();
-            string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}");
+            UdonSharpProgramAsset[] udonSharpDataAssets = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
 
-            UdonSharpEditorCache editorCache = UdonSharpEditorCache.Instance;
-
-            foreach (string dataGuid in udonSharpDataAssets)
+            foreach (UdonSharpProgramAsset programAsset in udonSharpDataAssets)
             {
-                UdonSharpProgramAsset programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(dataGuid));
-
                 if (programAsset.sourceCsScript == null)
                     continue;
 
                 if (programAsset.GetSerializedProgramAssetWithoutRefresh() == null)
                     continue;
 
-                IUdonProgram program = programAsset.GetSerializedProgramAssetWithoutRefresh().RetrieveProgram();
+                long programID = programAsset.scriptID;
 
-                if (program == null ||
-                    program.Heap == null ||
-                    program.SymbolTable == null)
-                {
-                    //Debug.LogWarning($"Could not load program for '{programAsset}', exceptions for this script will not be handled until scripts have been reloaded");
+                if (programID == 0)
                     continue;
-                }
-
-                long programID;
-
-                if (program.SymbolTable.TryGetAddressFromSymbol(CompilerConstants.UsbTypeIDHeapKey, out uint address))
-                    programID = program.Heap.GetHeapVariable<long>(address);
-                else
-                {
-                    Debug.LogWarning($"No symbol found for debug info on program asset '{programAsset}', exceptions for this program will not be caught until scripts have been reloaded.");
-                    continue;
-                }
 
                 if (scriptLookup.ContainsKey(programID))
                     continue;

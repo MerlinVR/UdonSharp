@@ -39,7 +39,7 @@ namespace UdonSharpEditor
         public static UdonSharpBehaviour AddComponent(GameObject gameObject, System.Type type)
         {
             if (type == typeof(UdonSharpBehaviour))
-                throw new System.ArgumentException("Cannot add components of type 'UdonSharpBehaviour', you can only add subclasses of this type");
+                throw new System.ArgumentException("Cannot add components of abstract class 'UdonSharpBehaviour', you can only add subclasses of this type");
 
             if (!typeof(UdonSharpBehaviour).IsAssignableFrom(type))
                 throw new System.ArgumentException("Type for AddUdonSharpComponent must be a subclass of UdonSharpBehaviour");
@@ -62,18 +62,12 @@ namespace UdonSharpEditor
             System.Type scriptType = programAsset.GetClass();
 
             UdonSharpBehaviour proxyComponent = (UdonSharpBehaviour)Undo.AddComponent(udonBehaviour.gameObject, scriptType);
-            proxyComponent.hideFlags = HideFlags.DontSaveInBuild |
-#if !UDONSHARP_DEBUG
-                                       HideFlags.HideInInspector |
-#endif
-                                       HideFlags.DontSaveInEditor;
-            proxyComponent.enabled = false;
-
-            UdonSharpEditorUtility.SetBackingUdonBehaviour(proxyComponent, udonBehaviour);
-            UdonSharpEditorUtility.CopyUdonToProxy(proxyComponent, ProxySerializationPolicy.AllWithCreateUndo);
+            UdonSharpEditorUtility.RunBehaviourSetup(proxyComponent);
 
             if (EditorApplication.isPlaying)
+            {
                 udonBehaviour.InitializeUdonContent();
+            }
 
             return proxyComponent;
         }

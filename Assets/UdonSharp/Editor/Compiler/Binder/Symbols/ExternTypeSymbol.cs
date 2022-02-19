@@ -11,7 +11,9 @@ namespace UdonSharp.Compiler.Symbols
         public ExternTypeSymbol(INamedTypeSymbol sourceSymbol, AbstractPhaseContext context)
             : base(sourceSymbol, context)
         {
-            SystemType = sourceSymbol.GetExternType();
+            TryGetSystemType(sourceSymbol, out var systemType);
+            SystemType = systemType;
+            
             Type udonType = UdonSharpUtils.UserTypeToUdonType(SystemType);
 
             UdonType = (ExternTypeSymbol)(udonType == SystemType ? this : context.GetUdonTypeSymbol(sourceSymbol));
@@ -22,7 +24,9 @@ namespace UdonSharp.Compiler.Symbols
         public ExternTypeSymbol(IArrayTypeSymbol sourceSymbol, AbstractPhaseContext context)
             : base(sourceSymbol, context)
         {
-            SystemType = sourceSymbol.GetExternType();
+            TryGetSystemType(sourceSymbol, out var systemType);
+            SystemType = systemType;
+            
             Type udonType = UdonSharpUtils.UserTypeToUdonType(SystemType);
 
             UdonType = (ExternTypeSymbol)(udonType == SystemType ? this : context.GetUdonTypeSymbol(sourceSymbol));

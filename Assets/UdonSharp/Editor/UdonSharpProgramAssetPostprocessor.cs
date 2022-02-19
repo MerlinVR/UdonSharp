@@ -4,27 +4,29 @@ using UnityEditor;
 
 namespace UdonSharpEditor
 {
-    public class UdonSharpProgramAssetPostprocessor : AssetPostprocessor
+    internal class UdonSharpProgramAssetPostprocessor : AssetPostprocessor
     {
-        static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
-            bool importedUdonSharpAsset = false;
-
+            // bool importedUdonSharpAsset = false;
+            
             foreach (string importedAssetPath in importedAssets)
             {
                 UdonSharpProgramAsset importedAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(importedAssetPath);
 
                 if (importedAsset != null)
                 {
-                    importedUdonSharpAsset = true;
-                    break;
+                    // importedUdonSharpAsset = true;
+                    UdonSharpUpgrader.QueueUpgrade(importedAsset);
+                    
+                    UdonSharpEditorCache.Instance.QueueUpgradePass();
                 }
             }
 
             UdonSharpProgramAsset.ClearProgramAssetCache();
 
-            if (importedUdonSharpAsset)
-                UdonSharpEditorManager.QueueScriptCompile();
+            // if (importedUdonSharpAsset)
+            //     UdonSharpEditorManager.QueueScriptCompile();
         }
     }
 }
