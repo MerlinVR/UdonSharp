@@ -551,15 +551,8 @@ namespace UdonSharpEditor
         private static void OnChangePlayMode(PlayModeStateChange state)
         {
             UdonSharpCompilerV1.WaitForCompile();
-
-            // Prevent people from entering play mode when there are compile errors, like normal Unity C#
-            // READ ME
-            // --------
-            // If you think you know better and are about to edit this out, be aware that you gain nothing by doing so. 
-            // If a script hits a compile error, it will not update until the compile errors are resolved.
-            // You will just be left wondering "why aren't my scripts changing when I edit them?" since the old copy of the script will be used until the compile errors are resolved.
-            // --------
-            if (state == PlayModeStateChange.EnteredPlayMode || state == PlayModeStateChange.ExitingEditMode)
+            
+            if (state == PlayModeStateChange.ExitingEditMode)
             {
                 if (UdonSharpProgramAsset.AnyUdonSharpScriptHasError())
                 {
@@ -568,8 +561,15 @@ namespace UdonSharpEditor
 
                     if (UdonSharpProgramAsset.AnyUdonSharpScriptHasError())
                     {
+                        // Prevent people from entering play mode when there are compile errors, like normal Unity C#
+                        // READ ME
+                        // --------
+                        // If you think you know better and are about to edit this out, be aware that you gain nothing by doing so. 
+                        // If a script hits a compile error, it will not update until the compile errors are resolved.
+                        // You will just be left wondering "why aren't my scripts changing when I edit them?" since the old copy of the script will be used until the compile errors are resolved.
+                        // --------
+                        
                         EditorApplication.isPlaying = false;
-
                         UdonSharpUtils.ShowEditorNotification(ERROR_BLOCK_PLAYMODE);
                         UdonSharpUtils.LogError(ERROR_BLOCK_PLAYMODE);
 
@@ -577,24 +577,6 @@ namespace UdonSharpEditor
                     }
                 }
                 
-                if (state == PlayModeStateChange.EnteredPlayMode)
-                {
-                    SanitizeProxyBehaviours(GetAllUdonBehaviours().Select(e => e.gameObject).ToArray(), true, out _);
-                }
-            }
-
-            if (state == PlayModeStateChange.EnteredEditMode)
-            {
-                UdonSharpEditorCache.ResetInstance();
-                if (UdonSharpEditorCache.Instance.LastBuildType == UdonSharpEditorCache.DebugInfoType.Client)
-                {
-                    UdonSharpProgramAsset.CompileAllCsPrograms(true);
-                }
-
-                RunAllUpdates();
-            }
-            else if (state == PlayModeStateChange.ExitingEditMode)
-            {
                 if (UdonSharpEditorCache.Instance.LastBuildType == UdonSharpEditorCache.DebugInfoType.Client)
                     UdonSharpCompilerV1.CompileSync();
                 
@@ -607,6 +589,16 @@ namespace UdonSharpEditor
                     return;
                 }
                     
+                RunAllUpdates();
+            }
+            else if (state == PlayModeStateChange.EnteredEditMode)
+            {
+                UdonSharpEditorCache.ResetInstance();
+                if (UdonSharpEditorCache.Instance.LastBuildType == UdonSharpEditorCache.DebugInfoType.Client)
+                {
+                    UdonSharpProgramAsset.CompileAllCsPrograms(true);
+                }
+
                 RunAllUpdates();
             }
 
@@ -1266,11 +1258,11 @@ namespace UdonSharpEditor
             neededUpdates = false;
             
             // Check that all U# behaviours are setup fully
-            foreach (var gameObject in allGameObjects)
+            foreach (GameObject gameObject in allGameObjects)
             {
                 UdonSharpBehaviour[] proxyBehaviours = gameObject.GetComponents<UdonSharpBehaviour>();
 
-                foreach (var proxyBehaviour in proxyBehaviours)
+                foreach (UdonSharpBehaviour proxyBehaviour in proxyBehaviours)
                 {
                     UdonSharpProgramAsset programAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset(proxyBehaviour);
                     
@@ -1304,7 +1296,7 @@ namespace UdonSharpEditor
             }
             
             // Verifies that there aren't dangling references to behaviours, this may be changed to do the upgrade pass
-            foreach (var behaviour in allGameObjects.SelectMany(e => e.GetComponents<UdonBehaviour>()))
+            foreach (UdonBehaviour behaviour in allGameObjects.SelectMany(e => e.GetComponents<UdonBehaviour>()))
             {
                 if (!UdonSharpEditorUtility.IsUdonSharpBehaviour(behaviour))
                     continue;
@@ -1323,7 +1315,7 @@ namespace UdonSharpEditor
                 }
             }
             
-            foreach (var behaviour in allGameObjects.SelectMany(e => e.GetComponents<UdonSharpBehaviour>()))
+            foreach (UdonSharpBehaviour behaviour in allGameObjects.SelectMany(e => e.GetComponents<UdonSharpBehaviour>()))
             {
                 UdonSharpProgramAsset programAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset(behaviour);
                 
