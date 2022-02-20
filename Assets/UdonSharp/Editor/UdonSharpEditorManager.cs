@@ -115,10 +115,10 @@ namespace UdonSharpEditor
         
         private static void RunPostAssemblyBuildRefresh()
         {
+            InjectUnityEventInterceptors();
+            
             if (!RunAllUpgrades())
                 UdonSharpProgramAsset.CompileAllCsPrograms();
-            
-            InjectUnityEventInterceptors();
         }
 
         private const string HARMONY_ID = "UdonSharp.Editor.EventPatch";
@@ -1526,7 +1526,7 @@ namespace UdonSharpEditor
                     GameObject prefabInstance = Object.Instantiate(prefabRoot, instantiatedObjectRoot.transform);
                     
                     // Update the data on the U# behaviours
-                    foreach (var behaviour in prefabInstance.GetComponentsInChildren<UdonSharpBehaviour>(true))
+                    foreach (UdonSharpBehaviour behaviour in prefabInstance.GetComponentsInChildren<UdonSharpBehaviour>(true))
                     {
                         if (!UdonSharpEditorUtility.IsProxyBehaviour(behaviour))
                             continue;
@@ -1584,9 +1584,9 @@ namespace UdonSharpEditor
 
                 bool prefabModified = false;
 
-                foreach (var behaviour in prefabRoot.GetComponentsInChildren<UdonBehaviour>(true))
+                foreach (UdonBehaviour behaviour in prefabRoot.GetComponentsInChildren<UdonBehaviour>(true))
                 {
-                    var unityObjectList = (List<Object>)_serializedObjectReferencesField.GetValue(behaviour);
+                    List<Object> unityObjectList = (List<Object>)_serializedObjectReferencesField.GetValue(behaviour);
 
                     if (unityObjectList == null)
                         continue;
@@ -1603,7 +1603,7 @@ namespace UdonSharpEditor
 
                 if (stripBehavioursForBuild)
                 {
-                    foreach (var behaviour in prefabRoot.GetComponentsInChildren<UdonSharpBehaviour>(true))
+                    foreach (UdonSharpBehaviour behaviour in prefabRoot.GetComponentsInChildren<UdonSharpBehaviour>(true))
                     {
                         Object.DestroyImmediate(behaviour, true);
                         prefabModified = true;
@@ -1621,7 +1621,7 @@ namespace UdonSharpEditor
             {
                 using (new AssetEditScope())
                 {
-                    foreach (var rootToSave in prefabRootsToSave)
+                    foreach (GameObject rootToSave in prefabRootsToSave)
                     {
                         PrefabUtility.SavePrefabAsset(rootToSave);
                     }
@@ -1629,7 +1629,7 @@ namespace UdonSharpEditor
             }
 
             // Copy U# -> Udon for behaviours in scene
-            foreach (var rootBehaviour in rootBehaviours)
+            foreach (UdonBehaviour rootBehaviour in rootBehaviours)
             {
                 if (UdonSharpEditorUtility.IsUdonSharpBehaviour(rootBehaviour))
                 {
@@ -1642,7 +1642,7 @@ namespace UdonSharpEditor
             // Strip behaviours in scene
             if (stripBehavioursForBuild)
             {
-                foreach (var rootBehaviour in rootBehaviours)
+                foreach (UdonBehaviour rootBehaviour in rootBehaviours)
                 {
                     if (UdonSharpEditorUtility.IsUdonSharpBehaviour(rootBehaviour))
                     {
@@ -1652,9 +1652,9 @@ namespace UdonSharpEditor
             }
 
             // Remap prefab references on behaviours in the scene
-            foreach (var rootBehaviour in rootBehaviours)
+            foreach (UdonBehaviour rootBehaviour in rootBehaviours)
             {
-                var unityObjectList = (List<Object>)_serializedObjectReferencesField.GetValue(rootBehaviour);
+                List<Object> unityObjectList = (List<Object>)_serializedObjectReferencesField.GetValue(rootBehaviour);
 
                 if (unityObjectList == null)
                     continue;
@@ -1663,7 +1663,7 @@ namespace UdonSharpEditor
 
                 for (int i = 0; i < unityObjectList.Count; ++i)
                 {
-                    if (mappingManager.TryRemapObject(unityObjectList[i], out var newObject))
+                    if (mappingManager.TryRemapObject(unityObjectList[i], out Object newObject))
                     {
                         unityObjectList[i] = newObject;
                         modifiedObject = true;
@@ -1676,7 +1676,7 @@ namespace UdonSharpEditor
                 }
             }
 
-            UdonSharpUtils.Log($"Took {timer.Elapsed.TotalSeconds * 1000.0}ms to update UdonSharp scripts");
+            // UdonSharpUtils.Log($"Took {timer.Elapsed.TotalSeconds * 1000.0}ms to update UdonSharp scripts");
         }
 
         internal class AssetEditScope : IDisposable
