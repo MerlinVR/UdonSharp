@@ -180,19 +180,19 @@ namespace UdonSharp.Serialization
 
         protected override Serializer MakeSerializer(TypeSerializationMetadata typeMetadata)
         {
-            var innerSerializer = (Serializer)Activator.CreateInstance(typeof(UdonSharpBehaviourSerializer), typeMetadata);
+            Serializer innerSerializer = (Serializer)Activator.CreateInstance(typeof(UdonSharpBehaviourSerializer), typeMetadata);
 
             return (Serializer)Activator.CreateInstance(typeof(UdonSharpBehaviourTypedWrapper<>).MakeGenericType(typeMetadata.cSharpType), typeMetadata, innerSerializer);
         }
 
         private class UdonSharpBehaviourTypedWrapper<T> : Serializer<T> where T : UdonSharpBehaviour
         {
-            private readonly UdonSharpBehaviourSerializer innerSerializer;
+            private readonly UdonSharpBehaviourSerializer _innerSerializer;
             
             public UdonSharpBehaviourTypedWrapper(TypeSerializationMetadata typeMetadata, UdonSharpBehaviourSerializer innerSerializer) 
                 :base(typeMetadata)
             {
-                this.innerSerializer = innerSerializer;
+                _innerSerializer = innerSerializer;
             }
 
             protected override Serializer MakeSerializer(TypeSerializationMetadata typeMetadata)
@@ -207,18 +207,18 @@ namespace UdonSharp.Serialization
 
             public override Type GetUdonStorageType()
             {
-                return innerSerializer.GetUdonStorageType();
+                return _innerSerializer.GetUdonStorageType();
             }
 
             public override void Write(IValueStorage targetObject, in T sourceObject)
             {
-                innerSerializer.Serialize(targetObject, sourceObject);
+                _innerSerializer.Serialize(targetObject, sourceObject);
             }
 
             public override void Read(ref T targetObject, IValueStorage sourceObject)
             {
                 UdonSharpBehaviour refObj = targetObject;
-                innerSerializer.Read(ref refObj, sourceObject);
+                _innerSerializer.Read(ref refObj, sourceObject);
                 targetObject = (T)refObj;
             }
         }

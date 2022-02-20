@@ -173,7 +173,7 @@ namespace UdonSharpEditor
         private const string UDONSHARP_BEHAVIOUR_VERSION_KEY = "___UdonSharpBehaviourVersion___";
         private const string UDONSHARP_BEHAVIOUR_UPGRADE_MARKER = "___UdonSharpBehaviourPersistDataFromUpgrade___";
 
-        internal static bool ShouldPersistVariable(string variableSymbol)
+        private static bool ShouldPersistVariable(string variableSymbol)
         {
             return variableSymbol == UDONSHARP_BEHAVIOUR_VERSION_KEY ||
                    variableSymbol == UDONSHARP_BEHAVIOUR_UPGRADE_MARKER;
@@ -231,7 +231,7 @@ namespace UdonSharpEditor
             }
         }
 
-        internal static void SetBehaviourUpgraded(UdonBehaviour behaviour)
+        private static void SetBehaviourUpgraded(UdonBehaviour behaviour)
         {
             if (!PrefabUtility.IsPartOfPrefabAsset(behaviour))
                 return;
