@@ -84,6 +84,8 @@ Assets/UdonSharp/UtilityScripts
 Assets/UdonSharp/UtilityScripts.meta
 Assets/UdonSharp/UdonSharpDataLocator.asset
 Assets/UdonSharp/UdonSharpDataLocator.asset.meta
+Assets/UdonSharp/PrefabBuild
+Assets/UdonSharp/PrefabBuild.meta
 
 # Package stuff
 Assets/Resources
