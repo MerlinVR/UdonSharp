@@ -14,7 +14,7 @@ namespace UdonSharp
             if (requestedBuildType == VRCSDKRequestedBuildType.Avatar)
                 return true;
 
-            if (UdonSharpSettings.GetSettings()?.disableUploadCompile ?? false)
+            if (UdonSharpSettings.GetSettings().disableUploadCompile)
                 return true;
 
             UdonSharpCompilerV1.CompileSync(new UdonSharpCompileOptions() { IsEditorBuild = false });

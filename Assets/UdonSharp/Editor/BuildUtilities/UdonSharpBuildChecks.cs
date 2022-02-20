@@ -20,7 +20,7 @@ namespace UdonSharpEditor
         public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
         {
             UdonSharpSettings settings = UdonSharpSettings.GetSettings();
-            bool shouldForceCompile = settings != null && settings.shouldForceCompile;
+            bool shouldForceCompile = settings.shouldForceCompile;
 
             // Unity doesn't like this and will throw errors if it ends up compiling scripts. But it seems to work. 
             // This is marked experimental for now since I don't know if it will break horribly in some case.

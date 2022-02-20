@@ -406,16 +406,13 @@ namespace UdonSharpEditor
             
             UdonSharpSettings settings = UdonSharpSettings.GetSettings();
 
-            if (settings)
-            {
-                string defaultEditor = settings.defaultBehaviourInterfaceType;
+            string defaultEditor = settings.defaultBehaviourInterfaceType;
 
-                if (!string.IsNullOrEmpty(defaultEditor))
+            if (!string.IsNullOrEmpty(defaultEditor))
+            {
+                if (_defaultInspectorMap.TryGetValue(defaultEditor, out var defaultEditorType))
                 {
-                    if (_defaultInspectorMap.TryGetValue(defaultEditor, out var defaultEditorType))
-                    {
-                        editorType = defaultEditorType.Item2;
-                    }
+                    editorType = defaultEditorType.Item2;
                 }
             }
 

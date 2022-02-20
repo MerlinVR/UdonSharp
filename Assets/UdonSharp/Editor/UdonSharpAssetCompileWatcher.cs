@@ -41,16 +41,16 @@ namespace UdonSharpEditor
             {
                 UdonSharpSettings settings = UdonSharpSettings.GetSettings();
 
-                bool watcherEnabled = settings == null || settings.autoCompileOnModify;
+                bool watcherEnabled = settings.autoCompileOnModify;
 
-                if (watcherEnabled != _lastEnabledState)
+                if (watcherEnabled == _lastEnabledState) 
+                    return;
+                
+                _lastEnabledState = watcherEnabled;
+                foreach (FileSystemWatcher watcher in _fileSystemWatchers)
                 {
-                    _lastEnabledState = watcherEnabled;
-                    foreach (FileSystemWatcher watcher in _fileSystemWatchers)
-                    {
-                        if (watcher != null)
-                            watcher.EnableRaisingEvents = watcherEnabled;
-                    }
+                    if (watcher != null)
+                        watcher.EnableRaisingEvents = watcherEnabled;
                 }
 
                 return;
@@ -73,7 +73,7 @@ namespace UdonSharpEditor
             //         sourceDirectories.Add(directory);
             // }
 
-            var sourcePaths = CompilationContext.GetAllFilteredSourcePaths(true);
+            IEnumerable<string> sourcePaths = CompilationContext.GetAllFilteredSourcePaths(true);
 
             HashSet<string> sourceDirectoriesSet = new HashSet<string>();
 
@@ -82,7 +82,7 @@ namespace UdonSharpEditor
                 sourceDirectoriesSet.Add(Path.GetDirectoryName(sourcePath));
             }
 
-            var sourceDirectories = sourceDirectoriesSet.ToArray();
+            string[] sourceDirectories = sourceDirectoriesSet.ToArray();
 
             _fileSystemWatchers = new FileSystemWatcher[sourceDirectories.Length];
             
@@ -122,17 +122,14 @@ namespace UdonSharpEditor
         {
             UdonSharpSettings settings = UdonSharpSettings.GetSettings();
 
-            if (settings != null)
+            if (!settings.autoCompileOnModify)
             {
-                if (!settings.autoCompileOnModify)
-                {
-                    _modifiedScripts.Clear();
-                    return;
-                }
-
-                if (settings.waitForFocus && !UnityEditorInternal.InternalEditorUtility.isApplicationActive)
-                    return;
+                _modifiedScripts.Clear();
+                return;
             }
+
+            if (settings.waitForFocus && !UnityEditorInternal.InternalEditorUtility.isApplicationActive)
+                return;
 
             if (_modifiedScripts.Count == 0)
                 return;
@@ -154,7 +151,7 @@ namespace UdonSharpEditor
             {
                 if (assetsToUpdate.Count > 0)
                 {
-                    if (settings == null || settings.compileAllScripts)
+                    if (settings.compileAllScripts)
                     {
                         UdonSharpProgramAsset.CompileAllCsPrograms();
                     }

@@ -77,9 +77,17 @@ public class <TemplateClassName> : UdonSharpBehaviour
         public LogWatcherMode watcherMode = LogWatcherMode.Disabled;
         public string[] logWatcherMatchStrings = Array.Empty<string>();
 
+        private static UdonSharpSettings _settings;
+        
         public static UdonSharpSettings GetSettings()
         {
+            if (_settings)
+                return _settings;
+            
             UdonSharpSettings settings = AssetDatabase.LoadAssetAtPath<UdonSharpSettings>(UdonSharpLocator.SettingsPath);
+
+            if (settings == null)
+                _settings = settings = CreateInstance<UdonSharpSettings>();
             
             return settings;
         }
@@ -93,7 +101,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 if (!AssetDatabase.IsValidFolder(Path.GetDirectoryName(settingsPath)))
                     Directory.CreateDirectory(Path.GetDirectoryName(settingsPath));
                 
-                settings = CreateInstance<UdonSharpSettings>();
+                _settings = settings = CreateInstance<UdonSharpSettings>();
                 AssetDatabase.CreateAsset(settings, settingsPath);
                 AssetDatabase.SaveAssets();
             }
@@ -101,12 +109,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
             return settings;
         }
 
-        internal static SerializedObject GetSerializedSettings()
-        {
-            return new SerializedObject(GetOrCreateSettings());
-        }
-
-        static string SanitizeName(string name)
+        private static string SanitizeName(string name)
         {
             return name.Replace(" ", "")
                         .Replace("#", "Sharp")
@@ -139,26 +142,16 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
             UdonSharpSettings settings = GetSettings();
 
-            string templateStr;
-
-            if (settings != null && settings.newScriptTemplateOverride != null)
-                templateStr = settings.newScriptTemplateOverride.ToString();
-            else
-                templateStr = DefaultProgramTemplate;
+            string templateStr = settings.newScriptTemplateOverride != null ? settings.newScriptTemplateOverride.ToString() : DefaultProgramTemplate;
 
             templateStr = templateStr.Replace("<TemplateClassName>", scriptName);
 
             return templateStr;
         }
 
-        public static string[] GetScannerBlacklist()
+        private static string[] GetScannerBlacklist()
         {
-            UdonSharpSettings settings = GetSettings();
-
-            if (settings != null)
-                return BuiltinScanningBlacklist.Concat(settings.scanningDirectoryBlacklist).ToArray();
-
-            return BuiltinScanningBlacklist;
+            return BuiltinScanningBlacklist.Concat(GetSettings().scanningDirectoryBlacklist).ToArray();
         }
 
         public static bool IsBlacklistedPath(string path)
@@ -267,7 +260,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 guiHandler = (searchContext) =>
                 {
                     UdonSharpSettings settings = UdonSharpSettings.GetOrCreateSettings();
-                    SerializedObject settingsObject = UdonSharpSettings.GetSerializedSettings();
+                    SerializedObject settingsObject = new SerializedObject(settings);
 
                     // Compiler settings
                     EditorGUILayout.LabelField("Compiler", EditorStyles.boldLabel);
@@ -330,14 +323,12 @@ Disabling this setting will make the UNITY_EDITOR define not work as expected an
                     if (EditorGUI.EndChangeCheck())
                     {
                         settingsObject.ApplyModifiedProperties();
-                        EditorUtility.SetDirty(UdonSharpSettings.GetSettings());
+                        EditorUtility.SetDirty(settings);
                     }
                 },
             };
 
             return provider;
         }
-
-
     }
 }
