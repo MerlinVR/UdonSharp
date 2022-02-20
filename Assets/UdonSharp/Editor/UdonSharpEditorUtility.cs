@@ -413,7 +413,7 @@ namespace UdonSharpEditor
         internal static void UpgradeSceneBehaviours(IEnumerable<UdonBehaviour> behaviours)
         {
             // Create proxies if they do not exist
-            foreach (var udonBehaviour in behaviours)
+            foreach (UdonBehaviour udonBehaviour in behaviours)
             {
                 if (!UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour))
                     continue;
@@ -428,8 +428,15 @@ namespace UdonSharpEditor
                     newProxy.enabled = udonBehaviour.enabled;
 
                     UdonSharpEditorUtility.SetBackingUdonBehaviour(newProxy, udonBehaviour);
-                            
-                    _moveComponentRelativeToComponent.Invoke(null, new object[] { newProxy, udonBehaviour, true });
+
+                    if (!PrefabUtility.IsAddedComponentOverride(udonBehaviour))
+                    {
+                        MoveComponentRelativeToComponent(newProxy, udonBehaviour, true);
+                    }
+                    else
+                    {
+                        UdonSharpUtils.LogWarning("Cannot reorder internal UdonBehaviour during upgrade because it is on a prefab instance.");
+                    }
 
                     UdonSharpUtils.SetDirty(newProxy);
                 }
@@ -439,7 +446,7 @@ namespace UdonSharpEditor
             }
 
             // Copy data over from UdonBehaviour to UdonSharpBehaviour
-            foreach (var udonBehaviour in behaviours)
+            foreach (UdonBehaviour udonBehaviour in behaviours)
             {
                 if (!UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour) || 
                     UdonSharpEditorUtility.GetBehaviourVersion(udonBehaviour) != UdonSharpBehaviourVersion.V0DataUpgradeNeeded)
@@ -487,7 +494,7 @@ namespace UdonSharpEditor
             {
                 int refCount = 0;
                 UdonSharpBehaviour[] behaviours = backingBehaviour.GetComponents<UdonSharpBehaviour>();
-                foreach (var udonSharpBehaviour in behaviours)
+                foreach (UdonSharpBehaviour udonSharpBehaviour in behaviours)
                 {
                     if (GetBackingUdonBehaviour(udonSharpBehaviour) == backingBehaviour)
                         refCount++;
