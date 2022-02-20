@@ -18,7 +18,7 @@ using VRC.Udon.UAssembly.Interfaces;
 
 namespace UdonSharp.Compiler.Udon
 {
-    [InitializeOnLoad]
+    // [InitializeOnLoad]
     internal static class CompilerUdonInterface
     {
         private static HashSet<string> _nodeDefinitionLookup;
@@ -57,11 +57,11 @@ namespace UdonSharp.Compiler.Udon
         
         private static UdonEditorInterface _editorInterfaceInstance;
 
-        static CompilerUdonInterface()
-        {
-            // AssemblyCacheInit();
-            // CacheInit();
-        }
+        // static CompilerUdonInterface()
+        // {
+        //     AssemblyCacheInit();
+        //     CacheInit();
+        // }
 
         internal static void CacheInit()
         {
