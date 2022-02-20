@@ -12,16 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: EditorClientSetColor
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 750c53c679bcc284da0e2c5093cb1417,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: d715eedf299e2cc4db15b6d4e8e2e7c7,
     type: 2}
   udonAssembly: 
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: 49628212e19973c4182708ec86855ffb, type: 3}
-  isV1Root: 0
+  scriptVersion: 2
+  compiledVersion: 2
   behaviourSyncMode: 0
-  behaviourIDHeapVarName: __refl_const_intnl_udonTypeID
-  compileErrors: []
   hasInteractEvent: 0
+  scriptID: 5110115239562179608
   serializationData:
     SerializedFormat: 2
     SerializedBytes: 
