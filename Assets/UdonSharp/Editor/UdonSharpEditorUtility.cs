@@ -265,7 +265,7 @@ namespace UdonSharpEditor
 
             bool NeedsNewProxy(UdonBehaviour udonBehaviour)
             {
-                if (!UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour))
+                if (!IsUdonSharpBehaviour(udonBehaviour))
                     return false;
                 
                 // The behaviour originates from a parent prefab so we don't want to modify this copy of the prefab
@@ -277,7 +277,7 @@ namespace UdonSharpEditor
                     return false;
                 }
 
-                if (UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour))
+                if (GetProxyBehaviour(udonBehaviour))
                     return false;
                 
                 return true;
@@ -285,13 +285,13 @@ namespace UdonSharpEditor
 
             bool NeedsSerializationUpgrade(UdonBehaviour udonBehaviour)
             {
-                if (!UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour))
+                if (!IsUdonSharpBehaviour(udonBehaviour))
                     return false;
                 
                 if (NeedsNewProxy(udonBehaviour))
                     return true;
 
-                if (UdonSharpEditorUtility.GetBehaviourVersion(udonBehaviour) == UdonSharpBehaviourVersion.V0DataUpgradeNeeded)
+                if (GetBehaviourVersion(udonBehaviour) == UdonSharpBehaviourVersion.V0DataUpgradeNeeded)
                     return true;
                 
                 return false;
@@ -300,7 +300,7 @@ namespace UdonSharpEditor
             HashSet<GameObject> phase1FixupPrefabRoots = new HashSet<GameObject>();
 
             // Phase 1 Pruning - Add missing proxy behaviours
-            foreach (var prefabRoot in prefabRoots)
+            foreach (GameObject prefabRoot in prefabRoots)
             {
                 if (!prefabRoot.GetComponentsInChildren<UdonBehaviour>(true).Any(NeedsNewProxy)) 
                     continue;
@@ -314,9 +314,9 @@ namespace UdonSharpEditor
             HashSet<GameObject> phase2FixupPrefabRoots = new HashSet<GameObject>(phase1FixupPrefabRoots);
 
             // Phase 2 Pruning - Check for behaviours that require their data ownership to be transferred Udon -> C#
-            foreach (var prefabRoot in prefabRoots)
+            foreach (GameObject prefabRoot in prefabRoots)
             {
-                foreach (var udonBehaviour in prefabRoot.GetComponentsInChildren<UdonBehaviour>(true))
+                foreach (UdonBehaviour udonBehaviour in prefabRoot.GetComponentsInChildren<UdonBehaviour>(true))
                 {
                     if (NeedsSerializationUpgrade(udonBehaviour))
                     {
@@ -346,19 +346,19 @@ namespace UdonSharpEditor
                 {
                     try
                     {
-                        foreach (var udonBehaviour in prefabRoot.GetComponentsInChildren<UdonBehaviour>(true))
+                        foreach (UdonBehaviour udonBehaviour in prefabRoot.GetComponentsInChildren<UdonBehaviour>(true))
                         {
                             if (!NeedsNewProxy(udonBehaviour))
                                 continue;
                             
-                            UdonSharpBehaviour newProxy = (UdonSharpBehaviour)udonBehaviour.gameObject.AddComponent(UdonSharpEditorUtility.GetUdonSharpBehaviourType(udonBehaviour));
+                            UdonSharpBehaviour newProxy = (UdonSharpBehaviour)udonBehaviour.gameObject.AddComponent(GetUdonSharpBehaviourType(udonBehaviour));
                             newProxy.enabled = udonBehaviour.enabled;
 
-                            UdonSharpEditorUtility.SetBackingUdonBehaviour(newProxy, udonBehaviour);
+                            SetBackingUdonBehaviour(newProxy, udonBehaviour);
 
                             MoveComponentRelativeToComponent(newProxy, udonBehaviour, true);
 
-                            UdonSharpEditorUtility.SetBehaviourVersion(udonBehaviour, UdonSharpBehaviourVersion.V0DataUpgradeNeeded);
+                            SetBehaviourVersion(udonBehaviour, UdonSharpBehaviourVersion.V0DataUpgradeNeeded);
                         }
 
                         // Phase2 is a superset of phase 1 upgrades, and AssetEditScope prevents flushing to disk anyways so just don't save here.
@@ -372,16 +372,16 @@ namespace UdonSharpEditor
                     }
                 }
 
-                foreach (var prefabRoot in phase2FixupPrefabRoots)
+                foreach (GameObject prefabRoot in phase2FixupPrefabRoots)
                 {
                     try
                     {
-                        foreach (var udonBehaviour in prefabRoot.GetComponentsInChildren<UdonBehaviour>(true))
+                        foreach (UdonBehaviour udonBehaviour in prefabRoot.GetComponentsInChildren<UdonBehaviour>(true))
                         {
                             if (!NeedsSerializationUpgrade(udonBehaviour))
                                 continue;
                             
-                            UdonSharpEditorUtility.CopyUdonToProxy(UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour), ProxySerializationPolicy.RootOnly);
+                            CopyUdonToProxy(GetProxyBehaviour(udonBehaviour), ProxySerializationPolicy.RootOnly);
 
                             // We can't remove this data for backwards compatibility :'(
                             // If we nuke the data, the unity object array on the underlying storage may change.
@@ -392,8 +392,8 @@ namespace UdonSharpEditor
                             // foreach (string publicVarSymbol in udonBehaviour.publicVariables.VariableSymbols.ToArray())
                             //     udonBehaviour.publicVariables.RemoveVariable(publicVarSymbol);
                             
-                            UdonSharpEditorUtility.SetBehaviourVersion(udonBehaviour, UdonSharpBehaviourVersion.V1);
-                            UdonSharpEditorUtility.SetBehaviourUpgraded(udonBehaviour);
+                            SetBehaviourVersion(udonBehaviour, UdonSharpBehaviourVersion.V1);
+                            SetBehaviourUpgraded(udonBehaviour);
                         }
 
                         PrefabUtility.SavePrefabAsset(prefabRoot);
@@ -415,19 +415,19 @@ namespace UdonSharpEditor
             // Create proxies if they do not exist
             foreach (UdonBehaviour udonBehaviour in behaviours)
             {
-                if (!UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour))
+                if (!IsUdonSharpBehaviour(udonBehaviour))
                     continue;
                 
                 if (PrefabUtility.IsPartOfPrefabInstance(udonBehaviour) &&
                     PrefabUtility.IsAddedComponentOverride(udonBehaviour))
                     continue;
 
-                if (UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour) == null)
+                if (GetProxyBehaviour(udonBehaviour) == null)
                 {
-                    UdonSharpBehaviour newProxy = (UdonSharpBehaviour)udonBehaviour.gameObject.AddComponent(UdonSharpEditorUtility.GetUdonSharpBehaviourType(udonBehaviour));
+                    UdonSharpBehaviour newProxy = (UdonSharpBehaviour)udonBehaviour.gameObject.AddComponent(GetUdonSharpBehaviourType(udonBehaviour));
                     newProxy.enabled = udonBehaviour.enabled;
 
-                    UdonSharpEditorUtility.SetBackingUdonBehaviour(newProxy, udonBehaviour);
+                    SetBackingUdonBehaviour(newProxy, udonBehaviour);
 
                     if (!PrefabUtility.IsAddedComponentOverride(udonBehaviour))
                     {
@@ -441,26 +441,26 @@ namespace UdonSharpEditor
                     UdonSharpUtils.SetDirty(newProxy);
                 }
                 
-                if (UdonSharpEditorUtility.GetBehaviourVersion(udonBehaviour) == UdonSharpBehaviourVersion.V0)
-                    UdonSharpEditorUtility.SetBehaviourVersion(udonBehaviour, UdonSharpBehaviourVersion.V0DataUpgradeNeeded);
+                if (GetBehaviourVersion(udonBehaviour) == UdonSharpBehaviourVersion.V0)
+                    SetBehaviourVersion(udonBehaviour, UdonSharpBehaviourVersion.V0DataUpgradeNeeded);
             }
 
             // Copy data over from UdonBehaviour to UdonSharpBehaviour
             foreach (UdonBehaviour udonBehaviour in behaviours)
             {
-                if (!UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour) || 
-                    UdonSharpEditorUtility.GetBehaviourVersion(udonBehaviour) != UdonSharpBehaviourVersion.V0DataUpgradeNeeded)
+                if (!IsUdonSharpBehaviour(udonBehaviour) || 
+                    GetBehaviourVersion(udonBehaviour) != UdonSharpBehaviourVersion.V0DataUpgradeNeeded)
                     continue;
                 
-                UdonSharpBehaviour proxy = UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour);
+                UdonSharpBehaviour proxy = GetProxyBehaviour(udonBehaviour);
                 
-                UdonSharpEditorUtility.CopyUdonToProxy(proxy, ProxySerializationPolicy.RootOnly);
+                CopyUdonToProxy(proxy, ProxySerializationPolicy.RootOnly);
 
                 // Nuke out old data now because we want only the C# side to own the data from this point on
                 
-                UdonSharpEditorUtility.ClearBehaviourVariables(udonBehaviour, true);
+                ClearBehaviourVariables(udonBehaviour, true);
                             
-                UdonSharpEditorUtility.SetBehaviourVersion(udonBehaviour, UdonSharpBehaviourVersion.V1);
+                SetBehaviourVersion(udonBehaviour, UdonSharpBehaviourVersion.V1);
                 
                 UdonSharpUtils.SetDirty(proxy);
                 
