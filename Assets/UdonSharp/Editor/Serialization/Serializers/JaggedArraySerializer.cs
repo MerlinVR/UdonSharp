@@ -105,12 +105,9 @@ namespace UdonSharp.Serialization
             {
                 Array targetArray = (Array)targetElement;
                 Array sourceArray = (Array)elementValue;
-
-                if (!UsbSerializationContext.CollectDependencies)
-                {
-                    if (targetArray == null || targetArray.Length != sourceArray.Length)
-                        targetElement = targetArray = (Array)Activator.CreateInstance(UdonSharpUtils.UserTypeToUdonType(cSharpType), sourceArray.Length);
-                }
+                
+                if (targetArray == null || targetArray.Length != sourceArray.Length)
+                    targetElement = targetArray = (Array)Activator.CreateInstance(UdonSharpUtils.UserTypeToUdonType(cSharpType), sourceArray.Length);
 
                 for (int i = 0; i < sourceArray.Length; ++i)
                 {

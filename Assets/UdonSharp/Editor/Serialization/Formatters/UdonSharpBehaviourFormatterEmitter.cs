@@ -112,7 +112,7 @@ namespace UdonSharp.Serialization
                 UdonBehaviourHeapData heapStorage = UdonSharpBehaviourFormatterManager.GetHeapData((UdonBehaviour)sourceObject.Value);
 
                 if (heapStorage != null)
-                    readDelegate(heapStorage.heapFieldValues, ref targetObject, EditorApplication.isPlaying);
+                    readDelegate(heapStorage.heapFieldValues, ref targetObject, EditorApplication.isPlaying && !UsbSerializationContext.CurrentPolicy.IsPreBuildSerialize);
             }
 
             public override void Write(IValueStorage targetObject, T sourceObject)
@@ -123,7 +123,7 @@ namespace UdonSharp.Serialization
                 if (heapStorage == null) 
                     return;
                 
-                writeDelegate(heapStorage.heapFieldValues, ref sourceObject, EditorApplication.isPlaying);
+                writeDelegate(heapStorage.heapFieldValues, ref sourceObject, EditorApplication.isPlaying && !UsbSerializationContext.CurrentPolicy.IsPreBuildSerialize);
                     
                 if (!UsbSerializationContext.CollectDependencies && !EditorApplication.isPlaying)
                     PrefabUtility.RecordPrefabInstancePropertyModifications(backingBehaviour);

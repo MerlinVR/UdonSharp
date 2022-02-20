@@ -804,6 +804,13 @@ namespace UdonSharp.Compiler
 
                         program.Heap.SetHeapVariable(valAddress, typeStorage.Value, typeStorage.Value.GetType());
                     }
+                    // We set synced strings to an empty string by default
+                    else if (field.FieldType == typeof(string) &&
+                             field.GetValue(component) == null &&
+                             field.GetCustomAttribute<UdonSyncedAttribute>() != null)
+                    {
+                        program.Heap.SetHeapVariable(valAddress, "");
+                    }
                     else
                     {
                         program.Heap.SetHeapVariable(valAddress, fieldValue, field.FieldType);
