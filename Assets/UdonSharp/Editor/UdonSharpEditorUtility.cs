@@ -172,11 +172,13 @@ namespace UdonSharpEditor
 
         private const string UDONSHARP_BEHAVIOUR_VERSION_KEY = "___UdonSharpBehaviourVersion___";
         private const string UDONSHARP_BEHAVIOUR_UPGRADE_MARKER = "___UdonSharpBehaviourPersistDataFromUpgrade___";
+        private const string UDONSHARP_SCENE_BEHAVIOUR_UPGRADE_MARKER = "___UdonSharpBehaviourHasDoneSceneUpgrade___";
 
         private static bool ShouldPersistVariable(string variableSymbol)
         {
             return variableSymbol == UDONSHARP_BEHAVIOUR_VERSION_KEY ||
-                   variableSymbol == UDONSHARP_BEHAVIOUR_UPGRADE_MARKER;
+                   variableSymbol == UDONSHARP_BEHAVIOUR_UPGRADE_MARKER ||
+                   variableSymbol == UDONSHARP_SCENE_BEHAVIOUR_UPGRADE_MARKER;
         }
 
         internal static UdonSharpBehaviourVersion GetBehaviourVersion(UdonBehaviour behaviour)
@@ -212,7 +214,7 @@ namespace UdonSharpEditor
             UdonSharpUtils.LogError("Could not set version variable");
         }
 
-        internal static bool BehaviourRequiresBackwardsCompatibilityPersistence(UdonBehaviour behaviour)
+        private static bool BehaviourRequiresBackwardsCompatibilityPersistence(UdonBehaviour behaviour)
         {
             if (behaviour.publicVariables.TryGetVariableValue<bool>(UDONSHARP_BEHAVIOUR_UPGRADE_MARKER, out bool needsBackwardsCompat) && PrefabUtility.IsPartOfPrefabAsset(behaviour))
                 return needsBackwardsCompat;
@@ -222,7 +224,7 @@ namespace UdonSharpEditor
 
         internal static void ClearBehaviourVariables(UdonBehaviour behaviour, bool clearPersistentVariables = false)
         {
-            foreach (string publicVarSymbol in behaviour.publicVariables.VariableSymbols.ToArray())
+            foreach (string publicVarSymbol in behaviour.publicVariables.VariableSymbols.ToArray()) // ToArray so we don't modify the collection while iterating it
             {
                 if (!clearPersistentVariables && ShouldPersistVariable(publicVarSymbol))
                     continue;
@@ -244,8 +246,28 @@ namespace UdonSharpEditor
                 behaviour.publicVariables.TryAddVariable(newVar);
             }
             
-            EditorUtility.SetDirty(behaviour);
-            PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+            UdonSharpUtils.SetDirty(behaviour);
+        }
+
+        private static void SetSceneBehaviourUpgraded(UdonBehaviour behaviour)
+        {
+            if (!PrefabUtility.IsPartOfPrefabInstance(behaviour))
+                return;
+            
+            if (!behaviour.publicVariables.TrySetVariableValue<bool>(UDONSHARP_SCENE_BEHAVIOUR_UPGRADE_MARKER, true))
+            {
+                behaviour.publicVariables.RemoveVariable(UDONSHARP_SCENE_BEHAVIOUR_UPGRADE_MARKER);
+                
+                IUdonVariable newVar = new UdonVariable<bool>(UDONSHARP_SCENE_BEHAVIOUR_UPGRADE_MARKER, true);
+                behaviour.publicVariables.TryAddVariable(newVar);
+            }
+            
+            UdonSharpUtils.SetDirty(behaviour);
+        }
+
+        private static bool HasSceneBehaviourUpgradeFlag(UdonBehaviour behaviour)
+        {
+            return behaviour.publicVariables.TryGetVariableValue<bool>(UDONSHARP_SCENE_BEHAVIOUR_UPGRADE_MARKER, out bool sceneBehaviourUpgraded) && sceneBehaviourUpgraded;
         }
         
         /// <summary>
@@ -448,9 +470,35 @@ namespace UdonSharpEditor
             // Copy data over from UdonBehaviour to UdonSharpBehaviour
             foreach (UdonBehaviour udonBehaviour in behaviours)
             {
-                if (!IsUdonSharpBehaviour(udonBehaviour) || 
-                    GetBehaviourVersion(udonBehaviour) != UdonSharpBehaviourVersion.V0DataUpgradeNeeded)
+                if (!IsUdonSharpBehaviour(udonBehaviour))
                     continue;
+                
+                bool needsPrefabInstanceUpgrade = false;
+
+                if (GetBehaviourVersion(udonBehaviour) != UdonSharpBehaviourVersion.V0DataUpgradeNeeded)
+                {
+                    // Check if the prefab instance has a prefab that was upgraded causing the string data to be copied, but has a delta'd UnityEngine.Object storage array
+                    if (PrefabUtility.IsPartOfPrefabInstance(udonBehaviour) &&
+                        !HasSceneBehaviourUpgradeFlag(udonBehaviour))
+                    {
+                        UdonBehaviour prefabSource = PrefabUtility.GetCorrespondingObjectFromSource(udonBehaviour);
+
+                        if (prefabSource && BehaviourRequiresBackwardsCompatibilityPersistence(prefabSource))
+                        {
+                            PropertyModification[] modifications =
+                                PrefabUtility.GetPropertyModifications(udonBehaviour);
+
+                            if (modifications != null &&
+                                modifications.Any(e => e.propertyPath.StartsWith("publicVariablesUnityEngineObjects", StringComparison.Ordinal)))
+                            {
+                                needsPrefabInstanceUpgrade = true;
+                            }
+                        }
+                    }
+
+                    if (!needsPrefabInstanceUpgrade)
+                        continue;
+                }
                 
                 UdonSharpBehaviour proxy = GetProxyBehaviour(udonBehaviour);
                 
@@ -461,7 +509,13 @@ namespace UdonSharpEditor
                 ClearBehaviourVariables(udonBehaviour, true);
                             
                 SetBehaviourVersion(udonBehaviour, UdonSharpBehaviourVersion.V1);
-                
+
+                if (needsPrefabInstanceUpgrade)
+                {
+                    SetSceneBehaviourUpgraded(udonBehaviour);
+                    UdonSharpUtils.Log($"Scene behaviour {udonBehaviour.name} needed UnityEngine.Object upgrade pass");
+                }
+
                 UdonSharpUtils.SetDirty(proxy);
                 
                 UdonSharpUtils.Log($"Upgraded scene behaviour {udonBehaviour.name}", udonBehaviour);
@@ -631,7 +685,6 @@ namespace UdonSharpEditor
         /// Finds an existing proxy behaviour, if none exists returns null
         /// </summary>
         /// <param name="udonBehaviour"></param>
-        /// <param name="proxySerializationPolicy"></param>
         /// <returns></returns>
         private static UdonSharpBehaviour FindProxyBehaviour_Internal(UdonBehaviour udonBehaviour)
         {
@@ -953,7 +1006,7 @@ namespace UdonSharpEditor
             if (visitedSet.Contains(rootObject))
                 return;
 
-            System.Type objectType = rootObject.GetType();
+            Type objectType = rootObject.GetType();
 
             if (objectType.IsValueType)
                 return;
@@ -971,7 +1024,7 @@ namespace UdonSharpEditor
 
             if (objectType.IsArray)
             {
-                foreach (object arrayElement in (System.Array)rootObject)
+                foreach (object arrayElement in (Array)rootObject)
                 {
                     CollectUdonSharpBehaviourReferencesInternal(arrayElement, gatheredSet, visitedSet);
                 }
@@ -1019,14 +1072,14 @@ namespace UdonSharpEditor
                     // This is an absolute mess, it should probably just be simplified to counting the number of affected behaviours
                     string referencedBehaviourStr;
                     if (allReferencedBehaviours.Count <= 2)
-                        referencedBehaviourStr = string.Join(", ", allReferencedBehaviours.Select(e => $"'{e.ToString()}'"));
+                        referencedBehaviourStr = string.Join(", ", allReferencedBehaviours.Select(e => $"'{e}'"));
                     else
                         referencedBehaviourStr = $"{allReferencedBehaviours.Count} behaviours";
 
                     string rootBehaviourStr;
 
                     if (components.Length <= 2)
-                        rootBehaviourStr = $"{string.Join(", ", components.Select(e => $"'{e.ToString()}'"))} reference{(components.Length == 1 ? "s" : "")} ";
+                        rootBehaviourStr = $"{string.Join(", ", components.Select(e => $"'{e}'"))} reference{(components.Length == 1 ? "s" : "")} ";
                     else
                         rootBehaviourStr = $"{components.Length} behaviours to convert reference ";
 
@@ -1094,12 +1147,7 @@ namespace UdonSharpEditor
 
                 GameObject targetGameObject = targetObject.gameObject;
 
-                UdonBehaviour udonBehaviour = null;
-
-                if (shouldUndo)
-                    udonBehaviour = Undo.AddComponent<UdonBehaviour>(targetGameObject);
-                else
-                    udonBehaviour = targetGameObject.AddComponent<UdonBehaviour>();
+                UdonBehaviour udonBehaviour = shouldUndo ? Undo.AddComponent<UdonBehaviour>(targetGameObject) : targetGameObject.AddComponent<UdonBehaviour>();
 
                 udonBehaviour.programSource = programAsset;
 #pragma warning disable CS0618 // Type or member is obsolete

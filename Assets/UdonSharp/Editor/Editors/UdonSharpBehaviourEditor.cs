@@ -12,6 +12,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using VRC.Udon;
 using VRC.Udon.Editor;
+using Object = UnityEngine.Object;
 
 #if ODIN_INSPECTOR_3
 using UdonSharpEditor;
@@ -137,7 +138,7 @@ namespace UdonSharpEditor
             errorState = BehaviourInspectorErrorState.Success;
             bool needsUpgradePass = false;
             
-            foreach (var target in targets)
+            foreach (Object target in targets)
             {
                 UdonBehaviour targetBehaviour = (UdonBehaviour)target;
 
@@ -148,24 +149,24 @@ namespace UdonSharpEditor
                     break;
                 }
 
-                if (UdonSharpEditorUtility.GetProxyBehaviour(targetBehaviour) == null)
-                {
-                    needsUpgradePass = true;
+                if (UdonSharpEditorUtility.GetProxyBehaviour(targetBehaviour) != null) 
+                    continue;
+                
+                needsUpgradePass = true;
                     
-                    if (PrefabUtility.IsPartOfPrefabInstance(targetBehaviour) &&
-                        !PrefabUtility.IsAddedComponentOverride(targetBehaviour))
-                    {
-                        UdonSharpUtils.LogWarning($"UdonBehaviour '{targetBehaviour}' needs upgrade on source prefab asset.", targetBehaviour);
-                        errorState = BehaviourInspectorErrorState.PrefabNeedsUpgrade;
-                        break;
-                    }
+                if (PrefabUtility.IsPartOfPrefabInstance(targetBehaviour) &&
+                    !PrefabUtility.IsAddedComponentOverride(targetBehaviour))
+                {
+                    UdonSharpUtils.LogWarning($"UdonBehaviour '{targetBehaviour}' needs upgrade on source prefab asset.", targetBehaviour);
+                    errorState = BehaviourInspectorErrorState.PrefabNeedsUpgrade;
+                    break;
                 }
             }
 
             if (!needsUpgradePass || errorState != BehaviourInspectorErrorState.Success)
                 return;
 
-            foreach (var target in targets)
+            foreach (Object target in targets)
             {
                 UdonBehaviour targetBehaviour = (UdonBehaviour)target;
                 UdonSharpBehaviour udonSharpBehaviour = UdonSharpEditorUtility.GetProxyBehaviour(targetBehaviour);
@@ -182,6 +183,7 @@ namespace UdonSharpEditor
                         UdonSharpEditorUtility.SetBackingUdonBehaviour(udonSharpBehaviour, targetBehaviour);
                         UdonSharpEditorUtility.MoveComponentRelativeToComponent(udonSharpBehaviour, targetBehaviour, true);
                         UdonSharpEditorUtility.SetBehaviourVersion(targetBehaviour, UdonSharpBehaviourVersion.CurrentVersion);
+                        UdonSharpEditorUtility.SetSceneBehaviourUpgraded(targetBehaviour);
                     }
                     finally
                     {
