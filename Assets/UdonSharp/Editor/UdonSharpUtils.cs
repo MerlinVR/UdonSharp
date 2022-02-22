@@ -480,9 +480,7 @@ namespace UdonSharp
         internal static void SetDirty(UnityEngine.Object obj)
         {
             EditorUtility.SetDirty(obj);
-            
-            if (PrefabUtility.IsPartOfPrefabInstance(obj))
-                PrefabUtility.RecordPrefabInstancePropertyModifications(obj);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(obj);
         }
 
         private static PropertyInfo _getLoadedAssembliesProp;

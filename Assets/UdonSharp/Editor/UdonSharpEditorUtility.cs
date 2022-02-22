@@ -475,19 +475,20 @@ namespace UdonSharpEditor
                 
                 bool needsPrefabInstanceUpgrade = false;
 
-                if (GetBehaviourVersion(udonBehaviour) != UdonSharpBehaviourVersion.V0DataUpgradeNeeded)
+                UdonSharpBehaviourVersion behaviourVersion = GetBehaviourVersion(udonBehaviour);
+                if (behaviourVersion >= UdonSharpBehaviourVersion.V1)
                 {
                     // Check if the prefab instance has a prefab that was upgraded causing the string data to be copied, but has a delta'd UnityEngine.Object storage array
                     if (PrefabUtility.IsPartOfPrefabInstance(udonBehaviour) &&
                         !HasSceneBehaviourUpgradeFlag(udonBehaviour))
                     {
                         UdonBehaviour prefabSource = PrefabUtility.GetCorrespondingObjectFromSource(udonBehaviour);
-
+                    
                         if (prefabSource && BehaviourRequiresBackwardsCompatibilityPersistence(prefabSource))
                         {
                             PropertyModification[] modifications =
                                 PrefabUtility.GetPropertyModifications(udonBehaviour);
-
+                    
                             if (modifications != null &&
                                 modifications.Any(e => e.propertyPath.StartsWith("publicVariablesUnityEngineObjects", StringComparison.Ordinal)))
                             {
@@ -509,12 +510,10 @@ namespace UdonSharpEditor
                 ClearBehaviourVariables(udonBehaviour, true);
                             
                 SetBehaviourVersion(udonBehaviour, UdonSharpBehaviourVersion.V1);
+                SetSceneBehaviourUpgraded(udonBehaviour);
 
                 if (needsPrefabInstanceUpgrade)
-                {
-                    SetSceneBehaviourUpgraded(udonBehaviour);
-                    UdonSharpUtils.Log($"Scene behaviour {udonBehaviour.name} needed UnityEngine.Object upgrade pass");
-                }
+                    UdonSharpUtils.Log($"Scene behaviour {udonBehaviour.name} needed UnityEngine.Object upgrade pass", udonBehaviour);
 
                 UdonSharpUtils.SetDirty(proxy);
                 

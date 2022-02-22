@@ -46,7 +46,7 @@ namespace UdonSharp
         public MonoScript sourceCsScript;
 
         [SerializeField]
-        private UdonSharpProgramVersion scriptVersion = UdonSharpProgramVersion.CurrentVersion;
+        private UdonSharpProgramVersion scriptVersion = UdonSharpProgramVersion.Unknown;
 
         /// <summary>
         /// The version the attached C# script is on, determines if this needs an upgrade pass that rewrites the script file.
