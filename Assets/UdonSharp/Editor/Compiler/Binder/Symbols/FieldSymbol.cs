@@ -79,7 +79,7 @@ namespace UdonSharp.Compiler.Symbols
                 InitializerSyntax = (context.CurrentNode as VariableDeclaratorSyntax)?.Initializer?.Value;
             }
 
-            if (!IsExtern && IsStatic)
+            if (!IsExtern && IsStatic && !IsConst)
                 throw new NotSupportedException("Static fields are not yet supported on user defined types");
             
             CheckHiddenFields(context);
