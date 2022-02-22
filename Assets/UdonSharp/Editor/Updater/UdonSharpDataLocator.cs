@@ -1,5 +1,4 @@
 ﻿
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
@@ -56,7 +55,7 @@ namespace UdonSharp.Updater
         private static string GetUtilitiesPath(UdonSharpDataLocator locator)
         {
             string locatorPath = AssetDatabase.GetAssetPath(locator);
-
+        
             return Path.Combine(Path.GetDirectoryName(locatorPath), "UtilityScripts");
         }
         
@@ -65,15 +64,18 @@ namespace UdonSharp.Updater
             if (!AssetDatabase.IsValidFolder(Path.GetDirectoryName(DEFAULT_DATA_PATH)))
                 AssetDatabase.CreateFolder("Assets", "UdonSharp");
             
-            var locator = CreateInstance<UdonSharpDataLocator>();
+            UdonSharpDataLocator locator = CreateInstance<UdonSharpDataLocator>();
             AssetDatabase.CreateAsset(locator, DEFAULT_DATA_PATH);
 
             string utilsTargetPath = GetUtilitiesPath(locator);
-
+            
             string utilsSourcePath = Path.Combine(UdonSharpLocator.SamplesPath, "Utilities");
             
-            DeepCopyDirectory(utilsSourcePath, utilsTargetPath);
-            
+            if (Directory.Exists(utilsSourcePath))
+                DeepCopyDirectory(utilsSourcePath, utilsTargetPath);
+            else
+                Debug.LogWarning("No utilities directory found to copy from for UdonSharp utility scripts");
+
             Debug.Log("Created UdonSharp data directory", locator);
 
             AssetDatabase.Refresh();
@@ -111,7 +113,7 @@ namespace UdonSharp.Updater
             EditorGUILayout.HelpBox("Do not delete this file! This is used by UdonSharp to locate its data directory.", MessageType.Error);
         }
     }
-
+ 
     internal class InitUSharpDataOnImport : AssetPostprocessor
     {
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
@@ -120,9 +122,16 @@ namespace UdonSharp.Updater
             
             try
             {
-                string _ = UdonSharpDataLocator.DataPath; // Implicitly initializes the data asset if it doesn't exist
+                foreach (string importedAsset in importedAssets)
+                {
+                    if (Path.GetFileName(importedAsset) == "UdonSharpLocator.asset" && 
+                        AssetDatabase.LoadAssetAtPath<UdonSharpLocator>(importedAsset))
+                    {
+                        string _ = UdonSharpDataLocator.DataPath; // Implicitly initializes the data asset if it doesn't exist
+                    }
+                }
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 Debug.LogError(e);
             }
