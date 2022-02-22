@@ -72,7 +72,7 @@ namespace UdonSharpEditor
 
     // [CustomEditor(typeof(UdonSharpBehaviour), true)]
     // [CanEditMultipleObjects]
-    [CustomUdonBehaviourInspector(typeof(UdonSharpProgramAsset))]
+    // [CustomUdonBehaviourInspector(typeof(UdonSharpProgramAsset))]
     internal class UdonSharpBehaviourEditor : Editor
     {
         [MenuItem("Assets/Create/U# Script", false, 5)]
