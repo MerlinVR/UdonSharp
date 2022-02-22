@@ -4,10 +4,10 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using UdonSharp.Compiler.Binder;
-using UdonSharp.Core;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon.Serialization.OdinSerializer;
+using NotSupportedException = UdonSharp.Core.NotSupportedException;
 
 namespace UdonSharp.Compiler.Symbols
 {
@@ -62,7 +62,7 @@ namespace UdonSharp.Compiler.Symbols
             {
                 FieldSymbol foundSymbol = currentType.GetMember<FieldSymbol>(Name, context);
                 if (foundSymbol != null && !foundSymbol.IsConst)
-                    throw new CompilerException($"U# does not yet support hiding base fields");
+                    throw new NotSupportedException("U# does not yet support hiding base fields");
 
                 currentType = currentType.BaseType;
             }
@@ -78,6 +78,9 @@ namespace UdonSharp.Compiler.Symbols
                 context.CurrentNode = RoslynSymbol.DeclaringSyntaxReferences.First().GetSyntax();
                 InitializerSyntax = (context.CurrentNode as VariableDeclaratorSyntax)?.Initializer?.Value;
             }
+
+            if (!IsExtern && IsStatic)
+                throw new NotSupportedException("Static fields are not yet supported on user defined types");
             
             CheckHiddenFields(context);
             
