@@ -22,6 +22,7 @@ using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
 using UdonSharp.Compiler.Udon;
+using UdonSharp.Core;
 using UdonSharp.Internal;
 using UdonSharp.Lib.Internal;
 using UdonSharp.Serialization;
@@ -400,11 +401,11 @@ namespace UdonSharp.Compiler
             CompilerUdonInterface.AssemblyCacheInit();
             
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.Setup;
-            var syntaxTrees = compilationContext.LoadSyntaxTreesAndCreateModules(allSourcePaths, scriptingDefines);
+            ModuleBinding[] syntaxTrees = compilationContext.LoadSyntaxTreesAndCreateModules(allSourcePaths, scriptingDefines);
 
             foreach (ModuleBinding binding in syntaxTrees)
             {
-                foreach (var diag in binding.tree.GetDiagnostics())
+                foreach (Diagnostic diag in binding.tree.GetDiagnostics())
                 {
                     if (diag.Severity != Microsoft.CodeAnalysis.DiagnosticSeverity.Error) continue;
                     
@@ -447,7 +448,7 @@ namespace UdonSharp.Compiler
             
             Stopwatch roslynEmitTimer = Stopwatch.StartNew();
             
-            using (var memoryStream = new MemoryStream())
+            using (MemoryStream memoryStream = new MemoryStream())
             {
                 EmitResult emitResult = compilation.Emit(memoryStream);
                 if (emitResult.Success)
@@ -471,7 +472,7 @@ namespace UdonSharp.Compiler
             if (compilationContext.ErrorCount > 0)
                 return;
 
-            foreach (var tree in syntaxTrees)
+            foreach (ModuleBinding tree in syntaxTrees)
                 tree.semanticModel = compilation.GetSemanticModel(tree.tree);
 
             ConcurrentBag<(INamedTypeSymbol, ModuleBinding)> rootUdonSharpTypes = new ConcurrentBag<(INamedTypeSymbol, ModuleBinding)>();
@@ -557,7 +558,7 @@ namespace UdonSharp.Compiler
             int currentIterationDivisor = 2;
             compilationContext.PhaseProgress = 0f;
 
-            var bindSet = symbolsToBind;
+            Dictionary<TypeSymbol, HashSet<Symbol>> bindSet = symbolsToBind;
 
         #if SINGLE_THREAD_BUILD
             foreach (var rootTypeSymbol in bindings)
@@ -573,6 +574,10 @@ namespace UdonSharp.Compiler
                 try
                 {
                     bindContext.Bind();
+                }
+                catch (CompilerException e)
+                {
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, bindContext.CurrentNode, e.Message);
                 }
                 catch (Exception e)
                 {
@@ -614,6 +619,10 @@ namespace UdonSharp.Compiler
                     try
                     {
                         bindContext.Bind();
+                    }
+                    catch (CompilerException e)
+                    {
+                        compilationContext.AddDiagnostic(DiagnosticSeverity.Error, bindContext.CurrentNode, e.Message);
                     }
                     catch (Exception e)
                     {
@@ -686,6 +695,10 @@ namespace UdonSharp.Compiler
                 {
                     moduleEmitContext.Emit();
                 }
+                catch (CompilerException e)
+                {
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, moduleEmitContext.CurrentNode, e.Message);
+                }
                 catch (Exception e)
                 {
                     compilationContext.AddDiagnostic(DiagnosticSeverity.Error, moduleEmitContext.CurrentNode, e.ToString());
@@ -704,7 +717,7 @@ namespace UdonSharp.Compiler
 
                 foreach (FieldSymbol symbol in moduleEmitContext.DeclaredFields)
                 {
-                    if (!symbol.Type.TryGetSystemType(out var symbolSystemType))
+                    if (!symbol.Type.TryGetSystemType(out Type symbolSystemType))
                         Debug.LogError($"Could not get type for field {symbol.Name}");
 
                     fieldDefinitions.Add(symbol.Name, new FieldDefinition(symbol.Name, symbolSystemType, symbol.Type.UdonType.SystemType, symbol.SyncMode, symbol.IsSerialized, symbol.SymbolAttributes.ToList()));
@@ -719,7 +732,7 @@ namespace UdonSharp.Compiler
                     UdonSharpEditorCache.Instance.SetDebugInfo(moduleBinding.programAsset, CurrentJob.CompileOptions.IsEditorBuild ? UdonSharpEditorCache.DebugInfoType.Editor : UdonSharpEditorCache.DebugInfoType.Client, moduleEmitContext.DebugInfo);
 
                 moduleBinding.programAsset.scriptID = typeID;
-                
+
                 try
                 {
                     AssembleProgram(binding, assembly);
