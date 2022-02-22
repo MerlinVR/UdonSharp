@@ -136,18 +136,6 @@ namespace UdonSharp.Serialization
                         {
                             targetObject.Value = backingBehaviour;
                         }
-                        else if (UsbSerializationContext.CurrentPolicy.ChildProxyMode ==
-                                 ProxySerializationPolicy.ChildProxyCreateMode.Create)
-                        {
-                            UdonBehaviour newBehaviour = UdonSharpEditorUtility.ConvertToUdonBehaviours(new[] { sourceObject })[0];
-                            targetObject.Value = newBehaviour;
-                        }
-                        else if (UsbSerializationContext.CurrentPolicy.ChildProxyMode ==
-                                 ProxySerializationPolicy.ChildProxyCreateMode.CreateWithUndo)
-                        {
-                            UdonBehaviour newBehaviour = UdonSharpEditorUtility.ConvertToUdonBehavioursWithUndo(new[] { sourceObject })[0];
-                            targetObject.Value = newBehaviour;
-                        }
                         else
                         {
                             targetObject.Value = null;
