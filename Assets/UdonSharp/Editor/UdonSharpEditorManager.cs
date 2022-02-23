@@ -361,31 +361,30 @@ namespace UdonSharpEditor
 
                         if (references[0] is GameObject gameObject)
                         {
-                            references = gameObject.GetComponents<UdonSharpBehaviour>();
+                            references = gameObject.GetComponents<UdonBehaviour>();
                         }
 
                         foreach (UnityEngine.Object reference in references)
                         {
                             System.Type refType = reference.GetType();
 
-                            if (objType.IsAssignableFrom(reference.GetType()))
+                            if (objType.IsInstanceOfType(reference))
                             {
                                 return reference;
                             }
-                            else if (reference is UdonBehaviour udonBehaviour && UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour))
+                            else if (reference is UdonSharpBehaviour udonBehaviour)
                             {
-                                UdonSharpBehaviour proxy = UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour);
+                                UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(udonBehaviour);
 
-                                if (proxy && objType.IsAssignableFrom(proxy.GetType()))
-                                    return proxy;
+                                if (backingBehaviour)
+                                    return backingBehaviour;
                             }
                         }
                     }
                 }
                 else
                 {
-                    if (objType == typeof(UdonSharpBehaviour) ||
-                        objType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+                    if (objType == typeof(UdonBehaviour))
                     {
                         foreach (UnityEngine.Object reference in references)
                         {
@@ -400,17 +399,17 @@ namespace UdonSharpEditor
                             }
                             else if (reference is GameObject referenceObject)
                             {
-                                UnityEngine.Object foundRef = ValidateObjectReference(referenceObject.GetComponents<UdonSharpBehaviour>(), objType, null);
+                                UnityEngine.Object foundRef = ValidateObjectReference(referenceObject.GetComponents<UdonBehaviour>(), objType, null);
 
                                 if (foundRef)
                                     return foundRef;
                             }
-                            else if (reference is UdonBehaviour referenceBehaviour && UdonSharpEditorUtility.IsUdonSharpBehaviour(referenceBehaviour))
+                            else if (reference is UdonSharpBehaviour udonBehaviour)
                             {
-                                UdonSharpBehaviour proxy = UdonSharpEditorUtility.GetProxyBehaviour(referenceBehaviour);
+                                UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(udonBehaviour);
 
-                                if (proxy && objType.IsAssignableFrom(proxy.GetType()))
-                                    return proxy;
+                                if (backingBehaviour)
+                                    return backingBehaviour;
                             }
                         }
                     }
@@ -427,7 +426,7 @@ namespace UdonSharpEditor
             {
                 if (validator == null)
                 {
-                    if (objType != null && (objType == typeof(UdonSharpBehaviour) || objType.IsSubclassOf(typeof(UdonSharpBehaviour))))
+                    if (objType != null && objType == typeof(UdonBehaviour))
                         validator = validationDelegate;
                     else if (property != null)
                     {
@@ -447,7 +446,7 @@ namespace UdonSharpEditor
 
                             _getFieldInfoFunc(property, out Type fieldType);
 
-                            if (fieldType != null && (fieldType == typeof(UdonSharpBehaviour) || fieldType.IsSubclassOf(typeof(UdonSharpBehaviour))))
+                            if (fieldType != null && fieldType == typeof(UdonBehaviour))
                             {
                                 objType = fieldType;
                                 validator = validationDelegate;
