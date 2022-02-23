@@ -318,10 +318,17 @@ namespace UdonSharpEditor
                 // }
                 
                 // Make title bars report when you are using a U# script
-                var inspectorTitleMethod = typeof(ObjectNames).GetMethod(nameof(ObjectNames.GetInspectorTitle), BindingFlags.Public | BindingFlags.Static);
+                MethodInfo inspectorTitleMethod = typeof(ObjectNames).GetMethod(nameof(ObjectNames.GetInspectorTitle), BindingFlags.Public | BindingFlags.Static);
                 HarmonyMethod inspectorTitleReplacement = new HarmonyMethod(typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.GetInspectorTitleForUdon), BindingFlags.Public | BindingFlags.Static));
 
                 harmony.Patch(inspectorTitleMethod, inspectorTitleReplacement);
+                
+                // Quick addition of handling for when an UdonBehaviour gets destroyed in play mode
+                // todo: add proper handling to SDK
+                MethodInfo udonBehaviourDestroyMethod = typeof(UdonBehaviour).GetMethod(nameof(UdonBehaviour.OnDestroy), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                HarmonyMethod udonBehaviourDestroyPostfix = new HarmonyMethod(typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.UdonBehaviourDestroyCleanup), BindingFlags.Public | BindingFlags.Static));
+
+                harmony.Patch(udonBehaviourDestroyMethod, null, udonBehaviourDestroyPostfix);
             }
         }
 
@@ -542,6 +549,19 @@ namespace UdonSharpEditor
                 }
                 
                 return true;
+            }
+
+            public static void UdonBehaviourDestroyCleanup(UdonBehaviour __instance)
+            {
+                if (!EditorApplication.isPlaying || !UdonSharpEditorUtility.IsUdonSharpBehaviour(__instance))
+                    return;
+
+                UdonSharpBehaviour proxy = UdonSharpEditorUtility.GetProxyBehaviour(__instance);
+
+                if (proxy)
+                {
+                    Object.Destroy(proxy);
+                }
             }
         }
         
