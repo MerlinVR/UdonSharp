@@ -246,7 +246,7 @@ namespace UdonSharpEditor
         /// <summary>
         /// Handles removing the reference to the default UdonBehaviourEditor and injecting our own custom editor UdonBehaviourOverrideEditor
         /// </summary>
-        private static void OverrideUdonBehaviourDrawer() 
+        internal static void OverrideUdonBehaviourDrawer() 
         {
             Type editorAttributesClass = typeof(Editor).Assembly.GetType("UnityEditor.CustomEditorAttributes");
             
