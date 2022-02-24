@@ -549,7 +549,7 @@ namespace UdonSharp.Compiler
 
                 if (!ReferenceEquals(module.programAsset, null) && udonSharpBehaviourDeclaration == null)
                 {
-                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, tree.GetRoot(), "Script with U# program asset referencing it must have an UdonSharpBehaviour definition");
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, tree.GetRoot(), "Script with U# program asset referencing it must have an UdonSharpBehaviour definition; scripts without UdonSharpBehaviour definitions should not have an associated UdonSharpProgramAsset");
                     return;
                 }
 
