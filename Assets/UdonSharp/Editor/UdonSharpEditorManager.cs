@@ -677,6 +677,9 @@ namespace UdonSharpEditor
                     return;
                 }
                 
+                UdonSharpProgramAsset.CompileAllCsPrograms();
+                UdonSharpCompilerV1.WaitForCompile();
+                
                 if (UdonSharpProgramAsset.AnyUdonSharpScriptHasError())
                 {
                     // Give chance to compile and resolve errors in case they are fixed already
