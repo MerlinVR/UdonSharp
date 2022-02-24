@@ -8,25 +8,21 @@ namespace UdonSharpEditor
     {
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
-            // bool importedUdonSharpAsset = false;
-            
             foreach (string importedAssetPath in importedAssets)
             {
                 UdonSharpProgramAsset importedAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(importedAssetPath);
 
-                if (importedAsset != null)
+                if (importedAsset && (importedAsset.CompiledVersion < UdonSharpProgramVersion.CurrentVersion || importedAsset.ScriptVersion < UdonSharpProgramVersion.CurrentVersion))
                 {
-                    // importedUdonSharpAsset = true;
                     UdonSharpUpgrader.QueueUpgrade(importedAsset);
-                    
                     UdonSharpEditorCache.Instance.QueueUpgradePass();
                 }
+
+                if (importedAsset)
+                {
+                    UdonSharpProgramAsset.ClearProgramAssetCache();
+                }
             }
-
-            UdonSharpProgramAsset.ClearProgramAssetCache();
-
-            // if (importedUdonSharpAsset)
-            //     UdonSharpEditorManager.QueueScriptCompile();
         }
     }
 }
