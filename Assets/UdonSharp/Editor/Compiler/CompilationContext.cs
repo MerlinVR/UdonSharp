@@ -13,6 +13,7 @@ using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Symbols;
 using UdonSharp.Compiler.Udon;
 using UdonSharpEditor;
+using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
 
@@ -35,6 +36,8 @@ namespace UdonSharp.Compiler
         public SemanticModel semanticModel; // Populated after Roslyn compile
         public AssemblyModule assemblyModule;
         public UdonSharpProgramAsset programAsset;
+        public Type programClass;
+        public MonoScript programScript;
         public BindContext binding;
         public string assembly;
     }

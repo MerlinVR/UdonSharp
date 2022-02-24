@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -242,6 +243,15 @@ namespace UdonSharp.Compiler
             WaitForCompile();
         }
 
+        /// <summary>
+        /// Info that we need to pass from the main thread because the Unity APIs to access the info don't work off the main thread.
+        /// </summary>
+        private class ProgramAssetInfo
+        {
+            public UdonSharpProgramAsset programAsset;
+            public Type scriptClass;
+        }
+
         [PublicAPI]
         public static void Compile(UdonSharpCompileOptions options = null)
         {
@@ -269,7 +279,7 @@ namespace UdonSharp.Compiler
             
             Localization.Loc.InitLocalization();
 
-            var allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
+            UdonSharpProgramAsset[] allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
 
             if (!ValidateProgramAssetCollisions(allPrograms))
                 return;
@@ -277,8 +287,8 @@ namespace UdonSharp.Compiler
             // if (!ValidateScriptClasses(allPrograms))
             //     return;
             
-            var rootProgramLookup = new Dictionary<string, UdonSharpProgramAsset>();
-            foreach (var udonSharpProgram in allPrograms)
+            Dictionary<string, ProgramAssetInfo> rootProgramLookup = new Dictionary<string, ProgramAssetInfo>();
+            foreach (UdonSharpProgramAsset udonSharpProgram in allPrograms)
             {
                 if (udonSharpProgram.sourceCsScript == null)
                 {
@@ -294,7 +304,7 @@ namespace UdonSharp.Compiler
                     continue;
                 }
                 
-                rootProgramLookup.Add(assetPath.Replace('\\', '/'), udonSharpProgram);
+                rootProgramLookup.Add(assetPath.Replace('\\', '/'), new ProgramAssetInfo() { programAsset = udonSharpProgram, scriptClass = udonSharpProgram == null ? null : udonSharpProgram.GetClass() });
             }
             
             // var allSourcePaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Where(e => e.isV1Root).Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
@@ -308,7 +318,7 @@ namespace UdonSharp.Compiler
 
             EditorApplication.LockReloadAssemblies();
 
-            var compileTask = new Task(() => Compile(compilationContext, rootProgramLookup, allSourcePaths, defines));
+            Task compileTask = new Task(() => Compile(compilationContext, rootProgramLookup, allSourcePaths, defines));
             CurrentJob = new CompileJob() { Context = compilationContext, Task = compileTask, CompileTimer = Stopwatch.StartNew(), CompileOptions = options };
             
             compileTask.Start();
@@ -393,7 +403,8 @@ namespace UdonSharp.Compiler
             return succeeded;
         }
 
-        private static void Compile(CompilationContext compilationContext, Dictionary<string, UdonSharpProgramAsset> rootProgramLookup, IEnumerable<string> allSourcePaths, string[] scriptingDefines)
+        [SuppressMessage("ReSharper", "MergeConditionalExpression")]
+        private static void Compile(CompilationContext compilationContext, IReadOnlyDictionary<string, ProgramAssetInfo> rootProgramLookup, IEnumerable<string> allSourcePaths, string[] scriptingDefines)
         {
             Stopwatch setupTimer = Stopwatch.StartNew();
             
@@ -422,8 +433,14 @@ namespace UdonSharp.Compiler
             {
                 if (rootProgramLookup.ContainsKey(treeBinding.filePath))
                 {
+                    ProgramAssetInfo info = rootProgramLookup[treeBinding.filePath];
+                    // Do not flatten, these check for destroy so we can do ReferenceEquals on thread and avoid Unity potentially complaining
+                    treeBinding.programAsset = info.programAsset != null ? info.programAsset : null;
+                    treeBinding.programClass = info.scriptClass != null ? info.scriptClass : null;
+                    // ReSharper disable once Unity.NoNullPropagation
+                    treeBinding.programScript = treeBinding?.programAsset?.sourceCsScript != null ? treeBinding.programAsset.sourceCsScript : null;
+                    
                     rootTrees.Add(treeBinding);
-                    treeBinding.programAsset = rootProgramLookup[treeBinding.filePath];
                 }
             }
             
@@ -476,11 +493,15 @@ namespace UdonSharp.Compiler
                 tree.semanticModel = compilation.GetSemanticModel(tree.tree);
 
             ConcurrentBag<(INamedTypeSymbol, ModuleBinding)> rootUdonSharpTypes = new ConcurrentBag<(INamedTypeSymbol, ModuleBinding)>();
+            HashSet<INamedTypeSymbol> typesWithAssociatedProgramAssets = new HashSet<INamedTypeSymbol>();
+            object programTypesLock = new object();
 
             Parallel.ForEach(rootTrees, new ParallelOptions { MaxDegreeOfParallelism = MAX_PARALLELISM}, module =>
             {
                 SemanticModel model = module.semanticModel;
                 SyntaxTree tree = model.SyntaxTree;
+
+                INamedTypeSymbol udonSharpBehaviourDeclaration = null;
 
                 foreach (ClassDeclarationSyntax classDecl in tree.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>())
                 {
@@ -492,14 +513,14 @@ namespace UdonSharp.Compiler
                             return;
                         }
 
-                        // if (module.programAsset.sourceCsScript != null &&
-                        //     module.programAsset.sourceCsScript.GetClass() == null)
-                        // {
-                        //     compilationContext.AddDiagnostic(DiagnosticSeverity.Error, classType.DeclaringSyntaxReferences.First().GetSyntax(), "Could not retrieve C# class, make sure the MonoBehaviour class name matches the name of the .cs file and Unity has had a chance to compile the C# script.");
-                        //     return;
-                        // }
+                        if (!ReferenceEquals(module.programScript, null) &&
+                            ReferenceEquals(module.programClass, null))
+                        {
+                            compilationContext.AddDiagnostic(DiagnosticSeverity.Error, classType.DeclaringSyntaxReferences.First().GetSyntax(), "Could not retrieve C# class, make sure the MonoBehaviour class name matches the name of the .cs file and Unity has had a chance to compile the C# script.");
+                            return;
+                        }
                         
-                        if (module.programAsset != null && classType.Name == Path.GetFileNameWithoutExtension(module.filePath))
+                        if (!ReferenceEquals(module.programAsset, null) && classType.Name == Path.GetFileNameWithoutExtension(module.filePath))
                         {
                             if (classType.IsAbstract)
                             {
@@ -516,8 +537,36 @@ namespace UdonSharp.Compiler
                         
                         if (classType.IsAbstract || classType.IsGenericType)
                             continue;
-                        
-                        rootUdonSharpTypes.Add((classType, module));
+
+                        // If there are multiple UdonSharpBehaviours declared in the same behaviour, they need to be partial classes of the same class
+                        // We'll skip adding them as roots in that case
+                        if (udonSharpBehaviourDeclaration == null)
+                        {
+                            udonSharpBehaviourDeclaration = classType;
+                            rootUdonSharpTypes.Add((classType, module));
+                        }
+                    }
+                }
+
+                if (!ReferenceEquals(module.programAsset, null) && udonSharpBehaviourDeclaration == null)
+                {
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, tree.GetRoot(), "Script with U# program asset referencing it must have an UdonSharpBehaviour definition");
+                    return;
+                }
+
+                // Allow multiple partial classes of the same UdonSharpBehaviour type in one file, but still check if people have multiple of the partial class with program assets associated
+                if (udonSharpBehaviourDeclaration?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() is ClassDeclarationSyntax declarationSyntax && 
+                    declarationSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
+                {
+                    lock (programTypesLock)
+                    {
+                        if (typesWithAssociatedProgramAssets.Contains(udonSharpBehaviourDeclaration))
+                        {
+                            compilationContext.AddDiagnostic(DiagnosticSeverity.Error, udonSharpBehaviourDeclaration.DeclaringSyntaxReferences.First().GetSyntax(), "Partial U# behaviours cannot have multiple program assets, choose 1 primary program asset for partial U# behaviours");
+                            return;
+                        }
+
+                        typesWithAssociatedProgramAssets.Add(udonSharpBehaviourDeclaration);
                     }
                 }
             });
