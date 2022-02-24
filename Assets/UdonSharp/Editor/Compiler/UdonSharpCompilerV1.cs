@@ -30,7 +30,6 @@ using UdonSharp.Serialization;
 using UdonSharpEditor;
 using UnityEditor;
 using VRC.Udon.Common.Interfaces;
-using Debug = UnityEngine.Debug;
 
 namespace UdonSharp.Compiler
 {
@@ -149,13 +148,13 @@ namespace UdonSharp.Compiler
             
             if (CurrentJob.Task.IsFaulted)
             {
-                Debug.LogError("[<color=#FF00FF>UdonSharp</color>] internal compiler error, dumping exceptions. Please report to Merlin");
+                UdonSharpUtils.LogError("internal compiler error, dumping exceptions. Please report to Merlin");
 
                 if (CurrentJob.Task.Exception != null)
                 {
-                    foreach (var innerException in CurrentJob.Task.Exception.InnerExceptions)
+                    foreach (Exception innerException in CurrentJob.Task.Exception.InnerExceptions)
                     {
-                        Debug.LogError(innerException);
+                        UdonSharpUtils.LogError(innerException);
                     }
                 }
 
@@ -767,7 +766,7 @@ namespace UdonSharp.Compiler
                 foreach (FieldSymbol symbol in moduleEmitContext.DeclaredFields)
                 {
                     if (!symbol.Type.TryGetSystemType(out Type symbolSystemType))
-                        Debug.LogError($"Could not get type for field {symbol.Name}");
+                        UdonSharpUtils.LogError($"Could not get type for field {symbol.Name}");
 
                     fieldDefinitions.Add(symbol.Name, new FieldDefinition(symbol.Name, symbolSystemType, symbol.Type.UdonType.SystemType, symbol.SyncMode, symbol.IsSerialized, symbol.SymbolAttributes.ToList()));
                 }
