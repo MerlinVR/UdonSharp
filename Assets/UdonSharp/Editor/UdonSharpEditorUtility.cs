@@ -527,11 +527,11 @@ namespace UdonSharpEditor
                 SetSceneBehaviourUpgraded(udonBehaviour);
 
                 if (needsPrefabInstanceUpgrade)
-                    UdonSharpUtils.Log($"Scene behaviour {udonBehaviour.name} needed UnityEngine.Object upgrade pass", udonBehaviour);
+                    UdonSharpUtils.Log($"Scene behaviour '{udonBehaviour.name}' needed UnityEngine.Object upgrade pass", udonBehaviour);
 
                 UdonSharpUtils.SetDirty(proxy);
                 
-                UdonSharpUtils.Log($"Upgraded scene behaviour {udonBehaviour.name}", udonBehaviour);
+                UdonSharpUtils.Log($"Upgraded scene behaviour '{udonBehaviour.name}'", udonBehaviour);
             }
         }
 

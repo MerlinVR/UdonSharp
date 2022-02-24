@@ -656,15 +656,38 @@ namespace UdonSharpEditor
             UpgradeAssetsIfNeeded();
         }
 
+        // Rely on assembly reload to clear this since it indicates the user needs to change a script
+        private static bool _upgradeDeferredByScriptError;
+
         private static void UpgradeAssetsIfNeeded()
         {
             if (UdonSharpEditorCache.Instance.Info.projectNeedsUpgrade && 
-                !EditorApplication.isCompiling && !EditorApplication.isUpdating)
+                !EditorApplication.isCompiling && !EditorApplication.isUpdating && !_upgradeDeferredByScriptError)
             {
                 if (UdonSharpUpgrader.UpgradeScripts())
                 {
                     UdonSharpUtils.LogWarning("Needed to update scripts, deferring asset update.");
                     return;
+                }
+
+                if (UdonSharpUtils.DoesUnityProjectHaveCompileErrors())
+                {
+                    UdonSharpUtils.LogWarning("C# scripts have compile errors, prefab upgrade deferred until script errors are resolved.");
+                    _upgradeDeferredByScriptError = true;
+                    return;
+                }
+                
+                if (UdonSharpProgramAsset.AnyUdonSharpScriptHasError())
+                {
+                    // Give chance to compile and resolve errors in case they are fixed already
+                    UdonSharpCompilerV1.CompileSync();
+                    
+                    if (UdonSharpProgramAsset.AnyUdonSharpScriptHasError())
+                    {
+                        UdonSharpUtils.LogWarning("U# scripts have compile errors, prefab upgrade deferred until script errors are resolved.");
+                        _upgradeDeferredByScriptError = true;
+                        return;
+                    }
                 }
 
                 try
@@ -1376,13 +1399,8 @@ namespace UdonSharpEditor
             if (UdonSharpUpgrader.UpgradeScripts())
                 return true;
 
-            var udonBehaviours = GetAllUdonBehaviours();
-            
-            // UpgradePrefabs(CollectAllReferencedPrefabRoots(udonBehaviours));
-            // UpgradePrefabs(CollectScenePrefabRoots(udonBehaviours));
-            
             UpgradeAssetsIfNeeded();
-            UdonSharpEditorUtility.UpgradeSceneBehaviours(udonBehaviours);
+            UdonSharpEditorUtility.UpgradeSceneBehaviours(GetAllUdonBehaviours());
 
             return false;
         }
@@ -1521,7 +1539,7 @@ namespace UdonSharpEditor
                 List<(GameObject, GameObject, string)> prefabsToSave = new List<(GameObject, GameObject, string)>();
                 
                 // First pass over all prefabs referenced by scene objects
-                foreach (var prefabRoot in prefabRoots)
+                foreach (GameObject prefabRoot in prefabRoots)
                 {
                     if (!prefabRoot.GetComponentInChildren<UdonSharpBehaviour>(true))
                         continue;
