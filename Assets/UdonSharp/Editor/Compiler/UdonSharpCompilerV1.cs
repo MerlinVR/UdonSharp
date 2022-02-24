@@ -262,12 +262,6 @@ namespace UdonSharp.Compiler
                 UdonSharpUtils.LogError("All Unity C# compiler errors must be resolved before running an UdonSharp compile.");
                 return;
             }
-
-            if (EditorApplication.isCompiling)
-            {
-                UdonSharpUtils.LogError("Cannot start a UdonSharp compile while Unity is compiling, wait for Unity to finish compiling before initiating a U# compile.");
-                return;
-            }
             
             if (CurrentJob != null)
             {
