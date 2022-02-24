@@ -446,7 +446,15 @@ namespace UdonSharpEditor
 
                 if (GetProxyBehaviour(udonBehaviour) == null)
                 {
-                    UdonSharpBehaviour newProxy = (UdonSharpBehaviour)udonBehaviour.gameObject.AddComponent(GetUdonSharpBehaviourType(udonBehaviour));
+                    Type udonSharpBehaviourType = GetUdonSharpBehaviourType(udonBehaviour);
+
+                    if (!udonSharpBehaviourType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+                    {
+                        UdonSharpUtils.LogError($"Class script referenced by program asset '{udonBehaviour.programSource}' is not an UdonSharpBehaviour", udonBehaviour.programSource);
+                        continue;
+                    }
+                    
+                    UdonSharpBehaviour newProxy = (UdonSharpBehaviour)udonBehaviour.gameObject.AddComponent(udonSharpBehaviourType);
                     newProxy.enabled = udonBehaviour.enabled;
 
                     SetBackingUdonBehaviour(newProxy, udonBehaviour);
@@ -502,6 +510,12 @@ namespace UdonSharpEditor
                 }
                 
                 UdonSharpBehaviour proxy = GetProxyBehaviour(udonBehaviour);
+
+                if (proxy == null)
+                {
+                    UdonSharpUtils.LogWarning($"UdonSharpBehaviour '{udonBehaviour}' could not be upgraded since it is missing a proxy", udonBehaviour);
+                    continue;
+                }
                 
                 CopyUdonToProxy(proxy, ProxySerializationPolicy.RootOnly);
 
