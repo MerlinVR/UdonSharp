@@ -446,6 +446,13 @@ namespace UdonSharpEditor
 
                 if (GetProxyBehaviour(udonBehaviour) == null)
                 {
+                    if (PrefabUtility.IsPartOfPrefabInstance(udonBehaviour) &&
+                        PrefabUtility.GetCorrespondingObjectFromSource(udonBehaviour) != udonBehaviour)
+                    {
+                        UdonSharpUtils.LogError($"Cannot upgrade scene behaviour '{udonBehaviour}' since its prefab must be upgraded.", udonBehaviour);
+                        continue;
+                    }
+                    
                     Type udonSharpBehaviourType = GetUdonSharpBehaviourType(udonBehaviour);
 
                     if (!udonSharpBehaviourType.IsSubclassOf(typeof(UdonSharpBehaviour)))
@@ -483,6 +490,7 @@ namespace UdonSharpEditor
                 
                 bool needsPrefabInstanceUpgrade = false;
 
+                // Checks if the version is below V1 or if it needs the prefab instance upgrade
                 UdonSharpBehaviourVersion behaviourVersion = GetBehaviourVersion(udonBehaviour);
                 if (behaviourVersion >= UdonSharpBehaviourVersion.V1)
                 {
