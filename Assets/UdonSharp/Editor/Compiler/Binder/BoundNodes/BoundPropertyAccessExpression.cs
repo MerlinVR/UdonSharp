@@ -83,7 +83,8 @@ namespace UdonSharp.Compiler.Binder
 
         public override Value EmitValue(EmitContext context)
         {
-            BoundInvocationExpression invocationExpression = BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode, Property.GetMethod,
+            BoundInvocationExpression invocationExpression = BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode, 
+                Property.GetMethod,
                 GetInstanceExpression(context), GetParameters(context));
 
             if (_isBaseCall)
@@ -94,9 +95,11 @@ namespace UdonSharp.Compiler.Binder
 
         public override Value EmitSet(EmitContext context, BoundExpression valueExpression)
         {
+            BoundExpression instanceValue = GetInstanceExpression(context);
+            
             BoundInvocationExpression invocationExpression = BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode,
                 Property.SetMethod,
-                GetInstanceExpression(context), GetParameters(context, valueExpression));
+                instanceValue, GetParameters(context, valueExpression));
             
             if (_isBaseCall)
                 invocationExpression.MarkForcedBaseCall();
@@ -107,6 +110,13 @@ namespace UdonSharp.Compiler.Binder
             
             if (resultVal == null)
                 throw new NullReferenceException();
+            
+            if (instanceValue != null &&
+                SourceExpression.ValueType.IsValueType &&
+                SourceExpression is BoundArrayAccessExpression sourceAccessExpression)
+            {
+                context.EmitSet(sourceAccessExpression, instanceValue);
+            }
             
             return resultVal;
         }
