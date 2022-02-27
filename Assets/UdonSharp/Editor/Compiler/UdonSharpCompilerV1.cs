@@ -297,7 +297,7 @@ namespace UdonSharp.Compiler
                     continue;
                 }
                 
-                rootProgramLookup.Add(assetPath.Replace('\\', '/'), new ProgramAssetInfo() { programAsset = udonSharpProgram, scriptClass = udonSharpProgram == null ? null : udonSharpProgram.GetClass() });
+                rootProgramLookup.Add(assetPath.Replace('\\', '/'), new ProgramAssetInfo() { programAsset = udonSharpProgram ? udonSharpProgram : null, scriptClass = udonSharpProgram != null ? udonSharpProgram.GetClass() : null });
             }
             
             // var allSourcePaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Where(e => e.isV1Root).Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
@@ -396,7 +396,6 @@ namespace UdonSharp.Compiler
             return succeeded;
         }
 
-        [SuppressMessage("ReSharper", "MergeConditionalExpression")]
         private static void Compile(CompilationContext compilationContext, IReadOnlyDictionary<string, ProgramAssetInfo> rootProgramLookup, IEnumerable<string> allSourcePaths, string[] scriptingDefines)
         {
             Stopwatch setupTimer = Stopwatch.StartNew();
@@ -427,11 +426,10 @@ namespace UdonSharp.Compiler
                 if (rootProgramLookup.ContainsKey(treeBinding.filePath))
                 {
                     ProgramAssetInfo info = rootProgramLookup[treeBinding.filePath];
-                    // Do not flatten, these check for destroy so we can do ReferenceEquals on thread and avoid Unity potentially complaining
-                    treeBinding.programAsset = info.programAsset != null ? info.programAsset : null;
-                    treeBinding.programClass = info.scriptClass != null ? info.scriptClass : null;
+                    treeBinding.programAsset = info.programAsset;
+                    treeBinding.programClass = info.scriptClass;
                     // ReSharper disable once Unity.NoNullPropagation
-                    treeBinding.programScript = treeBinding?.programAsset?.sourceCsScript != null ? treeBinding.programAsset.sourceCsScript : null;
+                    treeBinding.programScript = treeBinding?.programAsset?.sourceCsScript;
                     
                     rootTrees.Add(treeBinding);
                 }

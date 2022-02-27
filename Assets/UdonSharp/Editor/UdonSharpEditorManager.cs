@@ -1130,7 +1130,7 @@ namespace UdonSharpEditor
                     {
                         UdonSharpBehaviour proxy = UdonSharpEditorUtility.GetProxyBehaviour(behaviour);
 
-                        if (proxy == null) 
+                        if (proxy == null)
                             continue;
                         
                         UdonSharpProgramAsset programAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset(proxy);
