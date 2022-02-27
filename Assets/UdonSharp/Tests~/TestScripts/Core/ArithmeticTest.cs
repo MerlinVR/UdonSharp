@@ -31,6 +31,7 @@ namespace UdonSharp.Tests
             StringAddition();
             DecimalOps();
             BitwiseNot();
+            UdonBehaviourFieldCompoundAssignment();
         }
 
         void IntBinaryOps()
@@ -415,6 +416,22 @@ namespace UdonSharp.Tests
 
             tester.TestAssertion("Long bitwise NOT 1", lb == -0x1111111111111112);
             tester.TestAssertion("Long bitwise NOT 2", ~lb == la);
+        }
+
+        private float _testFloat = 2;
+        private Vector3 _testVec = new Vector3(1, 2, 3);
+        
+        void UdonBehaviourFieldCompoundAssignment()
+        {
+            ArithmeticTest self = this;
+
+            self._testFloat += 2f;
+            
+            tester.TestAssertion("Field compound assignment", _testFloat == 4);
+
+            self._testVec.x += 3;
+            
+            tester.TestAssertion("Field struct compound assignment", _testVec.x == 4);
         }
     }
 }

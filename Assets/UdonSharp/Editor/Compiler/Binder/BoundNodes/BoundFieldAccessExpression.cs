@@ -80,7 +80,7 @@ namespace UdonSharp.Compiler.Binder
                 if (sourceValue != null)
                 {
                     if (SourceExpression.ValueType.IsValueType &&
-                        SourceExpression is BoundArrayAccessExpression sourceAccessExpression)
+                        SourceExpression is BoundAccessExpression sourceAccessExpression)
                         context.EmitSet(sourceAccessExpression, BindAccess(sourceValue.Value));
                 }
 
