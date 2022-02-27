@@ -3,7 +3,7 @@ using System;
 
 namespace UdonSharp.Serialization
 {
-    public class UnityObjectSerializer<T> : Serializer<T> where T : UnityEngine.Object
+    internal class UnityObjectSerializer<T> : Serializer<T> where T : UnityEngine.Object
     {
         public UnityObjectSerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)

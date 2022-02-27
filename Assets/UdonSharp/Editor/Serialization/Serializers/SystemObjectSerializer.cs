@@ -1,12 +1,11 @@
 ﻿
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace UdonSharp.Serialization
 {
-    public class SystemObjectSerializer : Serializer<object>
+    internal class SystemObjectSerializer : Serializer<object>
     {
         private static ConcurrentDictionary<Type, ConcurrentStack<IValueStorage>> _objectValueStorageStack =
             new ConcurrentDictionary<Type, ConcurrentStack<IValueStorage>>();

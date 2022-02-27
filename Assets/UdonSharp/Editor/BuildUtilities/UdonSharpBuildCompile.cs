@@ -1,9 +1,9 @@
 ﻿
+using UdonSharp;
 using UdonSharp.Compiler;
-using UdonSharpEditor;
 using VRC.SDKBase.Editor.BuildPipeline;
 
-namespace UdonSharp
+namespace UdonSharpEditor
 {
     internal class UdonSharpBuildCompile : IVRCSDKBuildRequestedCallback
     {

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace UdonSharp.Serialization
 {
-    public class ArraySerializer<T> : Serializer<T[]>
+    internal class ArraySerializer<T> : Serializer<T[]>
     {
         private Serializer<T> elementSerializer;
 

@@ -3,7 +3,7 @@ using VRC.Udon;
 
 namespace UdonSharp.Serialization
 {
-    public class UdonSharpBaseBehaviourSerializer : Serializer<UdonSharpBehaviour>
+    internal class UdonSharpBaseBehaviourSerializer : Serializer<UdonSharpBehaviour>
     {
         public UdonSharpBaseBehaviourSerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)

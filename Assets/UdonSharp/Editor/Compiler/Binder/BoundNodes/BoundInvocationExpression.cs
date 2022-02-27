@@ -404,7 +404,7 @@ namespace UdonSharp.Compiler.Binder
                     parameterExpressions);
             }
 
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         protected override void ReleaseCowValuesImpl(EmitContext context)

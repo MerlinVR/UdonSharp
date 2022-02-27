@@ -1,7 +1,6 @@
 ﻿
 using UdonSharp;
 using UnityEditor;
-using UnityEngine;
 using VRC.SDKBase.Editor.BuildPipeline;
 
 namespace UdonSharpEditor

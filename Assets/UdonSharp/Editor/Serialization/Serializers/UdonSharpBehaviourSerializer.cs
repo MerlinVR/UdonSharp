@@ -24,7 +24,7 @@ namespace UdonSharp.Serialization
         public static bool UseHeapSerialization => CollectDependencies || (CurrentPolicy?.IsPreBuildSerialize ?? false);
     }
 
-    public class UdonSharpBehaviourSerializer : Serializer<UdonSharpBehaviour>
+    internal class UdonSharpBehaviourSerializer : Serializer<UdonSharpBehaviour>
     {
         public UdonSharpBehaviourSerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)

@@ -199,7 +199,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
         }
     }
     
-    public static class UdonSharpSettingsProvider
+    internal static class UdonSharpSettingsProvider
     {
         private static readonly GUIContent _autoCompileLabel = new GUIContent("Auto compile on modify", "Trigger a compile whenever a U# source file is modified.");
         private static readonly GUIContent _waitForFocusLabel = new GUIContent("Compile on focus", "Waits for application focus to compile any changed U# scripts");

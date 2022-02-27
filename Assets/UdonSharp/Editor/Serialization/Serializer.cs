@@ -47,7 +47,7 @@ namespace UdonSharp.Serialization
 
         public static Serializer<T> CreatePooled<T>()
         {
-            var val = CreatePooled(typeof(T));
+            Serializer val = CreatePooled(typeof(T));
 
             return (Serializer<T>)val;
         }

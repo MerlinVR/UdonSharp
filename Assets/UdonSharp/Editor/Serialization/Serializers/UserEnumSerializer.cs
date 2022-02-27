@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace UdonSharp.Serialization
 {
-    public class UserEnumSerializer<T> : Serializer<T>
+    internal class UserEnumSerializer<T> : Serializer<T>
     {
         public UserEnumSerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)

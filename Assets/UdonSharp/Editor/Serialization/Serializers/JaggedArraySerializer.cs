@@ -4,7 +4,7 @@ using System.Runtime.Serialization;
 
 namespace UdonSharp.Serialization
 {
-    public class JaggedArraySerializer<T> : Serializer<T>
+    internal class JaggedArraySerializer<T> : Serializer<T>
     {
         private Serializer rootArraySerializer;
 
