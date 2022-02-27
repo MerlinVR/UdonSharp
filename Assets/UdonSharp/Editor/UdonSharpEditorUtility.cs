@@ -788,15 +788,7 @@ namespace UdonSharpEditor
         private static UdonSharpBehaviour GetProxyBehaviour_Internal(UdonBehaviour udonBehaviour)
         {
             if (udonBehaviour == null)
-                throw new ArgumentNullException("Source Udon Behaviour cannot be null");
-
-            if (udonBehaviour.programSource == null)
-                throw new ArgumentNullException("Program source on UdonBehaviour cannot be null");
-
-            UdonSharpProgramAsset udonSharpProgram = udonBehaviour.programSource as UdonSharpProgramAsset;
-
-            if (udonSharpProgram == null)
-                throw new ArgumentException("UdonBehaviour must be using an UdonSharp program");
+                throw new ArgumentNullException(nameof(udonBehaviour));
 
             UdonSharpBehaviour proxyBehaviour = FindProxyBehaviour_Internal(udonBehaviour);
             

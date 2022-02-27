@@ -1098,7 +1098,10 @@ namespace UdonSharpEditor
                 new Dictionary<AbstractSerializedUdonProgramAsset, UdonSharpProgramAsset>();
 
             foreach (UdonSharpProgramAsset programAsset in UdonSharpProgramAsset.GetAllUdonSharpPrograms())
-                udonSharpProgramAssetLookup.Add(programAsset.SerializedProgramAsset, programAsset);
+            {
+                if (programAsset.SerializedProgramAsset)
+                    udonSharpProgramAssetLookup.Add(programAsset.SerializedProgramAsset, programAsset);
+            }
 
             foreach (UdonBehaviour behaviour in udonBehaviours)
             {
@@ -1118,16 +1121,35 @@ namespace UdonSharpEditor
                     {
                         serializedBehaviour.FindProperty(nameof(UdonBehaviour.programSource)).objectReferenceValue = foundProgramAsset;
                         serializedBehaviour.ApplyModifiedPropertiesWithoutUndo();
+                
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
                         
                         UdonSharpUtils.LogWarning($"Repaired reference to {foundProgramAsset} on {behaviour}");
+                    }
+                    else
+                    {
+                        UdonSharpBehaviour proxy = UdonSharpEditorUtility.GetProxyBehaviour(behaviour);
+
+                        if (proxy == null) 
+                            continue;
+                        
+                        UdonSharpProgramAsset programAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset(proxy);
+
+                        if (programAsset == null)
+                            continue;
+                        
+                        serializedBehaviour.FindProperty(nameof(UdonBehaviour.programSource)).objectReferenceValue = programAsset;
+                        serializedBehaviour.ApplyModifiedPropertiesWithoutUndo();
+
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+
+                        UdonSharpUtils.LogWarning($"Repaired reference to {programAsset} on {behaviour} using proxy reference");
                     }
                 }
                 else
                 {
                     UdonSharpUtils.LogWarning($"Empty UdonBehaviour found on {behaviour.gameObject}", behaviour);
                 }
-                
-                PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
             }
         }
 
