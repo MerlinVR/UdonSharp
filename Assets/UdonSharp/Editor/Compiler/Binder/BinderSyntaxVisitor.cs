@@ -85,7 +85,7 @@ namespace UdonSharp.Compiler.Binder
                     if (lhsExpression == null && !nodeSymbol.IsStatic)
                         lhsExpression = BoundAccessExpression.BindThisAccess(OwningSymbol.ContainingType);
                     
-                    var access = BoundAccessExpression.BindAccess(Context, node, nodeSymbol, lhsExpression);
+                    BoundAccessExpression access = BoundAccessExpression.BindAccess(Context, node, nodeSymbol, lhsExpression);
                     if (accessExpressionSyntax.Expression.Kind() == SyntaxKind.BaseExpression)
                         access.MarkForcedBaseCall();
 

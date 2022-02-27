@@ -279,7 +279,7 @@ namespace UdonSharp.Compiler.Emit
 
         public Value GetReturnValue(TypeSymbol type)
         {
-            var assignmentTarget = _assignmentScopes.Count > 0 ? _assignmentScopes.Peek().TargetValue : null;
+            Value assignmentTarget = _assignmentScopes.Count > 0 ? _assignmentScopes.Peek().TargetValue : null;
 
             if (assignmentTarget != null && IsTriviallyAssignableTo(type, assignmentTarget.UserType))
                 return assignmentTarget;
@@ -700,12 +700,7 @@ namespace UdonSharp.Compiler.Emit
 
         private IDisposable OpenAssignmentScope(Value assignmentTarget)
         {
-            AssignmentScope scope;
-
-            if (_assignmentScopeCache.Count > 0)
-                scope = _assignmentScopeCache.Pop();
-            else
-                scope = new AssignmentScope(this);
+            AssignmentScope scope = _assignmentScopeCache.Count > 0 ? _assignmentScopeCache.Pop() : new AssignmentScope(this);
 
             scope.TargetValue = assignmentTarget;
             _assignmentScopes.Push(scope);
@@ -960,7 +955,7 @@ namespace UdonSharp.Compiler.Emit
             UpdateNode(expression);
             
             EnterCowScope();
-            var expressionVal = expression.EmitValue(this);
+            Value expressionVal = expression.EmitValue(this);
             ExitCowScope();
 
             return expressionVal;
@@ -1006,7 +1001,7 @@ namespace UdonSharp.Compiler.Emit
             
             foreach (var valueMap in valuesMap)
             {
-                foreach (var value in valueMap.Value)
+                foreach (Value.CowValue value in valueMap.Value)
                 {
                     value.Dispose();
                 }

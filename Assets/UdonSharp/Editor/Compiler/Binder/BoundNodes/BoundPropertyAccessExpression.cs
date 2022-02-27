@@ -52,7 +52,7 @@ namespace UdonSharp.Compiler.Binder
                     context.RegisterCowValues(propertyParams, this, "propertyParams");
                 }
 
-                var expressions = new List<BoundExpression>();
+                List<BoundExpression> expressions = new List<BoundExpression>();
                 expressions.AddRange(propertyParams.Select(BindAccess));
                 if (valueExpression != null)
                     expressions.Add(valueExpression);
@@ -83,7 +83,7 @@ namespace UdonSharp.Compiler.Binder
 
         public override Value EmitValue(EmitContext context)
         {
-            var invocationExpression = BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode, Property.GetMethod,
+            BoundInvocationExpression invocationExpression = BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode, Property.GetMethod,
                 GetInstanceExpression(context), GetParameters(context));
 
             if (_isBaseCall)
@@ -94,7 +94,7 @@ namespace UdonSharp.Compiler.Binder
 
         public override Value EmitSet(EmitContext context, BoundExpression valueExpression)
         {
-            var invocationExpression = BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode,
+            BoundInvocationExpression invocationExpression = BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode,
                 Property.SetMethod,
                 GetInstanceExpression(context), GetParameters(context, valueExpression));
             
@@ -103,7 +103,7 @@ namespace UdonSharp.Compiler.Binder
             
             invocationExpression.MarkPropertySetter();
 
-            var resultVal = context.EmitValue(invocationExpression);
+            Value resultVal = context.EmitValue(invocationExpression);
             
             if (resultVal == null)
                 throw new NullReferenceException();
