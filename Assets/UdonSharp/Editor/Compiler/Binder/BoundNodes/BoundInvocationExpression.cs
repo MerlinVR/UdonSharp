@@ -345,7 +345,7 @@ namespace UdonSharp.Compiler.Binder
                     symbol.ContainingType == context.GetTypeSymbol(typeof(UdonSharpBehaviour))) // Pass through for making base calls on the U# behaviour type return noop
                     return new BoundUdonSharpBehaviourInvocationExpression(node, symbol, instanceExpression, parameterExpressions);
                 
-                var doExposureCheck = (!symbol.IsOperator || (symbol.ContainingType == null || !symbol.ContainingType.IsEnum));
+                bool doExposureCheck = (!symbol.IsOperator || (symbol.ContainingType == null || !symbol.ContainingType.IsEnum));
 
                 if (symbol.IsOperator && symbol is ExternBuiltinOperatorSymbol operatorSymbol &&
                     operatorSymbol.OperatorType == BuiltinOperatorType.BitwiseNot)
@@ -362,7 +362,7 @@ namespace UdonSharp.Compiler.Binder
                         MethodSymbol objectEqualsMethod = context.GetTypeSymbol(SpecialType.System_Object)
                             .GetMember<MethodSymbol>("Equals", context);
                         
-                        var boundEqualsInvocation = CreateBoundInvocation(context, node, objectEqualsMethod, parameterExpressions[0],
+                        BoundInvocationExpression boundEqualsInvocation = CreateBoundInvocation(context, node, objectEqualsMethod, parameterExpressions[0],
                                 new[] {parameterExpressions[1]});
                         if (symbol.Name == "op_Equality")
                             return boundEqualsInvocation;
