@@ -1123,8 +1123,8 @@ namespace UdonSharpEditor
                     {
                         serializedBehaviour.FindProperty(nameof(UdonBehaviour.programSource)).objectReferenceValue = foundProgramAsset;
                         serializedBehaviour.ApplyModifiedPropertiesWithoutUndo();
-                
-                        PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                        
+                        UdonSharpUtils.SetDirty(behaviour);
                         
                         UdonSharpUtils.LogWarning($"Repaired reference to {foundProgramAsset} on {behaviour}");
                     }
@@ -1142,8 +1142,8 @@ namespace UdonSharpEditor
                         
                         serializedBehaviour.FindProperty(nameof(UdonBehaviour.programSource)).objectReferenceValue = programAsset;
                         serializedBehaviour.ApplyModifiedPropertiesWithoutUndo();
-
-                        PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+                        
+                        UdonSharpUtils.SetDirty(behaviour);
 
                         UdonSharpUtils.LogWarning($"Repaired reference to {programAsset} on {behaviour} using proxy reference");
                     }
