@@ -21,7 +21,7 @@ namespace UdonSharp
     {
     #region Instance and serialization management
         [Serializable]
-        public struct CompileDiagnostic
+        internal struct CompileDiagnostic
         {
             public DiagnosticSeverity severity;
             public string file;
@@ -71,7 +71,7 @@ namespace UdonSharp
                 _instance.sourceFileHashLookup = storage.sourceFileHashLookup;
                 _instance.LastBuildType = storage.lastScriptBuildType;
                 _instance._info = storage.info;
-                _instance._diagnostics = storage.diagnostics?.ToImmutableArray() ?? ImmutableArray<CompileDiagnostic>.Empty;
+                _instance._diagnostics = storage.diagnostics ?? Array.Empty<CompileDiagnostic>();
 
                 // For now we just use this to see if we need to check for project serialization upgrade, may be extended later on. At the moment only used to avoid wasting time on extra validation when possible.
                 if (_instance._info.version < CURR_CACHE_VER)
@@ -214,9 +214,9 @@ namespace UdonSharp
             Info = info;
         }
 
-        private ImmutableArray<CompileDiagnostic> _diagnostics = ImmutableArray<CompileDiagnostic>.Empty;
+        private CompileDiagnostic[] _diagnostics = Array.Empty<CompileDiagnostic>();
 
-        internal ImmutableArray<CompileDiagnostic> LastCompileDiagnostics
+        internal CompileDiagnostic[] LastCompileDiagnostics
         {
             get => _diagnostics;
             set
@@ -224,7 +224,7 @@ namespace UdonSharp
                 _diagnostics = value;
                 
                 if (_diagnostics == null)
-                    _diagnostics = ImmutableArray<CompileDiagnostic>.Empty;
+                    _diagnostics = Array.Empty<CompileDiagnostic>();
 
                 _infoDirty = true;
             }

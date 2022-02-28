@@ -85,7 +85,7 @@ namespace UdonSharp.Compiler
             
             if (!CurrentJob.Task.IsCompleted)
             {
-                var currentPhase = CurrentJob.Context.CurrentPhase;
+                CompilationContext.CompilePhase currentPhase = CurrentJob.Context.CurrentPhase;
                 float phaseProgress = CurrentJob.Context.PhaseProgress;
 
                 float totalProgress = (phaseProgress / (int) CompilationContext.CompilePhase.Count) +
@@ -132,7 +132,7 @@ namespace UdonSharp.Compiler
 
             for (int i = 0; i < diagnostics.Length; ++i)
             {
-                var diagLine = compileDiagnostics[i].Location.GetLineSpan().StartLinePosition;
+                LinePosition diagLine = compileDiagnostics[i].Location.GetLineSpan().StartLinePosition;
                 
                 diagnostics[i] = new UdonSharpEditorCache.CompileDiagnostic()
                 {
@@ -144,7 +144,7 @@ namespace UdonSharp.Compiler
                 };
             }
 
-            UdonSharpEditorCache.Instance.LastCompileDiagnostics = diagnostics.ToImmutableArray();
+            UdonSharpEditorCache.Instance.LastCompileDiagnostics = diagnostics;
             
             if (CurrentJob.Task.IsFaulted)
             {
