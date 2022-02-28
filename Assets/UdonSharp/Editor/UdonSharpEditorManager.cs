@@ -290,17 +290,17 @@ namespace UdonSharpEditor
                 // This is currently cursed, do not include with the user-facing stuff
                 // This will prevent Unity from trying to compile dirty scripts when entering/exiting play mode which is great for iteration time, 
                 //  however it will not compile the modified scripts after exiting play mode and reimporting until you actually change another script
-                MethodInfo dirtyScriptMethod = typeof(Editor).Assembly
-                    .GetType("UnityEditor.Scripting.ScriptCompilation.EditorCompilation").GetMethod(
-                        "DirtyScript",
-                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                
-                MethodInfo injectedDirtyScriptMethod = typeof(InjectedMethods).GetMethod(
-                    nameof(InjectedMethods.DirtyScriptOverride), BindingFlags.Static | BindingFlags.Public);
-                
-                HarmonyMethod injectedHarmonyCompileMethod = new HarmonyMethod(injectedDirtyScriptMethod);
-                
-                harmony.Patch(dirtyScriptMethod, injectedHarmonyCompileMethod);
+                // MethodInfo dirtyScriptMethod = typeof(Editor).Assembly
+                //     .GetType("UnityEditor.Scripting.ScriptCompilation.EditorCompilation").GetMethod(
+                //         "DirtyScript",
+                //         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                //
+                // MethodInfo injectedDirtyScriptMethod = typeof(InjectedMethods).GetMethod(
+                //     nameof(InjectedMethods.DirtyScriptOverride), BindingFlags.Static | BindingFlags.Public);
+                //
+                // HarmonyMethod injectedHarmonyCompileMethod = new HarmonyMethod(injectedDirtyScriptMethod);
+                //
+                // harmony.Patch(dirtyScriptMethod, injectedHarmonyCompileMethod);
                 
                 // Patch out the constructor check for U# behaviours since we instantiate them to retrieve the field values
                 MethodBase monoBehaviourConstructorMethod = (MethodBase)typeof(MonoBehaviour).GetMember(".ctor", BindingFlags.CreateInstance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).First();
@@ -515,7 +515,7 @@ namespace UdonSharpEditor
             }
 #endif
 
-            public static bool DirtyScriptOverride()
+            public static bool DirtyScriptOverride(string path, string assemblyFilename)
             {
                 return !EditorApplication.isPlayingOrWillChangePlaymode;
             }
