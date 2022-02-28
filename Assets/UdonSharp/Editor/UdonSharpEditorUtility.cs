@@ -9,6 +9,7 @@ using System.Reflection;
 using UdonSharp;
 using UdonSharp.Compiler;
 using UdonSharp.Serialization;
+using UdonSharp.Updater;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -997,6 +998,20 @@ namespace UdonSharpEditor
                     SetIgnoreEvents(false);
                 }
             }
+        }
+
+        internal static void DeletePrefabBuildAssets()
+        {
+        #if UDONSHARP_DEBUG
+            return;
+        #endif
+            
+            string prefabBuildPath = UdonSharpLocator.IntermediatePrefabPath;
+
+            if (!Directory.Exists(prefabBuildPath))
+                return;
+            
+            AssetDatabase.DeleteAsset(prefabBuildPath);
         }
     }
 }

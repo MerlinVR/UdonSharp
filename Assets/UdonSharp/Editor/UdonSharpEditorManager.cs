@@ -619,6 +619,8 @@ namespace UdonSharpEditor
                 }
 
                 RunAllUpdates();
+                
+                UdonSharpEditorUtility.DeletePrefabBuildAssets();
             }
 
             UdonSharpEditorCache.SaveOnPlayExit(state);
@@ -992,7 +994,7 @@ namespace UdonSharpEditor
             {
                 dependencies.Add(dependencyRoot.gameObject);
                 
-                var behaviourDependencies = ((List<UnityEngine.Object>)_serializedObjectReferencesField.GetValue(dependencyRoot))?.Where(e => e != null);
+                IEnumerable<Object> behaviourDependencies = ((List<UnityEngine.Object>)_serializedObjectReferencesField.GetValue(dependencyRoot))?.Where(e => e != null);
                 
                 if (behaviourDependencies != null)
                     dependencies.UnionWith(behaviourDependencies);
