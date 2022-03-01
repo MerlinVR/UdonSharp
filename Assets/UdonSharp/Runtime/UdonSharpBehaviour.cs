@@ -128,6 +128,12 @@ namespace UdonSharp
         [PublicAPI] 
         public bool DisableInteractive { get; set; }
 
+        /// <summary>
+        /// Access the text that shows up on interactable tooltips
+        /// </summary>
+        [PublicAPI]
+        public string InteractionText { get; set; }
+
         [Obsolete("This method is obsolete, use Object.Instantiate(gameObject) instead")]
         protected static GameObject VRCInstantiate(GameObject original)
         {
