@@ -244,7 +244,6 @@ namespace UdonSharp
         [SerializeField, HideInInspector]
         private SerializationData serializationData;
         
-        [FormerlySerializedAs("backingUdonBehaviour")] 
         [SerializeField, HideInInspector, UsedImplicitly]
         private VRC.Udon.UdonBehaviour _udonSharpBackingUdonBehaviour;
 
