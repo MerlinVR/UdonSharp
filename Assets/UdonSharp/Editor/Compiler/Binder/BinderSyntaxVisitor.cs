@@ -986,7 +986,7 @@ namespace UdonSharp.Compiler.Binder
             }
 
             if (interpolationExpressions.Count == 0)
-                return new BoundConstantExpression(new ConstantValue<string>(interpolationStr.ToString()),
+                return new BoundConstantExpression(new ConstantValue<string>(string.Format(interpolationStr.ToString())),
                     Context.GetTypeSymbol(SpecialType.System_String), node);
 
             return new BoundInterpolatedStringExpression(node, interpolationStr.ToString(), interpolationExpressions.ToArray(), Context);
