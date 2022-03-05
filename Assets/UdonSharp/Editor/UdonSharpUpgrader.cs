@@ -231,13 +231,13 @@ namespace UdonSharpEditor
                 odinSerializeName = QualifiedName(odinSerializeName, IdentifierName("OdinSerializer"));
                 odinSerializeName = QualifiedName(odinSerializeName, IdentifierName("OdinSerialize"));
 
-                var newAttribList = SeparatedList(new [] { Attribute(odinSerializeName)});
+                SeparatedSyntaxList<AttributeSyntax> newAttribList = SeparatedList(new [] { Attribute(odinSerializeName)});
 
                 // Somehow it seems like there's literally no decent way to maintain the indent on inserted code so we'll just inline the comment because Roslyn is dumb
-                var commentTrivia = Comment(" /* UdonSharp auto-upgrade: serialization */ ");
-                var combinedList = List(new [] { AttributeList(newAttribList).WithLeadingTrivia(fieldDeclaration.GetLeadingTrivia()).WithTrailingTrivia(commentTrivia) }.Concat(fieldDeclaration.AttributeLists));
+                SyntaxTrivia commentTrivia = Comment(" /* UdonSharp auto-upgrade: serialization */ ");
+                SyntaxList<AttributeListSyntax> combinedList = List(fieldDeclaration.AttributeLists.Append(AttributeList(newAttribList).WithTrailingTrivia(commentTrivia)));
 
-                return fieldDeclaration.WithoutLeadingTrivia().WithAttributeLists(combinedList);
+                return fieldDeclaration.WithAttributeLists(combinedList);
             }
         }
     }
