@@ -410,31 +410,43 @@ namespace UdonSharp.Compiler.Binder
             }
 
             bool hasParams = false;
+            int handledArgsCount = startIdx;
             for (int i = startIdx; i < boundArguments.Length; ++i)
             {
-                if (i - startIdx >= argumentsList.Count) // Default argument handling
-                {
-                    boundArguments[i] = new BoundConstantExpression(methodSymbol.Parameters[i].DefaultValue, methodSymbol.Parameters[i].Type, node);
-                    continue;
-                }
-
                 if (methodSymbol.Parameters[i].IsParams)
                 {
                     hasParams = true;
                     break;
                 }
 
-                boundArguments[i] = VisitExpression(argumentsList[i - startIdx].Expression, methodSymbol.Parameters[i].Type);
+                if (i - startIdx >= argumentsList.Count) // Default argument handling
+                {
+                    boundArguments[i] = new BoundConstantExpression(methodSymbol.Parameters[i].DefaultValue, methodSymbol.Parameters[i].Type, node);
+                    continue;
+                }
+
+                ArgumentSyntax argument;
+                if (argumentsList[i].NameColon != null && argumentsList[i - startIdx].NameColon.Name.ToString() != methodSymbol.Parameters[i].Name)
+                {
+                    argument = argumentsList.First(x => x.NameColon?.Name.ToString() == methodSymbol.Parameters[i].Name);
+                }
+                else
+                {
+                    argument = argumentsList[i - startIdx];
+                }
+
+                boundArguments[i] = VisitExpression(argument.Expression, methodSymbol.Parameters[i].Type);
+                handledArgsCount++;
             }
 
             if (hasParams)
             {
-                int paramCount = argumentsList.Count - boundArguments.Length + 1;
+                int paramCount = argumentsList.Count - handledArgsCount;
 
                 BoundExpression[] paramExpressions = new BoundExpression[paramCount];
 
                 int idx = 0;
-                for (int i = boundArguments.Length - 1; i < argumentsList.Count; ++i)
+                for (int i = handledArgsCount; i < argumentsList.Count; ++i)
                 {
                     paramExpressions[idx++] = VisitExpression(argumentsList[i].Expression);
                 }

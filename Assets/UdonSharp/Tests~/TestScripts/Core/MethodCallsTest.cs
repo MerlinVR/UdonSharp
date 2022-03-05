@@ -24,6 +24,11 @@ namespace UdonSharp.Tests
         {
             return a + elements[0].ToString();
         }
+        
+        private string MyDefaultParamsMethod(string a, string b = "B", string c = "C", string d = "D", params string[] elements)
+        {
+            return a + b + c + d + string.Join("", elements);
+        }
 
         public void ExecuteTests()
         {
@@ -59,13 +64,25 @@ namespace UdonSharp.Tests
             tester.TestAssertion("FormatStr 3", formatStr3 == "MethodCalls (VRC.Udon.UdonBehaviour)");
 
             string formatStr4 = string.Format("{0}, {1}", new string[] { "a", "b" });
-            
             tester.TestAssertion("FormatStr 4", formatStr4 == "a, b");
+
+            string formatStr5 = string.Format("zero params");
+            tester.TestAssertion("FormatStr 5", formatStr5 == "zero params");
 
             tester.TestAssertion("String Join Objects params", string.Join(", ", this, this, this, this) == "MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour)"); 
             tester.TestAssertion("String Join Objects array", string.Join(", ", new object[] { this, this, this, this }) == "MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour), MethodCalls (VRC.Udon.UdonBehaviour)");
 
             tester.TestAssertion("Split test", "a b c d".Split(new [] { ' ' }, System.StringSplitOptions.None).Length == 4);
+
+            tester.TestAssertion("Default params 1", MyDefaultParamsMethod("a", "b", "c", "d") == "abcd");
+            tester.TestAssertion("Default params 2", MyDefaultParamsMethod("a", "b", "c") == "abcD");
+            tester.TestAssertion("Default params 3", MyDefaultParamsMethod("a") == "aBCD");
+
+            tester.TestAssertion("Params array", MyDefaultParamsMethod("a", "b", "c", "d", "e", "f") == "abcdef");
+
+            tester.TestAssertion("Named args 1", MyDefaultParamsMethod(d: "d", a: "a", c: "c", b: "b") == "abcd");
+            tester.TestAssertion("Named args 2", MyDefaultParamsMethod(a: "a", b: "b", c: "c", d: "d", "e", "f") == "abcdef");
+            tester.TestAssertion("Named args 3", MyDefaultParamsMethod("a", b: "b", "c", d: "d", "e", "f") == "abcdef");
 
             enabled = false;
             tester.TestAssertion("UdonBehaviour enabled", enabled == false);
