@@ -74,15 +74,21 @@ namespace UdonSharp.Tests
 
             tester.TestAssertion("Split test", "a b c d".Split(new [] { ' ' }, System.StringSplitOptions.None).Length == 4);
 
-            tester.TestAssertion("Default params 1", MyDefaultParamsMethod("a", "b", "c", "d") == "abcd");
-            tester.TestAssertion("Default params 2", MyDefaultParamsMethod("a", "b", "c") == "abcD");
-            tester.TestAssertion("Default params 3", MyDefaultParamsMethod("a") == "aBCD");
-
-            tester.TestAssertion("Params array", MyDefaultParamsMethod("a", "b", "c", "d", "e", "f") == "abcdef");
+            tester.TestAssertion("Default params 1", MyDefaultParamsMethod("a", "b", "c") == "abcD");
+            tester.TestAssertion("Default params 2", MyDefaultParamsMethod("a") == "aBCD");
 
             tester.TestAssertion("Named args 1", MyDefaultParamsMethod(d: "d", a: "a", c: "c", b: "b") == "abcd");
             tester.TestAssertion("Named args 2", MyDefaultParamsMethod(a: "a", b: "b", c: "c", d: "d", "e", "f") == "abcdef");
             tester.TestAssertion("Named args 3", MyDefaultParamsMethod("a", b: "b", "c", d: "d", "e", "f") == "abcdef");
+
+            tester.TestAssertion("Params array 0", MyDefaultParamsMethod("a", "b", "c", "d") == "abcd");
+            tester.TestAssertion("Params array 1", MyDefaultParamsMethod("a", "b", "c", "d", "e") == "abcde");
+            tester.TestAssertion("Params array 2", MyDefaultParamsMethod("a", "b", "c", "d", "e", "f") == "abcdef");
+
+            tester.TestAssertion("Params array 3", MyDefaultParamsMethod("a", b: "b", c: "c", d: "d", new string[] { "e", "f" }) == "abcdef");
+            tester.TestAssertion("Params array 4", MyDefaultParamsMethod("a", "b", "c", "d", new string[] { "e", "f" }) == "abcdef");
+
+            tester.TestAssertion("Params array 5", MyDefaultParamsMethod("a", elements: new string[] { "e", "f" }, b: "b", d: "d") == "abcdef");
 
             enabled = false;
             tester.TestAssertion("UdonBehaviour enabled", enabled == false);
