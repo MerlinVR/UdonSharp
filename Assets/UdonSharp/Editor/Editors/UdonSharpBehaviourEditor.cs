@@ -644,9 +644,19 @@ namespace UdonSharpEditor
                 
                     if (userEditor)
                         userEditor.serializedObject.Update();
+                    
+                    int foldoutMargin = EditorStyles.foldout.margin.left;
+                    EditorStyles.foldout.margin.left = 3;
 
-                    imguiAction();
-                
+                    try
+                    {
+                        imguiAction();
+                    }
+                    finally
+                    {
+                        EditorStyles.foldout.margin.left = foldoutMargin;
+                    }
+
                     if (!skipSerialize && EditorApplication.isPlaying)
                     {
                         foreach (var targetProxy in targets)
