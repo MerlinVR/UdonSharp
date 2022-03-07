@@ -429,16 +429,13 @@ namespace UdonSharp.Compiler.Binder
                 {
                     argument = null;
                 }
+                else if (argumentsList[i - startIdx].NameColon != null && argumentsList[i - startIdx].NameColon.Name.ToString() != methodSymbol.Parameters[i].Name)
+                {
+                    argument = argumentsList.FirstOrDefault(x => x.NameColon?.Name.ToString() == methodSymbol.Parameters[i].Name);
+                }
                 else
                 {
-                    if (argumentsList[i].NameColon != null && argumentsList[i - startIdx].NameColon.Name.ToString() != methodSymbol.Parameters[i].Name)
-                    {
-                        argument = argumentsList.FirstOrDefault(x => x.NameColon?.Name.ToString() == methodSymbol.Parameters[i].Name);
-                    }
-                    else
-                    {
-                        argument = argumentsList[i - startIdx];
-                    }
+                    argument = argumentsList[i - startIdx];
                 }
 
                 if (argument == null) // Default argument handling
