@@ -128,11 +128,6 @@ namespace UdonSharp
             base.DrawProgramDisassembly();
         }
 
-        private new void DrawPublicVariables(UdonBehaviour behaviour, ref bool dirty)
-        {
-            UdonSharpGUI.DrawPublicVariables(behaviour, this, ref dirty);
-        }
-
         internal new void DrawProgramSourceGUI(UdonBehaviour udonBehaviour, ref bool dirty)
         {
             currentBehaviour = udonBehaviour;

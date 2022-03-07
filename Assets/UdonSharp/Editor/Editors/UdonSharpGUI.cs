@@ -354,6 +354,7 @@ namespace UdonSharpEditor
             USharpEditorState editorState = GetEditorState(programAsset);
 
             editorState.ShowExtraOptions = programAsset.showUtilityDropdown = EditorGUILayout.Foldout(editorState.ShowExtraOptions, "Utilities", true);
+            
             if (editorState.ShowExtraOptions)
             {
                 if (GUILayout.Button(Loc.Get(LocStr.UI_CompileAllPrograms)))
@@ -1155,91 +1156,45 @@ namespace UdonSharpEditor
         /// <param name="behaviour"></param>
         /// <param name="programAsset"></param>
         /// <param name="dirty"></param>
+        [Obsolete("DrawPublicVariables using UdonBehaviour is obsolete in U# >=1.0, use DrawVariables instead", true)]
+        public static void DrawPublicVariables(UdonBehaviour behaviour, UdonSharpProgramAsset programAsset, ref bool dirty) 
+        { }
+
+        /// <summary>
+        /// Draws serialized variables on a behaviour
+        /// </summary>
+        /// <param name="behaviour">Any MonoBehaviour if a UdonBehaviour is passed, will try and get the UdonSharpBehaviour proxy to draw.</param>
         [PublicAPI]
-        public static void DrawPublicVariables(UdonBehaviour behaviour, UdonSharpProgramAsset programAsset, ref bool dirty)
+        public static void DrawVariables(MonoBehaviour behaviour)
         {
-            SetupGUI();
-
-            programAsset.UpdateProgram();
-
-            _currentProgramAsset = programAsset;
-            _currentBehaviour = behaviour;
-
-            IUdonVariable CreateUdonVariable(string symbolName, object value, Type type)
+            if (behaviour is UdonBehaviour udonBehaviour)
             {
-                Type udonVariableType = typeof(UdonVariable<>).MakeGenericType(type);
-                return (IUdonVariable)Activator.CreateInstance(udonVariableType, symbolName, value);
-            }
-
-            IUdonVariableTable publicVariables = null;
-            if (behaviour)
-                publicVariables = behaviour.publicVariables;
-
-            IUdonProgram program = programAsset?.GetRealProgram();
-            if (program?.SymbolTable == null)
-            {
-                return;
-            }
-
-            IUdonSymbolTable symbolTable = program.SymbolTable;
-
-            ImmutableArray<string> exportedSymbolNames = symbolTable.GetExportedSymbols();
-
-            EditorGUI.BeginChangeCheck();
-
-            foreach (string exportedSymbol in exportedSymbolNames)
-            {
-                Type symbolType = symbolTable.GetSymbolType(exportedSymbol);
-                if (publicVariables == null)
+                if (UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour))
                 {
-                    DrawPublicVariableField(behaviour, programAsset, exportedSymbol, programAsset.GetPublicVariableDefaultValue(exportedSymbol), symbolType, ref dirty, false);
-                    continue;
+                    behaviour = UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour);
                 }
-                
-                if (!publicVariables.TryGetVariableValue(exportedSymbol, out object variableValue))
+                else
                 {
-                    variableValue = programAsset.GetPublicVariableDefaultValue(exportedSymbol);
-                    dirty = true;
-                }
-
-                variableValue = DrawPublicVariableField(behaviour, programAsset, exportedSymbol, variableValue, symbolType, ref dirty, true);
-                if (!dirty)
-                    continue;
-
-                Undo.RecordObject(behaviour, "Modify variable");
-
-                if (!publicVariables.TrySetVariableValue(exportedSymbol, variableValue))
-                {
-                    if (!publicVariables.TryAddVariable(CreateUdonVariable(exportedSymbol, variableValue, symbolType)))
-                    {
-                        Debug.LogError($"Failed to set public variable '{exportedSymbol}' value.");
-                    }
+                    throw new NotSupportedException("Cannot call DrawVariables on a non-UdonSharpBehaviour");
                 }
             }
 
-            if (behaviour)
+            SerializedObject serializedObject = new SerializedObject(behaviour);
+            
+            SerializedProperty fieldProp = serializedObject.GetIterator();
+            if (fieldProp.NextVisible(true))
             {
-                foreach (string exportedSymbolName in exportedSymbolNames)
+                do
                 {
-                    bool foundValue = behaviour.publicVariables.TryGetVariableValue(exportedSymbolName, out var variableValue);
-                    bool foundType = behaviour.publicVariables.TryGetVariableType(exportedSymbolName, out var variableType);
+                    if (fieldProp.propertyPath == "m_Script")
+                        continue;
 
-                    // Remove this variable from the publicVariable list since UdonBehaviours set all null GameObjects, UdonBehaviours, and Transforms to the current behavior's equivalent object regardless of if it's marked as a `null` heap variable or `this`
-                    // This default behavior is not the same as Unity, where the references are just left null. And more importantly, it assumes that the user has interacted with the inspector on that object at some point which cannot be guaranteed. 
-                    // Specifically, if the user adds some public variable to a class, and multiple objects in the scene reference the program asset, 
-                    //   the user will need to go through each of the objects' inspectors to make sure each UdonBehavior has its `publicVariables` variable populated by the inspector
-                    if (foundValue && foundType &&
-                        variableValue.IsUnityObjectNull() &&
-                        (variableType == typeof(GameObject) || variableType == typeof(UdonBehaviour) || variableType == typeof(Transform)))
-                    {
-                        behaviour.publicVariables.RemoveVariable(exportedSymbolName);
-                        GUI.changed = true;
-                    }
-                }
+                    EditorGUILayout.PropertyField(fieldProp);
+
+                } while (fieldProp.NextVisible(false));
             }
 
-            if (EditorGUI.EndChangeCheck() && PrefabUtility.IsPartOfPrefabInstance(behaviour))
-                PrefabUtility.RecordPrefabInstancePropertyModifications(behaviour);
+            serializedObject.ApplyModifiedProperties();
         }
 
         // https://forum.unity.com/threads/horizontal-line-in-editor-window.520812/#post-3534861
