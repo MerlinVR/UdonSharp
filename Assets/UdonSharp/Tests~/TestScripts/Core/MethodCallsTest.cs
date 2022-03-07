@@ -88,7 +88,7 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Params array 3", MyDefaultParamsMethod("a", b: "b", c: "c", d: "d", new string[] { "e", "f" }) == "abcdef");
             tester.TestAssertion("Params array 4", MyDefaultParamsMethod("a", "b", "c", "d", new string[] { "e", "f" }) == "abcdef");
 
-            tester.TestAssertion("Params array 5", MyDefaultParamsMethod("a", elements: new string[] { "e", "f" }, b: "b", d: "d") == "abcdef");
+            tester.TestAssertion("Params array 5", MyDefaultParamsMethod("a", elements: new string[] { "e", "f" }, b: "b", d: "d") == "abCdef");
 
             enabled = false;
             tester.TestAssertion("UdonBehaviour enabled", enabled == false);
