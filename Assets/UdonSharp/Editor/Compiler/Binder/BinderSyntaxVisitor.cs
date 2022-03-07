@@ -429,7 +429,7 @@ namespace UdonSharp.Compiler.Binder
                 {
                     argument = null;
                 }
-                else if (argumentsList[i - startIdx].NameColon != null && argumentsList[i - startIdx].NameColon.Name.ToString() != methodSymbol.Parameters[i].Name)
+                else if (argumentsList[i - startIdx].NameColon != null)
                 {
                     argument = argumentsList.FirstOrDefault(x => x.NameColon?.Name.ToString() == methodSymbol.Parameters[i].Name);
                 }
