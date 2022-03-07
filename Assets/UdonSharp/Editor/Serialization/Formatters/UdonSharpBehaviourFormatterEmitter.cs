@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using UdonSharp.Compiler.Symbols;
 using UdonSharpEditor;
 using UnityEditor;
 using UnityEngine;
@@ -80,7 +81,7 @@ namespace UdonSharp.Serialization
                     if (fieldLayout == null)
                         throw new NullReferenceException($"Formatter manager {typeof(UdonSharpBehaviourFormatterManager).FullName} has not been initialized.");
 
-                    var heapStorage = CreateHeapStorage(udonBehaviour);
+                    IHeapStorage heapStorage = CreateHeapStorage(udonBehaviour);
                     if (heapStorage == null)
                         return null;
 
@@ -160,7 +161,7 @@ namespace UdonSharp.Serialization
         {
             lock (_emitLock)
             {
-                if (_formatters.TryGetValue(typeof(T), out var formatter))
+                if (_formatters.TryGetValue(typeof(T), out IFormatter formatter))
                 {
                     return (Formatter<T>)formatter;
                 }
@@ -172,11 +173,10 @@ namespace UdonSharp.Serialization
 
                 foreach (FieldInfo field in allFields)
                 {
-                    if (field.IsDefined(typeof(CompilerGeneratedAttribute), false))
-                        continue;
+                    // if (field.IsDefined(typeof(CompilerGeneratedAttribute), false))
+                    //     continue;
 
-                    if ((field.IsPublic && field.GetAttribute<NonSerializedAttribute>() == null) ||
-                        (!field.IsPublic && field.GetAttribute<SerializeField>() != null))
+                    if (FieldSymbol.IsFieldSerialized(field))
                     {
                         serializedFieldList.Add(field);
                     }

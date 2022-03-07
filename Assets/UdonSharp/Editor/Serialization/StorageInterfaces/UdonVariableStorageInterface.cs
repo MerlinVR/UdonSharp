@@ -32,6 +32,8 @@ namespace UdonSharp.Serialization
 
         private static void SetVarInternal<T>(UdonBehaviour behaviour, string variableKey, T value)
         {
+            variableKey = UdonSharpUtils.UnmanglePropertyFieldName(variableKey);
+            
             if (behaviour.publicVariables.TrySetVariableValue<T>(variableKey, value)) 
                 return;
             

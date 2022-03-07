@@ -139,6 +139,14 @@ namespace UdonSharp
             return false;
         }
 
+        /// <summary>
+        /// Escapes property names into something Udon allows since C# will put '<' and '>' in property backing field names
+        /// </summary>
+        internal static string UnmanglePropertyFieldName(string propertyName)
+        {
+            return propertyName?.Replace('<', '_').Replace('>', '_');
+        }
+
         public static bool IsUserDefinedBehaviour(System.Type type)
         {
             return type == typeof(UdonSharpBehaviour) ||

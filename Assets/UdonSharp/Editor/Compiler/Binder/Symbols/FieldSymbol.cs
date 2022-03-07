@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.Linq;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using UdonSharp.Compiler.Binder;
@@ -44,6 +45,16 @@ namespace UdonSharp.Compiler.Symbols
                 if (HasAttribute<NonSerializedAttribute>()) return false;
                 return RoslynSymbol.DeclaredAccessibility == Accessibility.Public || HasAttribute<SerializeField>() || HasAttribute<SerializeReference>();
             }
+        }
+
+        // There are better places this could go, but IsSerialized and this should stay in sync so we'll put them next to each other for visibility 
+        internal static bool IsFieldSerialized(FieldInfo field)
+        {
+            if (field.IsInitOnly) return false;
+            if (field.IsStatic) return false;
+            if (field.IsDefined(typeof(OdinSerializeAttribute), false)) return true;
+            if (field.IsDefined(typeof(NonSerializedAttribute), false)) return true;
+            return field.IsPublic || field.IsDefined(typeof(SerializeField), false) || field.IsDefined(typeof(SerializeReference), false);
         }
 
         public bool IsConstInitialized => InitializerExpression != null && InitializerExpression.IsConstant;

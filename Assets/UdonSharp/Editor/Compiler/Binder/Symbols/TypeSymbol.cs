@@ -115,9 +115,9 @@ namespace UdonSharp.Compiler.Symbols
                 SetupAttributes(context);
             }
 
-            var members = RoslynSymbol.GetMembers();
+            ImmutableArray<ISymbol> members = RoslynSymbol.GetMembers();
 
-            foreach (var member in members.Where(member => (!member.IsImplicitlyDeclared || member.Kind == SymbolKind.Field)))
+            foreach (ISymbol member in members.Where(member => (!member.IsImplicitlyDeclared || member.Kind == SymbolKind.Field)))
             {
                 switch (member)
                 {

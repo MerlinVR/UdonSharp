@@ -832,7 +832,7 @@ namespace UdonSharp.Compiler
                 foreach (FieldInfo field in asmType.GetFields(BindingFlags.Public | BindingFlags.NonPublic |
                                                               BindingFlags.Instance))
                 {
-                    uint valAddress = program.SymbolTable.GetAddressFromSymbol(field.Name.Replace("<", "_").Replace(">", "_"));
+                    uint valAddress = program.SymbolTable.GetAddressFromSymbol(UdonSharpUtils.UnmanglePropertyFieldName(field.Name));
 
                     object fieldValue = field.GetValue(component);
 
