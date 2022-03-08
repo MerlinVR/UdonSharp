@@ -38,6 +38,7 @@ namespace UdonSharpEditor
         internal static void ForceUpgrade()
         {
             UdonSharpProgramAsset.GetAllUdonSharpPrograms().ForEach(QueueUpgrade);
+            UdonSharpEditorCache.Instance.QueueUpgradePass();
         }
 
         private static bool _needsProgramUpgradePass;
