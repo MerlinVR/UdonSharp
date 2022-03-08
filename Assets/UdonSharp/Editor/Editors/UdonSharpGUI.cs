@@ -1165,21 +1165,42 @@ namespace UdonSharpEditor
         /// </summary>
         /// <param name="behaviour">Any MonoBehaviour if a UdonBehaviour is passed, will try and get the UdonSharpBehaviour proxy to draw.</param>
         [PublicAPI]
-        public static void DrawVariables(MonoBehaviour behaviour)
+        public static void DrawVariables(Object behaviour)
         {
-            if (behaviour is UdonBehaviour udonBehaviour)
+            DrawVariables(new [] { behaviour });
+        }
+        
+        /// <summary>
+        /// Draws serialized variables on a behaviour
+        /// </summary>
+        /// <param name="behaviours">Any MonoBehaviour if a UdonBehaviour is passed, will try and get the UdonSharpBehaviour proxy to draw.</param>
+        [PublicAPI]
+        public static void DrawVariables(Object[] behaviours)
+        {
+            Object[] behaviourArrCopy = new Object[behaviours.Length];
+
+            for (int i = 0; i < behaviours.Length; ++i)
             {
-                if (UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour))
+                Object behaviour = behaviours[i];
+                behaviourArrCopy[i] = behaviours[i];
+                
+                if (!(behaviours[i] is MonoBehaviour))
+                    throw new ArgumentException(nameof(behaviours));
+                
+                if (behaviour is UdonBehaviour udonBehaviour)
                 {
-                    behaviour = UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour);
-                }
-                else
-                {
-                    throw new NotSupportedException("Cannot call DrawVariables on a non-UdonSharpBehaviour");
+                    if (UdonSharpEditorUtility.IsUdonSharpBehaviour(udonBehaviour))
+                    {
+                        behaviourArrCopy[i] = UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException("Cannot call DrawVariables on a non-UdonSharpBehaviour");
+                    }
                 }
             }
 
-            SerializedObject serializedObject = new SerializedObject(behaviour);
+            SerializedObject serializedObject = new SerializedObject(behaviourArrCopy);
             
             SerializedProperty fieldProp = serializedObject.GetIterator();
             if (fieldProp.NextVisible(true))
