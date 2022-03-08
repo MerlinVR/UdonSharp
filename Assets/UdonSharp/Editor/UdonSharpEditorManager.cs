@@ -18,8 +18,11 @@ using UnityEngine.SceneManagement;
 using VRC.SDKBase;
 using VRC.Udon;
 using VRC.Udon.Editor;
-using VRC.Udon.Serialization.OdinSerializer.Utilities;
 using Object = UnityEngine.Object;
+
+#if ODIN_INSPECTOR_3
+using Sirenix.OdinInspector.Editor;
+#endif
 
 namespace UdonSharpEditor
 {
@@ -266,25 +269,21 @@ namespace UdonSharpEditor
 
                 harmony.Patch(findTypeInLoadedAssemblies, injectedFindTypeHarmonyMethod);
                 
-#if ODIN_INSPECTOR_3
+            #if ODIN_INSPECTOR_3
                 try
                 {
-                    Assembly odinEditorAssembly = UdonSharpUtils.GetLoadedEditorAssemblies().FirstOrDefault(assembly => assembly.GetName().Name == "Sirenix.OdinInspector.Editor");
-
-                    System.Type editorUtilityType = odinEditorAssembly.GetType("Sirenix.OdinInspector.Editor.CustomEditorUtility");
-
-                    MethodInfo resetCustomEditorsMethod = editorUtilityType.GetMethod("ResetCustomEditors");
+                    MethodInfo setupInspectorsMethodsetupInspectorsMethod = typeof(InspectorConfig).GetMethod("UpdateOdinEditors", BindingFlags.Public | BindingFlags.Instance);
 
                     MethodInfo odinInspectorOverrideMethod = typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.OdinInspectorOverride), BindingFlags.Public | BindingFlags.Static);
                     HarmonyMethod odinInspectorOverrideHarmonyMethod = new HarmonyMethod(odinInspectorOverrideMethod);
 
-                    harmony.Patch(resetCustomEditorsMethod, null, odinInspectorOverrideHarmonyMethod);
+                    harmony.Patch(setupInspectorsMethodsetupInspectorsMethod, null, odinInspectorOverrideHarmonyMethod);
                 }
                 catch (Exception e)
                 {
                     UdonSharpUtils.LogWarning($"Failed to patch Odin inspector fix for U#\nException: {e}");
                 }
-#endif
+            #endif
                 
                 // Unity sucks
                 // This is currently cursed, do not include with the user-facing stuff
@@ -508,12 +507,12 @@ namespace UdonSharpEditor
                 return _ignoredAssemblies.Any(candidate => System.Text.RegularExpressions.Regex.IsMatch(name, candidate));
             }
 
-#if ODIN_INSPECTOR_3
+        #if ODIN_INSPECTOR_3
             public static void OdinInspectorOverride()
             {
                 UdonBehaviourDrawerOverride.OverrideUdonBehaviourDrawer();
             }
-#endif
+        #endif
 
             public static bool DirtyScriptOverride(string path, string assemblyFilename)
             {

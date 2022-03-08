@@ -11,7 +11,6 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using VRC.Udon;
-using VRC.Udon.Editor;
 using Object = UnityEngine.Object;
 
 #if ODIN_INSPECTOR_3
@@ -296,6 +295,9 @@ namespace UdonSharpEditor
 
             foreach (Type inspectedType in inspectedTypes)
             {
+                if (!inspectedType.IsSubclassOf(typeof(UdonSharpBehaviour)))
+                    continue;
+                
                 object editorTypeList = Activator.CreateInstance(monoEditorTypeListType);
 
                 object editorTypeObject = Activator.CreateInstance(monoEditorTypeType);
@@ -305,18 +307,12 @@ namespace UdonSharpEditor
             
                 listAddTypeMethod.Invoke(editorTypeList, new [] {editorTypeObject});
 
-                Type inspectorType = UdonSharpCustomEditorManager.GetInspectorEditorType(inspectedType);
-
                 removeTypeMethod.Invoke(customEditorDictionary, new object[] { inspectedType });
 
                 addTypeMethod.Invoke(customEditorDictionary, new [] { inspectedType, editorTypeList });
 
-                if (inspectorType.GetCustomAttribute<CanEditMultipleObjects>() != null ||
-                    inspectorType == typeof(UdonSharpBehaviourOverrideEditor))
-                {
-                    removeTypeMethod.Invoke(customMultiEditorDictionary, new object[] { inspectedType });
-                    addTypeMethod.Invoke(customMultiEditorDictionary, new [] { inspectedType, editorTypeList });
-                }
+                removeTypeMethod.Invoke(customMultiEditorDictionary, new object[] { inspectedType });
+                addTypeMethod.Invoke(customMultiEditorDictionary, new [] { inspectedType, editorTypeList });
             }
         }
     }
@@ -356,7 +352,7 @@ namespace UdonSharpEditor
                         
                         if (_typeInspectorMap.ContainsKey(inspectedType))
                         {
-                            Debug.LogError($"Cannot register inspector '{editorType.Name}' for type '{inspectedType.Name}' since inspector '{_typeInspectorMap[inspectedType].Name}' is already registered");
+                            UdonSharpUtils.LogError($"Cannot register inspector '{editorType.Name}' for type '{inspectedType.Name}' since inspector '{_typeInspectorMap[inspectedType].Name}' is already registered");
                             continue;
                         }
 
@@ -379,7 +375,7 @@ namespace UdonSharpEditor
                 {
                     if (!editorAttribute.inspectorType.IsSubclassOf(typeof(Editor)))
                     {
-                        Debug.LogError($"Could not add default inspector '{editorAttribute.inspectorType}', custom inspectors must inherit from UnityEditor.Editor");
+                        UdonSharpUtils.LogError($"Could not add default inspector '{editorAttribute.inspectorType}', custom inspectors must inherit from UnityEditor.Editor");
                         continue;
                     }
 
@@ -401,9 +397,10 @@ namespace UdonSharpEditor
         {
             InitInspectorMap();
             
-            _typeInspectorMap.TryGetValue(udonSharpBehaviourType, out var editorType);
+            _typeInspectorMap.TryGetValue(udonSharpBehaviourType, out Type editorType);
 
-            if (editorType != null) 
+            // Fall through and check for a default editor if no inspector is specified on the behaviour
+            if (editorType != null && editorType != typeof(UdonSharpBehaviourOverrideEditor)) 
                 return editorType;
             
             UdonSharpSettings settings = UdonSharpSettings.GetSettings();
