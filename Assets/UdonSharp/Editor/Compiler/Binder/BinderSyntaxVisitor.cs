@@ -39,6 +39,10 @@ namespace UdonSharp.Compiler.Binder
 
             if (node.Kind() == SyntaxKind.BaseExpression)
                 return null;
+
+            // Strip unary plus operator
+            if (node.Kind() == SyntaxKind.UnaryPlusExpression)
+                return Visit((node as PrefixUnaryExpressionSyntax)?.Operand);
             
             Symbol nodeSymbol = GetSymbol(node);
             if (nodeSymbol is TypeSymbol)
