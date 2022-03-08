@@ -426,22 +426,22 @@ namespace UdonSharpEditor
     /// </summary>
     internal class UdonSharpBehaviourOverrideEditor : Editor
     {
-        private Editor userEditor;
+        private Editor _userEditor;
 
         private void OnEnable()
         {
-            foreach (var targetBehaviour in targets)
+            foreach (Object targetBehaviour in targets)
                 UdonSharpEditorUtility.RunBehaviourSetupWithUndo((UdonSharpBehaviour)targetBehaviour);
 
-            if (userEditor == null)
-            {
-                Type userType = target.GetType();
+            if (_userEditor != null) 
+                return;
+            
+            Type userType = target.GetType();
 
-                Type customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(userType);
+            Type customEditorType = UdonSharpCustomEditorManager.GetInspectorEditorType(userType);
 
-                if (customEditorType != null && customEditorType != typeof(UdonSharpBehaviourOverrideEditor))
-                    userEditor = CreateEditorWithContext(targets, this, customEditorType);
-            }
+            if (customEditorType != null && customEditorType != typeof(UdonSharpBehaviourOverrideEditor))
+                _userEditor = CreateEditorWithContext(targets, this, customEditorType);
         }
 
         private void OnDisable()
@@ -457,10 +457,10 @@ namespace UdonSharpEditor
 
         private void CleanupEditor()
         {
-            if (userEditor)
+            if (_userEditor)
             {
-                DestroyImmediate(userEditor);
-                userEditor = null;
+                DestroyImmediate(_userEditor);
+                _userEditor = null;
             }
         }
 
@@ -469,7 +469,7 @@ namespace UdonSharpEditor
         /// </summary>
         private void CleanupBackingBehaviours()
         {
-            foreach (var target in targets)
+            foreach (Object target in targets)
             {
                 // Check if the target has been marked destroyed
                 if (!ReferenceEquals(target, null) && target == null)
@@ -486,19 +486,19 @@ namespace UdonSharpEditor
 
         private void OnSceneGUI()
         {
-            if (!userEditor)
+            if (!_userEditor)
                 return;
             
-            Type customEditorType = userEditor.GetType();
+            Type customEditorType = _userEditor.GetType();
         
             MethodInfo onSceneGUIMethod = customEditorType?.GetMethod("OnSceneGUI", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { }, null);
         
             if (onSceneGUIMethod == null)
                 return;
         
-            userEditor.serializedObject.Update();
+            _userEditor.serializedObject.Update();
         
-            onSceneGUIMethod.Invoke(userEditor, null);
+            onSceneGUIMethod.Invoke(_userEditor, null);
         }
 
         private const string BAR_NAME = "UdonSharpScriptBar";
@@ -522,8 +522,8 @@ namespace UdonSharpEditor
             // A little jank atm, can bleed into some inspectors like the material inspector that Unity adds in some cases
             _rootInspectorElement.RegisterCallback<AttachToPanelEvent>(evt =>
             {
-                var inspectorElement = _rootInspectorElement.GetFirstAncestorOfType<InspectorElement>();
-                var editorElement = inspectorElement.parent;
+                InspectorElement inspectorElement = _rootInspectorElement.GetFirstAncestorOfType<InspectorElement>();
+                VisualElement editorElement = inspectorElement.parent;
         
                 VisualElement bar = new VisualElement
                 {
@@ -543,13 +543,13 @@ namespace UdonSharpEditor
 
                 List<VisualElement> removeList = new List<VisualElement>();
 
-                foreach (var child in editorElement.Children())
+                foreach (VisualElement child in editorElement.Children())
                 {
                     if (child.name == BAR_NAME)
                         removeList.Add(child);
                 }
 
-                foreach (var element in removeList)
+                foreach (VisualElement element in removeList)
                 {
                     editorElement.Remove(element);
                 }
@@ -594,18 +594,26 @@ namespace UdonSharpEditor
                     }
                 }, true);
             }
-            
-            if (!userEditor) 
+
+            if (!_userEditor) 
                 return CreateDefaultUdonSharpInspectorElement();
+
+            if (targets.Length > 1 && !_userEditor.GetType().IsDefined(typeof(CanEditMultipleObjects), false))
+            {
+                return CreateIMGUIInspector(() =>
+                {
+                    EditorGUILayout.HelpBox("Multi-object editing not supported.", MessageType.None);
+                });
+            }
             
-            VisualElement userEditorElement = userEditor.CreateInspectorGUI();
+            VisualElement userEditorElement = _userEditor.CreateInspectorGUI();
 
             if (userEditorElement != null)
                 return userEditorElement;
 
             return CreateIMGUIInspector(() =>
             {
-                userEditor.OnInspectorGUI();
+                _userEditor.OnInspectorGUI();
             });
         }
 
@@ -639,8 +647,8 @@ namespace UdonSharpEditor
                             UdonSharpEditorUtility.CopyUdonToProxy((UdonSharpBehaviour)targetProxy, ProxySerializationPolicy.All);
                     }
                 
-                    if (userEditor)
-                        userEditor.serializedObject.Update();
+                    if (_userEditor)
+                        _userEditor.serializedObject.Update();
                     
                     int foldoutMargin = EditorStyles.foldout.margin.left;
                     EditorStyles.foldout.margin.left = 3;
@@ -703,10 +711,10 @@ namespace UdonSharpEditor
 
         public override bool RequiresConstantRepaint()
         {
-            if (!userEditor)
+            if (!_userEditor)
                 return EditorApplication.isPlaying;
 
-            return userEditor.RequiresConstantRepaint();
+            return _userEditor.RequiresConstantRepaint();
         }
 
         public override bool UseDefaultMargins()
