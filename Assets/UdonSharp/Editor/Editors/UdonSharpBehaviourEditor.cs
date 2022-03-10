@@ -291,7 +291,7 @@ namespace UdonSharpEditor
                                                                         e.GetParameters().Length == 1 &&
                                                                         e.GetParameters()[0].ParameterType == monoEditorTypeType);
 
-            Type[] inspectedTypes = UdonSharpCustomEditorManager.GetInspectedTypes();
+            IEnumerable<Type> inspectedTypes = UdonSharpCustomEditorManager.GetInspectedTypes();
 
             foreach (Type inspectedType in inspectedTypes)
             {
@@ -322,8 +322,18 @@ namespace UdonSharpEditor
     internal static class UdonSharpCustomEditorManager
     {
         private static Dictionary<Type, Type> _typeInspectorMap;
-        internal static Dictionary<string, (string, Type)> _defaultInspectorMap;
-        private static bool _initialized;
+        private static Dictionary<string, (string, Type)> _defaultInspectorMap;
+
+        internal static Dictionary<string, (string, Type)> DefaultInspectorMap
+        {
+            get
+            {
+                InitInspectorMap();
+                return _defaultInspectorMap;
+            }
+        }
+
+        private static bool _initialized; 
 
         private static void InitInspectorMap()
         {
@@ -334,36 +344,57 @@ namespace UdonSharpEditor
             _defaultInspectorMap = new Dictionary<string, (string, Type)>();
 
             FieldInfo inspectedTypeField = typeof(CustomEditor).GetField("m_InspectedType", BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo inspectsChildClassesField = typeof(CustomEditor).GetField("m_EditorForChildClasses", BindingFlags.NonPublic | BindingFlags.Instance);
 
             TypeCache.TypeCollection types = TypeCache.GetTypesWithAttribute<CustomEditor>();
-            
+
             foreach (Type editorType in types)
             {
                 IEnumerable<CustomEditor> editorAttributes = editorType.GetCustomAttributes<CustomEditor>();
 
                 foreach (CustomEditor editorAttribute in editorAttributes)
                 {
-                    if (editorAttribute != null && editorAttribute.GetType() == typeof(CustomEditor)) // The CustomEditorForRenderPipeline attribute inherits from CustomEditor, but we do not want to take that into account.
-                    {
-                        Type inspectedType = (Type)inspectedTypeField.GetValue(editorAttribute);
+                    if (editorAttribute == null || editorAttribute.GetType() != typeof(CustomEditor)) // The CustomEditorForRenderPipeline attribute inherits from CustomEditor, but we do not want to take that into account.
+                        continue;
+                    
+                    Type inspectedType = (Type)inspectedTypeField.GetValue(editorAttribute);
 
-                        if (!inspectedType.IsSubclassOf(typeof(UdonSharpBehaviour))) 
-                            continue;
+                    if (!inspectedType.IsSubclassOf(typeof(UdonSharpBehaviour))) 
+                        continue;
                         
-                        if (_typeInspectorMap.ContainsKey(inspectedType))
-                        {
-                            UdonSharpUtils.LogError($"Cannot register inspector '{editorType.Name}' for type '{inspectedType.Name}' since inspector '{_typeInspectorMap[inspectedType].Name}' is already registered");
-                            continue;
-                        }
-
-                        _typeInspectorMap.Add(inspectedType, editorType);
+                    if (_typeInspectorMap.ContainsKey(inspectedType))
+                    {
+                        UdonSharpUtils.LogError($"Cannot register inspector '{editorType.Name}' for type '{inspectedType.Name}' since inspector '{_typeInspectorMap[inspectedType].Name}' is already registered");
+                        continue;
                     }
+                    
+                    _typeInspectorMap.Add(inspectedType, editorType);
                 }
             }
 
             foreach (Type udonSharpBehaviourType in TypeCache.GetTypesDerivedFrom<UdonSharpBehaviour>())
             {
-                if (!_typeInspectorMap.ContainsKey(udonSharpBehaviourType))
+                if (_typeInspectorMap.ContainsKey(udonSharpBehaviourType)) 
+                    continue;
+                
+                Type currentType = udonSharpBehaviourType.BaseType;
+
+                bool foundType = false;
+                while (currentType != null && currentType != typeof(UdonSharpBehaviour))
+                {
+                    if (_typeInspectorMap.TryGetValue(currentType, out Type foundInspectorType) &&
+                        foundInspectorType.GetCustomAttribute<CustomEditor>() != null &&
+                        (bool)inspectsChildClassesField.GetValue(foundInspectorType.GetCustomAttribute<CustomEditor>()))
+                    {
+                        _typeInspectorMap.Add(udonSharpBehaviourType, foundInspectorType);
+                        foundType = true;
+                        break;
+                    }
+                        
+                    currentType = currentType.BaseType;
+                }
+
+                if (!foundType)
                 {
                     _typeInspectorMap.Add(udonSharpBehaviourType, typeof(UdonSharpBehaviourOverrideEditor));
                 }
@@ -386,11 +417,11 @@ namespace UdonSharpEditor
             _initialized = true;
         }
 
-        public static Type[] GetInspectedTypes()
+        public static IEnumerable<Type> GetInspectedTypes()
         {
             InitInspectorMap();
 
-            return _typeInspectorMap.Keys.ToArray();
+            return _typeInspectorMap.Keys;
         }
 
         public static Type GetInspectorEditorType(Type udonSharpBehaviourType)

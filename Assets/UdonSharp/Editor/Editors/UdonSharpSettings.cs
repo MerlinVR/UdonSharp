@@ -217,7 +217,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
         static string DrawCustomEditorSelection(string currentSelection)
         {
             List<(string, string)> optionsList = new List<(string, string)>() { ("", "Default") };
-            optionsList.AddRange(UdonSharpCustomEditorManager._defaultInspectorMap.Select(e => (e.Key, e.Value.Item1)));
+            optionsList.AddRange(UdonSharpCustomEditorManager.DefaultInspectorMap.Select(e => (e.Key, e.Value.Item1)));
 
             int[] values = Enumerable.Range(0, optionsList.Count).ToArray();
 
