@@ -19,6 +19,9 @@ namespace UdonSharp.Compiler.Binder
 
         public override void Emit(EmitContext context)
         {
+            if (UserSymbol is LocalSymbol localSymbol && localSymbol.IsConst)
+                return;
+
             Value userValue = context.GetUserValue(UserSymbol);
 
             if (Initializer == null) return;

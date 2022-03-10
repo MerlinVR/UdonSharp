@@ -33,7 +33,7 @@ namespace UdonSharp.Compiler.Binder
             switch (accessSymbol)
             {
                 case LocalSymbol localSymbol:
-                    return new BoundLocalAccessExpression(node, localSymbol);
+                    return BoundLocalAccessExpression.BindLocalAccess(node, localSymbol);
                 case ParameterSymbol parameterSymbol:
                     return new BoundParameterAccessExpression(node, parameterSymbol);
                 case FieldSymbol fieldSymbol:
@@ -85,8 +85,19 @@ namespace UdonSharp.Compiler.Binder
                 AccessSymbol = accessSymbol;
             }
 
+            public static BoundAccessExpression BindLocalAccess(SyntaxNode node, LocalSymbol localSymbol)
+            {
+                if (localSymbol.IsConst)
+                    return new BoundConstantExpression(localSymbol.ConstantValue, localSymbol.Type);
+
+                return new BoundLocalAccessExpression(node, localSymbol);
+            }
+
             public override Value EmitValue(EmitContext context)
             {
+                if (AccessSymbol.IsConst)
+                    return context.GetConstantValue(ValueType, AccessSymbol.ConstantValue);
+
                 return context.GetUserValue(AccessSymbol);
             }
 
