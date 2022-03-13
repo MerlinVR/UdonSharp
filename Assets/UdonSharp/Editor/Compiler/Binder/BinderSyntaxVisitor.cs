@@ -418,7 +418,7 @@ namespace UdonSharp.Compiler.Binder
                 if (methodSymbol.Parameters[i].IsParams)
                 {
                     hasParams = true;
-                    paramsNamedArg = argumentsList.FirstOrDefault(x => x.NameColon?.Name.ToString() == methodSymbol.Parameters[i].Name);
+                    paramsNamedArg = argumentsList.FirstOrDefault(x => x.NameColon?.Name.Identifier.ValueText == methodSymbol.Parameters[i].Name);
 
                     break;
                 }
@@ -431,7 +431,7 @@ namespace UdonSharp.Compiler.Binder
                 }
                 else if (argumentsList[i - startIdx].NameColon != null)
                 {
-                    argument = argumentsList.FirstOrDefault(x => x.NameColon?.Name.ToString() == methodSymbol.Parameters[i].Name);
+                    argument = argumentsList.FirstOrDefault(x => x.NameColon?.Name.Identifier.ValueText == methodSymbol.Parameters[i].Name);
                 }
                 else
                 {
