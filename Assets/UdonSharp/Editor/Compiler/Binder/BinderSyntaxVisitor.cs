@@ -354,12 +354,12 @@ namespace UdonSharp.Compiler.Binder
                 {
                     case SyntaxKind.SimpleMemberAccessExpression:
                         MemberAccessExpressionSyntax memberNode = (MemberAccessExpressionSyntax)currentNode;
-                        currentName = memberNode.Name.ToString();
+                        currentName = memberNode.Name.Identifier.ValueText;
                         currentNode = memberNode.Name;
                         break;
                     case SyntaxKind.IdentifierName:
                         IdentifierNameSyntax identifierName = (IdentifierNameSyntax)currentNode;
-                        currentName = identifierName.ToString();
+                        currentName = identifierName.Identifier.ValueText;
                         currentNode = null;
                         break;
                     default:
