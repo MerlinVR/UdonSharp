@@ -27,6 +27,9 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Property nameof", nameof(nums.Length) == "Length");
 
             tester.TestAssertion(">2 accesses nameof", nameof(UnityEngine.UI.Text) == "Text");
+
+            int @int = 0;
+            tester.TestAssertion("Verbatim identifier", nameof(@int) == "int");
         }
     }
 }
