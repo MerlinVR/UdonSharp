@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
+using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Symbols;
 using UdonSharpEditor;
 using UnityEditor;
@@ -257,9 +258,9 @@ namespace UdonSharp.Compiler.Udon
             Set,
         }
         
-        public static string GetUdonAccessorName(Symbol symbol, TypeSymbol fieldType, FieldAccessorType accessorType)
+        public static string GetUdonAccessorName(FieldSymbol symbol, FieldAccessorType accessorType)
         {
-            if (!TypeSymbol.TryGetSystemType(symbol.RoslynSymbol.ContainingType, out var containingType))
+            if (!TypeSymbol.TryGetSystemType(symbol.RoslynSymbol.ContainingType, out Type containingType))
                 throw new InvalidOperationException("Containing type must be a valid extern");
             
             containingType = UdonSharpUtils.RemapBaseType(containingType);
@@ -267,7 +268,7 @@ namespace UdonSharp.Compiler.Udon
             string functionNamespace = SanitizeTypeName(containingType.FullName).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver").Replace("UdonSharpUdonSharpBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
             string methodName = $"__{(accessorType == FieldAccessorType.Get ? "get" : "set")}_{symbol.Name.Trim('_')}";
 
-            string paramStr = $"__{GetUdonTypeName(fieldType)}";
+            string paramStr = $"__{GetUdonTypeName(symbol.Type)}";
 
             string finalFunctionSig = $"{functionNamespace}.{methodName}{paramStr}";
 
@@ -275,6 +276,111 @@ namespace UdonSharp.Compiler.Udon
             {
                 throw new Exception($"Accessor {finalFunctionSig} is not exposed in Udon");
             }
+
+            return finalFunctionSig;
+        }
+        
+        public static string GetUdonAccessorName(FieldInfo fieldInfo, FieldAccessorType accessorType)
+        {
+            Type containingType = fieldInfo.DeclaringType;
+            
+            containingType = UdonSharpUtils.RemapBaseType(containingType);
+
+            string functionNamespace = SanitizeTypeName(containingType.FullName).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver").Replace("UdonSharpUdonSharpBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
+            string methodName = $"__{(accessorType == FieldAccessorType.Get ? "get" : "set")}_{fieldInfo.Name.Trim('_')}";
+
+            string paramStr = $"__{GetUdonTypeName(fieldInfo.FieldType)}";
+
+            return $"{functionNamespace}.{methodName}{paramStr}";
+        }
+
+        internal static string GetUdonMethodName(ExternMethodSymbol methodSymbol, AbstractPhaseContext context)
+        {
+            Type methodSourceType = methodSymbol.ContainingType.UdonType.SystemType;
+            IMethodSymbol roslynSymbol = methodSymbol.RoslynSymbol;
+
+            methodSourceType = UdonSharpUtils.RemapBaseType(methodSourceType);
+
+            string functionNamespace = SanitizeTypeName(methodSourceType.FullName ?? methodSourceType.Namespace + methodSourceType.Name).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
+
+            string methodName = $"__{methodSymbol.Name.Trim('_').TrimStart('.')}";
+            ImmutableArray<IParameterSymbol> parameters = roslynSymbol.Parameters;
+
+            string paramStr = "";
+            
+            if (parameters.Length > 0)
+            {
+                paramStr = "_"; // Arg separator
+            
+                foreach (IParameterSymbol parameter in parameters)
+                {
+                    paramStr += $"_{GetUdonTypeName(context.GetTypeSymbol(parameter.Type))}";
+                    if (parameter.RefKind != RefKind.None)
+                        paramStr += "Ref";
+                }
+            }
+            else if (methodSymbol.IsConstructor)
+                paramStr = "__";
+
+            string returnStr = "";
+
+            if (!methodSymbol.IsConstructor)
+            {
+                TypeSymbol returnType = context.GetTypeSymbol(roslynSymbol.ReturnType);
+
+                if (returnType.IsExtern &&
+                    returnType.RoslynSymbol?.ContainingNamespace?.ToString() == "VRC.SDKBase")
+                    returnStr = $"__{GetUdonTypeName(((ExternTypeSymbol)returnType).SystemType)}";
+                else
+                    returnStr = $"__{GetUdonTypeName(returnType)}";
+            }
+            else
+            {
+                returnStr = $"__{GetUdonTypeName(methodSymbol.ContainingType)}";
+            }
+
+            string finalFunctionSig = $"{functionNamespace}.{methodName}{paramStr}{returnStr}";
+
+            return finalFunctionSig;
+        }
+        
+        // Any changes to the above symbol based method should be ported to this
+        public static string GetUdonMethodName(MethodBase methodInfo)
+        {
+            Type methodSourceType = methodInfo.DeclaringType;
+            methodSourceType = UdonSharpUtils.RemapBaseType(methodSourceType);
+
+            string functionNamespace = SanitizeTypeName(methodSourceType.FullName ?? methodSourceType.Namespace + methodSourceType.Name).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
+
+            string methodName = $"__{methodInfo.Name.Trim('_').TrimStart('.')}";
+            ParameterInfo[] parameters = methodInfo.GetParameters();
+
+            string paramStr = "";
+            
+            if (parameters.Length > 0)
+            {
+                paramStr = "_"; // Arg separator
+            
+                foreach (ParameterInfo parameter in parameters)
+                {
+                    paramStr += $"_{GetUdonTypeName(parameter.ParameterType)}";
+                }
+            }
+            else if (methodInfo.IsConstructor)
+                paramStr = "__";
+
+            string returnStr = "";
+
+            if (!methodInfo.IsConstructor)
+            {
+                returnStr = $"__{GetUdonTypeName(((MethodInfo)methodInfo).ReturnType)}";
+            }
+            else
+            {
+                returnStr = $"__{GetUdonTypeName(methodSourceType)}";
+            }
+
+            string finalFunctionSig = $"{functionNamespace}.{methodName}{paramStr}{returnStr}";
 
             return finalFunctionSig;
         }

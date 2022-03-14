@@ -207,9 +207,9 @@ namespace UdonSharp
             return _inheritedTypeMap;
         }
 
-        internal static System.Type RemapBaseType(Type type)
+        internal static Type RemapBaseType(Type type)
         {
-            var typeMap = GetInheritedTypeMap();
+            Dictionary<Type, Type> typeMap = GetInheritedTypeMap();
 
             int arrayDepth = 0;
             Type currentType = type;

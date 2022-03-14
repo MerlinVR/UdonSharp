@@ -11,7 +11,7 @@ namespace UdonSharp.Compiler.Symbols
         public ExternTypeSymbol(INamedTypeSymbol sourceSymbol, AbstractPhaseContext context)
             : base(sourceSymbol, context)
         {
-            TryGetSystemType(sourceSymbol, out var systemType);
+            TryGetSystemType(sourceSymbol, out Type systemType);
             SystemType = systemType;
             
             Type udonType = UdonSharpUtils.UserTypeToUdonType(SystemType);
@@ -24,7 +24,7 @@ namespace UdonSharp.Compiler.Symbols
         public ExternTypeSymbol(IArrayTypeSymbol sourceSymbol, AbstractPhaseContext context)
             : base(sourceSymbol, context)
         {
-            TryGetSystemType(sourceSymbol, out var systemType);
+            TryGetSystemType(sourceSymbol, out Type systemType);
             SystemType = systemType;
             
             Type udonType = UdonSharpUtils.UserTypeToUdonType(SystemType);
@@ -53,7 +53,7 @@ namespace UdonSharp.Compiler.Symbols
             switch (roslynSymbol.Kind)
             {
                 case SymbolKind.Method:
-                    var methodSymbol = (IMethodSymbol) roslynSymbol;
+                    IMethodSymbol methodSymbol = (IMethodSymbol) roslynSymbol;
                     return methodSymbol.MethodKind == MethodKind.BuiltinOperator ? new ExternBuiltinOperatorSymbol(methodSymbol, context) : new ExternMethodSymbol(methodSymbol, context);
                 case SymbolKind.Field:
                     return new ExternFieldSymbol((IFieldSymbol)roslynSymbol, context);

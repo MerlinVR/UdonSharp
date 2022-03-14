@@ -38,7 +38,7 @@ namespace UdonSharp.Compiler.Binder
 
             TypeSymbol[] paramTypes = parameterExpressions.Select(ex => ex.ValueType).ToArray();
 
-            foreach (var candidate in candidates)
+            foreach (TypeSymbol candidate in candidates)
             {
                 ExternMethodSymbol externMethodSymbol = new ExternSynthesizedMethodSymbol(context, originalSymbol.Name, candidate, paramTypes, originalSymbol.ReturnType, false, false);
                 if (CompilerUdonInterface.IsExposedToUdon(externMethodSymbol.ExternSignature))
