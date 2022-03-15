@@ -173,7 +173,9 @@ namespace UdonSharp.Editors
                 return childStringData;
             }
 
+        #pragma warning disable 162
             return "";
+        #pragma warning restore 162
         }
 
         private TreeViewItem GetNamespaceParent(string path, TreeViewItem root, ref int currentID)
