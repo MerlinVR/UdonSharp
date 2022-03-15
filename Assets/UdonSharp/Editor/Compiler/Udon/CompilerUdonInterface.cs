@@ -400,11 +400,16 @@ namespace UdonSharp.Compiler.Udon
 
             methodSourceType = UdonSharpUtils.RemapBaseType(methodSourceType);
 
-            return CompilerUdonInterface.SanitizeTypeName(methodSourceType.FullName ?? methodSourceType.Namespace + methodSourceType.Name).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
+            return SanitizeTypeName(methodSourceType.FullName ?? methodSourceType.Namespace + methodSourceType.Name).Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
         }
+
+        private static ConcurrentDictionary<Type, string> _typeNameMap = new ConcurrentDictionary<Type, string>();
 
         public static string GetUdonTypeName(Type externType)
         {
+            if (_typeNameMap.TryGetValue(externType, out string foundTypeName))
+                return foundTypeName;
+            
             string externTypeName = externType.GetNameWithoutGenericArity();
             while (externType.IsArray || externType.IsByRef)
             {
@@ -451,6 +456,8 @@ namespace UdonSharp.Compiler.Udon
 
             // fullTypeName = fullTypeName.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
 
+            _typeNameMap.TryAdd(externType, fullTypeName);
+            
             return fullTypeName;
         }
 

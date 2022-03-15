@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using UdonSharp.Compiler.Udon;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
@@ -361,26 +363,36 @@ namespace UdonSharp.Editors
             return nestedTypes;
         }
 
+        private static int _assemblyCounter = 0;
+        
         private void BuildExposedTypeList()
         {
             if (_exposedTypes != null)
                 return;
-
+            
+            // Stopwatch timer = Stopwatch.StartNew();
+            
             try
             {
                 Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
+                object typeSetLock = new object();
                 HashSet<Type> exposedTypeSet = new HashSet<Type>();
-
-                for (int i = 0; i < assemblies.Length; ++i)
+                
+                int mainThreadID = Thread.CurrentThread.ManagedThreadId;
+                _assemblyCounter = 0;
+                int totalAssemblies = assemblies.Length;
+                
+                Parallel.ForEach(assemblies, new ParallelOptions { MaxDegreeOfParallelism = 3 }, assembly =>
                 {
-                    EditorUtility.DisplayProgressBar("Processing methods and types...", $"Assembly {i + 1}/{assemblies.Length} {assemblies[i].GetName().Name}", i / (float)assemblies.Length);
-
-                    Assembly assembly = assemblies[i];
-
                     if (assembly.FullName.Contains("UdonSharp") ||
                         assembly.FullName.Contains("CodeAnalysis"))
-                        continue;
+                        return;
+
+                    Interlocked.Increment(ref _assemblyCounter);
+
+                    if (Thread.CurrentThread.ManagedThreadId == mainThreadID) // Can only be called from the main thread, since Parallel.ForEach uses the calling thread for some loops we just only run this in that thread.
+                        EditorUtility.DisplayProgressBar("Processing methods and types...", $"{_assemblyCounter}/{totalAssemblies}", _assemblyCounter / (float)totalAssemblies);
 
                     Type[] assemblyTypes = assembly.GetTypes();
 
@@ -394,6 +406,8 @@ namespace UdonSharp.Editors
 
                     types = types.Distinct().ToList();
 
+                    HashSet<Type> localExposedTypeSet = new HashSet<Type>();
+
                     foreach (Type type in types)
                     {
                         if (type.IsByRef)
@@ -402,39 +416,40 @@ namespace UdonSharp.Editors
                         string typeName = CompilerUdonInterface.GetUdonTypeName(type);
                         if (UdonEditorManager.Instance.GetTypeFromTypeString(typeName) != null)
                         {
-                            exposedTypeSet.Add(type);
+                            localExposedTypeSet.Add(type);
 
                             if (!type.IsGenericType && !type.IsGenericTypeDefinition)
-                                exposedTypeSet.Add(type.MakeArrayType());
+                                localExposedTypeSet.Add(type.MakeArrayType());
                         }
 
                         MethodInfo[] methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
-                        
+
                         foreach (MethodInfo method in methods)
                         {
                             if (CompilerUdonInterface.IsExposedToUdon(CompilerUdonInterface.GetUdonMethodName(method)))
                             {
-                                exposedTypeSet.Add(method.DeclaringType);
+                                localExposedTypeSet.Add(method.DeclaringType);
 
                                 // We also want to highlight types that can be returned or taken as parameters
                                 if (method.ReturnType != typeof(void) &&
                                     method.ReturnType.Name != "T" &&
                                     method.ReturnType.Name != "T[]")
                                 {
-                                    exposedTypeSet.Add(method.ReturnType);
+                                    localExposedTypeSet.Add(method.ReturnType);
 
-                                    if (!method.ReturnType.IsArray && !method.ReturnType.IsGenericType && !method.ReturnType.IsGenericTypeDefinition)
-                                        exposedTypeSet.Add(method.ReturnType.MakeArrayType());
+                                    if (!method.ReturnType.IsArray && !method.ReturnType.IsGenericType &&
+                                        !method.ReturnType.IsGenericTypeDefinition)
+                                        localExposedTypeSet.Add(method.ReturnType.MakeArrayType());
                                 }
 
                                 foreach (ParameterInfo parameterInfo in method.GetParameters())
                                 {
                                     if (!parameterInfo.ParameterType.IsByRef)
                                     {
-                                        exposedTypeSet.Add(parameterInfo.ParameterType);
+                                        localExposedTypeSet.Add(parameterInfo.ParameterType);
 
                                         if (!parameterInfo.ParameterType.IsArray)
-                                            exposedTypeSet.Add(parameterInfo.ParameterType.MakeArrayType());
+                                            localExposedTypeSet.Add(parameterInfo.ParameterType.MakeArrayType());
                                     }
                                 }
                             }
@@ -449,45 +464,56 @@ namespace UdonSharp.Editors
                             if (CompilerUdonInterface.IsExposedToUdon(CompilerUdonInterface.GetUdonMethodName(propertyGetter)))
                             {
                                 Type returnType = propertyGetter.ReturnType;
-                                
-                                exposedTypeSet.Add(property.DeclaringType);
+
+                                localExposedTypeSet.Add(property.DeclaringType);
 
                                 if (returnType != typeof(void) &&
                                     returnType.Name != "T" &&
                                     returnType.Name != "T[]")
                                 {
-                                    exposedTypeSet.Add(returnType);
+                                    localExposedTypeSet.Add(returnType);
 
-                                    if (!returnType.IsArray && !returnType.IsGenericType && !returnType.IsGenericTypeDefinition)
-                                        exposedTypeSet.Add(returnType.MakeArrayType());
+                                    if (!returnType.IsArray && !returnType.IsGenericType &&
+                                        !returnType.IsGenericTypeDefinition)
+                                        localExposedTypeSet.Add(returnType.MakeArrayType());
                                 }
                             }
                         }
 
                         foreach (FieldInfo field in type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
                         {
-                            if (field.DeclaringType?.FullName == null) // Fix szome weird types in Odin that don't have a name for their declaring type
+                            if (field.DeclaringType?.FullName ==
+                                null) // Fix some weird types in Odin that don't have a name for their declaring type
                                 continue;
 
                             if (CompilerUdonInterface.IsExposedToUdon(CompilerUdonInterface.GetUdonAccessorName(field, CompilerUdonInterface.FieldAccessorType.Get)))
                             {
                                 Type returnType = field.FieldType;
-                                
-                                exposedTypeSet.Add(field.DeclaringType);
+
+                                localExposedTypeSet.Add(field.DeclaringType);
 
                                 if (returnType != typeof(void) &&
                                     returnType.Name != "T" &&
                                     returnType.Name != "T[]")
                                 {
-                                    exposedTypeSet.Add(returnType);
+                                    localExposedTypeSet.Add(returnType);
 
-                                    if (!returnType.IsArray && !returnType.IsGenericType && !returnType.IsGenericTypeDefinition)
-                                        exposedTypeSet.Add(returnType.MakeArrayType());
+                                    if (!returnType.IsArray && !returnType.IsGenericType &&
+                                        !returnType.IsGenericTypeDefinition)
+                                        localExposedTypeSet.Add(returnType.MakeArrayType());
                                 }
                             }
                         }
                     }
-                }
+
+                    if (localExposedTypeSet.Count == 0) 
+                        return;
+                    
+                    lock (typeSetLock)
+                    {
+                        exposedTypeSet.UnionWith(localExposedTypeSet);
+                    }
+                });
 
                 _exposedTypes = exposedTypeSet.ToList();
             }
@@ -497,6 +523,8 @@ namespace UdonSharp.Editors
             }
 
             _exposedTypes.RemoveAll(e => e.Name == "T" || e.Name == "T[]");
+            
+            // Debug.Log($"Elapsed time {timer.Elapsed.TotalSeconds * 1000.0}ms");
         }
 
         protected override TreeViewItem BuildRoot()
@@ -526,7 +554,10 @@ namespace UdonSharp.Editors
 
             foreach (Type type in _exposedTypes.OrderBy(e => e.Name))
             {
-                EditorUtility.DisplayProgressBar("Adding types...", $"Adding type {type}", currentTypeCount++ / (float)_exposedTypes.Count);
+                if (currentTypeCount % 30 == 0)
+                    EditorUtility.DisplayProgressBar("Adding types...", $"Adding type {type}", currentTypeCount / (float)_exposedTypes.Count);
+
+                currentTypeCount++;
                 
                 // if (ShouldHideTypeTopLevel(type, true))
                 //     continue;
