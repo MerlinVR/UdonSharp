@@ -1,7 +1,7 @@
 ﻿
 using System;
+using System.Linq;
 using JetBrains.Annotations;
-using System.Collections.Generic;
 using UdonSharp;
 using UnityEditor;
 using UnityEngine;
@@ -53,82 +53,6 @@ namespace UdonSharpEditor
         public static void ApplyProxyModifications(this UdonSharpBehaviour behaviour, ProxySerializationPolicy serializationPolicy)
         {
             UdonSharpEditorUtility.CopyProxyToUdon(behaviour, serializationPolicy);
-        }
-    #endregion
-
-    #region Utility functions
-        private static UdonSharpBehaviour ConvertToUdonSharpComponentIntnl(UdonBehaviour behaviour, System.Type type, ProxySerializationPolicy proxySerializationPolicy)
-        {
-            if (behaviour == null)
-                return null;
-
-            if (!UdonSharpEditorUtility.IsUdonSharpBehaviour(behaviour))
-                return null;
-
-            UdonSharpBehaviour udonSharpBehaviour = UdonSharpEditorUtility.GetProxyBehaviour(behaviour);
-            System.Type uSharpBehaviourType = udonSharpBehaviour.GetType();
-
-            if (udonSharpBehaviour && (uSharpBehaviourType == type || uSharpBehaviourType.IsSubclassOf(type)))
-            {
-                UdonSharpEditorUtility.CopyUdonToProxy(udonSharpBehaviour, proxySerializationPolicy);
-                return udonSharpBehaviour;
-            }
-
-            return null;
-        }
-
-        private static UdonSharpBehaviour ConvertToUdonSharpComponent(UdonBehaviour[] behaviours, System.Type type, ProxySerializationPolicy proxySerializationPolicy)
-        {
-            foreach (UdonBehaviour behaviour in behaviours)
-            {
-                UdonSharpBehaviour udonSharpBehaviour = ConvertToUdonSharpComponentIntnl(behaviour, type, ProxySerializationPolicy.NoSerialization);
-
-                if (udonSharpBehaviour)
-                    return udonSharpBehaviour;
-            }
-
-            return null;
-        }
-
-        private static T ConvertToUdonSharpComponent<T>(UdonBehaviour[] behaviours, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour
-        {
-            return (T)ConvertToUdonSharpComponent(behaviours, typeof(T), ProxySerializationPolicy.NoSerialization);
-        }
-
-        private static UdonSharpBehaviour[] ConvertToUdonSharpComponents(UdonBehaviour[] behaviours, System.Type type, ProxySerializationPolicy proxySerializationPolicy)
-        {
-            if (behaviours.Length == 0)
-                return Array.Empty<UdonSharpBehaviour>();
-
-            List<UdonSharpBehaviour> udonSharpBehaviours = new List<UdonSharpBehaviour>();
-
-            foreach (UdonBehaviour behaviour in behaviours)
-            {
-                UdonSharpBehaviour udonSharpBehaviour = ConvertToUdonSharpComponentIntnl(behaviour, type, ProxySerializationPolicy.NoSerialization);
-
-                if (udonSharpBehaviour)
-                    udonSharpBehaviours.Add(udonSharpBehaviour);
-            }
-
-            return udonSharpBehaviours.ToArray();
-        }
-
-        private static T[] ConvertToUdonSharpComponents<T>(UdonBehaviour[] behaviours, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour
-        {
-            if (behaviours.Length == 0)
-                return Array.Empty<T>();
-
-            List<T> udonSharpBehaviours = new List<T>();
-
-            foreach (UdonBehaviour behaviour in behaviours)
-            {
-                UdonSharpBehaviour udonSharpBehaviour = ConvertToUdonSharpComponentIntnl(behaviour, typeof(T), ProxySerializationPolicy.NoSerialization);
-
-                if (udonSharpBehaviour)
-                    udonSharpBehaviours.Add((T)udonSharpBehaviour);
-            }
-
-            return udonSharpBehaviours.ToArray();
         }
     #endregion
 
@@ -184,376 +108,310 @@ namespace UdonSharpEditor
             (T)AddUdonSharpComponent(gameObject, typeof(T));
     #endregion
 
+    #region Obsolete GetComponent APIs
+
+        private static UdonSharpBehaviour[] CastArray(this Component[] components) => components.OfType<UdonSharpBehaviour>().ToArray();
+
     #region GetComponent
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static T GetUdonSharpComponent<T>(this GameObject gameObject) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponents<UdonBehaviour>(), ProxySerializationPolicy.Default);
+        public static T GetUdonSharpComponent<T>(this GameObject gameObject) where T : UdonSharpBehaviour => 
+            gameObject.GetComponent<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static T GetUdonSharpComponent<T>(this GameObject gameObject, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponents<UdonBehaviour>(), proxySerializationPolicy);
+        public static T GetUdonSharpComponent<T>(this GameObject gameObject, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour => 
+            gameObject.GetComponent<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponent(this GameObject gameObject, System.Type type) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponents<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour GetUdonSharpComponent(this GameObject gameObject, Type type) => 
+            gameObject.GetComponent(type) as UdonSharpBehaviour;
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponent(this GameObject gameObject, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponents<UdonBehaviour>(), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour GetUdonSharpComponent(this GameObject gameObject, Type type, ProxySerializationPolicy proxySerializationPolicy) => 
+            gameObject.GetComponent(type) as UdonSharpBehaviour;
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static T GetUdonSharpComponent<T>(this Component component) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(component.GetComponents<UdonBehaviour>(), ProxySerializationPolicy.Default);
+        public static T GetUdonSharpComponent<T>(this Component component) where T : UdonSharpBehaviour => 
+            component.GetComponent<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T GetUdonSharpComponent<T>(this Component component, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour => 
-            ConvertToUdonSharpComponent<T>(component.GetComponents<UdonBehaviour>(), proxySerializationPolicy);
+            component.GetComponent<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponent(this Component component, System.Type type) =>
-            ConvertToUdonSharpComponent(component.GetComponents<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour GetUdonSharpComponent(this Component component, Type type) => 
+            component.GetComponent(type) as UdonSharpBehaviour;
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponent(this Component component, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(component.GetComponents<UdonBehaviour>(), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour GetUdonSharpComponent(this Component component, Type type, ProxySerializationPolicy proxySerializationPolicy) => 
+            component.GetComponent(type) as UdonSharpBehaviour;
     #endregion
 
     #region GetComponents
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static T[] GetUdonSharpComponents<T>(this GameObject gameObject) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(gameObject.GetComponents<UdonBehaviour>(), ProxySerializationPolicy.Default);
+        public static T[] GetUdonSharpComponents<T>(this GameObject gameObject) where T : UdonSharpBehaviour => 
+            gameObject.GetComponents<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static T[] GetUdonSharpComponents<T>(this GameObject gameObject, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(gameObject.GetComponents<UdonBehaviour>(), proxySerializationPolicy);
+        public static T[] GetUdonSharpComponents<T>(this GameObject gameObject, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour => 
+            gameObject.GetComponents<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponents(this GameObject gameObject, System.Type type) =>
-            ConvertToUdonSharpComponents(gameObject.GetComponents<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour[] GetUdonSharpComponents(this GameObject gameObject, Type type) => 
+            gameObject.GetComponents(type).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponents(this GameObject gameObject, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponents(gameObject.GetComponents<UdonBehaviour>(), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour[] GetUdonSharpComponents(this GameObject gameObject, Type type, ProxySerializationPolicy proxySerializationPolicy) => 
+            gameObject.GetComponents(type).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static T[] GetUdonSharpComponents<T>(this Component component) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(component.GetComponents<UdonBehaviour>(), ProxySerializationPolicy.Default);
+        public static T[] GetUdonSharpComponents<T>(this Component component) where T : UdonSharpBehaviour => 
+            component.GetComponents<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static T[] GetUdonSharpComponents<T>(this Component component, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(component.GetComponents<UdonBehaviour>(), proxySerializationPolicy);
+        public static T[] GetUdonSharpComponents<T>(this Component component, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour => 
+            component.GetComponents<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponents(this Component component, System.Type type) =>
-            ConvertToUdonSharpComponents(component.GetComponents<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour[] GetUdonSharpComponents(this Component component, Type type) => 
+            component.GetComponents(type).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponents(this Component component, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponents(component.GetComponents<UdonBehaviour>(), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour[] GetUdonSharpComponents(this Component component, Type type, ProxySerializationPolicy proxySerializationPolicy) => 
+            component.GetComponents(type).CastArray();
     #endregion
 
     #region GetComponentInChildren
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static T GetUdonSharpComponentInChildren<T>(this GameObject gameObject) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponentsInChildren<UdonBehaviour>(), ProxySerializationPolicy.Default);
+        public static T GetUdonSharpComponentInChildren<T>(this GameObject gameObject) where T : UdonSharpBehaviour => 
+            gameObject.GetComponentInChildren<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static T GetUdonSharpComponentInChildren<T>(this GameObject gameObject, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponentsInChildren<UdonBehaviour>(), proxySerializationPolicy);
+        public static T GetUdonSharpComponentInChildren<T>(this GameObject gameObject, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour => 
+            gameObject.GetComponentInChildren<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this GameObject gameObject, System.Type type) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponentsInChildren<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this GameObject gameObject, Type type) => 
+            gameObject.GetComponentInChildren(type) as UdonSharpBehaviour;
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this GameObject gameObject, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponentsInChildren<UdonBehaviour>(), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this GameObject gameObject, Type type, ProxySerializationPolicy proxySerializationPolicy) => 
+            gameObject.GetComponentInChildren(type) as UdonSharpBehaviour;
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static T GetUdonSharpComponentInChildren<T>(this GameObject gameObject, bool includeInactive) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponentsInChildren<UdonBehaviour>(includeInactive), ProxySerializationPolicy.Default);
+        public static T GetUdonSharpComponentInChildren<T>(this GameObject gameObject, bool includeInactive) where T : UdonSharpBehaviour => 
+            gameObject.GetComponentInChildren<T>(includeInactive);
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static T GetUdonSharpComponentInChildren<T>(this GameObject gameObject, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponentsInChildren<UdonBehaviour>(includeInactive), proxySerializationPolicy);
+        public static T GetUdonSharpComponentInChildren<T>(this GameObject gameObject, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour => 
+            gameObject.GetComponentInChildren<T>(includeInactive);
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this GameObject gameObject, System.Type type, bool includeInactive) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponentsInChildren<UdonBehaviour>(includeInactive), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this GameObject gameObject, Type type, bool includeInactive) =>
+            gameObject.GetComponentInChildren(type) as UdonSharpBehaviour;
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this GameObject gameObject, System.Type type, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponentsInChildren<UdonBehaviour>(includeInactive), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this GameObject gameObject, Type type, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) => 
+            gameObject.GetComponentInChildren(type, includeInactive) as UdonSharpBehaviour;
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static T GetUdonSharpComponentInChildren<T>(this Component component) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(component.GetComponentsInChildren<UdonBehaviour>(), ProxySerializationPolicy.Default);
+        public static T GetUdonSharpComponentInChildren<T>(this Component component) where T : UdonSharpBehaviour => 
+            component.GetComponentInChildren<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static T GetUdonSharpComponentInChildren<T>(this Component component, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(component.GetComponentsInChildren<UdonBehaviour>(), proxySerializationPolicy);
+        public static T GetUdonSharpComponentInChildren<T>(this Component component, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour => 
+            component.GetComponentInChildren<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this Component component, System.Type type) =>
-            ConvertToUdonSharpComponent(component.GetComponentsInChildren<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this Component component, Type type) => 
+            component.GetComponentInChildren(type) as UdonSharpBehaviour;
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this Component component, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(component.GetComponentsInChildren<UdonBehaviour>(), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this Component component, Type type, ProxySerializationPolicy proxySerializationPolicy) =>
+            component.GetComponentInChildren(type) as UdonSharpBehaviour;
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T GetUdonSharpComponentInChildren<T>(this Component component, bool includeInactive) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(component.GetComponentsInChildren<UdonBehaviour>(includeInactive), ProxySerializationPolicy.Default);
+            component.GetComponentInChildren<T>(includeInactive);
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T GetUdonSharpComponentInChildren<T>(this Component component, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(component.GetComponentsInChildren<UdonBehaviour>(includeInactive), proxySerializationPolicy);
+            component.GetComponentInChildren<T>(includeInactive);
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this Component component, System.Type type, bool includeInactive) =>
-            ConvertToUdonSharpComponent(component.GetComponentsInChildren<UdonBehaviour>(includeInactive), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this Component component, Type type, bool includeInactive) =>
+            component.GetComponentInChildren(type, includeInactive) as UdonSharpBehaviour;
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this Component component, System.Type type, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(component.GetComponentsInChildren<UdonBehaviour>(includeInactive), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour GetUdonSharpComponentInChildren(this Component component, Type type, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) =>
+            component.GetComponentInChildren(type, includeInactive) as UdonSharpBehaviour;
     #endregion
 
     #region GetComponentsInChildren
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInChildren<T>(this GameObject gameObject) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(gameObject.GetComponentsInChildren<UdonBehaviour>(), ProxySerializationPolicy.Default);
+            gameObject.GetComponentsInChildren<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInChildren<T>(this GameObject gameObject, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(gameObject.GetComponentsInChildren<UdonBehaviour>(), proxySerializationPolicy);
+            gameObject.GetComponentsInChildren<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this GameObject gameObject, System.Type type) =>
-            ConvertToUdonSharpComponents(gameObject.GetComponentsInChildren<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this GameObject gameObject, Type type) =>
+            gameObject.GetComponentsInChildren(type).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this GameObject gameObject, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponents(gameObject.GetComponentsInChildren<UdonBehaviour>(), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this GameObject gameObject, Type type, ProxySerializationPolicy proxySerializationPolicy) =>
+            gameObject.GetComponentsInChildren(type).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInChildren<T>(this GameObject gameObject, bool includeInactive) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(gameObject.GetComponentsInChildren<UdonBehaviour>(includeInactive), ProxySerializationPolicy.Default);
+            gameObject.GetComponentsInChildren<T>(includeInactive);
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInChildren<T>(this GameObject gameObject, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(gameObject.GetComponentsInChildren<UdonBehaviour>(includeInactive), proxySerializationPolicy);
+            gameObject.GetComponentsInChildren<T>(includeInactive);
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this GameObject gameObject, System.Type type, bool includeInactive) =>
-            ConvertToUdonSharpComponents(gameObject.GetComponentsInChildren<UdonBehaviour>(includeInactive), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this GameObject gameObject, Type type, bool includeInactive) =>
+            gameObject.GetComponentsInChildren(type, includeInactive).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this GameObject gameObject, System.Type type, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponents(gameObject.GetComponentsInChildren<UdonBehaviour>(includeInactive), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this GameObject gameObject, Type type, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) =>
+            gameObject.GetComponentsInChildren(type, includeInactive).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInChildren<T>(this Component component) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(component.GetComponentsInChildren<UdonBehaviour>(), ProxySerializationPolicy.Default);
+            component.GetComponentsInChildren<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInChildren<T>(this Component component, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(component.GetComponentsInChildren<UdonBehaviour>(), proxySerializationPolicy);
+            component.GetComponentsInChildren<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this Component component, System.Type type) =>
-            ConvertToUdonSharpComponents(component.GetComponentsInChildren<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this Component component, Type type) =>
+            component.GetComponentsInChildren(type).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this Component component, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponents(component.GetComponentsInChildren<UdonBehaviour>(), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this Component component, Type type, ProxySerializationPolicy proxySerializationPolicy) =>
+            component.GetComponentsInChildren(type).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInChildren<T>(this Component component, bool includeInactive) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(component.GetComponentsInChildren<UdonBehaviour>(includeInactive), ProxySerializationPolicy.Default);
+            component.GetComponentsInChildren<T>(includeInactive);
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInChildren<T>(this Component component, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(component.GetComponentsInChildren<UdonBehaviour>(includeInactive), proxySerializationPolicy);
+            component.GetComponentsInChildren<T>(includeInactive);
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this Component component, System.Type type, bool includeInactive) =>
-            ConvertToUdonSharpComponents(component.GetComponentsInChildren<UdonBehaviour>(includeInactive), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this Component component, Type type, bool includeInactive) =>
+            component.GetComponentsInChildren(type, includeInactive).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this Component component, System.Type type, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponents(component.GetComponentsInChildren<UdonBehaviour>(includeInactive), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInChildren(this Component component, Type type, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) =>
+            component.GetComponentsInChildren(type, includeInactive).CastArray();
     #endregion
 
     #region GetComponentInParent
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T GetUdonSharpComponentInParent<T>(this GameObject gameObject) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponentsInParent<UdonBehaviour>(), ProxySerializationPolicy.Default);
+            gameObject.GetComponentInParent<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T GetUdonSharpComponentInParent<T>(this GameObject gameObject, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(gameObject.GetComponentsInParent<UdonBehaviour>(), proxySerializationPolicy);
+            gameObject.GetComponentInParent<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponentInParent(this GameObject gameObject, System.Type type) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponentsInParent<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour GetUdonSharpComponentInParent(this GameObject gameObject, Type type) =>
+            gameObject.GetComponentInParent(type) as UdonSharpBehaviour;
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponentInParent(this GameObject gameObject, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(gameObject.GetComponentsInParent<UdonBehaviour>(), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour GetUdonSharpComponentInParent(this GameObject gameObject, Type type, ProxySerializationPolicy proxySerializationPolicy) =>
+            gameObject.GetComponentInParent(type) as UdonSharpBehaviour;
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T GetUdonSharpComponentInParent<T>(this Component component) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(component.GetComponentsInParent<UdonBehaviour>(), ProxySerializationPolicy.Default);
+            component.GetComponentInParent<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T GetUdonSharpComponentInParent<T>(this Component component, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponent<T>(component.GetComponentsInParent<UdonBehaviour>(), proxySerializationPolicy);
+            component.GetComponentInParent<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponentInParent(this Component component, System.Type type) =>
-            ConvertToUdonSharpComponent(component.GetComponentsInParent<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour GetUdonSharpComponentInParent(this Component component, Type type) =>
+            component.GetComponentInParent(type) as UdonSharpBehaviour;
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour GetUdonSharpComponentInParent(this Component component, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponent(component.GetComponentsInParent<UdonBehaviour>(), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour GetUdonSharpComponentInParent(this Component component, Type type, ProxySerializationPolicy proxySerializationPolicy) =>
+            component.GetComponentInParent(type) as UdonSharpBehaviour;
     #endregion
 
     #region GetComponentsInParent
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInParent<T>(this GameObject gameObject) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(gameObject.GetComponentsInParent<UdonBehaviour>(), ProxySerializationPolicy.Default);
+            gameObject.GetComponentsInParent<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInParent<T>(this GameObject gameObject, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(gameObject.GetComponentsInParent<UdonBehaviour>(), proxySerializationPolicy);
+            gameObject.GetComponentsInParent<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this GameObject gameObject, System.Type type) =>
-            ConvertToUdonSharpComponents(gameObject.GetComponentsInParent<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this GameObject gameObject, Type type) =>
+            gameObject.GetComponentsInParent(type).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this GameObject gameObject, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponents(gameObject.GetComponentsInParent<UdonBehaviour>(), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this GameObject gameObject, Type type, ProxySerializationPolicy proxySerializationPolicy) =>
+            gameObject.GetComponentsInParent(type).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInParent<T>(this GameObject gameObject, bool includeInactive) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(gameObject.GetComponentsInParent<UdonBehaviour>(includeInactive), ProxySerializationPolicy.Default);
+            gameObject.GetComponentsInParent<T>(includeInactive);
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInParent<T>(this GameObject gameObject, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(gameObject.GetComponentsInParent<UdonBehaviour>(includeInactive), proxySerializationPolicy);
+            gameObject.GetComponentsInParent<T>(includeInactive);
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this GameObject gameObject, System.Type type, bool includeInactive) =>
-            ConvertToUdonSharpComponents(gameObject.GetComponentsInParent<UdonBehaviour>(includeInactive), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this GameObject gameObject, Type type, bool includeInactive) =>
+            gameObject.GetComponentsInParent(type, includeInactive).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this GameObject gameObject, System.Type type, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponents(gameObject.GetComponentsInParent<UdonBehaviour>(includeInactive), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this GameObject gameObject, Type type, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) =>
+            gameObject.GetComponentsInParent(type, includeInactive).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInParent<T>(this Component component) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(component.GetComponentsInParent<UdonBehaviour>(), ProxySerializationPolicy.Default);
+            component.GetComponentsInParent<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInParent<T>(this Component component, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(component.GetComponentsInParent<UdonBehaviour>(), proxySerializationPolicy);
+            component.GetComponentsInParent<T>();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this Component component, System.Type type) =>
-            ConvertToUdonSharpComponents(component.GetComponentsInParent<UdonBehaviour>(), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this Component component, Type type) =>
+            component.GetComponentsInParent(type).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this Component component, System.Type type, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponents(component.GetComponentsInParent<UdonBehaviour>(), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this Component component, Type type, ProxySerializationPolicy proxySerializationPolicy) =>
+            component.GetComponentsInParent(type).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInParent<T>(this Component component, bool includeInactive) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(component.GetComponentsInParent<UdonBehaviour>(includeInactive), ProxySerializationPolicy.Default);
+            component.GetComponentsInParent<T>(includeInactive);
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
         public static T[] GetUdonSharpComponentsInParent<T>(this Component component, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) where T : UdonSharpBehaviour =>
-            ConvertToUdonSharpComponents<T>(component.GetComponentsInParent<UdonBehaviour>(includeInactive), proxySerializationPolicy);
+            component.GetComponentsInParent<T>(includeInactive);
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this Component component, System.Type type, bool includeInactive) =>
-            ConvertToUdonSharpComponents(component.GetComponentsInParent<UdonBehaviour>(includeInactive), type, ProxySerializationPolicy.Default);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this Component component, Type type, bool includeInactive) =>
+            component.GetComponentsInParent(type, includeInactive).CastArray();
 
-        [PublicAPI]
         [Obsolete("UdonSharp GetComponent Extensions are deprecated, use regular GetComponent(s) calls now.")]
-        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this Component component, System.Type type, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) =>
-            ConvertToUdonSharpComponents(component.GetComponentsInParent<UdonBehaviour>(includeInactive), type, proxySerializationPolicy);
+        public static UdonSharpBehaviour[] GetUdonSharpComponentsInParent(this Component component, Type type, bool includeInactive, ProxySerializationPolicy proxySerializationPolicy) =>
+            component.GetComponentsInParent(type, includeInactive).CastArray();
+    #endregion
+
     #endregion
     }
 }
