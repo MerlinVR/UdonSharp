@@ -6,11 +6,13 @@ using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
 using UdonSharp;
+using UdonSharp.Compiler.Symbols;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using VRC.Udon;
+using VRC.Udon.Serialization.OdinSerializer;
 using Object = UnityEngine.Object;
 
 #if ODIN_INSPECTOR_3
@@ -711,6 +713,8 @@ namespace UdonSharpEditor
             return container;
         }
 
+        private static readonly GUIContent _jaggedArrayHeader = new GUIContent("Jagged Arrays", "Fallback inspector handling for jagged arrays since Unity does not handle serializing them.");
+        
         private VisualElement CreateDefaultUdonSharpInspectorElement()
         {
             return CreateIMGUIInspector(() =>
@@ -737,6 +741,64 @@ namespace UdonSharpEditor
             #endif
 
                 serializedObject.ApplyModifiedProperties();
+
+                // Fallback handling for jagged array drawer
+                List<FieldInfo> jaggedArrayFields = null;
+
+                foreach (FieldInfo field in target.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance))
+                {
+                    if (UdonSharpUtils.IsUserJaggedArray(field.FieldType) && 
+                        field.IsDefined(typeof(OdinSerializeAttribute)) && // We only want Odin serialized fields since other jagged arrays will not be saved
+                        !field.IsDefined(typeof(HideInInspector)))
+                    {
+                        if (jaggedArrayFields == null) 
+                            jaggedArrayFields = new List<FieldInfo>();
+                        
+                        jaggedArrayFields.Add(field);
+                    }
+                }
+
+                if (jaggedArrayFields == null)
+                    return;
+
+                bool isPrefab = PrefabUtility.IsPartOfPrefabInstance(target);
+                
+                // Unity will not record changes to instances even if I force Odin to serialize so :shrug:
+                EditorGUI.BeginDisabledGroup(isPrefab);
+
+                EditorGUILayout.Space();
+                    
+                EditorGUILayout.LabelField(_jaggedArrayHeader, EditorStyles.boldLabel);
+
+                if (targets.Length > 1)
+                {
+                    EditorGUILayout.HelpBox("Multi-edit is not supported on jagged array drawers", MessageType.None);
+                    return;
+                }
+
+                if (isPrefab)
+                    EditorGUILayout.HelpBox("Cannot edit jagged arrays on prefab instances", MessageType.None);
+
+                bool dirtied = false;
+                
+                foreach (FieldInfo field in jaggedArrayFields)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    object newArrayVal = UdonSharpGUI.DrawFieldForType(target, field.Name, field.Name, field.GetValue(target), field.FieldType, field);
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        dirtied = true;
+                        field.SetValue(target, newArrayVal);
+                    }
+                }
+
+                if (dirtied)
+                {
+                    UdonSharpUtils.SetDirty(target);
+                }
+                
+                EditorGUI.EndDisabledGroup();
             });
         }
 
