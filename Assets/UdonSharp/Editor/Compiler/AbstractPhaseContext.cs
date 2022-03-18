@@ -89,7 +89,7 @@ namespace UdonSharp.Compiler
         {
         }
 
-        public virtual Symbol RedirectTypeSymbol(Symbol symbol) => symbol;
+        protected virtual Symbol RedirectTypeSymbol(Symbol symbol) => symbol;
         protected virtual Symbol RedirectMethodSymbol(Symbol symbol) => symbol;
         protected virtual Symbol RedirectParameterSymbol(Symbol symbol) => symbol;
     }

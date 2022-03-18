@@ -14,6 +14,12 @@ namespace UdonSharp.Compiler.Symbols
     {
         private readonly object _dictionaryLazyInitLock = new object();
         private ConcurrentDictionary<ISymbol, Symbol> _typeSymbols;
+        
+        /// <summary>
+        /// Maps A method symbol to its locals.
+        /// This is needed to prevent conflicts of local symbols between instances of a generic method with different type arguments.
+        /// </summary>
+        private ConcurrentDictionary<IMethodSymbol, Dictionary<ILocalSymbol, LocalSymbol>> _methodLocalSymbols;
 
         public new ITypeSymbol RoslynSymbol => (ITypeSymbol)base.RoslynSymbol;
 
@@ -198,6 +204,35 @@ namespace UdonSharp.Compiler.Symbols
                     symbol = ((IMethodSymbol)symbol).Construct(methodSymbol.TypeArguments.ToArray());
             }
 
+            // Treats symbols as local to a particular method symbol across different method type arguments
+            // Prevents LocalSymbol info from leaking across multiple uses of the same method with different generic type arguments
+            if (symbol is ILocalSymbol localSymbol)
+            {
+                MethodSymbol currentBindMethod = ((BindContext)context).CurrentBindMethod;
+
+                if (_methodLocalSymbols == null)
+                {
+                    lock (_dictionaryLazyInitLock)
+                    {
+                        if (_methodLocalSymbols == null)
+                        {
+                            _methodLocalSymbols = new ConcurrentDictionary<IMethodSymbol, Dictionary<ILocalSymbol, LocalSymbol>>();
+                        }
+                    }
+                }
+                
+                Dictionary<ILocalSymbol, LocalSymbol> localMap = _methodLocalSymbols.GetOrAdd(currentBindMethod.RoslynSymbol, (key) => new Dictionary<ILocalSymbol, LocalSymbol>());
+
+                if (localMap.TryGetValue(localSymbol, out LocalSymbol foundSymbol))
+                    return foundSymbol;
+
+                LocalSymbol newLocal = (LocalSymbol)CreateSymbol(symbol, context);
+                
+                localMap.Add(localSymbol, newLocal);
+
+                return newLocal;
+            }
+
             return _typeSymbols.GetOrAdd(symbol, (key) => CreateSymbol(symbol, context));
         }
 
@@ -266,9 +301,6 @@ namespace UdonSharp.Compiler.Symbols
         private Type _cachedType;
         private static readonly SymbolDisplayFormat _fullTypeFormat =
             new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
-
-        private static readonly System.Reflection.Assembly _gameScriptAssembly =
-            AppDomain.CurrentDomain.GetAssemblies().First(e => e.GetName().Name == "Assembly-CSharp");
 
         public static string GetFullTypeName(ITypeSymbol typeSymbol)
         {

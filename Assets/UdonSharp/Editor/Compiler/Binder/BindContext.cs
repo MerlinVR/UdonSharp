@@ -16,6 +16,8 @@ namespace UdonSharp.Compiler.Binder
         private IEnumerable<Symbol> TypeSymbolsToBind { get; }
 
         private Symbol _currentBindSymbol;
+        public MethodSymbol CurrentBindMethod => _currentBindSymbol as MethodSymbol;
+        
         private HashSet<Symbol> _currentReferencedSymbols;
         
         public BindContext(CompilationContext context, ITypeSymbol bindSymbol, IEnumerable<Symbol> referencedTypeSymbolsToBind)
@@ -32,7 +34,7 @@ namespace UdonSharp.Compiler.Binder
             if (!containingType.IsBound)
                 containingType.Bind(this);
 
-            foreach (var symbol in TypeSymbolsToBind)
+            foreach (Symbol symbol in TypeSymbolsToBind)
             {
                 if (symbol.IsBound)
                     continue;
@@ -61,7 +63,7 @@ namespace UdonSharp.Compiler.Binder
             return currentSymbol;
         }
 
-        public override Symbol RedirectTypeSymbol(Symbol symbol)
+        protected override Symbol RedirectTypeSymbol(Symbol symbol)
         {
             if (_currentBindSymbol == null || !(symbol is TypeParameterSymbol)) 
                 return symbol;
@@ -125,7 +127,7 @@ namespace UdonSharp.Compiler.Binder
 
             if (_currentBindSymbol is MethodSymbol methodSymbol && methodSymbol.RoslynSymbol != methodSymbol.RoslynSymbol.OriginalDefinition)
             {
-                foreach (var methodParam in methodSymbol.Parameters)
+                foreach (ParameterSymbol methodParam in methodSymbol.Parameters)
                 {
                     if (methodParam.OriginalSymbol.Equals(symbol))
                         return methodParam;
