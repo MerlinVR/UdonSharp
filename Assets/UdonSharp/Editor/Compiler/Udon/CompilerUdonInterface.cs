@@ -409,6 +409,8 @@ namespace UdonSharp.Compiler.Udon
         {
             if (_typeNameMap.TryGetValue(externType, out string foundTypeName))
                 return foundTypeName;
+
+            Type originalType = externType;
             
             string externTypeName = externType.GetNameWithoutGenericArity();
             while (externType.IsArray || externType.IsByRef)
@@ -456,7 +458,7 @@ namespace UdonSharp.Compiler.Udon
 
             // fullTypeName = fullTypeName.Replace("VRCUdonUdonBehaviour", "VRCUdonCommonInterfacesIUdonEventReceiver");
 
-            _typeNameMap.TryAdd(externType, fullTypeName);
+            _typeNameMap.TryAdd(originalType, fullTypeName);
             
             return fullTypeName;
         }
