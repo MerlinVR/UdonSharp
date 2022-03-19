@@ -690,10 +690,11 @@ namespace UdonSharpEditor
 
             RepairPrefabProgramAssets(allBehaviours);
             RepairProgramAssetLinks(allBehaviours);
-            UpdateSerializedProgramAssets(allBehaviours);
             UpdateSyncModes(allBehaviours);
             ValidateHideFlagsOnEmptyUdonBehaviours(allBehaviours);
             SanitizeProxyBehaviours(GetAllSceneGameObjectsWithUdonBehavioursOrUdonSharpBehaviours(), true, out _);
+            ValidateMatchingProgramSource(allBehaviours);
+            UpdateSerializedProgramAssets(allBehaviours);
         }
 
         private static bool _requiresCompile;
@@ -1370,6 +1371,58 @@ namespace UdonSharpEditor
                     udonBehaviour.hideFlags &= ~(HideFlags.HideInInspector);
                     // We don't set dirty to make it more likely to pester the user until they fix the issue :)
                     // UdonSharpUtils.SetDirty(udonBehaviour);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Validates that all UdonBehaviour program source references match with their linked proxy behaviour's type, if they do not, we find the expected program asset type and assign it.
+        /// </summary>
+        private static void ValidateMatchingProgramSource(List<UdonBehaviour> allBehaviours)
+        {
+            foreach (UdonBehaviour behaviour in allBehaviours)
+            {
+                if (!UdonSharpEditorUtility.IsUdonSharpBehaviour(behaviour))
+                    continue;
+                
+                UdonSharpProgramAsset programAsset = behaviour.programSource as UdonSharpProgramAsset;
+
+                UdonSharpBehaviour proxy = UdonSharpEditorUtility.GetProxyBehaviour(behaviour);
+                
+                if (proxy == null)
+                    continue;
+
+                Type scriptType = programAsset.sourceCsScript.GetClass();
+                Type proxyType = proxy.GetType();
+                
+                if (scriptType != null && programAsset.sourceCsScript.GetClass() != proxyType)
+                {
+                    UdonSharpProgramAsset scriptAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset(proxyType);
+
+                    if (scriptAsset == null)
+                    {
+                        UdonSharpUtils.LogError($"Could not find program asset for UdonSharpBehaviour script type '{proxyType}'", proxy);
+                        continue;
+                    }
+
+                    if (scriptAsset.sourceCsScript == null)
+                    {
+                        UdonSharpUtils.LogError($"Script asset '{scriptAsset}' found for type '{proxyType}' has null source script, this is not valid.", proxy);
+                        continue;
+                    }
+
+                    if (scriptAsset.sourceCsScript.GetType() != proxyType)
+                    {
+                        UdonSharpUtils.LogError($"Script asset '{scriptAsset}' found for type '{proxyType}' actually has type '{scriptAsset.sourceCsScript.GetType()}' this is not valid.", proxy);
+                        continue;
+                    }
+                    
+                    if (scriptAsset)
+                    {
+                        UdonSharpUtils.LogWarning($"Script type on UdonSharpBehaviour proxy '{proxy}' did not match assigned UdonSharpProgramAsset '{behaviour.programSource}', assigned matching program asset '{programAsset}' for type.", proxy);
+                        behaviour.programSource = programAsset;
+                        UdonSharpUtils.SetDirty(behaviour);
+                    }
                 }
             }
         }

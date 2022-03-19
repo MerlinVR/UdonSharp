@@ -43,6 +43,7 @@ namespace UdonSharp
     [CreateAssetMenu(menuName = "VRChat/Udon/Udon C# Program Asset", fileName = "New Udon C# Program Asset")]
     public class UdonSharpProgramAsset : UdonAssemblyProgramAsset
     {
+        [HideInInspector]
         public MonoScript sourceCsScript;
 
         [SerializeField]
@@ -134,21 +135,16 @@ namespace UdonSharp
 
             if (!udonBehaviour)
             {
+                EditorGUI.BeginDisabledGroup(sourceCsScript != null);
                 EditorGUI.BeginChangeCheck();
                 MonoScript newSourceCsScript = (MonoScript)EditorGUILayout.ObjectField(Loc.Get(LocStr.UI_SourceScript), sourceCsScript, typeof(MonoScript), false);
+                EditorGUI.EndDisabledGroup();
+                
                 if (EditorGUI.EndChangeCheck())
                 {
-                    bool shouldReplace = true;
-
-                    if (sourceCsScript != null)
-                        shouldReplace = EditorUtility.DisplayDialog("Modifying script on program asset", "If you modify a script on a program asset while it is being used by objects in a scene it can cause issues. Are you sure you want to change the source script?", "Ok", "Cancel");
-
-                    if (shouldReplace)
-                    {
-                        Undo.RecordObject(this, "Changed source C# script");
-                        sourceCsScript = newSourceCsScript;
-                        dirty = true;
-                    }
+                    Undo.RecordObject(this, "Changed source C# script");
+                    sourceCsScript = newSourceCsScript;
+                    dirty = true;
                 }
 
                 EditorGUI.BeginDisabledGroup(true);
