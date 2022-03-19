@@ -328,6 +328,17 @@ namespace UdonSharpEditor
                 HarmonyMethod udonBehaviourDestroyPostfix = new HarmonyMethod(typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.UdonBehaviourDestroyCleanup), BindingFlags.Public | BindingFlags.Static));
 
                 harmony.Patch(udonBehaviourDestroyMethod, null, udonBehaviourDestroyPostfix);
+                
+                // Runtime sync the `enabled` property on UdonSharpBehaviour proxies
+                // Wraps the title bar drawing via prefix+postfix to check if enabled state has changed 
+                // This is done to allow the script to change its enabled state properly without getting overwritten when the user is viewing the inspector
+                MethodInfo doInspectorTitlebarMethod = typeof(EditorGUI).GetMethod("DoInspectorTitlebar", BindingFlags.NonPublic | BindingFlags.Static, null, new[]
+                    { typeof(Rect), typeof(int), typeof(bool), typeof(Object[]), typeof(SerializedProperty), typeof(GUIStyle) }, null);
+                
+                HarmonyMethod titlebarPrefix = new HarmonyMethod(typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.DoInspectorTitlebarPrefix)));
+                HarmonyMethod titlebarPostfix = new HarmonyMethod(typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.DoInspectorTitlebarPostfix)));
+
+                harmony.Patch(doInspectorTitlebarMethod, titlebarPrefix, titlebarPostfix);
             }
         }
 
@@ -559,6 +570,51 @@ namespace UdonSharpEditor
                 if (proxy)
                 {
                     Object.Destroy(proxy);
+                }
+            }
+
+            public class InspectorEnabledStateTracker
+            {
+                public bool[] enabledStates;
+
+                public InspectorEnabledStateTracker(bool[] enabledStates)
+                {
+                    this.enabledStates = enabledStates;
+                }
+            }
+            
+            public static void DoInspectorTitlebarPrefix(Object[] targetObjs, out InspectorEnabledStateTracker __state)
+            {
+                if (targetObjs != null && targetObjs.Length > 0 && targetObjs[0] is UdonSharpBehaviour)
+                {
+                    __state = new InspectorEnabledStateTracker(targetObjs.Cast<MonoBehaviour>().Select(e => e.enabled).ToArray());
+                }
+                else
+                {
+                    __state = null;
+                }
+            }
+
+            public static void DoInspectorTitlebarPostfix(Object[] targetObjs, InspectorEnabledStateTracker __state)
+            {
+                if (__state == null)
+                    return;
+                
+                for (int i = 0; i < targetObjs.Length; ++i)
+                {
+                    bool currentActiveState = ((MonoBehaviour)targetObjs[i]).enabled;
+
+                    if (currentActiveState == __state.enabledStates[i]) 
+                        continue;
+                    
+                    UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour((UdonSharpBehaviour)targetObjs[i]);
+
+                    if (backingBehaviour && backingBehaviour.enabled != currentActiveState)
+                    {
+                        SerializedObject udonBehaviourObj = new SerializedObject(backingBehaviour);
+                        udonBehaviourObj.FindProperty("m_Enabled").boolValue = currentActiveState;
+                        udonBehaviourObj.ApplyModifiedProperties();
+                    }
                 }
             }
         }
