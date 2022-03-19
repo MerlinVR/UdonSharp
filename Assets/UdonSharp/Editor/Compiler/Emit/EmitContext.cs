@@ -577,6 +577,7 @@ namespace UdonSharp.Compiler.Emit
         }
 
         private TypeSymbol _systemObjectType;
+        private TypeSymbol _systemArrayType;
 
         private bool IsTriviallyAssignableTo(TypeSymbol sourceType, TypeSymbol targetType)
         {
@@ -584,10 +585,14 @@ namespace UdonSharp.Compiler.Emit
                 return true;
             
             if (_systemObjectType == null) _systemObjectType = GetTypeSymbol(SpecialType.System_Object);
+            if (_systemArrayType == null) _systemArrayType = GetTypeSymbol(SpecialType.System_Array);
             
             // Quick early out for assigning to object types since anything can technically be passed
             // todo: better checking for IsAssignableFrom equivalent functionality so we can skip copies on subclass assignments and such
             if (targetType == _systemObjectType)
+                return true;
+
+            if (sourceType.IsArray && targetType == _systemArrayType)
                 return true;
 
             return false;
