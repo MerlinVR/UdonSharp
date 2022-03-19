@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -274,18 +273,15 @@ namespace UdonSharp.Compiler
 
             UdonSharpProgramAsset[] allPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
 
-            if (!ValidateProgramAssetCollisions(allPrograms))
-                return;
-
-            // if (!ValidateScriptClasses(allPrograms))
-            //     return;
+            bool hasError = !ValidateProgramAssetCollisions(allPrograms);
             
             Dictionary<string, ProgramAssetInfo> rootProgramLookup = new Dictionary<string, ProgramAssetInfo>();
             foreach (UdonSharpProgramAsset udonSharpProgram in allPrograms)
             {
                 if (udonSharpProgram.sourceCsScript == null)
                 {
-                    UdonSharpUtils.LogWarning($"Source C# script on {udonSharpProgram} is null", udonSharpProgram);
+                    UdonSharpUtils.LogError($"Source C# script on {udonSharpProgram} is null", udonSharpProgram);
+                    hasError = true;
                     continue;
                 }
 
@@ -293,11 +289,27 @@ namespace UdonSharp.Compiler
                 
                 if (string.IsNullOrEmpty(assetPath))
                 {
-                    UdonSharpUtils.LogWarning($"Source C# script on {udonSharpProgram} is null", udonSharpProgram);
+                    UdonSharpUtils.LogError($"Source C# script on {udonSharpProgram} is null", udonSharpProgram);
+                    hasError = true;
                     continue;
                 }
                 
                 rootProgramLookup.Add(assetPath.Replace('\\', '/'), new ProgramAssetInfo() { programAsset = udonSharpProgram ? udonSharpProgram : null, scriptClass = udonSharpProgram != null ? udonSharpProgram.GetClass() : null });
+            }
+
+            if (hasError)
+            {
+                UdonSharpEditorCache.Instance.LastCompileDiagnostics = new []
+                    {
+                        new UdonSharpEditorCache.CompileDiagnostic()
+                        {
+                            file = "",
+                            message = "Compile validation failed, check console output for details.",
+                            severity = DiagnosticSeverity.Error,
+                        } 
+                    };
+                
+                return;
             }
             
             // var allSourcePaths = new HashSet<string>(UdonSharpProgramAsset.GetAllUdonSharpPrograms().Where(e => e.isV1Root).Select(e => AssetDatabase.GetAssetPath(e.sourceCsScript).Replace('\\', '/')));
@@ -342,29 +354,10 @@ namespace UdonSharp.Compiler
             {
                 if (scriptAssetMapping.Value.Count > 1)
                 {
-                    UdonSharpUtils.LogError($"Script {Path.GetFileName(AssetDatabase.GetAssetPath(scriptAssetMapping.Key))} is referenced by {scriptAssetMapping.Value.Count} UdonSharpProgramAssets, scripts should only be referenced by 1 program asset.\n" +
+                    UdonSharpUtils.LogError($"Script {Path.GetFileName(AssetDatabase.GetAssetPath(scriptAssetMapping.Key))} is referenced by {scriptAssetMapping.Value.Count} UdonSharpProgramAssets, scripts can only be referenced by 1 program asset.\n" +
                                             "Referenced program assets:\n" +
                                             string.Join(",\n", scriptAssetMapping.Value.Select(AssetDatabase.GetAssetPath)));
 
-                    errorCount++;
-                }
-            }
-
-            return errorCount == 0;
-        }
-
-        private static bool ValidateScriptClasses(UdonSharpProgramAsset[] allProgramAssets)
-        {
-            int errorCount = 0;
-
-            foreach (var programAsset in allProgramAssets)
-            {
-                if (programAsset.sourceCsScript == null)
-                    continue;
-
-                if (programAsset.sourceCsScript.GetClass() == null)
-                {
-                    UdonSharpUtils.LogError($"Could not retrieve class for script '{AssetDatabase.GetAssetPath(programAsset.sourceCsScript)}'", programAsset);
                     errorCount++;
                 }
             }

@@ -272,7 +272,10 @@ namespace UdonSharpEditor
             {
                 if (diagnostic.severity == DiagnosticSeverity.Error)
                 {
-                    errorStrBuilder.Append($"{diagnostic.file}({diagnostic.line},{diagnostic.character}): {diagnostic.message}\n");
+                    if (diagnostic.file.IsNullOrWhitespace())
+                        errorStrBuilder.Append($"{diagnostic.message}\n");
+                    else
+                        errorStrBuilder.Append($"{diagnostic.file}({diagnostic.line},{diagnostic.character}): {diagnostic.message}\n");
                 }
             }
             
