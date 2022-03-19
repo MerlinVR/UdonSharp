@@ -16,43 +16,33 @@ namespace UdonSharpEditor
         /// <summary>
         /// Updates the proxy representation from the underlying UdonBehaviour state
         /// </summary>
-        /// <param name="behaviour"></param>
-        [PublicAPI]
+        [Obsolete("UpdateProxy is no longer needed for editor scripts to get the state of U# behaviours. If you need editor scripts to update behaviours in play mode, consider using CopyUdonToProxy")]
         public static void UpdateProxy(this UdonSharpBehaviour behaviour)
         {
-            UdonSharpEditorUtility.CopyUdonToProxy(behaviour);
         }
 
         /// <summary>
         /// Updates the proxy representation from the underlying UdonBehaviour state
         /// </summary>
-        /// <param name="behaviour"></param>
-        /// <param name="serializationPolicy"></param>
-        [PublicAPI]
+        [Obsolete("UpdateProxy is no longer needed for editor scripts to get the state of U# behaviours. If you need editor scripts to update behaviours in play mode, consider using CopyUdonToProxy")]
         public static void UpdateProxy(this UdonSharpBehaviour behaviour, ProxySerializationPolicy serializationPolicy)
         {
-            UdonSharpEditorUtility.CopyUdonToProxy(behaviour, serializationPolicy);
         }
         
         /// <summary>
         /// Writes changes to the proxy's data to the underlying UdonBehaviour
         /// </summary>
-        /// <param name="behaviour"></param>
-        [PublicAPI]
+        [Obsolete("ApplyProxyModifications is no longer needed for editor scripts to modify the state of U# behaviours. If you need editor scripts to update behaviours in play mode, consider using CopyProxyToUdon")]
         public static void ApplyProxyModifications(this UdonSharpBehaviour behaviour)
         {
-            UdonSharpEditorUtility.CopyProxyToUdon(behaviour);
         }
 
         /// <summary>
         /// Writes changes to the proxy's data to the underlying UdonBehaviour
         /// </summary>
-        /// <param name="behaviour"></param>
-        /// <param name="serializationPolicy"></param>
-        [PublicAPI]
+        [Obsolete("ApplyProxyModifications is no longer needed for editor scripts to modify the state of U# behaviours. If you need editor scripts to update behaviours in play mode, consider using CopyProxyToUdon")]
         public static void ApplyProxyModifications(this UdonSharpBehaviour behaviour, ProxySerializationPolicy serializationPolicy)
         {
-            UdonSharpEditorUtility.CopyProxyToUdon(behaviour, serializationPolicy);
         }
     #endregion
 
