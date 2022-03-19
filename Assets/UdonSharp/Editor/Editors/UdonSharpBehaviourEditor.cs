@@ -650,6 +650,8 @@ namespace UdonSharpEditor
             });
         }
 
+        private int _nullCounter;
+
         private IMGUIContainer CreateIMGUIInspector(Action imguiAction, bool skipSerialize = false)
         {
             IMGUIContainer container = new IMGUIContainer();
@@ -659,6 +661,14 @@ namespace UdonSharpEditor
             
             container.onGUIHandler = () =>
             {
+                if (targets.Any(e => e == null))
+                {
+                    if (_nullCounter++ > 5)
+                        EditorGUILayout.HelpBox("This inspector is inspecting null behaviours!", MessageType.Error);
+                        
+                    return;
+                }
+
                 bool isAnimating = AnimationMode.InAnimationMode();
                 
                 if (isAnimating)
@@ -676,7 +686,7 @@ namespace UdonSharpEditor
                 {
                     if (!skipSerialize && EditorApplication.isPlaying) // We only need this copy in play mode since U# now goes off the behaviour data for setting up UdonBehaviours
                     {
-                        foreach (var targetProxy in targets)
+                        foreach (Object targetProxy in targets)
                             UdonSharpEditorUtility.CopyUdonToProxy((UdonSharpBehaviour)targetProxy, ProxySerializationPolicy.All);
                     }
                 
@@ -697,7 +707,7 @@ namespace UdonSharpEditor
 
                     if (!skipSerialize && EditorApplication.isPlaying)
                     {
-                        foreach (var targetProxy in targets)
+                        foreach (Object targetProxy in targets)
                             UdonSharpEditorUtility.CopyProxyToUdon((UdonSharpBehaviour)targetProxy, ProxySerializationPolicy.All);
                     }
                 }
