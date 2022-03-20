@@ -339,6 +339,14 @@ namespace UdonSharpEditor
                 HarmonyMethod titlebarPostfix = new HarmonyMethod(typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.DoInspectorTitlebarPostfix)));
 
                 harmony.Patch(doInspectorTitlebarMethod, titlebarPrefix, titlebarPostfix);
+                
+                MethodInfo udonBehaviourOnEnable = typeof(UdonBehaviour).GetMethod(nameof(UdonBehaviour.OnEnable), BindingFlags.Public | BindingFlags.Instance);
+                MethodInfo udonBehaviourOnDisable = typeof(UdonBehaviour).GetMethod(nameof(UdonBehaviour.OnDisable), BindingFlags.Public | BindingFlags.Instance);
+                
+                HarmonyMethod enableDisablePostfix = new HarmonyMethod(typeof(InjectedMethods).GetMethod(nameof(InjectedMethods.OnEnableDisablePostfix), BindingFlags.Public | BindingFlags.Static));
+
+                harmony.Patch(udonBehaviourOnEnable, null, enableDisablePostfix);
+                harmony.Patch(udonBehaviourOnDisable, null, enableDisablePostfix);
             }
         }
 
@@ -602,20 +610,47 @@ namespace UdonSharpEditor
                 
                 for (int i = 0; i < targetObjs.Length; ++i)
                 {
-                    bool currentActiveState = ((MonoBehaviour)targetObjs[i]).enabled;
+                    UdonSharpBehaviour proxyBehaviour = targetObjs[i] as UdonSharpBehaviour;
+                    
+                    if (!proxyBehaviour)
+                        continue;
 
-                    if (currentActiveState == __state.enabledStates[i]) 
+                    UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(proxyBehaviour);
+
+                    if (!backingBehaviour)
                         continue;
                     
-                    UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour((UdonSharpBehaviour)targetObjs[i]);
+                    if (proxyBehaviour.enabled == __state.enabledStates[i] && 
+                        proxyBehaviour.enabled == backingBehaviour.enabled)
+                        continue;
 
-                    if (backingBehaviour && backingBehaviour.enabled != currentActiveState)
+                    // User has caused input that needs to change the backing behaviour
+                    if (proxyBehaviour.enabled != backingBehaviour.enabled && 
+                        proxyBehaviour.enabled != __state.enabledStates[i])
                     {
                         SerializedObject udonBehaviourObj = new SerializedObject(backingBehaviour);
-                        udonBehaviourObj.FindProperty("m_Enabled").boolValue = currentActiveState;
+                        udonBehaviourObj.FindProperty("m_Enabled").boolValue = proxyBehaviour.enabled;
                         udonBehaviourObj.ApplyModifiedProperties();
                     }
+                    // Script has caused input that needs the proxy to change
+                    else if (EditorApplication.isPlaying)
+                    {
+                        ((MonoBehaviour)targetObjs[i]).enabled = backingBehaviour.enabled;
+                    }
                 }
+            }
+
+            public static void OnEnableDisablePostfix(UdonBehaviour __instance)
+            {
+                if (!UdonSharpEditorUtility.IsUdonSharpBehaviour(__instance)) 
+                    return;
+                
+                UdonSharpBehaviour proxy = UdonSharpEditorUtility.GetProxyBehaviour(__instance);
+
+                if (!proxy)
+                    return;
+
+                proxy.enabled = __instance.enabled;
             }
         }
         

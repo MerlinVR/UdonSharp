@@ -463,6 +463,18 @@ namespace UdonSharpEditor
 
         private void OnEnable()
         {
+            if (EditorApplication.isPlaying)
+            {
+                foreach (Object targetBehaviour in targets)
+                {
+                    UdonSharpBehaviour proxy = (UdonSharpBehaviour)targetBehaviour;
+                    UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(proxy);
+
+                    if (proxy.enabled != backingBehaviour.enabled)
+                        proxy.enabled = backingBehaviour.enabled;
+                }
+            }
+            
             foreach (Object targetBehaviour in targets)
                 UdonSharpEditorUtility.RunBehaviourSetupWithUndo((UdonSharpBehaviour)targetBehaviour);
 
