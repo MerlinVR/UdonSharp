@@ -56,10 +56,9 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         // Compiler settings
         public bool autoCompileOnModify = true;
-        public bool compileAllScripts = true;
-        public bool waitForFocus = false;
-        public bool disableUploadCompile = false;
-        public TextAsset newScriptTemplateOverride = null;
+        public bool waitForFocus;
+        public bool disableUploadCompile;
+        public TextAsset newScriptTemplateOverride;
 
         public string[] scanningDirectoryBlacklist = Array.Empty<string>();
 
@@ -71,7 +70,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
         public bool includeInlineCode = true;
         public bool listenForVRCExceptions = true;
 
-        public bool shouldForceCompile = false;
+        public bool shouldForceCompile;
 
         // Log watcher
         public LogWatcherMode watcherMode = LogWatcherMode.Disabled;
@@ -214,7 +213,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
         private static readonly GUIContent _prefixArrayLabel = new GUIContent("Prefixes", "The list of prefixes that the log watcher will forward to the editor from in-game");
         private static readonly GUIContent _defaultBehaviourEditorLabel = new GUIContent("Default Behaviour Editor", "The default editor for U# behaviours, this is what will handle inspector drawing by default.");
 
-        static string DrawCustomEditorSelection(string currentSelection)
+        private static string DrawCustomEditorSelection(string currentSelection)
         {
             List<(string, string)> optionsList = new List<(string, string)>() { ("", "Default") };
             optionsList.AddRange(UdonSharpCustomEditorManager.DefaultInspectorMap.Select(e => (e.Key, e.Value.Item1)));
@@ -243,9 +242,6 @@ public class <TemplateClassName> : UdonSharpBehaviour
             string newSelectionStr = "";
             if (newSelection > 0)
                 newSelectionStr = optionsList[newSelection].Item1;
-
-            if (newSelection != 0)
-                EditorGUILayout.HelpBox("Selecting an editor other than the default editor will require a C# script recompile to update the inspector with newly added/removed fields.", MessageType.Info);
 
             return newSelectionStr;
         }

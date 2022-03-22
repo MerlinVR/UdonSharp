@@ -151,14 +151,7 @@ namespace UdonSharpEditor
             {
                 if (assetsToUpdate.Count > 0)
                 {
-                    if (settings.compileAllScripts)
-                    {
-                        UdonSharpProgramAsset.CompileAllCsPrograms();
-                    }
-                    else
-                    {
-                        UdonSharpCompilerV1.Compile();
-                    }
+                    UdonSharpProgramAsset.CompileAllCsPrograms();
                 }
             }
             finally
