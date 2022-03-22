@@ -1,6 +1,5 @@
 ﻿
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -12,6 +11,7 @@ using UdonSharp.Compiler;
 using UdonSharp.Compiler.Symbols;
 using UnityEditor;
 using UnityEngine;
+using VRC.SDKBase;
 using VRC.Udon.Serialization.OdinSerializer;
 using VRC.Udon.Serialization.OdinSerializer.Utilities;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -217,11 +217,16 @@ namespace UdonSharpEditor
                     return fieldDeclaration;
 
                 // Getting the type may fail if it's a user type that hasn't compiled on the C# side yet. For now we skip it, but we should do a simplified check for jagged arrays
-                if (!TypeSymbol.TryGetSystemType(rootType, out var systemType))
+                if (!TypeSymbol.TryGetSystemType(rootType, out Type systemType))
                     return fieldDeclaration;
                 
                 // If Unity can serialize the type, we're good
                 if (UnitySerializationUtility.GuessIfUnityWillSerialize(systemType))
+                    return fieldDeclaration;
+
+                // Common type that gets picked up as serialized but shouldn't be
+                // todo: Add actual checking for if a type is serializable, which isn't consistent. Unity/System library types in large part are serializable but don't have the System.Serializable tag, but types outside those assemblies need the tag to be serialized.
+                if (systemType == typeof(VRCPlayerApi) || systemType == typeof(VRCPlayerApi[]))
                     return fieldDeclaration;
 
                 Modified = true;
@@ -232,13 +237,29 @@ namespace UdonSharpEditor
                 odinSerializeName = QualifiedName(odinSerializeName, IdentifierName("OdinSerializer"));
                 odinSerializeName = QualifiedName(odinSerializeName, IdentifierName("OdinSerialize"));
 
-                SeparatedSyntaxList<AttributeSyntax> newAttribList = SeparatedList(new [] { Attribute(odinSerializeName)});
-
                 // Somehow it seems like there's literally no decent way to maintain the indent on inserted code so we'll just inline the comment because Roslyn is dumb
                 SyntaxTrivia commentTrivia = Comment(" /* UdonSharp auto-upgrade: serialization */ ");
-                SyntaxList<AttributeListSyntax> combinedList = List(fieldDeclaration.AttributeLists.Append(AttributeList(newAttribList).WithTrailingTrivia(commentTrivia)));
+                AttributeListSyntax newAttribList = AttributeList(SeparatedList(new [] { Attribute(odinSerializeName)})).WithTrailingTrivia(commentTrivia);
 
-                return fieldDeclaration.WithAttributeLists(combinedList);
+                SyntaxList<AttributeListSyntax> attributeList = fieldDeclaration.AttributeLists;
+                
+                if (attributeList.Count > 0)
+                {
+                    SyntaxTriviaList trailingTrivia = attributeList.Last().GetTrailingTrivia();
+                    trailingTrivia = trailingTrivia.Insert(0, commentTrivia);
+                    attributeList.Replace(attributeList[attributeList.Count - 1], attributeList[attributeList.Count -1].WithoutTrailingTrivia());
+
+                    newAttribList = newAttribList.WithTrailingTrivia(trailingTrivia);
+                }
+                else
+                {
+                    newAttribList = newAttribList.WithLeadingTrivia(fieldDeclaration.GetLeadingTrivia());
+                    fieldDeclaration = fieldDeclaration.WithoutLeadingTrivia();
+                }
+                
+                attributeList = attributeList.Add(newAttribList);
+
+                return fieldDeclaration.WithAttributeLists(attributeList);
             }
         }
     }
