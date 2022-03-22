@@ -372,7 +372,7 @@ namespace UdonSharp.Tests
         
             tester.TestAssertion("Decimal equality", x == 4);
             tester.TestAssertion("Decimal addition", (x + 5) == 9);
-            tester.TestAssertion("Decimal mul", (3 * 0.5m) == 1.5m);
+            tester.TestAssertion("Decimal mul", (x * 0.5m) == 2m);
         }
 
         private char stringChar = 'b';

@@ -124,11 +124,13 @@ namespace UdonSharp.Compiler.Symbols
             _udonName = _udonName.Replace("BitwiseAnd", "LogicalAnd");
             _udonName = _udonName.Replace("BitwiseOr", "LogicalOr"); 
             _udonName = _udonName.Replace("ExclusiveOr", "LogicalXor");
-            _udonName = _udonName.Replace("Multiply", "Multiplication");
             _udonName = _udonName.Replace("Modulus", "Remainder");
             _udonName = _udonName.Replace("LogicalNot", "UnaryNegation");
             _udonName = _udonName.Replace("Increment", "Addition");
             _udonName = _udonName.Replace("Decrement", "Subtraction");
+            
+            if (ContainingType.UdonType.SystemType != typeof(decimal))
+                _udonName = _udonName.Replace("Multiply", "Multiplication");
 
             return _udonName;
         }
