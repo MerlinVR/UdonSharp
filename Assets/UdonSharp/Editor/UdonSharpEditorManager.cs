@@ -650,7 +650,8 @@ namespace UdonSharpEditor
                 if (!proxy)
                     return;
 
-                proxy.enabled = __instance.enabled;
+                if (proxy.enabled != __instance.enabled)
+                    proxy.enabled = __instance.enabled;
             }
         }
         
