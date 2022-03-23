@@ -351,7 +351,7 @@ namespace UdonSharp.Editors
         }
 
         // Mostly because assembly.GetTypes doesn't return types that are nested under other nested types, which people really shouldn't do, but this is here for completeness
-        private List<System.Type> GetNestedTypes(System.Type type)
+        private static List<System.Type> GetNestedTypes(System.Type type)
         {
             List<System.Type> nestedTypes = new List<System.Type>();
 
@@ -660,15 +660,15 @@ namespace UdonSharp.Editors
 
     public class UdonTypeExposureTree : EditorWindow
     {
-        [SerializeField]
-        TreeViewState treeViewState;
+        [SerializeField] 
+        private TreeViewState treeViewState;
 
-        UdonTypeExposureTreeView treeView;
+        private UdonTypeExposureTreeView _treeView;
 
-        Vector2 currentScrollPos = Vector2.zero;
+        private Vector2 _currentScrollPos = Vector2.zero;
 
-        [MenuItem("Udon Sharp/Class Exposure Tree")]
-        static void Init()
+        [MenuItem("VRChat SDK/Udon Sharp/Class Exposure Tree")]
+        private static void Init()
         {
             GetWindow<UdonTypeExposureTree>(false, "Udon Type Exposure Tree");
         }
@@ -683,25 +683,22 @@ namespace UdonSharp.Editors
         {
             EditorGUILayout.LabelField("Class Exposure Tree", EditorStyles.boldLabel);
 
-            if (treeView == null)
+            if (_treeView == null)
             {
-                treeView = new UdonTypeExposureTreeView(treeViewState);
+                _treeView = new UdonTypeExposureTreeView(treeViewState);
             }
 
             EditorGUI.BeginChangeCheck();
-            treeView.showBaseTypeMembers = EditorGUILayout.Toggle("Show base members", treeView.showBaseTypeMembers);
+            _treeView.showBaseTypeMembers = EditorGUILayout.Toggle("Show base members", _treeView.showBaseTypeMembers);
             
             if (EditorGUI.EndChangeCheck())
-                treeView.Reload();
+                _treeView.Reload();
 
-            treeView.searchString = EditorGUILayout.TextField("Search: ", treeView.searchString);
+            _treeView.searchString = EditorGUILayout.TextField("Search: ", _treeView.searchString);
 
-            currentScrollPos = EditorGUILayout.BeginScrollView(currentScrollPos);
+            _currentScrollPos = EditorGUILayout.BeginScrollView(_currentScrollPos);
 
-            if (treeView != null)
-            {
-                treeView.OnGUI(new Rect(0, 0, position.width, position.height - 80));
-            }
+            _treeView?.OnGUI(new Rect(0, 0, position.width, position.height - 80));
 
             EditorGUILayout.EndScrollView();
         }

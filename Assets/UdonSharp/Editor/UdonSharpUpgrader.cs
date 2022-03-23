@@ -34,7 +34,7 @@ namespace UdonSharpEditor
             }
         }
 
-        [MenuItem("Udon Sharp/Force Upgrade")]
+        [MenuItem("VRChat SDK/Udon Sharp/Force Upgrade")]
         internal static void ForceUpgrade()
         {
             UdonSharpProgramAsset.GetAllUdonSharpPrograms().ForEach(QueueUpgrade);
