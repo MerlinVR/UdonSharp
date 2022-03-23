@@ -175,14 +175,14 @@ namespace UdonSharp.Compiler
                 rootBinding.programAsset.ApplyProgram();
                 
                 UdonSharpEditorCache.Instance.SetUASMStr(rootBinding.programAsset, rootBinding.assembly);
-                UdonSharpEditorCache.Instance.UpdateSourceHash(rootBinding.programAsset, rootBinding.sourceText);
                 
                 rootBinding.programAsset.CompiledVersion = UdonSharpProgramVersion.CurrentVersion;
                 EditorUtility.SetDirty(rootBinding.programAsset);
             }
-
+            
             try
             {
+                UdonSharpEditorCache.Instance.RehashAllScripts();
                 UdonSharpEditorManager.RunPostBuildSceneFixup();
             }
             catch (Exception e)

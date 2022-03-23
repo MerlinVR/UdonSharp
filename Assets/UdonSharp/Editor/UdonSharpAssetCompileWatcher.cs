@@ -134,25 +134,9 @@ namespace UdonSharpEditor
             if (_modifiedScripts.Count == 0)
                 return;
 
-            UdonSharpProgramAsset[] udonSharpPrograms = UdonSharpProgramAsset.GetAllUdonSharpPrograms();
-
-            HashSet<UdonSharpProgramAsset> assetsToUpdate = new HashSet<UdonSharpProgramAsset>();
-
-            foreach (MonoScript script in _modifiedScripts)
-            {
-                foreach (UdonSharpProgramAsset programAsset in udonSharpPrograms)
-                {
-                    if (programAsset.sourceCsScript == script)
-                        assetsToUpdate.Add(programAsset);
-                }
-            }
-
             try
             {
-                if (assetsToUpdate.Count > 0)
-                {
-                    UdonSharpProgramAsset.CompileAllCsPrograms();
-                }
+                UdonSharpProgramAsset.CompileAllCsPrograms();
             }
             finally
             {

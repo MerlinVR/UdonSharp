@@ -2,7 +2,6 @@
 using System;
 using JetBrains.Annotations;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using UdonSharp.Compiler;
@@ -10,6 +9,7 @@ using UnityEditor;
 using UnityEngine;
 using VRC.Udon.Serialization.OdinSerializer;
 using VRC.Udon.Serialization.OdinSerializer.Utilities;
+using Debug = UnityEngine.Debug;
 
 namespace UdonSharp
 {
@@ -51,7 +51,7 @@ namespace UdonSharp
         private static UdonSharpEditorCache _instance;
         private static readonly object _instanceLock = new object();
 
-        private const int CURR_CACHE_VER = 1;
+        private const int CURR_CACHE_VER = 2;
         
         private static UdonSharpEditorCache GetInstance()
         {
@@ -68,15 +68,17 @@ namespace UdonSharp
                     return _instance;
                 
                 UdonSharpCacheStorage storage = SerializationUtility.DeserializeValue<UdonSharpCacheStorage>(File.ReadAllBytes(CACHE_FILE_PATH), DataFormat.Binary);
-                _instance.sourceFileHashLookup = storage.sourceFileHashLookup;
+                _instance._sourceFileHashLookup = storage.sourceFileHashLookup;
                 _instance.LastBuildType = storage.lastScriptBuildType;
                 _instance._info = storage.info;
                 _instance._diagnostics = storage.diagnostics ?? Array.Empty<CompileDiagnostic>();
 
                 // For now we just use this to see if we need to check for project serialization upgrade, may be extended later on. At the moment only used to avoid wasting time on extra validation when possible.
+                // Hey now we use this to nuke out old data too
                 if (_instance._info.version < CURR_CACHE_VER)
                 {
                     _instance._info.version = CURR_CACHE_VER;
+                    _instance._sourceFileHashLookup = new Dictionary<string, string>();
                     _instance._info.projectNeedsUpgrade = true;
                 }
 
@@ -121,22 +123,22 @@ namespace UdonSharp
 
             public static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions options)
             {
-                UdonSharpProgramAsset programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(assetPath);
+                MonoScript script = AssetDatabase.LoadAssetAtPath<MonoScript>(assetPath);
 
-                if (programAsset)
+                if (script)
                 {
-                    Instance.ClearSourceHash(programAsset);
+                    Instance.ClearSourceHash(script);
                 }
                 else if(AssetDatabase.IsValidFolder(assetPath))
                 {
-                    string[] assetGuids = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}", new [] { assetPath });
+                    string[] assetGuids = AssetDatabase.FindAssets($"t:{nameof(MonoScript)}", new [] { assetPath });
 
                     foreach (string guid in assetGuids)
                     {
-                        programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(guid));
+                        script = AssetDatabase.LoadAssetAtPath<MonoScript>(AssetDatabase.GUIDToAssetPath(guid));
 
-                        if (programAsset)
-                            Instance.ClearSourceHash(programAsset);
+                        if (script)
+                            Instance.ClearSourceHash(script);
                     }
                 }
 
@@ -157,7 +159,7 @@ namespace UdonSharp
                     Directory.CreateDirectory(CACHE_DIR_PATH);
 
                 UdonSharpCacheStorage storage = new UdonSharpCacheStorage() {
-                    sourceFileHashLookup = _instance.sourceFileHashLookup,
+                    sourceFileHashLookup = _instance._sourceFileHashLookup,
                     lastScriptBuildType = LastBuildType,
                     info = _info,
                     diagnostics = _diagnostics.ToArray(),
@@ -246,21 +248,21 @@ namespace UdonSharp
     #region Source file modification cache
 
         private bool _sourceDirty;
-        private Dictionary<string, string> sourceFileHashLookup = new Dictionary<string, string>();
+        private Dictionary<string, string> _sourceFileHashLookup = new Dictionary<string, string>();
          
-        public bool IsSourceFileDirty(UdonSharpProgramAsset programAsset)
+        public bool IsSourceFileDirty(MonoScript script)
         {
-            if (programAsset == null || programAsset.sourceCsScript == null)
+            if (script == null)
                 return false;
             
-            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string programAssetGuid, out long _))
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(script, out string scriptGuid, out long _))
                 return false;
             
             // We haven't seen the source file before, so it needs to be compiled
-            if (!sourceFileHashLookup.TryGetValue(programAssetGuid, out string sourceFileHash))
+            if (!_sourceFileHashLookup.TryGetValue(scriptGuid, out string sourceFileHash))
                 return true;
 
-            string currentHash = HashSourceFile(programAsset.sourceCsScript);
+            string currentHash = HashSourceFile(script);
 
             if (currentHash != sourceFileHash)
                 return true;
@@ -268,26 +270,66 @@ namespace UdonSharp
             return false;
         }
 
-        public void UpdateSourceHash(UdonSharpProgramAsset programAsset, string sourceText)
+        public void UpdateSourceHash(MonoScript script, string sourceText)
         {
-            if (programAsset == null || programAsset.sourceCsScript == null)
+            if (script == null)
                 return;
             
-            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string programAssetGuid, out long _))
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(script, out string scriptGuid, out long _))
                 return;
 
             string newHash = UdonSharpUtils.HashString(sourceText);
 
-            if (sourceFileHashLookup.ContainsKey(programAssetGuid))
+            if (_sourceFileHashLookup.ContainsKey(scriptGuid))
             {
-                if (sourceFileHashLookup[programAssetGuid] != newHash)
+                if (_sourceFileHashLookup[scriptGuid] != newHash)
                     _sourceDirty = true;
 
-                sourceFileHashLookup[programAssetGuid] = newHash;
+                _sourceFileHashLookup[scriptGuid] = newHash;
             }
             else
             {
-                sourceFileHashLookup.Add(programAssetGuid, newHash);
+                _sourceFileHashLookup.Add(scriptGuid, newHash);
+                _sourceDirty = true;
+            }
+        }
+
+        public void RehashAllScripts()
+        {
+            HashSet<string> hashesToPrune = new HashSet<string>(_sourceFileHashLookup.Keys);
+
+            foreach (string path in CompilationContext.GetAllFilteredSourcePaths(true))
+            {
+                MonoScript script = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
+                
+                if (!script)
+                    continue;
+                
+                if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(script, out string scriptGuid, out long _))
+                    continue;
+
+                hashesToPrune.Remove(scriptGuid);
+
+                string newHash = HashSourceFile(script);
+                
+                if (_sourceFileHashLookup.ContainsKey(scriptGuid))
+                {
+                    if (_sourceFileHashLookup[scriptGuid] != newHash)
+                    {
+                        _sourceDirty = true;
+                        _sourceFileHashLookup[scriptGuid] = newHash;
+                    }
+                }
+                else
+                {
+                    _sourceFileHashLookup.Add(scriptGuid, newHash);
+                    _sourceDirty = true;
+                }
+            }
+
+            foreach (string pruneHash in hashesToPrune)
+            {
+                _sourceFileHashLookup.Remove(pruneHash);
                 _sourceDirty = true;
             }
         }
@@ -295,19 +337,18 @@ namespace UdonSharp
         /// <summary>
         /// Clears the source hash, this is used when a script hits a compile error in order to allow an undo to compile the scripts.
         /// </summary>
-        /// <param name="programAsset"></param>
-        private void ClearSourceHash(UdonSharpProgramAsset programAsset)
+        private void ClearSourceHash(MonoScript script)
         {
-            if (programAsset == null || programAsset.sourceCsScript == null)
+            if (script == null)
                 return;
 
-            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string programAssetGuid, out long _))
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(script, out string scriptGuid, out long _))
                 return;
 
-            if (!sourceFileHashLookup.ContainsKey(programAssetGuid)) 
+            if (!_sourceFileHashLookup.ContainsKey(scriptGuid)) 
                 return;
             
-            sourceFileHashLookup.Remove(programAssetGuid);
+            _sourceFileHashLookup.Remove(scriptGuid);
             _sourceDirty = true;
         }
 

@@ -239,7 +239,7 @@ namespace UdonSharp
             bool needsCompile = false;
             foreach (UdonSharpProgramAsset programAsset in programs)
             {
-                if (cache.IsSourceFileDirty(programAsset))
+                if (cache.IsSourceFileDirty(programAsset.sourceCsScript))
                 {
                     needsCompile = true;
                     break;
@@ -249,21 +249,36 @@ namespace UdonSharp
             return needsCompile;
         }
 
+        internal static bool IsAnyScriptDirty()
+        {
+            UdonSharpEditorCache cache = UdonSharpEditorCache.Instance;
+
+            foreach (MonoScript script in CompilationContext.GetAllFilteredScripts(true))
+            {
+                if (cache.IsSourceFileDirty(script))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         internal static bool IsAnyProgramAssetOutOfDate()
         {
             UdonSharpProgramAsset[] programs = GetAllUdonSharpPrograms();
             
-            bool needsCompile = false;
+            bool isOutOfDate = false;
             foreach (UdonSharpProgramAsset programAsset in programs)
             {
                 if (programAsset.CompiledVersion != UdonSharpProgramVersion.CurrentVersion)
                 {
-                    needsCompile = true;
+                    isOutOfDate = true;
                     break;
                 }
             }
 
-            return needsCompile;
+            return isOutOfDate;
         }
 
         /// <summary>
@@ -274,7 +289,7 @@ namespace UdonSharp
         [PublicAPI]
         public static void CompileAllCsPrograms(bool forceCompile = false, bool editorBuild = true)
         {
-            if (!forceCompile && !IsAnyProgramAssetSourceDirty())
+            if (!forceCompile && !IsAnyScriptDirty())
                 return;
 
             UdonSharpCompilerV1.Compile(new UdonSharpCompileOptions() { IsEditorBuild = editorBuild });

@@ -190,9 +190,14 @@ namespace UdonSharp.Compiler
             
             return ModuleBindings;
         }
+        
+        private static Dictionary<bool, IEnumerable<string>> _scriptPathCache = new Dictionary<bool, IEnumerable<string>>();
 
         public static IEnumerable<string> GetAllFilteredSourcePaths(bool isEditorBuild)
         {
+            if (_scriptPathCache.TryGetValue(isEditorBuild, out var cachedPaths))
+                return cachedPaths;
+            
             HashSet<string> assemblySourcePaths = new HashSet<string>();
 
             foreach (UnityEditor.Compilation.Assembly asm in CompilationPipeline.GetAssemblies(isEditorBuild ? AssembliesType.Editor : AssembliesType.PlayerWithoutTestAssemblies))
@@ -201,12 +206,21 @@ namespace UdonSharp.Compiler
                     assemblySourcePaths.UnionWith(asm.sourceFiles);
             }
 
-            return UdonSharpSettings.FilterBlacklistedPaths(assemblySourcePaths);
+            IEnumerable<string> paths =  UdonSharpSettings.FilterBlacklistedPaths(assemblySourcePaths);
+            
+            _scriptPathCache.Add(isEditorBuild, paths);
+
+            return paths;
+        }
+
+        public static IEnumerable<MonoScript> GetAllFilteredScripts(bool isEditorBuild)
+        {
+            return GetAllFilteredSourcePaths(isEditorBuild).Select(AssetDatabase.LoadAssetAtPath<MonoScript>).Where(e => e != null).ToArray();
         }
 
         private static HashSet<string> _udonSharpAssemblyNames;
 
-        public static bool IsUdonSharpAssembly(string assemblyName)
+        private static bool IsUdonSharpAssembly(string assemblyName)
         {
             if (_udonSharpAssemblyNames == null)
             {
