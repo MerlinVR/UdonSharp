@@ -557,6 +557,8 @@ namespace UdonSharpEditor
             _moveComponentRelativeToComponent.Invoke(null, new object[] { component, targetComponent, aboveTarget });
         }
         
+        private static readonly FieldInfo _serializedProgramAssetField = typeof(UdonBehaviour).GetField("serializedProgramAsset", BindingFlags.NonPublic | BindingFlags.Instance);
+        
         private static void RunBehaviourSetup(UdonSharpBehaviour behaviour, bool withUndo)
         {
             UdonBehaviour backingBehaviour = GetBackingUdonBehaviour(behaviour);
@@ -582,7 +584,8 @@ namespace UdonSharpEditor
                 }
             }
 
-            bool isPartOfPrefabInstance = PrefabUtility.IsPartOfPrefabInstance(behaviour);
+            bool isPartOfPrefabInstance = PrefabUtility.IsPartOfPrefabInstance(behaviour) && 
+                                          PrefabUtility.GetCorrespondingObjectFromSource(behaviour) != behaviour;
 
             if (backingBehaviour == null)
             {
@@ -597,6 +600,11 @@ namespace UdonSharpEditor
                 try
                 {
                     backingBehaviour = withUndo ? Undo.AddComponent<UdonBehaviour>(behaviour.gameObject) : behaviour.gameObject.AddComponent<UdonBehaviour>();
+                    
+                #pragma warning disable CS0618 // Type or member is obsolete
+                    backingBehaviour.SynchronizePosition = false;
+                    backingBehaviour.AllowCollisionOwnershipTransfer = false;
+                #pragma warning restore CS0618 // Type or member is obsolete
 
                     MoveComponentRelativeToComponent(backingBehaviour, behaviour, false);
                     
@@ -631,13 +639,28 @@ namespace UdonSharpEditor
             //     }
             // }
 
+            UdonSharpProgramAsset programAsset = GetUdonSharpProgramAsset(behaviour);
+
             if (backingBehaviour.programSource == null)
             {
-                backingBehaviour.programSource = GetUdonSharpProgramAsset(behaviour);
+                backingBehaviour.programSource = programAsset;
                 if (backingBehaviour.programSource == null)
                     UdonSharpUtils.LogError($"Unable to find valid U# program asset associated with script '{behaviour}'", behaviour);
                 
                 UdonSharpUtils.SetDirty(backingBehaviour);
+            }
+
+            if (_serializedProgramAssetField.GetValue(backingBehaviour) == null)
+            {
+                SerializedObject componentAsset = new SerializedObject(backingBehaviour);
+                SerializedProperty serializedProgramAssetProperty = componentAsset.FindProperty("serializedProgramAsset");
+
+                serializedProgramAssetProperty.objectReferenceValue = programAsset.SerializedProgramAsset;
+
+                if (withUndo)
+                    componentAsset.ApplyModifiedProperties();
+                else
+                    componentAsset.ApplyModifiedPropertiesWithoutUndo();
             }
 
             if (backingBehaviour.enabled != behaviour.enabled)
@@ -667,7 +690,7 @@ namespace UdonSharpEditor
             RunBehaviourSetup(behaviour, false);
         }
 
-        public static void RunBehaviourSetupWithUndo(UdonSharpBehaviour behaviour)
+        internal static void RunBehaviourSetupWithUndo(UdonSharpBehaviour behaviour)
         {
             RunBehaviourSetup(behaviour, true);
         }

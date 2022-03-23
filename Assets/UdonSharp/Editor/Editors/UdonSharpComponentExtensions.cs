@@ -5,13 +5,36 @@ using JetBrains.Annotations;
 using UdonSharp;
 using UnityEditor;
 using UnityEngine;
-using VRC.SDKBase;
-using VRC.Udon;
 
 namespace UdonSharpEditor
 {
     public static class UdonSharpComponentExtensions
     {
+    #region AddComponent
+        [PublicAPI]
+        public static UdonSharpBehaviour AddUdonSharpComponent(this GameObject gameObject, Type type)
+        {
+            if (type == typeof(UdonSharpBehaviour))
+                throw new ArgumentException("Cannot add components of type 'UdonSharpBehaviour', you can only add subclasses of this type");
+
+            if (!typeof(UdonSharpBehaviour).IsAssignableFrom(type))
+                throw new ArgumentException("Type for AddUdonSharpComponent must be a subclass of UdonSharpBehaviour");
+
+            UdonSharpBehaviour proxyBehaviour = (UdonSharpBehaviour)gameObject.AddComponent(type);
+            UdonSharpEditorUtility.RunBehaviourSetup(proxyBehaviour);
+
+            if (EditorApplication.isPlaying)
+                UdonSharpEditorUtility.GetBackingUdonBehaviour(proxyBehaviour).InitializeUdonContent();
+
+            return proxyBehaviour;
+        }
+
+        [PublicAPI]
+        public static T AddUdonSharpComponent<T>(this GameObject gameObject) where T : UdonSharpBehaviour =>
+            (T)AddUdonSharpComponent(gameObject, typeof(T));
+    #endregion
+
+        
     #region Serialization Helper extensions
         /// <summary>
         /// Updates the proxy representation from the underlying UdonBehaviour state
@@ -45,59 +68,6 @@ namespace UdonSharpEditor
         {
         }
     #endregion
-
-    #region AddComponent
-        [PublicAPI]
-        public static UdonSharpBehaviour AddUdonSharpComponent(this GameObject gameObject, System.Type type)
-        {
-            if (type == typeof(UdonSharpBehaviour))
-                throw new System.ArgumentException("Cannot add components of type 'UdonSharpBehaviour', you can only add subclasses of this type");
-
-            if (!typeof(UdonSharpBehaviour).IsAssignableFrom(type))
-                throw new System.ArgumentException("Type for AddUdonSharpComponent must be a subclass of UdonSharpBehaviour");
-
-            UdonBehaviour udonBehaviour = gameObject.AddComponent<UdonBehaviour>();
-
-            UdonSharpProgramAsset programAsset = UdonSharpProgramAsset.GetProgramAssetForClass(type);
-
-            udonBehaviour.programSource = programAsset;
-#pragma warning disable CS0618 // Type or member is obsolete
-            udonBehaviour.SynchronizePosition = false;
-            udonBehaviour.AllowCollisionOwnershipTransfer = false;
-#pragma warning restore CS0618 // Type or member is obsolete
-
-            switch (programAsset.behaviourSyncMode)
-            {
-                case BehaviourSyncMode.Continuous:
-                    udonBehaviour.SyncMethod = Networking.SyncType.Continuous;
-                    break;
-                case BehaviourSyncMode.Manual:
-                    udonBehaviour.SyncMethod = Networking.SyncType.Manual;
-                    break;
-                case BehaviourSyncMode.None:
-                    udonBehaviour.SyncMethod = Networking.SyncType.None;
-                    break;
-            }
-
-            SerializedObject componentAsset = new SerializedObject(udonBehaviour);
-            SerializedProperty serializedProgramAssetProperty = componentAsset.FindProperty("serializedProgramAsset");
-
-            serializedProgramAssetProperty.objectReferenceValue = programAsset.SerializedProgramAsset;
-            componentAsset.ApplyModifiedPropertiesWithoutUndo();
-
-            UdonSharpBehaviour proxyComponent = UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour);
-
-            if (EditorApplication.isPlaying)
-                udonBehaviour.InitializeUdonContent();
-
-            return proxyComponent;
-        }
-
-        [PublicAPI]
-        public static T AddUdonSharpComponent<T>(this GameObject gameObject) where T : UdonSharpBehaviour =>
-            (T)AddUdonSharpComponent(gameObject, typeof(T));
-    #endregion
-
     #region Obsolete GetComponent APIs
 
         private static UdonSharpBehaviour[] CastArray(this Component[] components) => components.OfType<UdonSharpBehaviour>().ToArray();

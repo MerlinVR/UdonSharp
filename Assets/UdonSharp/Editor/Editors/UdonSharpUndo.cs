@@ -1,4 +1,5 @@
 ﻿
+using System;
 using JetBrains.Annotations;
 using UdonSharp;
 using UnityEditor;
@@ -39,37 +40,18 @@ namespace UdonSharpEditor
         public static UdonSharpBehaviour AddComponent(GameObject gameObject, System.Type type)
         {
             if (type == typeof(UdonSharpBehaviour))
-                throw new System.ArgumentException("Cannot add components of abstract class 'UdonSharpBehaviour', you can only add subclasses of this type");
+                throw new ArgumentException("Cannot add components of type 'UdonSharpBehaviour', you can only add subclasses of this type");
 
             if (!typeof(UdonSharpBehaviour).IsAssignableFrom(type))
-                throw new System.ArgumentException("Type for AddUdonSharpComponent must be a subclass of UdonSharpBehaviour");
+                throw new ArgumentException("Type for AddUdonSharpComponent must be a subclass of UdonSharpBehaviour");
 
-            UdonBehaviour udonBehaviour = Undo.AddComponent<UdonBehaviour>(gameObject);
-
-            UdonSharpProgramAsset programAsset = UdonSharpProgramAsset.GetProgramAssetForClass(type);
-
-            udonBehaviour.programSource = programAsset;
-#pragma warning disable CS0618 // Type or member is obsolete
-            udonBehaviour.AllowCollisionOwnershipTransfer = false;
-#pragma warning restore CS0618 // Type or member is obsolete
-
-            SerializedObject componentAsset = new SerializedObject(udonBehaviour);
-            SerializedProperty serializedProgramAssetProperty = componentAsset.FindProperty("serializedProgramAsset");
-
-            serializedProgramAssetProperty.objectReferenceValue = programAsset.SerializedProgramAsset;
-            componentAsset.ApplyModifiedProperties();
-
-            System.Type scriptType = programAsset.GetClass();
-
-            UdonSharpBehaviour proxyComponent = (UdonSharpBehaviour)Undo.AddComponent(udonBehaviour.gameObject, scriptType);
-            UdonSharpEditorUtility.RunBehaviourSetup(proxyComponent);
+            UdonSharpBehaviour proxyBehaviour = (UdonSharpBehaviour)Undo.AddComponent(gameObject, type);
+            UdonSharpEditorUtility.RunBehaviourSetupWithUndo(proxyBehaviour);
 
             if (EditorApplication.isPlaying)
-            {
-                udonBehaviour.InitializeUdonContent();
-            }
+                UdonSharpEditorUtility.GetBackingUdonBehaviour(proxyBehaviour).InitializeUdonContent();
 
-            return proxyComponent;
+            return proxyBehaviour;
         }
 
         /// <summary>
