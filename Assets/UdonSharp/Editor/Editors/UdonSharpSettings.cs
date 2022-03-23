@@ -56,9 +56,9 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         // Compiler settings
         public bool autoCompileOnModify = true;
-        public bool waitForFocus;
-        public bool disableUploadCompile;
-        public TextAsset newScriptTemplateOverride;
+        public bool waitForFocus = false;
+        public bool disableUploadCompile = false;
+        public TextAsset newScriptTemplateOverride = null;
 
         public string[] scanningDirectoryBlacklist = Array.Empty<string>();
 
@@ -70,7 +70,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
         public bool includeInlineCode = true;
         public bool listenForVRCExceptions = true;
 
-        public bool shouldForceCompile;
+        public bool shouldForceCompile = false;
 
         // Log watcher
         public LogWatcherMode watcherMode = LogWatcherMode.Disabled;
