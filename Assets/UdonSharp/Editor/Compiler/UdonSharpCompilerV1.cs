@@ -131,7 +131,7 @@ namespace UdonSharp.Compiler
 
             for (int i = 0; i < diagnostics.Length; ++i)
             {
-                LinePosition diagLine = compileDiagnostics[i].Location.GetLineSpan().StartLinePosition;
+                LinePosition diagLine = compileDiagnostics[i]?.Location?.GetLineSpan().StartLinePosition ?? LinePosition.Zero;
                 
                 diagnostics[i] = new UdonSharpEditorCache.CompileDiagnostic()
                 {
