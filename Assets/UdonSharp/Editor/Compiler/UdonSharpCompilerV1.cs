@@ -739,7 +739,16 @@ namespace UdonSharp.Compiler
                 }
 
                 BehaviourSyncMode syncMode = BehaviourSyncMode.Any;
-                UdonBehaviourSyncModeAttribute syncModeAttribute = moduleEmitContext.EmitType.GetAttribute<UdonBehaviourSyncModeAttribute>();
+                UdonBehaviourSyncModeAttribute syncModeAttribute = null;
+
+                TypeSymbol currentTypeSymbol = moduleEmitContext.EmitType;
+                TypeSymbol udonSharpBehaviourType = moduleEmitContext.GetTypeSymbol(typeof(UdonSharpBehaviour));
+
+                while (currentTypeSymbol != udonSharpBehaviourType && syncModeAttribute == null)
+                {
+                    syncModeAttribute = currentTypeSymbol.GetAttribute<UdonBehaviourSyncModeAttribute>();
+                    currentTypeSymbol = currentTypeSymbol.BaseType;
+                }
 
                 if (syncModeAttribute != null)
                     syncMode = syncModeAttribute.behaviourSyncMode;

@@ -71,7 +71,7 @@ namespace UdonSharp
     }
 
     [PublicAPI]
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Class)]
     public class UdonBehaviourSyncModeAttribute : Attribute
     {
         public BehaviourSyncMode behaviourSyncMode = BehaviourSyncMode.Any;
