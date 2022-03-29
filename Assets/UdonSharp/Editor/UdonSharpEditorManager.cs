@@ -733,21 +733,30 @@ namespace UdonSharpEditor
             UpdateSerializedProgramAssets(allBehaviours);
         }
 
-        private static bool _requiresCompile;
-        internal static void QueueScriptCompile()
-        {
-            _requiresCompile = true;
-        }
-
         private static void OnEditorUpdate()
         {
-            if (_requiresCompile)
+            AddProjectDefine();
+            UpgradeAssetsIfNeeded();
+        }
+
+        private static bool _hasCheckedDefines;
+
+        private static void AddProjectDefine()
+        {
+            if (_hasCheckedDefines || EditorApplication.isUpdating || EditorApplication.isCompiling)
+                return;
+            
+            BuildTargetGroup buildTargetGroup = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
+            string[] defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildTargetGroup).Split(';');
+
+            if (!defines.Contains("UDONSHARP", StringComparer.OrdinalIgnoreCase))
             {
-                UdonSharpProgramAsset.CompileAllCsPrograms();
-                _requiresCompile = false;
+                defines = defines.AddItem("UDONSHARP").ToArray();
+                PlayerSettings.SetScriptingDefineSymbolsForGroup(buildTargetGroup, string.Join(";", defines));
+                UdonSharpUtils.Log("Updated scripting defines");
             }
 
-            UpgradeAssetsIfNeeded();
+            _hasCheckedDefines = true;
         }
 
         // Rely on assembly reload to clear this since it indicates the user needs to change a script
