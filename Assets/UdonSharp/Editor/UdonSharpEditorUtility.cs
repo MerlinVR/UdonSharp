@@ -435,6 +435,9 @@ namespace UdonSharpEditor
         
         internal static void UpgradeSceneBehaviours(IEnumerable<UdonBehaviour> behaviours)
         {
+            if (EditorApplication.isPlaying)
+                return;
+            
             // Create proxies if they do not exist
             foreach (UdonBehaviour udonBehaviour in behaviours)
             {
@@ -473,7 +476,7 @@ namespace UdonSharpEditor
                     }
                     else
                     {
-                        UdonSharpUtils.LogWarning("Cannot reorder internal UdonBehaviour during upgrade because it is on a prefab instance.");
+                        UdonSharpUtils.LogWarning($"Cannot reorder internal UdonBehaviour for '{udonBehaviour}' during upgrade because it is on a prefab instance.", udonBehaviour.gameObject);
                     }
 
                     UdonSharpUtils.SetDirty(newProxy);

@@ -733,10 +733,21 @@ namespace UdonSharpEditor
             UpdateSerializedProgramAssets(allBehaviours);
         }
 
+        private static bool _didSceneUpgrade;
+        
         private static void OnEditorUpdate()
         {
+            if (EditorApplication.isPlaying)
+                return;
+            
             AddProjectDefine();
             UpgradeAssetsIfNeeded();
+
+            if (!_didSceneUpgrade && !EditorApplication.isCompiling && !EditorApplication.isUpdating)
+            {
+                UdonSharpEditorUtility.UpgradeSceneBehaviours(GetAllUdonBehaviours());
+                _didSceneUpgrade = true;
+            }
         }
 
         private static bool _hasCheckedDefines;
@@ -1486,6 +1497,14 @@ namespace UdonSharpEditor
 
                 foreach (UdonSharpBehaviour proxyBehaviour in proxyBehaviours)
                 {
+                    if ((proxyBehaviour.hideFlags & HideFlags.DontSaveInEditor) != 0)
+                    {
+                        UdonSharpUtils.LogWarning("Obsolete proxy instance found from U# 0.X, cleaning up proxy.", proxyBehaviour.gameObject);
+                        
+                        Object.DestroyImmediate(proxyBehaviour);
+                        continue;
+                    }
+
                     UdonSharpProgramAsset programAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset(proxyBehaviour);
                     
                     if (programAsset.ScriptVersion < UdonSharpProgramVersion.V1SerializationUpdate)
@@ -1580,8 +1599,10 @@ namespace UdonSharpEditor
                 return true;
 
             UpgradeAssetsIfNeeded();
-            UdonSharpEditorUtility.UpgradeSceneBehaviours(GetAllUdonBehaviours());
-
+            
+            if (!EditorApplication.isCompiling && !EditorApplication.isUpdating)
+                UdonSharpEditorUtility.UpgradeSceneBehaviours(GetAllUdonBehaviours());
+            
             return false;
         }
 
