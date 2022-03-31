@@ -93,6 +93,8 @@ namespace UdonSharp.Compiler
         private ConcurrentDictionary<ITypeSymbol, TypeSymbol> _typeSymbolLookup = new ConcurrentDictionary<ITypeSymbol, TypeSymbol>();
 
         public UdonSharpCompileOptions Options { get; }
+        
+        private Dictionary<TypeSymbol, ImmutableArray<TypeSymbol>> _inheritedTypes;
 
         public CompilationContext(UdonSharpCompileOptions options)
         {
@@ -422,7 +424,7 @@ namespace UdonSharp.Compiler
                 _builtLayouts.Add(currentBuildType, new TypeLayout(layouts, idCounters));
             }
         }
-        
+
         /// <summary>
         /// Retrieves the method layout for a UdonSharpBehaviour method.
         /// This includes the method name, name of return variable, and name of parameter values.
@@ -434,9 +436,9 @@ namespace UdonSharp.Compiler
         {
             if (_udonSharpBehaviourType == null)
                 _udonSharpBehaviourType = GetTypeSymbol(typeof(UdonSharpBehaviour), context);
-            
-            while (method.OverridenMethod != null && 
-                   method.OverridenMethod.ContainingType != _udonSharpBehaviourType && 
+
+            while (method.OverridenMethod != null &&
+                   method.OverridenMethod.ContainingType != _udonSharpBehaviourType &&
                    !method.OverridenMethod.ContainingType.IsExtern)
                 method = method.OverridenMethod;
 
@@ -449,6 +451,57 @@ namespace UdonSharp.Compiler
 
                 return _layouts[method];
             }
+        }
+
+        public void BuildUdonBehaviourInheritanceLookup(IEnumerable<INamedTypeSymbol> rootTypes)
+        {
+            Dictionary<TypeSymbol, List<TypeSymbol>> inheritedTypeScratch = new Dictionary<TypeSymbol, List<TypeSymbol>>();
+
+            TypeSymbol udonSharpBehaviourType = null;
+            
+            foreach (INamedTypeSymbol typeSymbol in rootTypes)
+            {
+                BindContext bindContext = new BindContext(this, typeSymbol, null);
+                if (udonSharpBehaviourType == null)
+                    udonSharpBehaviourType = bindContext.GetTypeSymbol(typeof(UdonSharpBehaviour));
+
+                TypeSymbol rootTypeSymbol = bindContext.GetTypeSymbol(typeSymbol);
+
+                TypeSymbol baseType = rootTypeSymbol.BaseType;
+
+                while (baseType != udonSharpBehaviourType)
+                {
+                    if (!inheritedTypeScratch.TryGetValue(baseType, out List<TypeSymbol> inheritedTypeList))
+                    {
+                        inheritedTypeList = new List<TypeSymbol>();
+                        inheritedTypeScratch.Add(baseType, inheritedTypeList);
+                    }
+                    
+                    inheritedTypeList.Add(rootTypeSymbol);
+
+                    baseType = baseType.BaseType;
+                }
+            }
+
+            _inheritedTypes = new Dictionary<TypeSymbol, ImmutableArray<TypeSymbol>>();
+
+            foreach (var typeLists in inheritedTypeScratch)
+            {
+                _inheritedTypes.Add(typeLists.Key, typeLists.Value.ToImmutableArray());
+            }
+        }
+
+        public bool HasInheritedUdonSharpBehaviours(TypeSymbol baseType)
+        {
+            return _inheritedTypes.ContainsKey(baseType);
+        }
+
+        public ImmutableArray<TypeSymbol> GetInheritedTypes(TypeSymbol baseType)
+        {
+            if (_inheritedTypes.TryGetValue(baseType, out ImmutableArray<TypeSymbol> types))
+                return types;
+            
+            return ImmutableArray<TypeSymbol>.Empty;
         }
     }
 }

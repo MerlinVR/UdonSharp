@@ -117,6 +117,7 @@ namespace UdonSharp.Compiler.Binder
                 (symbol.ContainingType.UdonType.SystemType == typeof(Component) || symbol.ContainingType.UdonType.SystemType == typeof(GameObject)))
             {
                 TypeSymbol gameObjectType = context.GetTypeSymbol(typeof(GameObject));
+                TypeSymbol typeArgument = symbol.TypeArguments[0];
              
                 // udon-workaround: Work around the udon bug where it checks the strongbox type instead of variable type and blows up when the strong box is `object`
                 if (instanceExpression.ValueType == gameObjectType)
@@ -133,7 +134,7 @@ namespace UdonSharp.Compiler.Binder
                 TypeSymbol udonSharpBehaviourType = context.GetTypeSymbol(typeof(UdonSharpBehaviour));
 
                 // Exact UdonSharpBehaviour type match
-                if (symbol.TypeArguments[0] == udonSharpBehaviourType)
+                if (typeArgument == udonSharpBehaviourType)
                 {
                     MethodSymbol getComponentMethodShim = context.GetTypeSymbol(typeof(GetUserComponentShim))
                         .GetMembers<MethodSymbol>(symbol.Name + "USB", context)
@@ -148,13 +149,30 @@ namespace UdonSharp.Compiler.Binder
                 }
                 
                 // Subclass of UdonSharpBehaviour
-                if (symbol.TypeArguments[0].IsUdonSharpBehaviour)
+                if (typeArgument.IsUdonSharpBehaviour)
                 {
+                    // Handle inherited types
+                    if (context.CompileContext.HasInheritedUdonSharpBehaviours(typeArgument))
+                    {
+                        MethodSymbol getComponentInheritedMethodShim = context.GetTypeSymbol(typeof(GetUserComponentShim))
+                            .GetMembers<MethodSymbol>(symbol.Name + "I", context)
+                            .First(e => e.Parameters.Length == parameterExpressions.Length + 1);
+                        
+                        getComponentInheritedMethodShim = getComponentInheritedMethodShim.ConstructGenericMethod(context, new [] { typeArgument });
+                    
+                        createdInvocation = new BoundStaticUserMethodInvocation(node, getComponentInheritedMethodShim,
+                            new [] {instanceExpression}.Concat(parameterExpressions).ToArray());
+                    
+                        context.MarkSymbolReferenced(getComponentInheritedMethodShim);
+                        
+                        return true;
+                    }
+                    
                     MethodSymbol getComponentMethodShim = context.GetTypeSymbol(typeof(GetUserComponentShim))
                         .GetMembers<MethodSymbol>(symbol.Name, context)
                         .First(e => e.Parameters.Length == parameterExpressions.Length + 1);
                     
-                    getComponentMethodShim = getComponentMethodShim.ConstructGenericMethod(context, new [] { symbol.TypeArguments[0] });
+                    getComponentMethodShim = getComponentMethodShim.ConstructGenericMethod(context, new [] { typeArgument });
                     
                     createdInvocation = new BoundStaticUserMethodInvocation(node, getComponentMethodShim,
                         new [] {instanceExpression}.Concat(parameterExpressions).ToArray());

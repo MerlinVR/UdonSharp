@@ -17,6 +17,7 @@ namespace UdonSharp.Tests
         public IntegrationTestSuite tester;
         
         public GameObject modObject;
+        public GameObject inheritContainer;
 
         Transform[] transforms;
 
@@ -92,6 +93,11 @@ namespace UdonSharp.Tests
             // {
             //     Debug.Log("Component name: " + ((UdonSharpBehaviour)behaviour).GetUdonTypeName());
             // }
+            
+            tester.TestAssertion("Base type GetComponent", inheritContainer.GetComponents<TestInheritanceClassBase>().Length == 3);
+            tester.TestAssertion("Inherited GetComponent 1", inheritContainer.GetComponents<ClassA>().Length == 1);
+            tester.TestAssertion("Inherited GetComponent 2", inheritContainer.GetComponents<ClassB>().Length == 2);
+            tester.TestAssertion("Inherited GetComponent 3", inheritContainer.GetComponents<ClassC>().Length == 1);
         }
     }
 }

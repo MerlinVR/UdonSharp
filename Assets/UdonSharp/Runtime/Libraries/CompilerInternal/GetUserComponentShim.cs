@@ -1,4 +1,5 @@
 ﻿
+using System;
 using JetBrains.Annotations;
 using UnityEngine;
 using VRC.Udon;
@@ -289,6 +290,130 @@ namespace UdonSharp.Lib.Internal
         internal static UdonSharpBehaviour[] GetComponentsInParentUSB(Component instance, bool includeInactive)
         {
             return GetUdonSharpComponents(instance.GetComponentsInParent(typeof(UdonBehaviour), includeInactive));
+        }
+    #endregion
+
+    #region Get user component that has some inheritance
+        // Types with inheritance build a type array that we can do a lookup into
+        private static T GetUdonSharpComponentInherited<T>(Component[] behaviours) where T : UdonSharpBehaviour
+        {
+            long targetID = UdonSharpBehaviour.GetUdonTypeID<T>();
+            
+            foreach (UdonBehaviour behaviour in (UdonBehaviour[])behaviours)
+            {
+            #if UNITY_EDITOR
+                if (behaviour.GetProgramVariableType(CompilerConstants.UsbTypeIDArrayHeapKey) == null)
+                    continue;
+            #endif
+                object idValue = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDArrayHeapKey);
+                if (idValue != null)
+                {
+                    if (Array.IndexOf((Array)idValue, targetID) != -1)
+                        return (T)(Component)behaviour;
+                }
+            }
+            
+            return null;
+        }
+        
+        [UsedImplicitly]
+        internal static T GetComponentI<T>(Component instance) where T : UdonSharpBehaviour
+        {
+            return GetUdonSharpComponentInherited<T>(instance.GetComponents(typeof(UdonBehaviour)));
+        }
+
+        [UsedImplicitly]
+        internal static T GetComponentInChildrenI<T>(Component instance) where T : UdonSharpBehaviour
+        {
+            return GetUdonSharpComponentInherited<T>(instance.GetComponentsInChildren(typeof(UdonBehaviour)));
+        }
+
+        [UsedImplicitly]
+        internal static T GetComponentInChildrenI<T>(Component instance, bool includeInactive) where T : UdonSharpBehaviour
+        {
+            return GetUdonSharpComponentInherited<T>(instance.GetComponentsInChildren(typeof(UdonBehaviour), includeInactive));
+        }
+        
+        [UsedImplicitly]
+        internal static T GetComponentInParentI<T>(Component instance) where T : UdonSharpBehaviour
+        {
+            return GetUdonSharpComponentInherited<T>(instance.GetComponentsInParent(typeof(UdonBehaviour)));
+        }
+
+        [UsedImplicitly]
+        internal static T GetComponentInParentI<T>(Component instance, bool includeInactive) where T : UdonSharpBehaviour
+        {
+            return GetUdonSharpComponentInherited<T>(instance.GetComponentsInParent(typeof(UdonBehaviour), includeInactive));
+        }
+        
+        // GetComponents
+        private static T[] GetUdonSharpComponentsInherited<T>(Component[] behaviours) where T : UdonSharpBehaviour
+        {
+            long targetID = UdonSharpBehaviour.GetUdonTypeID<T>();
+            
+            int arraySize = 0;
+            foreach (UdonBehaviour behaviour in (UdonBehaviour[])behaviours)
+            {
+            #if UNITY_EDITOR
+                if (behaviour.GetProgramVariableType(CompilerConstants.UsbTypeIDArrayHeapKey) == null)
+                    continue;
+            #endif
+                object idValue = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDArrayHeapKey);
+                if (idValue != null)
+                {
+                    if (Array.IndexOf((Array)idValue, targetID) != -1)
+                        arraySize++;
+                }
+            }
+
+            Component[] foundBehaviours = new Component[arraySize];
+            int targetIdx = 0;
+            
+            foreach (UdonBehaviour behaviour in (UdonBehaviour[])behaviours)
+            {
+            #if UNITY_EDITOR
+                if (behaviour.GetProgramVariableType(CompilerConstants.UsbTypeIDArrayHeapKey) == null)
+                    continue;
+            #endif
+                object idValue = behaviour.GetProgramVariable(CompilerConstants.UsbTypeIDArrayHeapKey);
+                if (idValue != null)
+                {
+                    if (Array.IndexOf((Array)idValue, targetID) != -1)
+                        foundBehaviours[targetIdx++] = behaviour;
+                }
+            }
+
+            return (T[])foundBehaviours;
+        }
+        
+        [UsedImplicitly]
+        internal static T[] GetComponentsI<T>(Component instance) where T : UdonSharpBehaviour
+        {
+            return GetUdonSharpComponentsInherited<T>(instance.GetComponents(typeof(UdonBehaviour)));
+        }
+
+        [UsedImplicitly]
+        internal static T[] GetComponentsInChildrenI<T>(Component instance) where T : UdonSharpBehaviour
+        {
+            return GetUdonSharpComponentsInherited<T>(instance.GetComponentsInChildren(typeof(UdonBehaviour)));
+        }
+
+        [UsedImplicitly]
+        internal static T[] GetComponentsInChildrenI<T>(Component instance, bool includeInactive) where T : UdonSharpBehaviour
+        {
+            return GetUdonSharpComponentsInherited<T>(instance.GetComponentsInChildren(typeof(UdonBehaviour), includeInactive));
+        }
+        
+        [UsedImplicitly]
+        internal static T[] GetComponentsInParentI<T>(Component instance) where T : UdonSharpBehaviour
+        {
+            return GetUdonSharpComponentsInherited<T>(instance.GetComponentsInParent(typeof(UdonBehaviour)));
+        }
+
+        [UsedImplicitly]
+        internal static T[] GetComponentsInParentI<T>(Component instance, bool includeInactive) where T : UdonSharpBehaviour
+        {
+            return GetUdonSharpComponentsInherited<T>(instance.GetComponentsInParent(typeof(UdonBehaviour), includeInactive));
         }
     #endregion
     }

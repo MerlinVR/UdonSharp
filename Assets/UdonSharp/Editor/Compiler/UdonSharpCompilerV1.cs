@@ -557,6 +557,8 @@ namespace UdonSharp.Compiler
 
             (INamedTypeSymbol, ModuleBinding)[] rootTypes = rootUdonSharpTypes.ToArray();
 
+            compilationContext.BuildUdonBehaviourInheritanceLookup(rootTypes.Select(e => e.Item1));
+            
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.Bind;
 
             BindAllPrograms(rootTypes, compilationContext);
@@ -724,6 +726,26 @@ namespace UdonSharp.Compiler
                 moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeNameHeapKey,
                     moduleEmitContext.GetTypeSymbol(SpecialType.System_String), typeName);
 
+                TypeSymbol udonSharpBehaviourType = moduleEmitContext.GetTypeSymbol(typeof(UdonSharpBehaviour));
+                
+                if (moduleEmitContext.EmitType.BaseType != udonSharpBehaviourType ||
+                    compilationContext.HasInheritedUdonSharpBehaviours(moduleEmitContext.EmitType))
+                {
+                    List<long> baseTypeArr = new List<long>();
+
+                    TypeSymbol currentType = moduleEmitContext.EmitType;
+
+                    while (currentType != udonSharpBehaviourType)
+                    {
+                        baseTypeArr.Add(UdonSharpInternalUtility.GetTypeID(TypeSymbol.GetFullTypeName(currentType.RoslynSymbol)));
+                        currentType = currentType.BaseType;
+                    }
+
+                    // Array of base types inclusive of the root type
+                    moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeIDArrayHeapKey,
+                        moduleEmitContext.GetTypeSymbol(typeof(long).MakeArrayType()), baseTypeArr.ToArray());
+                }
+
                 try
                 {
                     moduleEmitContext.Emit();
@@ -742,7 +764,6 @@ namespace UdonSharp.Compiler
                 UdonBehaviourSyncModeAttribute syncModeAttribute = null;
 
                 TypeSymbol currentTypeSymbol = moduleEmitContext.EmitType;
-                TypeSymbol udonSharpBehaviourType = moduleEmitContext.GetTypeSymbol(typeof(UdonSharpBehaviour));
 
                 while (currentTypeSymbol != udonSharpBehaviourType && syncModeAttribute == null)
                 {
