@@ -416,5 +416,71 @@ namespace UdonSharp.Lib.Internal
             return GetUdonSharpComponentsInherited<T>(instance.GetComponentsInParent(typeof(UdonBehaviour), includeInactive));
         }
     #endregion
+
+    #region Broken VRC component getcomponent workaround
+
+        [UsedImplicitly]
+        internal static T GetComponentVRC<T>(Component instance) where T : Component
+        {
+            return (T)instance.GetComponent(typeof(T));
+        }
+        
+        [UsedImplicitly]
+        internal static T GetComponentInChildrenVRC<T>(Component instance) where T : Component
+        {
+            return (T)instance.GetComponentInChildren(typeof(T));
+        }
+        
+        [UsedImplicitly]
+        internal static T GetComponentInChildrenVRC<T>(Component instance, bool includeInactive) where T : Component
+        {
+            return (T)instance.GetComponentInChildren(typeof(T), includeInactive);
+        }
+        
+        [UsedImplicitly]
+        internal static T GetComponentInParentVRC<T>(Component instance) where T : Component
+        {
+            return (T)instance.GetComponentInParent(typeof(T));
+        }
+
+        private static T[] ConvertToTArray<T>(Component[] components) where T : Component
+        {
+            T[] newArr = new T[components.Length];
+            Array.Copy(components, newArr, components.Length);
+
+            return newArr;
+        }
+        
+        [UsedImplicitly]
+        internal static T[] GetComponentsVRC<T>(Component instance) where T : Component
+        {
+            return ConvertToTArray<T>(instance.GetComponents(typeof(T)));
+        }
+        
+        [UsedImplicitly]
+        internal static T[] GetComponentsInChildrenVRC<T>(Component instance) where T : Component
+        {
+            return ConvertToTArray<T>(instance.GetComponentsInChildren(typeof(T)));
+        }
+        
+        [UsedImplicitly]
+        internal static T[] GetComponentsInChildrenVRC<T>(Component instance, bool includeInactive) where T : Component
+        {
+            return ConvertToTArray<T>(instance.GetComponentsInChildren(typeof(T), includeInactive));
+        }
+        
+        [UsedImplicitly]
+        internal static T[] GetComponentsInParentVRC<T>(Component instance) where T : Component
+        {
+            return ConvertToTArray<T>(instance.GetComponentsInParent(typeof(T)));
+        }
+        
+        [UsedImplicitly]
+        internal static T[] GetComponentsInParentVRC<T>(Component instance, bool includeInactive) where T : Component
+        {
+            return ConvertToTArray<T>(instance.GetComponentsInParent(typeof(T), includeInactive));
+        }
+
+    #endregion
     }
 }

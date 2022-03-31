@@ -105,6 +105,21 @@ namespace UdonSharp.Compiler.Binder
             createdInvocation = null;
             return false;
         }
+        
+        private static readonly HashSet<Type> _brokenGetComponentTypes = new HashSet<Type>()
+        {
+            typeof(VRC.SDKBase.VRC_AvatarPedestal), typeof(VRC.SDK3.Components.VRCAvatarPedestal),
+            typeof(VRC.SDKBase.VRC_Pickup), typeof(VRC.SDK3.Components.VRCPickup),
+            typeof(VRC.SDKBase.VRC_PortalMarker), typeof(VRC.SDK3.Components.VRCPortalMarker),
+            //typeof(VRC.SDKBase.VRC_MirrorReflection), typeof(VRC.SDK3.Components.VRCMirrorReflection),
+            typeof(VRC.SDKBase.VRCStation),typeof(VRC.SDK3.Components.VRCStation),
+            typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer),
+            typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer),
+            typeof(VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer),
+            typeof(VRC.SDK3.Components.VRCObjectPool),
+            typeof(VRC.SDK3.Components.VRCObjectSync),
+            typeof(UdonBehaviour),
+        };
 
         private static bool TryCreateGetComponentInvocation(AbstractPhaseContext context, SyntaxNode node,
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
@@ -179,6 +194,22 @@ namespace UdonSharp.Compiler.Binder
                     
                     context.MarkSymbolReferenced(getComponentMethodShim);
 
+                    return true;
+                }
+
+                if (_brokenGetComponentTypes.Contains(typeArgument.UdonType.SystemType))
+                {
+                    MethodSymbol getComponentInheritedMethodShim = context.GetTypeSymbol(typeof(GetComponentShim))
+                        .GetMembers<MethodSymbol>(symbol.Name + "VRC", context)
+                        .First(e => e.Parameters.Length == parameterExpressions.Length + 1);
+                        
+                    getComponentInheritedMethodShim = getComponentInheritedMethodShim.ConstructGenericMethod(context, new [] { typeArgument });
+                    
+                    createdInvocation = new BoundStaticUserMethodInvocation(node, getComponentInheritedMethodShim,
+                        new [] {instanceExpression}.Concat(parameterExpressions).ToArray());
+                    
+                    context.MarkSymbolReferenced(getComponentInheritedMethodShim);
+                        
                     return true;
                 }
                 

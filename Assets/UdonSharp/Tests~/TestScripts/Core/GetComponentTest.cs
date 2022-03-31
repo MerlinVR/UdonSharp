@@ -1,12 +1,12 @@
 
-using UdonSharp;
-using UdonSharp.Examples.Utilities;
 using UnityEngine;
+using VRC.SDK3.Components;
 using VRC.SDK3.Video.Components;
 using VRC.SDK3.Video.Components.AVPro;
 using VRC.SDK3.Video.Components.Base;
 using VRC.SDKBase;
 using VRC.Udon;
+using VRCStation = VRC.SDKBase.VRCStation;
 
 namespace UdonSharp.Tests
 {
@@ -85,19 +85,20 @@ namespace UdonSharp.Tests
             // Should compile
             GetComponents<Collider>()[0].enabled = false;
             GetComponents<Collider>()[0].enabled = true;
-
-            // Debug.Log(getBehaviour.GetUdonTypeID());
-            // Debug.Log(getBehaviour.GetUdonTypeName());
-
-            // foreach (Component behaviour in modObject.GetComponents(typeof(UdonBehaviour)))
-            // {
-            //     Debug.Log("Component name: " + ((UdonSharpBehaviour)behaviour).GetUdonTypeName());
-            // }
             
+            // U# inheritance
             tester.TestAssertion("Base type GetComponent", inheritContainer.GetComponents<TestInheritanceClassBase>().Length == 3);
             tester.TestAssertion("Inherited GetComponent 1", inheritContainer.GetComponents<ClassA>().Length == 1);
             tester.TestAssertion("Inherited GetComponent 2", inheritContainer.GetComponents<ClassB>().Length == 2);
             tester.TestAssertion("Inherited GetComponent 3", inheritContainer.GetComponents<ClassC>().Length == 1);
+            
+            tester.TestAssertion("Get UdonBehaviour", GetComponent<UdonBehaviour>());
+            tester.TestAssertion("Get UdonBehaviours", GetComponents<UdonBehaviour>().Length == 2);
+            tester.TestAssertion("Get UdonBehaviours 2", inheritContainer.GetComponents<UdonBehaviour>().Length == 5);
+            tester.TestAssertion("Get VRC component 1", GetComponent<VRCObjectSync>());
+            tester.TestAssertion("Get VRC component 2", GetComponent<VRCAvatarPedestal>());
+            tester.TestAssertion("Get VRC component 3", GetComponent<VRC_AvatarPedestal>());
+            tester.TestAssertion("Get VRC components 1", GetComponents<VRC_AvatarPedestal>().Length == 1 && GetComponents<VRC_AvatarPedestal>()[0] != null);
         }
     }
 }
