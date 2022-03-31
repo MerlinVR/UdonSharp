@@ -116,20 +116,38 @@ namespace UdonSharp.Compiler.Binder
                 _getComponentNames.Contains(symbol.Name) &&
                 (symbol.ContainingType.UdonType.SystemType == typeof(Component) || symbol.ContainingType.UdonType.SystemType == typeof(GameObject)))
             {
-                var gameObjectType = context.GetTypeSymbol(typeof(GameObject));
+                TypeSymbol gameObjectType = context.GetTypeSymbol(typeof(GameObject));
              
                 // udon-workaround: Work around the udon bug where it checks the strongbox type instead of variable type and blows up when the strong box is `object`
                 if (instanceExpression.ValueType == gameObjectType)
                 {
-                    var accessProperty = gameObjectType.GetMember<PropertySymbol>("transform", context);
+                    PropertySymbol accessProperty = gameObjectType.GetMember<PropertySymbol>("transform", context);
                     instanceExpression = BoundAccessExpression.BindAccess(context, node, accessProperty, instanceExpression);
                 }
                 else
                 {
-                    var accessProperty = context.GetTypeSymbol(typeof(Component)).GetMember<PropertySymbol>("transform", context);
+                    PropertySymbol accessProperty = context.GetTypeSymbol(typeof(Component)).GetMember<PropertySymbol>("transform", context);
                     instanceExpression = BoundAccessExpression.BindAccess(context, node, accessProperty, instanceExpression);
                 }
+
+                TypeSymbol udonSharpBehaviourType = context.GetTypeSymbol(typeof(UdonSharpBehaviour));
+
+                // Exact UdonSharpBehaviour type match
+                if (symbol.TypeArguments[0] == udonSharpBehaviourType)
+                {
+                    MethodSymbol getComponentMethodShim = context.GetTypeSymbol(typeof(GetUserComponentShim))
+                        .GetMembers<MethodSymbol>(symbol.Name + "USB", context)
+                        .First(e => e.Parameters.Length == parameterExpressions.Length + 1);
+                    
+                    createdInvocation = new BoundStaticUserMethodInvocation(node, getComponentMethodShim,
+                        new [] {instanceExpression}.Concat(parameterExpressions).ToArray());
+                    
+                    context.MarkSymbolReferenced(getComponentMethodShim);
+
+                    return true;
+                }
                 
+                // Subclass of UdonSharpBehaviour
                 if (symbol.TypeArguments[0].IsUdonSharpBehaviour)
                 {
                     MethodSymbol getComponentMethodShim = context.GetTypeSymbol(typeof(GetUserComponentShim))
