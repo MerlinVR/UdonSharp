@@ -10,7 +10,7 @@ using VRC.Udon;
 
 namespace UdonSharp.Lib.Internal
 {
-    public static class GetUserComponentShim
+    public static class GetComponentShim
     {
     #region GetComponent
         [UsedImplicitly]

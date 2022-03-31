@@ -136,7 +136,7 @@ namespace UdonSharp.Compiler.Binder
                 // Exact UdonSharpBehaviour type match
                 if (typeArgument == udonSharpBehaviourType)
                 {
-                    MethodSymbol getComponentMethodShim = context.GetTypeSymbol(typeof(GetUserComponentShim))
+                    MethodSymbol getComponentMethodShim = context.GetTypeSymbol(typeof(GetComponentShim))
                         .GetMembers<MethodSymbol>(symbol.Name + "USB", context)
                         .First(e => e.Parameters.Length == parameterExpressions.Length + 1);
                     
@@ -154,7 +154,7 @@ namespace UdonSharp.Compiler.Binder
                     // Handle inherited types
                     if (context.CompileContext.HasInheritedUdonSharpBehaviours(typeArgument))
                     {
-                        MethodSymbol getComponentInheritedMethodShim = context.GetTypeSymbol(typeof(GetUserComponentShim))
+                        MethodSymbol getComponentInheritedMethodShim = context.GetTypeSymbol(typeof(GetComponentShim))
                             .GetMembers<MethodSymbol>(symbol.Name + "I", context)
                             .First(e => e.Parameters.Length == parameterExpressions.Length + 1);
                         
@@ -168,7 +168,7 @@ namespace UdonSharp.Compiler.Binder
                         return true;
                     }
                     
-                    MethodSymbol getComponentMethodShim = context.GetTypeSymbol(typeof(GetUserComponentShim))
+                    MethodSymbol getComponentMethodShim = context.GetTypeSymbol(typeof(GetComponentShim))
                         .GetMembers<MethodSymbol>(symbol.Name, context)
                         .First(e => e.Parameters.Length == parameterExpressions.Length + 1);
                     
