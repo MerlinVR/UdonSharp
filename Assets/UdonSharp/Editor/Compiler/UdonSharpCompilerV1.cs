@@ -606,24 +606,25 @@ namespace UdonSharp.Compiler
                     return;
                 
                 BindContext bindContext = new BindContext(compilationContext, rootTypeSymbol.Item1, Array.Empty<Symbol>());
+                Dictionary<TypeSymbol, HashSet<Symbol>> referencedTypes;
                 
                 try
                 {
                     bindContext.Bind();
+
+                    rootTypeSymbol.Item2.binding = bindContext;
+                    referencedTypes = bindContext.GetTypeSymbol(rootTypeSymbol.Item1).CollectReferencedUnboundSymbols(bindContext, Array.Empty<Symbol>());
                 }
                 catch (CompilerException e)
                 {
-                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, bindContext.CurrentNode, e.Message);
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, e.Location ?? bindContext.CurrentNode?.GetLocation(), e.Message);
+                    return;
                 }
                 catch (Exception e)
                 {
                     compilationContext.AddDiagnostic(DiagnosticSeverity.Error, bindContext.CurrentNode, e.ToString());
                     return;
                 }
-
-                rootTypeSymbol.Item2.binding = bindContext;
-
-                var referencedTypes = bindContext.GetTypeSymbol(rootTypeSymbol.Item1).CollectReferencedUnboundSymbols(bindContext, Array.Empty<Symbol>());
 
                 lock (referencedSymbolsLock)
                 {
@@ -651,22 +652,23 @@ namespace UdonSharp.Compiler
                         return;
                     
                     BindContext bindContext = new BindContext(compilationContext, typeSymbol.Key.RoslynSymbol, typeSymbol.Value);
+                    Dictionary<TypeSymbol, HashSet<Symbol>> referencedSymbols;
                     
                     try
                     {
                         bindContext.Bind();
+                        referencedSymbols = typeSymbol.Key.CollectReferencedUnboundSymbols(bindContext, typeSymbol.Value);
                     }
                     catch (CompilerException e)
                     {
-                        compilationContext.AddDiagnostic(DiagnosticSeverity.Error, bindContext.CurrentNode, e.Message);
+                        compilationContext.AddDiagnostic(DiagnosticSeverity.Error, e.Location ?? bindContext.CurrentNode?.GetLocation(), e.Message);
+                        return;
                     }
                     catch (Exception e)
                     {
                         compilationContext.AddDiagnostic(DiagnosticSeverity.Error, bindContext.CurrentNode, e.ToString());
                         return;
                     }
-                    
-                    var referencedSymbols = typeSymbol.Key.CollectReferencedUnboundSymbols(bindContext, typeSymbol.Value);
 
                     lock (referencedSymbolsLock)
                     {
@@ -753,7 +755,7 @@ namespace UdonSharp.Compiler
                 }
                 catch (CompilerException e)
                 {
-                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, moduleEmitContext.CurrentNode, e.Message);
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, e.Location ?? moduleEmitContext.CurrentNode?.GetLocation(), e.Message);
                 }
                 catch (Exception e)
                 {
