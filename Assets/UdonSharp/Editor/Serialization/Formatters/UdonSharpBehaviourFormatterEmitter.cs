@@ -169,7 +169,24 @@ namespace UdonSharp.Serialization
                 List<FieldInfo> serializedFieldList = new List<FieldInfo>();
                 List<FieldInfo> nonSerializedFieldList = new List<FieldInfo>();
 
-                FieldInfo[] allFields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                Stack<Type> baseTypes = new Stack<Type>();
+
+                Type currentType = typeof(T);
+
+                while (currentType != null && 
+                       currentType != typeof(UdonSharpBehaviour))
+                {
+                    baseTypes.Push(currentType);
+                    currentType = currentType.BaseType;
+                }
+
+                List<FieldInfo> allFields = new List<FieldInfo>();
+
+                while (baseTypes.Count > 0)
+                {
+                    currentType = baseTypes.Pop();
+                    allFields.AddRange(currentType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
+                }
 
                 foreach (FieldInfo field in allFields)
                 {
