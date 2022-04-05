@@ -557,7 +557,6 @@ namespace UdonSharpEditor
             
             _rootInspectorElement = new VisualElement();
             _rootInspectorElement.name = "UdonSharpInspectorRoot";
-            _rootInspectorElement.style.paddingTop = 4;
 
             RebuildUserInspector();
             
@@ -659,16 +658,20 @@ namespace UdonSharpEditor
             return CreateIMGUIInspector(() =>
             {
                 _userEditor.OnInspectorGUI();
-            });
+            }, false, _userEditor.UseDefaultMargins());
         }
 
+        private static readonly PropertyInfo _contextWidthProperty = typeof(EditorGUIUtility).GetProperty("contextWidth", BindingFlags.Static | BindingFlags.NonPublic);
+        
+        // Draws the blue bar on added component overrides
+        private static readonly MethodInfo _drawAddedComponentMethod = typeof(Editor).Assembly.GetType("UnityEditor.InspectorWindowUtils").GetMethod("DrawAddedComponentBackground", BindingFlags.Static | BindingFlags.Public);
+        
         private int _nullCounter;
 
-        private IMGUIContainer CreateIMGUIInspector(Action imguiAction, bool skipSerialize = false)
+        private IMGUIContainer CreateIMGUIInspector(Action imguiAction, bool skipSerialize = false, bool defaultMargins = true)
         {
             IMGUIContainer container = new IMGUIContainer();
             
-            container.style.marginRight = 4;
             container.style.overflow = Overflow.Visible;
             
             container.onGUIHandler = () =>
@@ -686,13 +689,18 @@ namespace UdonSharpEditor
                 if (isAnimating)
                     EditorGUILayout.HelpBox("U# Behaviours cannot be animated, disable animation recording/preview to edit fields.", MessageType.Error);
                 
-                EditorGUI.BeginDisabledGroup(isAnimating);
                 bool previousHierarchyMode = EditorGUIUtility.hierarchyMode;
+                bool previousWideMode = EditorGUIUtility.wideMode;
+                
                 EditorGUIUtility.hierarchyMode = true;
-                EditorGUILayout.BeginHorizontal();
-                GUILayout.Space(10);
-                EditorGUILayout.BeginVertical();
+                EditorGUIUtility.wideMode = (float)_contextWidthProperty.GetValue(null) > 330f;
                 GUI.changed = false;
+                
+                _drawAddedComponentMethod.Invoke(null, new object[] { container.contentRect, targets, 0f });
+                
+                EditorGUI.BeginDisabledGroup(isAnimating);
+                
+                EditorGUILayout.BeginVertical(defaultMargins ? EditorStyles.inspectorDefaultMargins : GUIStyle.none);
                 
                 try
                 {
@@ -704,18 +712,8 @@ namespace UdonSharpEditor
                 
                     if (_userEditor)
                         _userEditor.serializedObject.Update();
-                    
-                    int foldoutMargin = EditorStyles.foldout.margin.left;
-                    EditorStyles.foldout.margin.left = 3;
 
-                    try
-                    {
-                        imguiAction();
-                    }
-                    finally
-                    {
-                        EditorStyles.foldout.margin.left = foldoutMargin;
-                    }
+                    imguiAction();
 
                     if (!skipSerialize && EditorApplication.isPlaying)
                     {
@@ -725,10 +723,12 @@ namespace UdonSharpEditor
                 }
                 finally
                 {
-                    EditorGUIUtility.hierarchyMode = previousHierarchyMode;
                     EditorGUILayout.EndVertical();
-                    EditorGUILayout.EndHorizontal();
+                    
                     EditorGUI.EndDisabledGroup();
+                    
+                    EditorGUIUtility.wideMode = previousWideMode;
+                    EditorGUIUtility.hierarchyMode = previousHierarchyMode;
                 }
             };
 
@@ -751,7 +751,7 @@ namespace UdonSharpEditor
                         if (fieldProp.propertyPath == "m_Script")
                             continue;
 
-                        EditorGUILayout.PropertyField(fieldProp);
+                        EditorGUILayout.PropertyField(fieldProp, true);
 
                     } while (fieldProp.NextVisible(false));
                 }

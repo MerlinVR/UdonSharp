@@ -975,7 +975,7 @@ namespace UdonSharpEditor
                     if (fieldProp.propertyPath == "m_Script")
                         continue;
 
-                    EditorGUILayout.PropertyField(fieldProp);
+                    EditorGUILayout.PropertyField(fieldProp, true);
 
                 } while (fieldProp.NextVisible(false));
             }
