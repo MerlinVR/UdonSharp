@@ -48,12 +48,12 @@ This compiler is in an early state and I have no prior experience making compile
 ### Requirements
 - Unity 2018.4.20f1
 - [VRCSDK3 + UdonSDK](https://vrchat.com/home/download)
-- The latest [release](https://github.com/Merlin-san/UdonSharp/releases/latest) of UdonSharp
+- The latest [release](https://github.com/vrchat-community/UdonSharp/releases/latest) of UdonSharp
 
 ### Installation
 1. Read the getting started with Udon doc page https://docs.vrchat.com/docs/getting-started-with-udon this has basic installation instructions for Udon.
 2. Install the latest version of the VRCSDK3 linked on the getting started.
-3. Get the latest release of UdonSharp from [here](https://github.com/Merlin-san/UdonSharp/releases/latest) and install it to your project.
+3. Get the latest release of UdonSharp from [here](https://github.com/vrchat-community/UdonSharp/releases/latest) and install it to your project.
 
 ### Getting started
 1. Make a new object in your scene
@@ -93,7 +93,7 @@ public class RotatingCubeBehaviour : UdonSharpBehaviour
 
 #### Other examples
 
-For more example scripts take a look at the wiki page for [examples](https://github.com/Merlin-san/UdonSharp/wiki/examples), the Examples folder included with U#, or the [community resources](https://github.com/Merlin-san/UdonSharp/wiki/community-resources) page on the wiki.
+For more example scripts take a look at the wiki page for [examples](https://github.com/vrchat-community/UdonSharp/wiki/examples), the Examples folder included with U#, or the [community resources](https://github.com/vrchat-community/UdonSharp/wiki/community-resources) page on the wiki.
 
 ## Credits
   
