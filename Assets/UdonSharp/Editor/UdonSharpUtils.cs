@@ -1,5 +1,4 @@
 ﻿
-using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,38 +14,6 @@ namespace UdonSharp
 {
     internal static class UdonSharpUtils
     {
-        /// <summary>
-        /// Apparently anything that takes a parameter is 5, and anything that doesn't is 1. So These are probably 1 byte per instruction, and 4 bytes per parameter
-        /// So some day if the assembly is extended we might get 9 size instructions
-        /// </summary>
-        /// <param name="instruction"></param>
-        /// <returns></returns>
-        public static int GetUdonInstructionSize(string instruction)
-        {
-            switch (instruction)
-            {
-                case "LABEL": // The LABEL instruction gets replaced with a NOP by the end of compilation. It is just used to mark a target jump point
-                case "NOP":
-                case "POP":
-                case "COPY":
-                    return 4;
-                case "PUSH":
-                case "JUMP_IF_FALSE":
-                case "JUMP":
-                case "EXTERN":
-                case "JUMP_INDIRECT":
-                // The labeled variants of jump are fake and don't exist in Udon, 
-                //  they get replaced towards the end of compilation with jumps to concrete addresses
-                case "JUMP_LABEL":
-                case "JUMP_IF_FALSE_LABEL":
-                    return 8;
-                case "ANNOTATION":
-                    throw new System.NotImplementedException("ANNOTATION instruction is not yet implemented in Udon");
-                default:
-                    return 0;
-            }
-        }
-
         // https://stackoverflow.com/questions/6386202/get-type-name-without-any-generics-info
         public static string GetNameWithoutGenericArity(this System.Type t)
         {
@@ -58,43 +25,7 @@ namespace UdonSharp
             return index == -1 ? name : name.Substring(0, index);
         }
 
-        public static bool HasModifier(this SyntaxTokenList syntaxTokens, string modifier)
-        {
-            foreach (SyntaxToken token in syntaxTokens)
-            {
-                if (token.ValueText == modifier)
-                    return true;
-            }
-
-            return false;
-        }
-
-        // https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/conversions#implicit-numeric-conversions
-        private static readonly IReadOnlyDictionary<System.Type, System.Type[]> implicitBuiltinConversions = new Dictionary<System.Type, System.Type[]>()
-        {
-            { typeof(sbyte), new System.Type[] { typeof(short), typeof(int), typeof(long), typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(byte), new System.Type[] { typeof(short), typeof(ushort), typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(short), new System.Type[] { typeof(int), typeof(long), typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(ushort), new System.Type[] { typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(int), new System.Type[] { typeof(long), typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(uint), new System.Type[] { typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(long), new System.Type[] { typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(ulong), new System.Type[] { typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(char), new System.Type[] { typeof(ushort), typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(float), typeof(decimal) } },
-            { typeof(float), new System.Type[] { typeof(double) } },
-        };
-
-        private static readonly IReadOnlyDictionary<System.Type, System.Type> nextHighestPrecisionType = new Dictionary<System.Type, System.Type>()
-        {
-            { typeof(sbyte), typeof(int) },
-            { typeof(byte), typeof(int) },
-            { typeof(short), typeof(int) },
-            { typeof(ushort), typeof(int) },
-            { typeof(int), typeof(long) },
-            { typeof(uint), typeof(long) },
-        };
-
-        private static readonly HashSet<System.Type> unsignedTypes = new HashSet<System.Type>()
+        private static readonly HashSet<System.Type> _unsignedTypes = new HashSet<System.Type>()
         {
             typeof(byte),
             typeof(ushort),
@@ -102,7 +33,7 @@ namespace UdonSharp
             typeof(ulong),
         };
 
-        private static readonly HashSet<System.Type> signedTypes = new HashSet<System.Type>()
+        private static readonly HashSet<System.Type> _signedTypes = new HashSet<System.Type>()
         {
             typeof(sbyte),
             typeof(short),
@@ -110,7 +41,7 @@ namespace UdonSharp
             typeof(long),
         };
 
-        private static readonly HashSet<System.Type> integerTypes = new HashSet<System.Type>()
+        private static readonly HashSet<System.Type> _integerTypes = new HashSet<System.Type>()
         {
             typeof(byte),
             typeof(sbyte),
@@ -122,7 +53,7 @@ namespace UdonSharp
             typeof(ulong),
         };
 
-        private static readonly HashSet<System.Type> floatTypes = new HashSet<System.Type>()
+        private static readonly HashSet<System.Type> _floatTypes = new HashSet<System.Type>()
         {
             typeof(float),
             typeof(double),
@@ -131,115 +62,27 @@ namespace UdonSharp
 
         public static bool IsSignedType(System.Type type)
         {
-            return signedTypes.Contains(type);
+            return _signedTypes.Contains(type);
         }
 
         public static bool IsUnsignedType(System.Type type)
         {
-            return unsignedTypes.Contains(type);
+            return _unsignedTypes.Contains(type);
         }
 
         public static bool IsIntegerType(System.Type type)
         {
-            return integerTypes.Contains(type);
+            return _integerTypes.Contains(type);
         }
 
         public static bool IsFloatType(System.Type type)
         {
-            return floatTypes.Contains(type);
+            return _floatTypes.Contains(type);
         }
 
         public static bool IsNumericType(System.Type type)
         {
             return IsIntegerType(type) || IsFloatType(type);
-        }
-
-        public static bool IsNumericImplicitCastValid(System.Type targetType, System.Type sourceType)
-        {
-            if (implicitBuiltinConversions.ContainsKey(sourceType) && implicitBuiltinConversions[sourceType].Contains(targetType))
-                return true;
-
-            return false;
-        }
-
-        public static System.Type GetNextHighestNumericPrecision(System.Type type)
-        {
-            if (type == null)
-                return null;
-
-            System.Type precisionType = null;
-            nextHighestPrecisionType.TryGetValue(type, out precisionType);
-
-            return precisionType;
-        }
-
-        public static MethodInfo GetNumericConversionMethod(System.Type targetType, System.Type sourceType)
-        {
-            IEnumerable<MethodInfo> foundMethods = typeof(System.Convert)
-                .GetMethods(BindingFlags.Static | BindingFlags.Public)
-                .Where(e => e.Name == $"To{targetType.Name}")
-                .Where(e => e.GetParameters().FirstOrDefault().ParameterType == sourceType);
-
-            if (sourceType.IsEnum)
-            {
-                foundMethods = typeof(System.Convert).GetMethods(BindingFlags.Static | BindingFlags.Public)
-                                                     .Where(e => e.Name == $"To{targetType.Name}")
-                                                     .Where(e => e.GetParameters().FirstOrDefault().ParameterType == typeof(object));
-            }
-
-            return foundMethods.FirstOrDefault();
-        }
-
-        public static bool IsNumericExplicitCastValid(System.Type targetType, System.Type sourceType)
-        {
-            return IsNumericType(sourceType) && GetNumericConversionMethod(targetType, sourceType) != null;
-        }
-
-        public static bool IsImplicitlyAssignableFrom(this System.Type targetType, System.Type assignee)
-        {
-            // Normal explicit assign
-            if (targetType.IsAssignableFrom(assignee))
-                return true;
-
-            // Implicit numeric conversions
-            if (IsNumericImplicitCastValid(targetType, assignee))
-                return true;
-
-            // We use void as a placeholder for a null constant value getting passed in, if null is passed in and the target type is a reference type then we assume they are compatible
-            if (assignee == typeof(void) && !targetType.IsValueType)
-                return true;
-
-            // Handle user-defined implicit conversion operators defined on both sides
-            // Roughly follows https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/conversions#processing-of-user-defined-implicit-conversions
-
-            // I doubt I'll ever deal with properly supporting nullable but ¯\_(ツ)_/¯
-            if (System.Nullable.GetUnderlyingType(targetType) != null)
-                targetType = System.Nullable.GetUnderlyingType(targetType);
-            if (System.Nullable.GetUnderlyingType(assignee) != null)
-                assignee = System.Nullable.GetUnderlyingType(assignee);
-
-            List<System.Type> operatorTypes = new List<System.Type>();
-            operatorTypes.Add(targetType);
-
-            System.Type currentSourceType = assignee;
-            while(currentSourceType != null)
-            {
-                operatorTypes.Add(currentSourceType);
-                currentSourceType = currentSourceType.BaseType;
-            }
-
-            foreach (System.Type operatorType in operatorTypes)
-            {
-                IEnumerable<MethodInfo> methods = operatorType.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(e => e.Name == "op_Implicit");
-
-                foreach (MethodInfo methodInfo in methods)
-                {
-                    if (methodInfo.ReturnType == targetType && (methodInfo.GetParameters()[0].ParameterType == assignee || methodInfo.GetParameters()[0].ParameterType == typeof(UnityEngine.Object)))
-                        return true;
-                }
-            }
-
-            return false;
         }
 
         public static bool IsExplicitlyAssignableFrom(this System.Type targetType, System.Type assignee)
@@ -296,119 +139,12 @@ namespace UdonSharp
             return false;
         }
 
-        public static bool IsValidNumericImplictCastSourceType(this System.Type sourceType)
+        /// <summary>
+        /// Escapes property names into something Udon allows since C# will put '<' and '>' in property backing field names
+        /// </summary>
+        internal static string UnmanglePropertyFieldName(string propertyName)
         {
-            return implicitBuiltinConversions.ContainsKey(sourceType);
-        }
-
-        public static bool IsValidNumericImplicitCastTargetType(this System.Type targetType)
-        {
-            foreach (var lookupKeyVal in implicitBuiltinConversions)
-            {
-                foreach (System.Type testTargetType in lookupKeyVal.Value)
-                {
-                    if (targetType == testTargetType)
-                        return true;
-                }
-            }
-
-            return false;
-        }
-
-        public static int GetImplicitNumericCastDistance(System.Type targetType, System.Type sourceType)
-        {
-            if (targetType == sourceType)
-                return 0;
-
-            System.Type[] targetTypes;
-
-            if (!implicitBuiltinConversions.TryGetValue(sourceType, out targetTypes))
-            {
-                throw new System.ArgumentException("Could not find a implicit numeric cast for the source type");
-            }
-
-            for (int i = 0; i < targetTypes.Length; ++i)
-            {
-                if (targetTypes[i] == targetType)
-                    return i + 1;
-            }
-
-            throw new System.ArgumentException("Could not find applicable cast for target type");
-        }
-
-        public static bool HasParamsParameter(this ParameterInfo parameterInfo)
-        {
-            return parameterInfo.GetCustomAttributes(typeof(System.ParamArrayAttribute), false).Length > 0;
-        }
-        
-        // https://stackoverflow.com/questions/4168489/methodinfo-equality-for-declaring-type
-        public static bool AreMethodsEqualForDeclaringType(this MethodBase first, MethodBase second)
-        {
-            first = first.ReflectedType == first.DeclaringType ? first : first.DeclaringType.GetMethod(first.Name, first.GetParameters().Select(p => p.ParameterType).ToArray());
-            second = second.ReflectedType == second.DeclaringType ? second : second.DeclaringType.GetMethod(second.Name, second.GetParameters().Select(p => p.ParameterType).ToArray());
-
-            // Special case for comparing object functions since they need to be explicitly included in GetMethods
-            if (first.DeclaringType == typeof(object))
-                second = typeof(object).GetMethod(second.Name, second.GetParameters().Select(p => p.ParameterType).ToArray());
-            if (second.DeclaringType == typeof(object))
-                first = typeof(object).GetMethod(first.Name, first.GetParameters().Select(p => p.ParameterType).ToArray());
-
-            return first == second;
-        }
-
-        private static readonly HashSet<System.Type> builtinTypes = new HashSet<System.Type>
-        {
-            typeof(string),
-            typeof(bool),
-            typeof(byte),
-            typeof(sbyte),
-            typeof(char),
-            typeof(decimal),
-            typeof(double),
-            typeof(float),
-            typeof(int),
-            typeof(uint),
-            typeof(long),
-            typeof(ulong),
-            typeof(short),
-            typeof(ushort),
-            typeof(object),
-        };
-
-        public static bool IsBuiltinType(System.Type type)
-        {
-            return builtinTypes.Contains(type);
-        }
-        
-        public static string PrettifyTypeName(System.Type type)
-        {
-            if (type == typeof(sbyte))
-                return "sbyte";
-            if (type == typeof(byte))
-                return "byte";
-            if (type == typeof(short))
-                return "short";
-            if (type == typeof(ushort))
-                return "ushort";
-            if (type == typeof(int))
-                return "int";
-            if (type == typeof(uint))
-                return "uint";
-            if (type == typeof(long))
-                return "long";
-            if (type == typeof(ulong))
-                return "ulong";
-            if (type == typeof(char))
-                return "char";
-            if (type == typeof(string))
-                return "string";
-            if (type == typeof(float))
-                return "float";
-            if (type == typeof(double))
-                return "double";
-            if (type == typeof(bool))
-                return "bool";
-            return type.Name;
+            return propertyName?.Replace('<', '_').Replace('>', '_');
         }
 
         public static bool IsUserDefinedBehaviour(System.Type type)
@@ -436,38 +172,25 @@ namespace UdonSharp
                    IsUserJaggedArray(type) ||
                    IsUserDefinedEnum(type);
         }
-
-        public static bool IsUdonWorkaroundType(System.Type type)
-        {
-            return type == typeof(VRC.SDK3.Video.Components.VRCUnityVideoPlayer) || type == typeof(VRC.SDK3.Video.Components.AVPro.VRCAVProVideoPlayer);
-        }
-
-        public static System.Type GetRootElementType(System.Type type)
-        {
-            while (type.IsArray)
-                type = type.GetElementType();
-
-            return type;
-        }
         
-        private static Dictionary<System.Type, System.Type> _inheritedTypeMap = null;
-        private static readonly object inheritedTypeMapLock = new object();
+        private static Dictionary<Type, Type> _inheritedTypeMap;
+        private static readonly object _inheritedTypeMapLock = new object();
 
-        private static Dictionary<System.Type, System.Type> GetInheritedTypeMap()
+        private static Dictionary<Type, Type> GetInheritedTypeMap()
         {
             if (_inheritedTypeMap != null)
                 return _inheritedTypeMap;
             
-            lock (inheritedTypeMapLock)
+            lock (_inheritedTypeMapLock)
             {
                 if (_inheritedTypeMap != null)
                     return _inheritedTypeMap;
                 
-                Dictionary<System.Type, System.Type> typeMap = new Dictionary<System.Type, System.Type>();
+                Dictionary<Type, Type> typeMap = new Dictionary<Type, Type>();
 
-                IEnumerable<System.Type> typeList = System.AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == "VRCSDK3").GetTypes().Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
+                IEnumerable<Type> typeList = AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == "VRCSDK3").GetTypes().Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
 
-                foreach (System.Type childType in typeList)
+                foreach (Type childType in typeList)
                 {
                     if (childType.BaseType != null && childType.BaseType.Namespace.StartsWith("VRC.SDKBase"))
                     {
@@ -484,12 +207,12 @@ namespace UdonSharp
             return _inheritedTypeMap;
         }
 
-        internal static System.Type RemapBaseType(System.Type type)
+        internal static Type RemapBaseType(Type type)
         {
-            var typeMap = GetInheritedTypeMap();
+            Dictionary<Type, Type> typeMap = GetInheritedTypeMap();
 
             int arrayDepth = 0;
-            System.Type currentType = type;
+            Type currentType = type;
             while (currentType.IsArray)
             {
                 currentType = currentType.GetElementType();
@@ -508,20 +231,20 @@ namespace UdonSharp
         }
         
         [ThreadStatic]
-        private static Dictionary<System.Type, System.Type> userTypeToUdonTypeCache;
+        private static Dictionary<Type, Type> _userTypeToUdonTypeCache;
 
         public static Type UserTypeToUdonType(Type type)
         {
             if (type == null)
                 return null;
 
-            if (userTypeToUdonTypeCache == null)
-                userTypeToUdonTypeCache = new Dictionary<Type, Type>();
+            if (_userTypeToUdonTypeCache == null)
+                _userTypeToUdonTypeCache = new Dictionary<Type, Type>();
 
-            if (userTypeToUdonTypeCache.TryGetValue(type, out System.Type foundType))
+            if (_userTypeToUdonTypeCache.TryGetValue(type, out Type foundType))
                 return foundType;
             
-            System.Type udonType = null;
+            Type udonType = null;
 
             if (IsUserDefinedType(type))
             {
@@ -550,14 +273,14 @@ namespace UdonSharp
 
             udonType = RemapBaseType(udonType);
             
-            userTypeToUdonTypeCache.Add(type, udonType);
+            _userTypeToUdonTypeCache.Add(type, udonType);
 
             return udonType;
         }
 
-        public static string LogBuildError(string message, string filePath, int line, int character)
+        public static void LogBuildError(string message, string filePath, int line, int character)
         {
-            MethodInfo buildErrorLogMethod = typeof(UnityEngine.Debug).GetMethod("LogPlayerBuildError", BindingFlags.NonPublic | BindingFlags.Static);
+            MethodInfo buildErrorLogMethod = typeof(Debug).GetMethod("LogPlayerBuildError", BindingFlags.NonPublic | BindingFlags.Static);
 
             string errorMessage = $"[<color=#FF00FF>UdonSharp</color>] {filePath}({line},{character}): {message}";
 
@@ -566,8 +289,36 @@ namespace UdonSharp
                         filePath,
                         line,
                         character });
+        }
 
-            return errorMessage;
+        public static void Log(object message)
+        {
+            Debug.Log($"[<color=#0c824c>UdonSharp</color>] {message}");
+        }
+        
+        public static void Log(object message, UnityEngine.Object context)
+        {
+            Debug.Log($"[<color=#0c824c>UdonSharp</color>] {message}", context);
+        }
+        
+        public static void LogWarning(object message)
+        {
+            Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] {message}");
+        }
+        
+        public static void LogWarning(object message, UnityEngine.Object context)
+        {
+            Debug.LogWarning($"[<color=#FF00FF>UdonSharp</color>] {message}", context);
+        }
+        
+        public static void LogError(object message)
+        {
+            Debug.LogError($"[<color=#FF00FF>UdonSharp</color>] {message}");
+        }
+        
+        public static void LogError(object message, UnityEngine.Object context)
+        {
+            Debug.LogError($"[<color=#FF00FF>UdonSharp</color>] {message}", context);
         }
 
         private static readonly MethodInfo _displayProgressBar = typeof(Editor).Assembly.GetTypes().FirstOrDefault(e => e.Name == "AsyncProgressBar")?.GetMethod("Display");
@@ -583,7 +334,7 @@ namespace UdonSharp
             _clearProgressBar.Invoke(null, null);
         }
 
-        public static string LogRuntimeError(string message, string prefix, string filePath, int line, int character)
+        public static void LogRuntimeError(string message, string prefix, string filePath, int line, int character)
         {
             MethodInfo buildErrorLogMethod = typeof(UnityEngine.Debug).GetMethod("LogPlayerBuildError", BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -594,8 +345,6 @@ namespace UdonSharp
                         filePath,
                         line + 1,
                         character });
-
-            return errorMessage;
         }
 
         public static string ReadFileTextSync(string filePath, float timeoutSeconds = 2f)
@@ -633,7 +382,7 @@ namespace UdonSharp
 
                 if (timeFromStart.TotalSeconds > timeoutSeconds)
                 {
-                    UnityEngine.Debug.LogError($"Timeout when attempting to read file {filePath}");
+                    Debug.LogError($"Timeout when attempting to read file {filePath}");
                     if (exception != null)
                         throw exception;
                 }
@@ -648,6 +397,17 @@ namespace UdonSharp
             {
                 return BitConverter.ToString(sha256.ComputeHash(Encoding.UTF8.GetBytes(stringToHash))).Replace("-", "");
             }
+        }
+        
+        internal static bool AllElementsMatch<T>(IEnumerable<T> collection)
+        {
+            IEnumerable<T> enumerable = collection as T[] ?? collection.ToArray();
+            if (!enumerable.Any())
+                return true;
+
+            T firstValue = enumerable.First();
+
+            return enumerable.All(e => e.Equals(firstValue));
         }
 
         /// <summary>
@@ -686,27 +446,63 @@ namespace UdonSharp
 
         internal static void ShowEditorNotification(string notificationString)
         {
-            typeof(UnityEditor.SceneView).GetMethod("ShowNotification", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { notificationString });
+            typeof(SceneView).GetMethod("ShowNotification", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, new object[] { notificationString });
         }
 
-        static PropertyInfo getLoadedAssembliesProp;
-        static object getLoadedAssembliesLock = new object();
-
-        internal static Assembly[] GetLoadedEditorAssemblies()
+        public static bool DoesUnityProjectHaveCompileErrors()
         {
-            lock (getLoadedAssembliesLock)
+            Type logEntryType = typeof(Editor).Assembly.GetType("UnityEditor.LogEntries");
+            MethodInfo getLinesAndModeMethod = logEntryType.GetMethod("GetLinesAndModeFromEntryInternal", BindingFlags.Public | BindingFlags.Static);
+            
+            bool hasCompileError = false;
+            
+            int logEntryCount = (int)logEntryType.GetMethod("StartGettingEntries", BindingFlags.Public | BindingFlags.Static).Invoke(null, Array.Empty<object>());
+
+            try
             {
-                if (getLoadedAssembliesProp == null)
+                object[] getLinesParams = { 0, 1, 0, "" };
+
+                for (int i = 0; i < logEntryCount; ++i)
                 {
-                    Assembly editorAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(e => e.GetName().Name == "UnityEditor");
+                    getLinesParams[0] = i;
+                    getLinesAndModeMethod.Invoke(null, getLinesParams);
 
-                    System.Type editorAssembliesType = editorAssembly.GetType("UnityEditor.EditorAssemblies");
+                    int mode = (int)getLinesParams[2];
 
-                    getLoadedAssembliesProp = editorAssembliesType.GetProperty("loadedAssemblies", BindingFlags.Static | BindingFlags.NonPublic);
+                    // 1 << 11 == ConsoleWindow.Mode.ScriptCompileError
+                    if ((mode & (1 << 11)) != 0)
+                    {
+                        hasCompileError = true;
+                        break;
+                    }
                 }
             }
+            finally
+            {
+                logEntryType.GetMethod("EndGettingEntries").Invoke(null, Array.Empty<object>());
+            }
 
-            return (Assembly[])getLoadedAssembliesProp.GetValue(null);
+            return hasCompileError;
+        }
+
+        internal static void SetDirty(UnityEngine.Object obj)
+        {
+            EditorUtility.SetDirty(obj);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(obj);
+        }
+
+        private static PropertyInfo _getLoadedAssembliesProp;
+
+        internal static IEnumerable<Assembly> GetLoadedEditorAssemblies()
+        {
+            if (_getLoadedAssembliesProp == null)
+            {
+                Assembly editorAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(e => e.GetName().Name == "UnityEditor");
+                Type editorAssembliesType = editorAssembly.GetType("UnityEditor.EditorAssemblies");
+                _getLoadedAssembliesProp = editorAssembliesType.GetProperty("loadedAssemblies", BindingFlags.Static | BindingFlags.NonPublic);
+            }
+
+            return (Assembly[])_getLoadedAssembliesProp.GetValue(null);
         }
 
         /// <summary>

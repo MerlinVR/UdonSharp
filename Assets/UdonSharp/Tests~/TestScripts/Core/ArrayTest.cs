@@ -29,6 +29,8 @@ namespace UdonSharp.Tests
         public VRC.SDK3.Video.Components.VRCUnityVideoPlayer[] unityVideoPlayerArray;
         public VRC.SDK3.Video.Components.Base.BaseVRCVideoPlayer[] baseVideoPlayerArray;
 
+        private Vector3[] structArray;
+
         public void SetTestVal(int newTestVal)
         {
             testVal = newTestVal;
@@ -99,6 +101,37 @@ namespace UdonSharp.Tests
             myFloatArr = new float[arrSize2];
             
             tester.TestAssertion("Array size implicit conversion 3", myFloatArr.Length == 30);
+
+            ArrayTest self = this;
+
+            structArray = new[] { new Vector3(1, 2, 3), new Vector3(4, 5, 6) };
+
+            structArray[0].x = 4f;
+            
+            tester.TestAssertion("Struct array element assignment", structArray[0] == new Vector3(4, 2, 3));
+            
+            structArray[0].x += 4f;
+            
+            tester.TestAssertion("Struct array element assignment", structArray[0] == new Vector3(8, 2, 3));
+
+            self.structArray[0].y = 10f;
+            
+            tester.TestAssertion("Struct array field element assignment", structArray[0] == new Vector3(8, 10, 3));
+
+            self.structArray[0].z += 3;
+            
+            tester.TestAssertion("Struct array field element increment", structArray[0] == new Vector3(8, 10, 6));
+
+            self.structArray[1].x += self.structArray[0].y;
+            
+            tester.TestAssertion("Struct array field element increment from array element", structArray[1] == new Vector3(14, 5, 6));
+
+            CombineInstance[] instances = new CombineInstance[2];
+
+            Mesh foundMesh = GetComponentInChildren<MeshFilter>(true).mesh;
+            instances[0].mesh = foundMesh;
+            
+            tester.TestAssertion("Array struct property set", foundMesh != null && foundMesh == instances[0].mesh);
         }
     }
 }

@@ -17,8 +17,8 @@ namespace UdonSharp.Compiler.Binder
     internal class BinderSyntaxVisitor : CSharpSyntaxVisitor<BoundNode>
     {
         private Symbol OwningSymbol { get; }
-        public BindContext Context { get; }
-        public SemanticModel SymbolLookupModel { get; }
+        private BindContext Context { get; }
+        private SemanticModel SymbolLookupModel { get; }
 
         public BinderSyntaxVisitor(Symbol owningSymbol, BindContext context)
         {
@@ -39,6 +39,10 @@ namespace UdonSharp.Compiler.Binder
 
             if (node.Kind() == SyntaxKind.BaseExpression)
                 return null;
+
+            // Strip unary plus operator
+            if (node.Kind() == SyntaxKind.UnaryPlusExpression)
+                return Visit((node as PrefixUnaryExpressionSyntax)?.Operand);
             
             Symbol nodeSymbol = GetSymbol(node);
             if (nodeSymbol is TypeSymbol)
@@ -85,7 +89,7 @@ namespace UdonSharp.Compiler.Binder
                     if (lhsExpression == null && !nodeSymbol.IsStatic)
                         lhsExpression = BoundAccessExpression.BindThisAccess(OwningSymbol.ContainingType);
                     
-                    var access = BoundAccessExpression.BindAccess(Context, node, nodeSymbol, lhsExpression);
+                    BoundAccessExpression access = BoundAccessExpression.BindAccess(Context, node, nodeSymbol, lhsExpression);
                     if (accessExpressionSyntax.Expression.Kind() == SyntaxKind.BaseExpression)
                         access.MarkForcedBaseCall();
 
@@ -98,8 +102,8 @@ namespace UdonSharp.Compiler.Binder
 
             return BoundAccessExpression.BindAccess(Context, node, nodeSymbol, lhsExpression);
         }
-        
-        public BoundExpression VisitExpression(SyntaxNode node)
+
+        private BoundExpression VisitExpression(SyntaxNode node)
         {
             BoundExpression accessExpression = VisitAccessExpression(node);
             if (accessExpression != null)
@@ -180,7 +184,7 @@ namespace UdonSharp.Compiler.Binder
 
         private Symbol GetSymbol(SyntaxNode node)
         {
-            var symbol = SymbolLookupModel.GetSymbolInfo(node).Symbol;
+            ISymbol symbol = SymbolLookupModel.GetSymbolInfo(node).Symbol;
 
             if (symbol == null || symbol.Kind == SymbolKind.Namespace)
                 return null;

@@ -1,7 +1,6 @@
 ﻿
 using UdonSharp;
 using UnityEditor;
-using UnityEngine;
 using VRC.SDKBase.Editor.BuildPipeline;
 
 namespace UdonSharpEditor
@@ -20,23 +19,21 @@ namespace UdonSharpEditor
         public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
         {
             UdonSharpSettings settings = UdonSharpSettings.GetSettings();
-            bool shouldForceCompile = settings != null && settings.shouldForceCompile;
+            bool shouldForceCompile = settings.shouldForceCompile;
 
             // Unity doesn't like this and will throw errors if it ends up compiling scripts. But it seems to work. 
             // This is marked experimental for now since I don't know if it will break horribly in some case.
             if (shouldForceCompile)
             {
-                Debug.Log("Refresh U# force update");
                 AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
             }
             else
             {
-                Debug.Log("Refresh U# force update 2");
                 AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
 
                 if (EditorApplication.isCompiling)
                 {
-                    Debug.LogError("[<color=#FF00FF>UdonSharp</color>] Scripts are in the process of compiling, please retry build after scripts have compiled.");
+                    UdonSharpUtils.LogWarning("Scripts are in the process of compiling, please retry build after scripts have compiled.");
                     UdonSharpUtils.ShowEditorNotification("Scripts are in the process of compiling, please retry build after scripts have compiled.");
                     return false;
                 }

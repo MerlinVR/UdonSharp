@@ -136,7 +136,7 @@ namespace Merlin
                 return internalDrawerTypeMap;
             }
 
-            System.Type scriptAttributeUtilityType = FindTypeInAllAssemblies("UnityEditor.ScriptAttributeUtility");
+            System.Type scriptAttributeUtilityType = typeof(Editor).Assembly.GetType("UnityEditor.ScriptAttributeUtility");
 
             if (scriptAttributeUtilityType == null)
             {
@@ -202,7 +202,7 @@ namespace Merlin
                 clearMethod.Invoke(currentCacheValue, new object[] { });
             }
 
-            System.Type inspectorWindowType = FindTypeInAllAssemblies("UnityEditor.InspectorWindow");
+            System.Type inspectorWindowType = typeof(Editor).Assembly.GetType("UnityEditor.InspectorWindow");
 
             if (inspectorWindowType == null)
             {
@@ -221,7 +221,7 @@ namespace Merlin
 
             //FieldInfo trackerEditorsField = trackerField.GetType().GetField("")
 
-            System.Type propertyHandlerCacheType = FindTypeInAllAssemblies("UnityEditor.PropertyHandlerCache");
+            System.Type propertyHandlerCacheType = typeof(Editor).Assembly.GetType("UnityEditor.PropertyHandlerCache");
 
             if (propertyHandlerCacheType == null)
             {
@@ -263,14 +263,7 @@ namespace Merlin
             {
                 System.Type[] mapArgs = drawerTypeMap.FieldType.GetGenericArguments();
 
-                System.Type keyType = mapArgs[0];
                 System.Type valType = mapArgs[1];
-
-                if (keyType == null || valType == null)
-                {
-                    Debug.LogError("Could not retrieve dictionary types!");
-                    return;
-                }
 
                 FieldInfo drawerField = valType.GetField("drawer", BindingFlags.Public | BindingFlags.Instance);
                 FieldInfo typeField = valType.GetField("type", BindingFlags.Public | BindingFlags.Instance);
@@ -352,10 +345,9 @@ namespace Merlin
 
         public static void ApplyEventPropertyDrawerPatch(bool forceApply = false)
         {
-            EEESettings settings = GetEditorSettings();
-
             if (!patchApplied || forceApply)
             {
+                EEESettings settings = GetEditorSettings();
                 ApplyEventDrawerPatch(settings.overrideEventDrawer);
                 patchApplied = true;
             }
@@ -1363,7 +1355,7 @@ namespace Merlin
                 if (cachedSettings.hideOriginalUdonBehaviour &&
                     component is UdonBehaviour udonBehaviour &&
                     udonBehaviour.programSource != null && udonBehaviour.programSource is UdonSharpProgramAsset &&
-                    UdonSharpEditorUtility.FindProxyBehaviour(udonBehaviour, ProxySerializationPolicy.NoSerialization) != null)
+                    UdonSharpEditorUtility.GetProxyBehaviour(udonBehaviour) != null)
                     continue;
 
                 if (!cachedSettings.hideOriginalUdonBehaviour &&
@@ -1388,7 +1380,7 @@ namespace Merlin
         }
 
 #if UDONSHARP
-        private static Dictionary<string, string> builtinEventLookup;
+        private static Dictionary<string, string> _builtinEventLookup;
 #endif
 
         // Where the event data actually gets added when you choose a function
@@ -1414,9 +1406,9 @@ namespace Merlin
                     UdonSharpProgramAsset programAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset(udonSharpBehaviour);
 
                     // Stolen from the resolver context
-                    if (builtinEventLookup == null)
+                    if (_builtinEventLookup == null)
                     {
-                        builtinEventLookup = new Dictionary<string, string>();
+                        _builtinEventLookup = new Dictionary<string, string>();
 
                         foreach (UdonNodeDefinition nodeDefinition in UdonEditorManager.Instance.GetNodeDefinitions("Event_"))
                         {
@@ -1427,16 +1419,16 @@ namespace Merlin
                             char[] eventName = eventNameStr.ToCharArray();
                             eventName[0] = char.ToLowerInvariant(eventName[0]);
 
-                            builtinEventLookup.Add(eventNameStr, "_" + new string(eventName));
+                            _builtinEventLookup.Add(eventNameStr, "_" + new string(eventName));
                         }
                     }
 
                     string targetMethodName = originalTargetMethod.Name;
 
                     bool isBuiltin = false;
-                    if (builtinEventLookup.ContainsKey(targetMethodName))
+                    if (_builtinEventLookup.ContainsKey(targetMethodName))
                     {
-                        targetMethodName = builtinEventLookup[targetMethodName];
+                        targetMethodName = _builtinEventLookup[targetMethodName];
                         isBuiltin = true;
                     }
 

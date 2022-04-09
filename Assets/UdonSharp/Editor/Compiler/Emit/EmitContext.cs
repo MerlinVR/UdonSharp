@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Symbols;
@@ -279,7 +280,7 @@ namespace UdonSharp.Compiler.Emit
 
         public Value GetReturnValue(TypeSymbol type)
         {
-            var assignmentTarget = _assignmentScopes.Count > 0 ? _assignmentScopes.Peek().TargetValue : null;
+            Value assignmentTarget = _assignmentScopes.Count > 0 ? _assignmentScopes.Peek().TargetValue : null;
 
             if (assignmentTarget != null && IsTriviallyAssignableTo(type, assignmentTarget.UserType))
                 return assignmentTarget;
@@ -415,7 +416,7 @@ namespace UdonSharp.Compiler.Emit
         private MethodSymbol GetNumericConversionMethod(TypeSymbol sourceType, TypeSymbol targetType)
         {
             MethodSymbol convertMethod = GetTypeSymbol(typeof(Convert)).GetMembers<MethodSymbol>($"To{targetType.UdonType.Name}", this)
-                .First(e => e.Parameters[0].Type == sourceType.UdonType);
+                .FirstOrDefault(e => e.Parameters[0].Type == sourceType.UdonType);
 
             return convertMethod;
         }
@@ -500,10 +501,11 @@ namespace UdonSharp.Compiler.Emit
                     Module.AddCopy(sourceValue, targetValue);
             }
 
-            var conversion = CompileContext.RoslynCompilation.ClassifyConversion(sourceType.RoslynSymbol, targetType.RoslynSymbol);
+            Conversion conversion = CompileContext.RoslynCompilation.ClassifyConversion(sourceType.RoslynSymbol, targetType.RoslynSymbol);
 
             if (conversion.IsEnumeration)
             {
+                // Extern enum -> integer
                 if (sourceValue.UdonType.IsEnum &&
                     UdonSharpUtils.IsIntegerType(targetType.UdonType.SystemType))
                 {
@@ -513,6 +515,21 @@ namespace UdonSharp.Compiler.Emit
                     return;
                 }
 
+                // Integer -> user enum
+                // User enum -> user enum
+                if (UdonSharpUtils.IsIntegerType(sourceType.UdonType.SystemType) && !targetType.IsExtern && targetType.IsEnum)
+                {
+                    if (sourceType.UdonType == targetType.UdonType)
+                    {
+                        Module.AddCopy(sourceValue, targetValue);
+                        return;
+                    }
+                    
+                    ExecuteBoundInvocation(GetNumericConversionMethod(sourceType.UdonType, targetType.UdonType));
+                    return;
+                }
+
+                // integer -> extern enum
                 if (UdonSharpUtils.IsIntegerType(sourceType.UdonType.SystemType) &&
                     targetType.UdonType.IsEnum)
                 {
@@ -577,6 +594,7 @@ namespace UdonSharp.Compiler.Emit
         }
 
         private TypeSymbol _systemObjectType;
+        private TypeSymbol _systemArrayType;
 
         private bool IsTriviallyAssignableTo(TypeSymbol sourceType, TypeSymbol targetType)
         {
@@ -584,10 +602,14 @@ namespace UdonSharp.Compiler.Emit
                 return true;
             
             if (_systemObjectType == null) _systemObjectType = GetTypeSymbol(SpecialType.System_Object);
+            if (_systemArrayType == null) _systemArrayType = GetTypeSymbol(SpecialType.System_Array);
             
             // Quick early out for assigning to object types since anything can technically be passed
             // todo: better checking for IsAssignableFrom equivalent functionality so we can skip copies on subclass assignments and such
             if (targetType == _systemObjectType)
+                return true;
+
+            if (sourceType.IsArray && targetType == _systemArrayType)
                 return true;
 
             return false;
@@ -700,12 +722,7 @@ namespace UdonSharp.Compiler.Emit
 
         private IDisposable OpenAssignmentScope(Value assignmentTarget)
         {
-            AssignmentScope scope;
-
-            if (_assignmentScopeCache.Count > 0)
-                scope = _assignmentScopeCache.Pop();
-            else
-                scope = new AssignmentScope(this);
+            AssignmentScope scope = _assignmentScopeCache.Count > 0 ? _assignmentScopeCache.Pop() : new AssignmentScope(this);
 
             scope.TargetValue = assignmentTarget;
             _assignmentScopes.Push(scope);
@@ -960,7 +977,7 @@ namespace UdonSharp.Compiler.Emit
             UpdateNode(expression);
             
             EnterCowScope();
-            var expressionVal = expression.EmitValue(this);
+            Value expressionVal = expression.EmitValue(this);
             ExitCowScope();
 
             return expressionVal;
@@ -1006,7 +1023,7 @@ namespace UdonSharp.Compiler.Emit
             
             foreach (var valueMap in valuesMap)
             {
-                foreach (var value in valueMap.Value)
+                foreach (Value.CowValue value in valueMap.Value)
                 {
                     value.Dispose();
                 }

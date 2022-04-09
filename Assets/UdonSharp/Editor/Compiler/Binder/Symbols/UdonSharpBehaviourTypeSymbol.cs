@@ -1,7 +1,9 @@
 ﻿
 using Microsoft.CodeAnalysis;
+using UdonSharp.Core;
 using UnityEngine;
 using VRC.Udon;
+using System.Linq;
 
 namespace UdonSharp.Compiler.Symbols
 {
@@ -41,6 +43,9 @@ namespace UdonSharp.Compiler.Symbols
                     return new LocalSymbol(localSymbol, context);
                 case IParameterSymbol parameterSymbol:
                     return new ParameterSymbol(parameterSymbol, context);
+                case ITypeSymbol typeSymbol:
+                    throw new NotSupportedException("Nested type declarations are not currently supported by U#", typeSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()?.GetLocation());
+                    // return context.GetTypeSymbol(typeSymbol);
             }
 
             throw new System.InvalidOperationException("Failed to construct symbol for type");

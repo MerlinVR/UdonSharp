@@ -6,19 +6,20 @@ using JetBrains.Annotations;
 using UnityEngine;
 using VRC.Udon.Common.Interfaces;
 
-#if UNITY_EDITOR
 using System.Diagnostics;
+using UnityEngine.Serialization;
 using VRC.Udon.Serialization.OdinSerializer;
-#endif
 
 namespace UdonSharp
 {
-    public abstract class UdonSharpBehaviour : MonoBehaviour
-#if UNITY_EDITOR
-        , ISerializationCallbackReceiver
-#endif
+    public abstract class UdonSharpBehaviour : MonoBehaviour, ISerializationCallbackReceiver, ISupportsPrefabSerialization
     {
         // Stubs for the UdonBehaviour functions that emulate Udon behavior
+        
+        /// <summary>
+        /// Gets a field from the target UdonSharpBehaviour
+        /// </summary>
+        [PublicAPI]
         public object GetProgramVariable(string name)
         {
             FieldInfo variableField = GetType().GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
@@ -29,39 +30,50 @@ namespace UdonSharp
             return variableField.GetValue(this);
         }
 
+        /// <summary>
+        /// Sets a field on the target UdonSharpBehaviour.
+        /// <remarks>Make sure you are setting a value on the behaviour with a compatible type to the given <paramref name="value"/>, or you may run into unexpected crashes.</remarks>
+        /// </summary>
+        [PublicAPI]
         public void SetProgramVariable(string name, object value)
         {
             FieldInfo variableField = GetType().GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
-            if (variableField != null)
+            if (variableField == null)
+                return;
+            
+            FieldChangeCallbackAttribute fieldChangeCallback = variableField.GetCustomAttribute<FieldChangeCallbackAttribute>();
+
+            if (fieldChangeCallback != null)
             {
-                FieldChangeCallbackAttribute fieldChangeCallback = variableField.GetCustomAttribute<FieldChangeCallbackAttribute>();
+                PropertyInfo targetProperty = variableField.DeclaringType.GetProperty(fieldChangeCallback.CallbackPropertyName, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
 
-                if (fieldChangeCallback != null)
-                {
-                    PropertyInfo targetProperty = variableField.DeclaringType.GetProperty(fieldChangeCallback.CallbackPropertyName, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                if (targetProperty == null)
+                    return;
 
-                    if (targetProperty == null)
-                        return;
+                MethodInfo setMethod = targetProperty.GetSetMethod(true);
 
-                    MethodInfo setMethod = targetProperty.GetSetMethod(true);
+                if (setMethod == null)
+                    return;
 
-                    if (setMethod == null)
-                        return;
-
-                    setMethod.Invoke(this, new object[] { value });
-                }
-                else
-                {
-                    variableField.SetValue(this, value);
-                }
+                setMethod.Invoke(this, new object[] { value });
+            }
+            else
+            {
+                variableField.SetValue(this, value);
             }
         }
 
+        /// <summary>
+        /// Calls the method with <paramref name="eventName"/> on the target UdonSharpBehaviour. The target method must be public and have no parameters.
+        /// <remarks>The method is allowed to return a value, but the return value will not be accessible via this method.</remarks>
+        /// </summary>
+        /// <param name="eventName">Name of the method to call</param>
+        [PublicAPI]
         public void SendCustomEvent(string eventName)
         {
-#if UNITY_EDITOR
-            if (_backingUdonBehaviour != null) // If this is a proxy, we need to check if this is a valid call to SendCustomEvent, since animation events can call it when they shouldn't
+        #if UNITY_EDITOR
+            if (_udonSharpBackingUdonBehaviour != null) // If this is a proxy, we need to check if this is a valid call to SendCustomEvent, since animation events can call it when they shouldn't
             {
                 StackFrame frame = new StackFrame(1); // Get the frame of the calling method
 
@@ -69,7 +81,7 @@ namespace UdonSharp
                 if (frame.GetMethod() == null)
                     return;
             }
-#endif
+        #endif
 
             MethodInfo eventMethod = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(e => e.Name == eventName && e.GetParameters().Length == 0);
 
@@ -79,6 +91,14 @@ namespace UdonSharp
             }
         }
 
+        /// <summary>
+        /// Sends a networked call to the method with <paramref name="eventName"/> on the target UdonSharpBehaviour. The target method must be public and have no parameters.
+        /// <remarks>The method is allowed to return a value, but the return value will not be accessible via this method.
+        /// Methods with an underscore as their first character will not be callable via SendCustomNetworkEvent.</remarks>
+        /// </summary>
+        /// <param name="target">Whether to send this event to only the owner of the target behaviour's GameObject, or to everyone in the instance</param>
+        /// <param name="eventName">Name of the method to call</param>
+        [PublicAPI]
         public void SendCustomNetworkEvent(NetworkEventTarget target, string eventName)
         {
             SendCustomEvent(eventName);
@@ -90,6 +110,7 @@ namespace UdonSharp
         /// <param name="eventName"></param>
         /// <param name="delaySeconds"></param>
         /// <param name="eventTiming"></param>
+        [PublicAPI] 
         public void SendCustomEventDelayedSeconds(string eventName, float delaySeconds, VRC.Udon.Common.Enums.EventTiming eventTiming = VRC.Udon.Common.Enums.EventTiming.Update) { }
 
         /// <summary>
@@ -98,12 +119,20 @@ namespace UdonSharp
         /// <param name="eventName"></param>
         /// <param name="delayFrames"></param>
         /// <param name="eventTiming"></param>
+        [PublicAPI] 
         public void SendCustomEventDelayedFrames(string eventName, int delayFrames, VRC.Udon.Common.Enums.EventTiming eventTiming = VRC.Udon.Common.Enums.EventTiming.Update) { }
 
         /// <summary>
         /// Disables Interact events on this UdonBehaviour and disables the interact outline on the object this is attached to
         /// </summary>
+        [PublicAPI] 
         public bool DisableInteractive { get; set; }
+
+        /// <summary>
+        /// Access the text that shows up on interactable tooltips
+        /// </summary>
+        [PublicAPI]
+        public string InteractionText { get; set; }
 
         [Obsolete("This method is obsolete, use Object.Instantiate(gameObject) instead")]
         protected static GameObject VRCInstantiate(GameObject original)
@@ -111,6 +140,10 @@ namespace UdonSharp
             return Instantiate(original);
         }
         
+        /// <summary>
+        /// Requests a network serialization of the target UdonSharpBehaviour.
+        /// <remarks>This will only function if the UdonSharpBehaviour is set to Manual sync mode and the person calling RequestSerialization() is the owner of the object.</remarks>
+        /// </summary>
         [PublicAPI]
         public void RequestSerialization() { }
 
@@ -124,11 +157,16 @@ namespace UdonSharp
         /// Returns the unique ID of the UdonBehavior user type. Will return 0 if the UdonBehavior has no ID, which usually means that it's a graph program.
         /// </summary>
         /// <returns></returns>
+        [PublicAPI]
         public long GetUdonTypeID()
         {
             return GetUdonTypeID(GetType());
         }
 
+        /// <summary>
+        /// Gets the type ID for the given T, usually used for checking UdonSharpBehaviour type equality
+        /// </summary>
+        [PublicAPI]
         public static long GetUdonTypeID<T>() where T : UdonSharpBehaviour
         {
             return GetUdonTypeID(typeof(T));
@@ -139,11 +177,13 @@ namespace UdonSharp
             return Internal.UdonSharpInternalUtility.GetTypeName(type);
         }
 
+        [PublicAPI]
         public string GetUdonTypeName()
         {
             return GetUdonTypeName(GetType());
         }
 
+        [PublicAPI]
         public static string GetUdonTypeName<T>() where T : UdonSharpBehaviour
         {
             return GetUdonTypeName(typeof(T));
@@ -196,42 +236,54 @@ namespace UdonSharp
         [PublicAPI] public virtual void InputLookHorizontal(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
         [PublicAPI] public virtual void InputLookVertical(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
 
-        [Obsolete("The OnStationEntered() event is deprecated use the OnStationEntered(VRCPlayerApi player) event instead, this event will be removed in a future release.", true)]
+        [Obsolete("The OnStationEntered() event is deprecated use the OnStationEntered(VRCPlayerApi player) event instead", true)]
         public virtual void OnStationEntered() { }
 
-        [Obsolete("The OnStationExited() event is deprecated use the OnStationExited(VRCPlayerApi player) event instead, this event will be removed in a future release.", true)]
+        [Obsolete("The OnStationExited() event is deprecated use the OnStationExited(VRCPlayerApi player) event instead", true)]
         public virtual void OnStationExited() { }
 
-        [Obsolete("The OnOwnershipTransferred() event is deprecated use the OnOwnershipTransferred(VRCPlayerApi player) event instead, this event will be removed in a future release.", true)]
+        [Obsolete("The OnOwnershipTransferred() event is deprecated use the OnOwnershipTransferred(VRCPlayerApi player) event instead", true)]
         public virtual void OnOwnershipTransferred() { }
 
-#if UNITY_EDITOR
         // Used for tracking serialization data in editor
-        // Odin serialization is needed to keep track of the _backingUdonBehaviour reference for undo/redo operations
+        // Also allows serializing user data on U# behaviours that is otherwise not supported by Unity, so stuff like jagged arrays and more complex collection types.
         [SerializeField, HideInInspector]
-        SerializationData serializationData;
+        private SerializationData serializationData;
+        
+        [SerializeField, HideInInspector, UsedImplicitly]
+        private VRC.Udon.UdonBehaviour _udonSharpBackingUdonBehaviour;
+
+        // Used to preserve backing behaviour on Reset, paste component value calls, and preset applications
+        // http://answers.unity.com/answers/1754330/view.html
+        private VRC.Udon.UdonBehaviour _backingUdonBehaviourDump;
 
         void ISerializationCallbackReceiver.OnBeforeSerialize()
         {
             UnitySerializationUtility.SerializeUnityObject(this, ref serializationData);
+            _backingUdonBehaviourDump = _udonSharpBackingUdonBehaviour;
         }
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
             UnitySerializationUtility.DeserializeUnityObject(this, ref serializationData);
+
+            if (_backingUdonBehaviourDump)
+            {
+                _udonSharpBackingUdonBehaviour = _backingUdonBehaviourDump;
+            }
         }
         
-        [OdinSerialize]
-        private IUdonBehaviour _backingUdonBehaviour = null;
-
+        SerializationData ISupportsPrefabSerialization.SerializationData
+        {
+            get => serializationData;
+            set => serializationData = value;
+        }
 #pragma warning disable CS0414 // Referenced via reflection
-        [SerializeField, HideInInspector]
-        private bool _isValidForAutoCopy = false;
-
-        private static bool _skipEvents = false;
+        [UsedImplicitly]
+        private static bool _skipEvents;
 #pragma warning restore CS0414
 
+        [UsedImplicitly]
         private static bool ShouldSkipEvents() => _skipEvents;
-#endif
     }
 }

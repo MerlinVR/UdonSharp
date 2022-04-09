@@ -1,4 +1,5 @@
 ﻿
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using System.Linq;
 using UdonSharp.Compiler.Assembly;
@@ -32,6 +33,13 @@ namespace UdonSharp.Compiler.Symbols
             ExportedMethodAddress = new ExportAddress(ExportAddress.AddressKind.String, this);
         }
 
+        private static readonly HashSet<string> _obsoleteOverrides = new HashSet<string>()
+        {
+            "OnStationEntered",
+            "OnStationExited",
+            "OnOwnershipTransferred",
+        };
+
         public override void Bind(BindContext context)
         {
             IMethodSymbol symbol = RoslynSymbol;
@@ -40,6 +48,9 @@ namespace UdonSharp.Compiler.Symbols
                 throw new NotSupportedException(LocStr.CE_UdonSharpBehaviourConstructorsNotSupported, symbol.Locations.FirstOrDefault());
             if (symbol.IsGenericMethod)
                 throw new NotSupportedException(LocStr.CE_UdonSharpBehaviourGenericMethodsNotSupported, symbol.Locations.FirstOrDefault());
+
+            if (symbol.Parameters.Length == 0 && _obsoleteOverrides.Contains(symbol.Name))
+                throw new NotSupportedException($"The {symbol.Name}() event is deprecated use the version with the VRCPlayerApi '{symbol.Name}(VRCPlayerApi player)' instead");
 
             base.Bind(context);
             
@@ -75,7 +86,7 @@ namespace UdonSharp.Compiler.Symbols
                 context.Module.AddExportTag(this);
             }
 
-            var returnAddressConst = context.GetConstantValue(context.GetTypeSymbol(SpecialType.System_UInt32), 0xFFFFFFFF);
+            Value returnAddressConst = context.GetConstantValue(context.GetTypeSymbol(SpecialType.System_UInt32), 0xFFFFFFFF);
             context.Module.AddPush(returnAddressConst);
 
             base.Emit(context);

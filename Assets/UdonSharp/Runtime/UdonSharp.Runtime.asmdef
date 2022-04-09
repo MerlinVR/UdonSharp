@@ -2,14 +2,15 @@
     "name": "UdonSharp.Runtime",
     "references": [
         "VRC.Udon.Serialization.OdinSerializer",
-        "UdonSharp.Updater"
+        "VRC.Udon"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

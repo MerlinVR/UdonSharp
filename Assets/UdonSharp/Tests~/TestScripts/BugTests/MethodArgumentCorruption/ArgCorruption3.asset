@@ -12,16 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: ArgCorruption3
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: d8afed069c8e623438ddd6b78f024e9e,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 845251505cc69844c9242a417b96c622,
     type: 2}
   udonAssembly: 
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: dcae58eae7ac7f84a978a98a7f096c10, type: 3}
-  isV1Root: 0
+  scriptVersion: 2
+  compiledVersion: 2
   behaviourSyncMode: 0
-  behaviourIDHeapVarName: __refl_const_intnl_udonTypeID
-  compileErrors: []
   hasInteractEvent: 0
+  scriptID: -7275234948239430847
   serializationData:
     SerializedFormat: 2
     SerializedBytes: 

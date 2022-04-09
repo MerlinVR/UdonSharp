@@ -1,13 +1,14 @@
 ﻿
 using System;
 using System.Linq;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using UdonSharp.Compiler.Binder;
-using UdonSharp.Core;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon.Serialization.OdinSerializer;
+using NotSupportedException = UdonSharp.Core.NotSupportedException;
 
 namespace UdonSharp.Compiler.Symbols
 {
@@ -37,12 +38,23 @@ namespace UdonSharp.Compiler.Symbols
         {
             get
             {
+                if (IsConst) return false;
                 if (IsStatic) return false;
                 if (RoslynSymbol.IsReadOnly) return false;
                 if (HasAttribute<OdinSerializeAttribute>()) return true; // OdinSerializeAttribute takes precedence over NonSerializedAttribute
                 if (HasAttribute<NonSerializedAttribute>()) return false;
-                return RoslynSymbol.DeclaredAccessibility == Accessibility.Public || HasAttribute<SerializeField>();
+                return RoslynSymbol.DeclaredAccessibility == Accessibility.Public || HasAttribute<SerializeField>() || HasAttribute<SerializeReference>();
             }
+        }
+
+        // There are better places this could go, but IsSerialized and this should stay in sync so we'll put them next to each other for visibility 
+        internal static bool IsFieldSerialized(FieldInfo field)
+        {
+            if (field.IsInitOnly) return false;
+            if (field.IsStatic) return false;
+            if (field.IsDefined(typeof(OdinSerializeAttribute), false)) return true;
+            if (field.IsDefined(typeof(NonSerializedAttribute), false)) return true;
+            return field.IsPublic || field.IsDefined(typeof(SerializeField), false) || field.IsDefined(typeof(SerializeReference), false);
         }
 
         public bool IsConstInitialized => InitializerExpression != null && InitializerExpression.IsConstant;
@@ -61,7 +73,7 @@ namespace UdonSharp.Compiler.Symbols
             {
                 FieldSymbol foundSymbol = currentType.GetMember<FieldSymbol>(Name, context);
                 if (foundSymbol != null && !foundSymbol.IsConst)
-                    throw new CompilerException($"U# does not yet support hiding base fields");
+                    throw new NotSupportedException("U# does not yet support hiding base fields");
 
                 currentType = currentType.BaseType;
             }
@@ -77,6 +89,9 @@ namespace UdonSharp.Compiler.Symbols
                 context.CurrentNode = RoslynSymbol.DeclaringSyntaxReferences.First().GetSyntax();
                 InitializerSyntax = (context.CurrentNode as VariableDeclaratorSyntax)?.Initializer?.Value;
             }
+
+            if (!IsExtern && IsStatic && !IsConst)
+                throw new NotSupportedException("Static fields are not yet supported on user defined types");
             
             CheckHiddenFields(context);
             

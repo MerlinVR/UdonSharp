@@ -34,6 +34,9 @@ namespace UdonSharp.Compiler.Binder
 
             Value returnValue = context.GetReturnValue(ValueType);
             
+            // We don't want any references outside the flow control to be dirtied conditionally
+            context.TopTable.DirtyAllValues();
+            
             context.Module.AddJumpIfFalse(conditionJump, conditionValue);
 
             context.EmitValueAssignment(returnValue, TrueExpression);

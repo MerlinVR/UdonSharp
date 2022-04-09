@@ -1,6 +1,7 @@
 ﻿
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using UdonSharp.Core;
 
 namespace UdonSharp.Compiler.Symbols
 {
@@ -42,6 +43,9 @@ namespace UdonSharp.Compiler.Symbols
                     return new LocalSymbol(localSymbol, context);
                 case IParameterSymbol parameterSymbol:
                     return new ParameterSymbol(parameterSymbol, context);
+                case ITypeSymbol typeSymbol:
+                    throw new NotSupportedException("Nested type declarations are not currently supported by U#", typeSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()?.GetLocation());
+                    // return context.GetTypeSymbol(typeSymbol);
             }
             
             throw new System.NotImplementedException();
@@ -63,22 +67,6 @@ namespace UdonSharp.Compiler.Symbols
                     operatorType = BuiltinOperatorType.Inequality;
                 
                 return new ExternSynthesizedOperatorSymbol(operatorType, parameterType.UdonType, context);
-            }
-
-            if (methodSymbol.IsGenericMethod)
-            {
-                if (methodSymbol.TypeArguments.Any(e => e is ITypeParameterSymbol))
-                {
-                    var typeArguments = methodSymbol.TypeArguments.Select(context.GetTypeSymbol).ToArray();
-                    if (typeArguments.All(e => !(e is TypeParameterSymbol)))
-                    {
-                        var newMethod = new ImportedUdonSharpMethodSymbol(
-                            methodSymbol.OriginalDefinition.Construct(typeArguments.Select(e => e.RoslynSymbol)
-                                .ToArray()), context);
-
-                        return newMethod;
-                    }
-                }
             }
 
             return new ImportedUdonSharpMethodSymbol(methodSymbol, context);

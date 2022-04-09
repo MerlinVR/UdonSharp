@@ -81,6 +81,7 @@ namespace UdonSharp.Compiler.Binder
                 context.UpdateRecursiveStackMaxSize(recursiveValues.Length);
             }
                 
+            context.Module.AddCommentTag($"Calling {Method}");
             context.Module.AddJump(linkage.MethodLabel);
 
             context.Module.LabelJump(returnPoint);

@@ -14,6 +14,12 @@ namespace UdonSharp.Compiler.Symbols
     {
         private readonly object _dictionaryLazyInitLock = new object();
         private ConcurrentDictionary<ISymbol, Symbol> _typeSymbols;
+        
+        /// <summary>
+        /// Maps A method symbol to its locals.
+        /// This is needed to prevent conflicts of local symbols between instances of a generic method with different type arguments.
+        /// </summary>
+        private ConcurrentDictionary<IMethodSymbol, Dictionary<ILocalSymbol, LocalSymbol>> _methodLocalSymbols;
 
         public new ITypeSymbol RoslynSymbol => (ITypeSymbol)base.RoslynSymbol;
 
@@ -109,15 +115,15 @@ namespace UdonSharp.Compiler.Symbols
 
             if (IsUdonSharpBehaviour)
             {
-                if (RoslynSymbol.AllInterfaces.Length > 1) // Be lazy and ignore the serialization callback receiver since this is temporary
+                if (RoslynSymbol.AllInterfaces.Length > 2) // Be lazy and ignore the serialization callback receiver since this is temporary
                     throw new NotImplementedException("Interfaces are not yet handled by U#");
                 
                 SetupAttributes(context);
             }
 
-            var members = RoslynSymbol.GetMembers();
+            ImmutableArray<ISymbol> members = RoslynSymbol.GetMembers();
 
-            foreach (var member in members.Where(member => (!member.IsImplicitlyDeclared || member.Kind == SymbolKind.Field)))
+            foreach (ISymbol member in members.Where(member => (!member.IsImplicitlyDeclared || member.Kind == SymbolKind.Field)))
             {
                 switch (member)
                 {
@@ -198,6 +204,35 @@ namespace UdonSharp.Compiler.Symbols
                     symbol = ((IMethodSymbol)symbol).Construct(methodSymbol.TypeArguments.ToArray());
             }
 
+            // Treats symbols as local to a particular method symbol across different method type arguments
+            // Prevents LocalSymbol info from leaking across multiple uses of the same method with different generic type arguments
+            if (symbol is ILocalSymbol localSymbol)
+            {
+                MethodSymbol currentBindMethod = ((BindContext)context).CurrentBindMethod;
+
+                if (_methodLocalSymbols == null)
+                {
+                    lock (_dictionaryLazyInitLock)
+                    {
+                        if (_methodLocalSymbols == null)
+                        {
+                            _methodLocalSymbols = new ConcurrentDictionary<IMethodSymbol, Dictionary<ILocalSymbol, LocalSymbol>>();
+                        }
+                    }
+                }
+                
+                Dictionary<ILocalSymbol, LocalSymbol> localMap = _methodLocalSymbols.GetOrAdd(currentBindMethod.RoslynSymbol, (key) => new Dictionary<ILocalSymbol, LocalSymbol>());
+
+                if (localMap.TryGetValue(localSymbol, out LocalSymbol foundSymbol))
+                    return foundSymbol;
+
+                LocalSymbol newLocal = (LocalSymbol)CreateSymbol(symbol, context);
+                
+                localMap.Add(localSymbol, newLocal);
+
+                return newLocal;
+            }
+
             return _typeSymbols.GetOrAdd(symbol, (key) => CreateSymbol(symbol, context));
         }
 
@@ -255,12 +290,17 @@ namespace UdonSharp.Compiler.Symbols
             return context.GetTypeSymbol(context.CompileContext.RoslynCompilation.CreateArrayTypeSymbol(RoslynSymbol));
         }
 
+        /// <summary>
+        /// Implemented by derived type symbols to create their own relevant symbol for the roslyn symbol
+        /// </summary>
+        /// <param name="roslynSymbol"></param>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        protected abstract Symbol CreateSymbol(ISymbol roslynSymbol, AbstractPhaseContext context);
+
         private Type _cachedType;
         private static readonly SymbolDisplayFormat _fullTypeFormat =
             new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
-
-        private static readonly System.Reflection.Assembly _gameScriptAssembly =
-            AppDomain.CurrentDomain.GetAssemblies().First(e => e.GetName().Name == "Assembly-CSharp");
 
         public static string GetFullTypeName(ITypeSymbol typeSymbol)
         {
@@ -281,50 +321,173 @@ namespace UdonSharp.Compiler.Symbols
                 return true;
             }
 
-            int arrayDepth = 0;
-            TypeSymbol currentType = this;
-            while (currentType.IsArray)
+            if (TryGetSystemType(RoslynSymbol, out systemType))
             {
-                arrayDepth++;
-                currentType = currentType.ElementType;
-            }
-            
-            string typeName = GetFullTypeName(currentType.RoslynSymbol);
-
-            Type foundType = _gameScriptAssembly.GetType(typeName);
-
-            if (foundType == null)
-            {
-                foreach (var udonSharpAssembly in CompilerUdonInterface.UdonSharpAssemblies)
-                {
-                    foundType = udonSharpAssembly.GetType(typeName);
-                    if (foundType != null)
-                        break;
-                }
-            }
-
-            if (foundType != null)
-            {
-                while (arrayDepth > 0)
-                {
-                    arrayDepth--;
-                    foundType = foundType.MakeArrayType();
-                }
-                
-                _cachedType = systemType = foundType;
+                _cachedType = systemType;
                 return true;
             }
 
-            systemType = null;
             return false;
         }
+        
+        private static readonly SymbolDisplayFormat _externFullTypeFormat =
+            new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
+        private static readonly SymbolDisplayFormat _externTypeFormat =
+            new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameOnly);
+        
+        private static Type MakeGenericTypeInternal(Type baseType, INamedTypeSymbol typeSymbol)
+        {
+            if (baseType == null)
+                return null;
 
-        /// <summary>
-        /// Implemented by derived type symbols to create their own relevant symbol for the roslyn symbol
-        /// </summary>
-        /// <param name="roslynSymbol"></param>
-        /// <param name="context"></param>
-        /// <returns></returns>
-        protected abstract Symbol CreateSymbol(ISymbol roslynSymbol, AbstractPhaseContext context);
+            if (typeSymbol.IsGenericType != baseType.IsGenericType)
+                return null;
+            
+            if (!typeSymbol.IsGenericType && !baseType.IsGenericType)
+                return baseType;
+                
+            Type[] typeArguments = new Type[typeSymbol.TypeArguments.Length];
+
+            for (int i = 0; i < typeArguments.Length; ++i)
+            {
+                if (!TryGetSystemType(typeSymbol.TypeArguments[i], out var typeArgument))
+                    return null;
+
+                typeArguments[i] = typeArgument;
+            }
+
+            Type constructedType;
+
+            try
+            {
+                constructedType = baseType.MakeGenericType(typeArguments);
+            }
+            catch (Exception) // Some type constraint may have changed and cause the MakeGenericType to fail
+            {
+                return null;
+            }
+
+            return constructedType;
+        }
+        
+        private static Type GetSystemTypeInternal(string typeName, INamedTypeSymbol typeSymbol)
+        {
+            var containingAssembly = typeSymbol.GetExternAssembly();
+
+            if (containingAssembly != null)
+            {
+                return MakeGenericTypeInternal(containingAssembly.GetType(typeName), typeSymbol);
+            }
+
+            foreach (var udonSharpAssembly in CompilerUdonInterface.UdonSharpAssemblies)
+            {
+                Type foundType = udonSharpAssembly.GetType(typeName);
+
+                if (foundType != null)
+                    return MakeGenericTypeInternal(foundType, typeSymbol);
+            }
+
+            return null;
+        }
+        
+        public static bool TryGetSystemType(ITypeSymbol typeSymbol, out Type systemType)
+        {
+            systemType = null;
+            
+            Stack<int> arrayRanks = null;
+
+            if (typeSymbol.TypeKind == TypeKind.Array)
+            {
+                arrayRanks = new Stack<int>();
+
+                ITypeSymbol currentType = typeSymbol;
+                while (currentType.TypeKind == TypeKind.Array)
+                {
+                    IArrayTypeSymbol currentArrayType = (IArrayTypeSymbol)currentType;
+                    arrayRanks.Push(currentArrayType.Rank);
+                    
+                    currentType = currentArrayType.ElementType;
+                }
+
+                typeSymbol = currentType;
+            }
+
+            INamedTypeSymbol namedType = (INamedTypeSymbol)typeSymbol;
+            
+            Stack<INamedTypeSymbol> containingTypeStack = null;
+
+            if (namedType.ContainingType != null)
+            {
+                containingTypeStack = new Stack<INamedTypeSymbol>();
+                while (namedType != null)
+                {
+                    containingTypeStack.Push(namedType);
+                    namedType = namedType.ContainingType;
+                }
+
+                namedType = containingTypeStack.Peek();
+            }
+
+            Type foundType;
+
+            if (containingTypeStack == null || 
+                containingTypeStack.Count == 1)
+            {
+                string typeName = typeSymbol.ToDisplayString(_externFullTypeFormat);
+            
+                if (namedType.IsGenericType)
+                    typeName += $"`{namedType.TypeArguments.Length}";
+
+                foundType = GetSystemTypeInternal(typeName, namedType);
+
+                if (foundType == null)
+                    return false;
+            }
+            else
+            {
+                INamedTypeSymbol rootTypeSymbol = containingTypeStack.Pop();
+                string rootTypeName = rootTypeSymbol.ToDisplayString(_externFullTypeFormat);
+
+                if (rootTypeSymbol.IsGenericType)
+                    rootTypeName += $"`{rootTypeSymbol.TypeArguments.Length}";
+                
+                Type rootType = GetSystemTypeInternal(rootTypeName, namedType);
+                
+                if (rootType == null)
+                    return false;
+                
+                Type currentFoundType = rootType;
+
+                while (containingTypeStack.Count > 0)
+                {
+                    INamedTypeSymbol currentNamedType = containingTypeStack.Pop();
+                    string currentTypeName = currentNamedType.ToDisplayString(_externTypeFormat);
+                    if (currentNamedType.IsGenericType)
+                        currentTypeName += $"`{currentNamedType.TypeArguments.Length}";
+                        
+                    currentFoundType = MakeGenericTypeInternal(currentFoundType.GetNestedType(currentTypeName), currentNamedType);
+
+                    if (currentFoundType == null)
+                        return false;
+                }
+
+                foundType = currentFoundType;
+            }
+
+            if (arrayRanks != null)
+            {
+                while (arrayRanks.Count > 0)
+                {
+                    int rank = arrayRanks.Pop();
+
+                    // .MakeArrayType() and .MakeArrayType(1) do not return the same thing
+                    // See remarks in https://docs.microsoft.com/en-us/dotnet/api/system.type.makearraytype?view=net-5.0#System_Type_MakeArrayType_System_Int32_
+                    foundType = rank == 1 ? foundType.MakeArrayType() : foundType.MakeArrayType(rank);
+                }
+            }
+
+            systemType = foundType;
+            return true;
+        }
     }
 }

@@ -5,7 +5,6 @@
         "VRC.Udon.Editor",
         "VRC.Udon.Serialization.OdinSerializer",
         "UdonSharp.Runtime",
-        "UdonSharp.Updater",
         "UdonSharp.Lib"
     ],
     "includePlatforms": [

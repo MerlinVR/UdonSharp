@@ -46,9 +46,16 @@ namespace UdonSharp.Compiler
             _currentMethod = methodSymbol;
             _currentDebugInfo = new MethodDebugInfo();
             _currentDebugInfo.methodName = methodSymbol.Name;
-            _currentDebugInfo.containingFilePath = context.CompileContext
-                .TranslateLocationToFileName(methodSymbol.RoslynSymbol
-                .DeclaringSyntaxReferences.First().GetSyntax().GetLocation());
+            if (methodSymbol.RoslynSymbol.DeclaringSyntaxReferences.Length > 0)
+            {
+                _currentDebugInfo.containingFilePath = context.CompileContext
+                    .TranslateLocationToFileName(methodSymbol.RoslynSymbol
+                        .DeclaringSyntaxReferences.First().GetSyntax().GetLocation());
+            }
+            else
+            {
+                _currentDebugInfo.containingFilePath = "";
+            }
 
             _currentDebugInfo.methodStartAddress = context.Module.CurrentAddress;
         }

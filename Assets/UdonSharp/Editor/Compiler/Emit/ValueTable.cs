@@ -118,7 +118,8 @@ namespace UdonSharp.Compiler.Emit
                 }
             }
 
-            return GlobalTable.CreateValueInternal(type, null, Value.ValueFlags.UdonThis);
+            return GlobalTable.CreateValueInternal(type, null, 
+                Value.ValueFlags.UdonThis | Value.ValueFlags.Constant, "this");
         }
 
         public Value GetUserValue(Symbol userSymbol)
@@ -185,7 +186,7 @@ namespace UdonSharp.Compiler.Emit
         {
             string uniqueName;
 
-            symbolName = symbolName?.Replace("<", "_")?.Replace(">", "_");
+            symbolName = UdonSharpUtils.UnmanglePropertyFieldName(symbolName);
 
             if ((flags & Value.ValueFlags.Field) != 0 || 
                 (flags & Value.ValueFlags.Parameter) != 0 ||

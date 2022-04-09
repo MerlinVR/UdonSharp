@@ -12,6 +12,10 @@ using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Symbols;
 using UdonSharp.Compiler.Udon;
+using UdonSharpEditor;
+using UnityEditor;
+using UnityEditor.Compilation;
+using UnityEngine;
 
 namespace UdonSharp.Compiler
 {
@@ -32,6 +36,8 @@ namespace UdonSharp.Compiler
         public SemanticModel semanticModel; // Populated after Roslyn compile
         public AssemblyModule assemblyModule;
         public UdonSharpProgramAsset programAsset;
+        public Type programClass;
+        public MonoScript programScript;
         public BindContext binding;
         public string assembly;
     }
@@ -67,22 +73,6 @@ namespace UdonSharp.Compiler
             /// Emitting the assembly modules' uasm instructions and serialized heap values for each program
             /// </summary>
             Emit,
-            /// <summary>
-            /// Linking jump points for methods, linking other behaviour's field/method addresses, and building vtables
-            /// </summary>
-            // Link,
-            /// <summary>
-            /// Running uasm assembler to generate bytecode that's usable by Udon and writing modified program asssets
-            /// </summary>
-            // Assemble,
-            /// <summary>
-            /// Linking behaviours to the UdonSharpRuntime manager object in the current scene
-            /// </summary>
-            // SceneLink,
-            /// <summary>
-            /// Validating that behaviours in the current scene are in a correct state
-            /// </summary>
-            Validation,
             Count,
         }
         
@@ -102,6 +92,15 @@ namespace UdonSharp.Compiler
         
         private ConcurrentDictionary<ITypeSymbol, TypeSymbol> _typeSymbolLookup = new ConcurrentDictionary<ITypeSymbol, TypeSymbol>();
 
+        public UdonSharpCompileOptions Options { get; }
+        
+        private Dictionary<TypeSymbol, ImmutableArray<TypeSymbol>> _inheritedTypes;
+
+        public CompilationContext(UdonSharpCompileOptions options)
+        {
+            Options = options;
+        }
+
         public TypeSymbol GetTypeSymbol(ITypeSymbol type, AbstractPhaseContext context)
         {
             TypeSymbol typeSymbol = _typeSymbolLookup.GetOrAdd(type, (key) => TypeSymbolFactory.CreateSymbol(type, context));
@@ -111,12 +110,10 @@ namespace UdonSharp.Compiler
 
         public TypeSymbol GetUdonTypeSymbol(ITypeSymbol type, AbstractPhaseContext context)
         {
-            Type systemType;
-                
-            if (type.TypeKind == TypeKind.Array)
-                systemType = UdonSharpUtils.UserTypeToUdonType(((IArrayTypeSymbol) type).GetExternType());
-            else
-                systemType = UdonSharpUtils.UserTypeToUdonType(((INamedTypeSymbol) type).GetExternType());
+            if (!TypeSymbol.TryGetSystemType(type, out var systemType))
+                throw new InvalidOperationException("foundType should not be null");
+            
+            systemType = UdonSharpUtils.UserTypeToUdonType(systemType);
             
             return GetTypeSymbol(systemType, context);
         }
@@ -194,6 +191,91 @@ namespace UdonSharp.Compiler
             ModuleBindings = syntaxTrees.ToArray();
             
             return ModuleBindings;
+        }
+        
+        private static Dictionary<bool, IEnumerable<string>> _scriptPathCache = new Dictionary<bool, IEnumerable<string>>();
+
+        public static IEnumerable<string> GetAllFilteredSourcePaths(bool isEditorBuild)
+        {
+            if (_scriptPathCache.TryGetValue(isEditorBuild, out var cachedPaths))
+                return cachedPaths;
+            
+            HashSet<string> assemblySourcePaths = new HashSet<string>();
+
+            foreach (UnityEditor.Compilation.Assembly asm in CompilationPipeline.GetAssemblies(isEditorBuild ? AssembliesType.Editor : AssembliesType.PlayerWithoutTestAssemblies))
+            {
+                if (asm.name == "Assembly-CSharp" || IsUdonSharpAssembly(asm.name))
+                    assemblySourcePaths.UnionWith(asm.sourceFiles);
+            }
+
+            IEnumerable<string> paths =  UdonSharpSettings.FilterBlacklistedPaths(assemblySourcePaths);
+            
+            _scriptPathCache.Add(isEditorBuild, paths);
+
+            return paths;
+        }
+
+        public static IEnumerable<MonoScript> GetAllFilteredScripts(bool isEditorBuild)
+        {
+            return GetAllFilteredSourcePaths(isEditorBuild).Select(AssetDatabase.LoadAssetAtPath<MonoScript>).Where(e => e != null).ToArray();
+        }
+
+        private static HashSet<string> _udonSharpAssemblyNames;
+
+        private static bool IsUdonSharpAssembly(string assemblyName)
+        {
+            if (_udonSharpAssemblyNames == null)
+            {
+                _udonSharpAssemblyNames = new HashSet<string>();
+                foreach (UdonSharpAssemblyDefinition asmDef in CompilerUdonInterface.UdonSharpAssemblyDefinitions)
+                {
+                    _udonSharpAssemblyNames.Add(asmDef.sourceAssembly.name);
+                }
+            }
+
+            return _udonSharpAssemblyNames.Contains(assemblyName);
+        }
+
+        private static List<MetadataReference> _metadataReferences;
+
+        public static IEnumerable<MetadataReference> GetMetadataReferences()
+        {
+            if (_metadataReferences != null) return _metadataReferences;
+            
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            _metadataReferences = new List<MetadataReference>();
+
+            foreach (var assembly in assemblies)
+            {
+                if (assembly.IsDynamic || assembly.Location.Length <= 0 ||
+                    assembly.Location.StartsWith("data")) 
+                    continue;
+                
+                if (assembly.GetName().Name == "Assembly-CSharp" ||
+                    assembly.GetName().Name == "Assembly-CSharp-Editor")
+                {
+                    continue;
+                }
+
+                if (IsUdonSharpAssembly(assembly.GetName().Name))
+                    continue;
+
+                PortableExecutableReference executableReference = null;
+
+                try
+                {
+                    executableReference = MetadataReference.CreateFromFile(assembly.Location);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Unable to locate assembly {assembly.Location} Exception: {e}");
+                }
+
+                if (executableReference != null)
+                    _metadataReferences.Add(executableReference);
+            }
+
+            return _metadataReferences;
         }
         
         public string TranslateLocationToFileName(Location location)
@@ -342,7 +424,7 @@ namespace UdonSharp.Compiler
                 _builtLayouts.Add(currentBuildType, new TypeLayout(layouts, idCounters));
             }
         }
-        
+
         /// <summary>
         /// Retrieves the method layout for a UdonSharpBehaviour method.
         /// This includes the method name, name of return variable, and name of parameter values.
@@ -354,9 +436,9 @@ namespace UdonSharp.Compiler
         {
             if (_udonSharpBehaviourType == null)
                 _udonSharpBehaviourType = GetTypeSymbol(typeof(UdonSharpBehaviour), context);
-            
-            while (method.OverridenMethod != null && 
-                   method.OverridenMethod.ContainingType != _udonSharpBehaviourType && 
+
+            while (method.OverridenMethod != null &&
+                   method.OverridenMethod.ContainingType != _udonSharpBehaviourType &&
                    !method.OverridenMethod.ContainingType.IsExtern)
                 method = method.OverridenMethod;
 
@@ -369,6 +451,57 @@ namespace UdonSharp.Compiler
 
                 return _layouts[method];
             }
+        }
+
+        public void BuildUdonBehaviourInheritanceLookup(IEnumerable<INamedTypeSymbol> rootTypes)
+        {
+            Dictionary<TypeSymbol, List<TypeSymbol>> inheritedTypeScratch = new Dictionary<TypeSymbol, List<TypeSymbol>>();
+
+            TypeSymbol udonSharpBehaviourType = null;
+            
+            foreach (INamedTypeSymbol typeSymbol in rootTypes)
+            {
+                BindContext bindContext = new BindContext(this, typeSymbol, null);
+                if (udonSharpBehaviourType == null)
+                    udonSharpBehaviourType = bindContext.GetTypeSymbol(typeof(UdonSharpBehaviour));
+
+                TypeSymbol rootTypeSymbol = bindContext.GetTypeSymbol(typeSymbol);
+
+                TypeSymbol baseType = rootTypeSymbol.BaseType;
+
+                while (baseType != udonSharpBehaviourType)
+                {
+                    if (!inheritedTypeScratch.TryGetValue(baseType, out List<TypeSymbol> inheritedTypeList))
+                    {
+                        inheritedTypeList = new List<TypeSymbol>();
+                        inheritedTypeScratch.Add(baseType, inheritedTypeList);
+                    }
+                    
+                    inheritedTypeList.Add(rootTypeSymbol);
+
+                    baseType = baseType.BaseType;
+                }
+            }
+
+            _inheritedTypes = new Dictionary<TypeSymbol, ImmutableArray<TypeSymbol>>();
+
+            foreach (var typeLists in inheritedTypeScratch)
+            {
+                _inheritedTypes.Add(typeLists.Key, typeLists.Value.ToImmutableArray());
+            }
+        }
+
+        public bool HasInheritedUdonSharpBehaviours(TypeSymbol baseType)
+        {
+            return _inheritedTypes.ContainsKey(baseType);
+        }
+
+        public ImmutableArray<TypeSymbol> GetInheritedTypes(TypeSymbol baseType)
+        {
+            if (_inheritedTypes.TryGetValue(baseType, out ImmutableArray<TypeSymbol> types))
+                return types;
+            
+            return ImmutableArray<TypeSymbol>.Empty;
         }
     }
 }
