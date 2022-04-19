@@ -20,7 +20,10 @@ namespace UdonSharp.Compiler.Symbols
             Type = bindContext.GetTypeSymbol(sourceSymbol.Type);
         }
 
-        public new ILocalSymbol RoslynSymbol { get { return (ILocalSymbol)base.RoslynSymbol; } }
+        public new ILocalSymbol RoslynSymbol => (ILocalSymbol)base.RoslynSymbol;
+
+        public bool IsConst => RoslynSymbol.IsConst;
+        public object ConstantValue => RoslynSymbol.ConstantValue;
 
         public override void Bind(BindContext context)
         {

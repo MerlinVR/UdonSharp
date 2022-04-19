@@ -50,7 +50,7 @@ namespace UdonSharp.Tests
             
             tester.TestAssertion("Float switch 1", FloatSwitch(1) == "one");
             tester.TestAssertion("Float switch 2", FloatSwitch(2) == "two");
-            tester.TestAssertion("Float switch 1", FloatSwitch(1.2f) == "no switch val found");
+            tester.TestAssertion("Float switch 3", FloatSwitch(1.2f) == "no switch val found");
             
             tester.TestAssertion("User enum jump table switch 1", TestUserJumpTableEnumSwitch(MySwitchEnum.A) == "A");
             tester.TestAssertion("User enum jump table switch 2", TestUserJumpTableEnumSwitch(MySwitchEnum.B) == "B");
@@ -64,6 +64,10 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Object switch 2", ObjectSwitch(2) == "two");
             tester.TestAssertion("Object switch 3", ObjectSwitch(2L) == "two long");
             tester.TestAssertion("Object switch 4", ObjectSwitch("testVal") == "the testVal");
+
+            tester.TestAssertion("Const variable switch 1", ConstVariableSwitch(1) == "one");
+            tester.TestAssertion("Const variable switch 2", ConstVariableSwitch(2) == "two");
+            tester.TestAssertion("Const variable switch 3", ConstVariableSwitch(3) == "no switch val found");
         }
 
         private string TestSwitch(int switchVal)
@@ -174,6 +178,22 @@ namespace UdonSharp.Tests
                 case 1:
                     return "one";
                 case 2f:
+                    return "two";
+            }
+
+            return "no switch val found";
+        }
+        
+        const int one = 1;
+        private string ConstVariableSwitch(int val)
+        {
+            const int two = 2;
+
+            switch (val)
+            {
+                case one:
+                    return "one";
+                case two:
                     return "two";
             }
 
