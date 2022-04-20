@@ -1,14 +1,15 @@
 ﻿
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UdonSharpEditor;
+using UdonSharp.Updater;
 using UnityEditor;
 using UnityEngine;
 
-namespace UdonSharp
+namespace UdonSharpEditor
 {
-    public class UdonSharpSettings : ScriptableObject
+    internal class UdonSharpSettings : ScriptableObject
     {
         public enum LogWatcherMode
         {
@@ -16,8 +17,6 @@ namespace UdonSharp
             AllLogs,
             Prefix,
         }
-
-        private const string SettingsSavePath = "Assets/UdonSharp/UdonSharpSettings.asset";
 
         private const string DefaultProgramTemplate = @"
 using UdonSharp;
@@ -34,12 +33,15 @@ public class <TemplateClassName> : UdonSharpBehaviour
 }
 ";
 
-        private static readonly string[] BuiltinScanningBlacklist = new string[]
-        {
+        private static readonly string[] BuiltinScanningBlacklist = {
             "Assets/Udon/Editor/",
             "Assets/Udon/Serialization/",
+            "Assets/Udon/ProgramSources/",
+            "Assets/Udon/WrapperModules/",
             "Assets/VRChat Examples/",
             "Assets/VRCSDK/Dependencies/",
+            "Assets/VRCSDK/SDK3/",
+            "Assets/VRCSDK/Sample Assets/",
             "Assets/UdonSharp/Editor/",
             // Common 3rd party editor assets
             "Assets/AmplifyShaderEditor/",
@@ -49,16 +51,16 @@ public class <TemplateClassName> : UdonSharpBehaviour
             "Assets/Procedural Worlds/", // Gaia
             "Assets/Pavo Studio/", // Muscle editor
             "Assets/Plugins/RootMotion/", // FinalIK
+            "Assets/CyanEmu/", // References VRC stuff that's excluded
         };
 
         // Compiler settings
         public bool autoCompileOnModify = true;
-        public bool compileAllScripts = true;
         public bool waitForFocus = false;
         public bool disableUploadCompile = false;
         public TextAsset newScriptTemplateOverride = null;
 
-        public string[] scanningDirectoryBlacklist = new string[0];
+        public string[] scanningDirectoryBlacklist = Array.Empty<string>();
 
         // Interface settings
         public string defaultBehaviourInterfaceType = "";
@@ -72,34 +74,41 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
         // Log watcher
         public LogWatcherMode watcherMode = LogWatcherMode.Disabled;
-        public string[] logWatcherMatchStrings = new string[0];
+        public string[] logWatcherMatchStrings = Array.Empty<string>();
 
+        private static UdonSharpSettings _settings;
+        
         public static UdonSharpSettings GetSettings()
         {
-            UdonSharpSettings settings = AssetDatabase.LoadAssetAtPath<UdonSharpSettings>(SettingsSavePath);
+            if (_settings)
+                return _settings;
+            
+            UdonSharpSettings settings = AssetDatabase.LoadAssetAtPath<UdonSharpSettings>(UdonSharpLocator.SettingsPath);
+
+            if (settings == null)
+                _settings = settings = CreateInstance<UdonSharpSettings>();
             
             return settings;
         }
 
         internal static UdonSharpSettings GetOrCreateSettings()
         {
-            UdonSharpSettings settings = AssetDatabase.LoadAssetAtPath<UdonSharpSettings>(SettingsSavePath);
+            string settingsPath = UdonSharpLocator.SettingsPath;
+            UdonSharpSettings settings = AssetDatabase.LoadAssetAtPath<UdonSharpSettings>(settingsPath);
             if (settings == null)
             {
-                settings = ScriptableObject.CreateInstance<UdonSharpSettings>();
-                AssetDatabase.CreateAsset(settings, SettingsSavePath);
+                if (!AssetDatabase.IsValidFolder(Path.GetDirectoryName(settingsPath)))
+                    Directory.CreateDirectory(Path.GetDirectoryName(settingsPath));
+                
+                _settings = settings = CreateInstance<UdonSharpSettings>();
+                AssetDatabase.CreateAsset(settings, settingsPath);
                 AssetDatabase.SaveAssets();
             }
 
             return settings;
         }
 
-        internal static SerializedObject GetSerializedSettings()
-        {
-            return new SerializedObject(GetOrCreateSettings());
-        }
-
-        static string SanitizeName(string name)
+        private static string SanitizeName(string name)
         {
             return name.Replace(" ", "")
                         .Replace("#", "Sharp")
@@ -132,49 +141,82 @@ public class <TemplateClassName> : UdonSharpBehaviour
 
             UdonSharpSettings settings = GetSettings();
 
-            string templateStr;
-
-            if (settings != null && settings.newScriptTemplateOverride != null)
-                templateStr = settings.newScriptTemplateOverride.ToString();
-            else
-                templateStr = DefaultProgramTemplate;
+            string templateStr = settings.newScriptTemplateOverride != null ? settings.newScriptTemplateOverride.ToString() : DefaultProgramTemplate;
 
             templateStr = templateStr.Replace("<TemplateClassName>", scriptName);
 
             return templateStr;
         }
 
-        public static string[] GetScannerBlacklist()
+        private static string[] GetScannerBlacklist()
         {
-            UdonSharpSettings settings = GetSettings();
+            return BuiltinScanningBlacklist.Concat(GetSettings().scanningDirectoryBlacklist).ToArray();
+        }
 
-            if (settings != null)
-                return BuiltinScanningBlacklist.Concat(settings.scanningDirectoryBlacklist).ToArray();
+        public static bool IsBlacklistedPath(string path)
+        {
+            string[] blackList = GetScannerBlacklist();
 
-            return BuiltinScanningBlacklist;
+            path = path.Replace('\\', '/');
+
+            foreach (string blacklistPath in blackList)
+            {
+                if (path.StartsWith(blacklistPath.Replace('\\', '/')))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static IEnumerable<string> FilterBlacklistedPaths(IEnumerable<string> paths)
+        {
+            // todo: use hashset instead of n*m comparisons
+            List<string> filteredPaths = new List<string>();
+            string[] blacklist = GetScannerBlacklist();
+            for (int i = 0; i < blacklist.Length; ++i)
+                blacklist[i] = blacklist[i].Replace('\\', '/');
+
+            foreach (string originalPath in paths)
+            {
+                string replacedOriginal = originalPath.Replace('\\', '/');
+
+                bool blackListed = false;
+                foreach (string blacklistPath in blacklist)
+                {
+                    if (replacedOriginal.StartsWith(blacklistPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        blackListed = true;
+                        break;
+                    }
+                }
+
+                if (!blackListed)
+                    filteredPaths.Add(replacedOriginal);
+            }
+
+            return filteredPaths;
         }
     }
     
-    public class UdonSharpSettingsProvider
+    internal static class UdonSharpSettingsProvider
     {
-        private static readonly GUIContent autoCompileLabel = new GUIContent("Auto compile on modify", "Trigger a compile whenever a U# source file is modified.");
-        private static readonly GUIContent compileAllLabel = new GUIContent("Compile all scripts", "Compile all scripts when a script is modified. This prevents some potential for weird issues where classes don't match");
-        private static readonly GUIContent waitForFocusLabel = new GUIContent("Compile on focus", "Waits for application focus to compile any changed U# scripts");
-        private static readonly GUIContent disableUploadCompileLabel = new GUIContent("Disable compile on upload", "Disables U# compile step on upload. This is not recommended unless you absolutely cannot deal with the compile on upload step.");
-        private static readonly GUIContent templateOverrideLabel = new GUIContent("Script template override", "A custom override file to use as a template for newly created U# files. Put \"<TemplateClassName>\" in place of a class name for it to automatically populate with the file name.");
-        private static readonly GUIContent includeDebugInfoLabel = new GUIContent("Debug build", "Include debug info in build");
-        private static readonly GUIContent includeInlineCodeLabel = new GUIContent("Inline code", "Include C# inline in generated assembly");
-        private static readonly GUIContent listenForVRCExceptionsLabel = new GUIContent("Listen for client exceptions", "Listens for exceptions from Udon and tries to match them to scripts in the project");
-        private static readonly GUIContent scanningBlackListLabel = new GUIContent("Scanning blacklist", "Directories to not watch for source code changes and not include in class lookups");
-        private static readonly GUIContent forceCompileLabel = new GUIContent("Force compile on upload", "Forces Unity to synchronously compile scripts when a world build is started. Unity will complain and throw errors, but it seems to work. This is a less intrusive way to prevent Unity from corrupting assemblies on upload.");
-        private static readonly GUIContent outputLogWatcherModeLabel = new GUIContent("Output log watch mode", "The log watcher will read log messages from the VRC log and forward them to the editor's console. Prefix mode will only show messages with a given prefix string.");
-        private static readonly GUIContent prefixArrayLabel = new GUIContent("Prefixes", "The list of prefixes that the log watcher will forward to the editor from in-game");
-        private static readonly GUIContent defaultBehaviourEditorLabel = new GUIContent("Default Behaviour Editor", "The default editor for U# behaviours, this is what will handle inspector drawing by default.");
+        private static readonly GUIContent _autoCompileLabel = new GUIContent("Auto compile on modify", "Trigger a compile whenever a U# source file is modified.");
+        private static readonly GUIContent _waitForFocusLabel = new GUIContent("Compile on focus", "Waits for application focus to compile any changed U# scripts");
+        private static readonly GUIContent _disableUploadCompileLabel = new GUIContent("Disable compile on upload", "Disables U# compile step on upload. This is not recommended unless you absolutely cannot deal with the compile on upload step.");
+        private static readonly GUIContent _templateOverrideLabel = new GUIContent("Script template override", "A custom override file to use as a template for newly created U# files. Put \"<TemplateClassName>\" in place of a class name for it to automatically populate with the file name.");
+        private static readonly GUIContent _includeDebugInfoLabel = new GUIContent("Debug build", "Include debug info in build");
+        private static readonly GUIContent _includeInlineCodeLabel = new GUIContent("Inline code", "Include C# inline in generated assembly");
+        private static readonly GUIContent _listenForVrcExceptionsLabel = new GUIContent("Listen for client exceptions", "Listens for exceptions from Udon and tries to match them to scripts in the project");
+        private static readonly GUIContent _scanningBlackListLabel = new GUIContent("Scanning blacklist", "Directories to not watch for source code changes and not include in class lookups");
+        private static readonly GUIContent _forceCompileLabel = new GUIContent("Force compile on upload", "Forces Unity to synchronously compile scripts when a world build is started. Unity will complain and throw errors, but it seems to work. This is a less intrusive way to prevent Unity from corrupting assemblies on upload.");
+        private static readonly GUIContent _outputLogWatcherModeLabel = new GUIContent("Output log watch mode", "The log watcher will read log messages from the VRC log and forward them to the editor's console. Prefix mode will only show messages with a given prefix string.");
+        private static readonly GUIContent _prefixArrayLabel = new GUIContent("Prefixes", "The list of prefixes that the log watcher will forward to the editor from in-game");
+        private static readonly GUIContent _defaultBehaviourEditorLabel = new GUIContent("Default Behaviour Editor", "The default editor for U# behaviours, this is what will handle inspector drawing by default.");
 
-        static string DrawCustomEditorSelection(string currentSelection)
+        private static string DrawCustomEditorSelection(string currentSelection)
         {
             List<(string, string)> optionsList = new List<(string, string)>() { ("", "Default") };
-            optionsList.AddRange(UdonSharpCustomEditorManager._defaultInspectorMap.Select(e => (e.Key, e.Value.Item1)));
+            optionsList.AddRange(UdonSharpCustomEditorManager.DefaultInspectorMap.Select(e => (e.Key, e.Value.Item1)));
 
             int[] values = Enumerable.Range(0, optionsList.Count).ToArray();
 
@@ -195,14 +237,11 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 }
             }
 
-            int newSelection = EditorGUILayout.IntPopup(defaultBehaviourEditorLabel, currentValue, optionsList.Select(e => new GUIContent(e.Item2)).ToArray(), values);
+            int newSelection = EditorGUILayout.IntPopup(_defaultBehaviourEditorLabel, currentValue, optionsList.Select(e => new GUIContent(e.Item2)).ToArray(), values);
 
             string newSelectionStr = "";
             if (newSelection > 0)
                 newSelectionStr = optionsList[newSelection].Item1;
-
-            if (newSelection != 0)
-                EditorGUILayout.HelpBox("Selecting an editor other than the default editor will require a C# script recompile to update the inspector with newly added/removed fields.", MessageType.Info);
 
             return newSelectionStr;
         }
@@ -217,24 +256,17 @@ public class <TemplateClassName> : UdonSharpBehaviour
                 guiHandler = (searchContext) =>
                 {
                     UdonSharpSettings settings = UdonSharpSettings.GetOrCreateSettings();
-                    SerializedObject settingsObject = UdonSharpSettings.GetSerializedSettings();
+                    SerializedObject settingsObject = new SerializedObject(settings);
 
                     // Compiler settings
                     EditorGUILayout.LabelField("Compiler", EditorStyles.boldLabel);
 
                     EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.autoCompileOnModify)), autoCompileLabel);
-                    
-                    if (settings.autoCompileOnModify)
-                    {
-                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.compileAllScripts)), compileAllLabel);
-                        if (!settings.compileAllScripts)
-                            EditorGUILayout.HelpBox("Only compiling the script that has been modified can cause issues if you have multiple scripts communicating via methods.", MessageType.Warning);
-                    }
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.autoCompileOnModify)), _autoCompileLabel);
 
-                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.waitForFocus)), waitForFocusLabel);
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.waitForFocus)), _waitForFocusLabel);
 
-                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.disableUploadCompile)), disableUploadCompileLabel);
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.disableUploadCompile)), _disableUploadCompileLabel);
 
                     if (settings.disableUploadCompile)
                     {
@@ -242,9 +274,9 @@ public class <TemplateClassName> : UdonSharpBehaviour
 Disabling this setting will make the UNITY_EDITOR define not work as expected and will break prefabs that depend on the define being accurate between game and editor builds.", MessageType.Warning);
                     }
 
-                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.newScriptTemplateOverride)), templateOverrideLabel);
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.newScriptTemplateOverride)), _templateOverrideLabel);
 
-                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.scanningDirectoryBlacklist)), scanningBlackListLabel, true);
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.scanningDirectoryBlacklist)), _scanningBlackListLabel, true);
 
                     EditorGUILayout.Space();
 
@@ -260,21 +292,21 @@ Disabling this setting will make the UNITY_EDITOR define not work as expected an
                     // Debugging settings
                     EditorGUILayout.LabelField("Debugging", EditorStyles.boldLabel);
 
-                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.buildDebugInfo)), includeDebugInfoLabel);
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.buildDebugInfo)), _includeDebugInfoLabel);
 
                     if (settings.buildDebugInfo)
                     {
-                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.includeInlineCode)), includeInlineCodeLabel);
-                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.listenForVRCExceptions)), listenForVRCExceptionsLabel);
+                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.includeInlineCode)), _includeInlineCodeLabel);
+                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.listenForVRCExceptions)), _listenForVrcExceptionsLabel);
                     }
 
                     EditorGUILayout.Space();
                     SerializedProperty watcherModeProperty = settingsObject.FindProperty(nameof(UdonSharpSettings.watcherMode));
-                    EditorGUILayout.PropertyField(watcherModeProperty, outputLogWatcherModeLabel);
+                    EditorGUILayout.PropertyField(watcherModeProperty, _outputLogWatcherModeLabel);
                     
                     if (watcherModeProperty.enumValueIndex == (int)UdonSharpSettings.LogWatcherMode.Prefix)
                     {
-                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.logWatcherMatchStrings)), prefixArrayLabel, true);
+                        EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.logWatcherMatchStrings)), _prefixArrayLabel, true);
                     }
 
                     EditorGUILayout.Space();
@@ -282,19 +314,17 @@ Disabling this setting will make the UNITY_EDITOR define not work as expected an
                     // Experimental settings
                     EditorGUILayout.LabelField("Experimental", EditorStyles.boldLabel);
 
-                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.shouldForceCompile)), forceCompileLabel);
+                    EditorGUILayout.PropertyField(settingsObject.FindProperty(nameof(UdonSharpSettings.shouldForceCompile)), _forceCompileLabel);
 
                     if (EditorGUI.EndChangeCheck())
                     {
                         settingsObject.ApplyModifiedProperties();
-                        EditorUtility.SetDirty(UdonSharpSettings.GetSettings());
+                        EditorUtility.SetDirty(settings);
                     }
                 },
             };
 
             return provider;
         }
-
-
     }
 }

@@ -1,52 +1,47 @@
 # UdonSharp
-## An experimental compiler for compiling C# to Udon assembly
+## A compiler for compiling C# to Udon assembly
 
-UdonSharp is a compiler that compiles C# to Udon assembly. UdonSharp is not currently conformant to any version of the C# language specification, so there are many things that are not implemented or will not work. If you want to learn C#, I don't recommend you use UdonSharp for learning as it is right now, since there may be language features tutorials assume exist that don't yet exist in U#. 
-
-This compiler is in an early state and I have no prior experience making compilers. There has been very little work done on optimizations. Despite that, programs compiled by this generally perform similarly to their graph-compiled counterparts. Though due to how Udon currently handles copying structs, UdonSharp scripts can generate more garbage than the graph counterparts at the moment. 
+UdonSharp is a compiler that compiles C# to Udon assembly. UdonSharp is not currently conformant to any version of the C# language specification, so there are many things that are not implemented or will not work.
 
 ## Features that Udon supports which are currently not supported by U#
 - UdonSharp is currently at feature parity with the Udon graph as far as I am aware. Please message me or make an issue if you find something that should be supported, but is not.
 
 ## C# features supported
-- Automatic property and field accessor handling for getting and setting
 - Flow control
   - Supports: `if` `else` `while` `for` `do` `foreach` `switch` `return` `break` `continue` `ternary operator (condition ? true : false)` `??`
-  - `goto` is not currently supported: https://xkcd.com/292/ I may add it in the future anyways
-- Extern method overload resolution with support for default arguments and `params` argument lists
 - Implicit and explicit type conversions
 - Arrays and array indexers
 - All builtin arithmetic operators
 - Conditional short circuiting `(true || CheckIfTrue())` will not execute CheckIfTrue()
 - `typeof()`
 - Extern methods with out or ref parameters (such as many variants of `Physics.Raycast()`)
-- User defined methods with parameters and return values. (This does not currently support method overloads, default parameter values, or `ref`/`params` parameters)
+- User defined methods with parameters and return values, supports out/ref, extension methods, and `params`
 - User defined properties
+- Static user methods
+- UdonSharpBehaviour inheritence, virtual methods, etc.
 - Unity/Udon event callbacks with arguments. For instance, registering a OnPlayerJoined event with a VRCPlayerApi argument is valid.
 - String interpolation
 - Field initializers
 - Jagged arrays
-- Referencing other custom classes, accessing fields, and calling methods on them
+- Referencing other custom UdonSharpBehaviour classes, accessing fields, and calling methods on them
 - Recursive method calls are supported via the `[RecursiveMethod]` attribute
 
 ## Differences from regular Unity C# to note
 - For the best experience making UdonSharp scripts, make your scripts inherit from `UdonSharpBehaviour` instead of `MonoBehaviour`
-- `Instantiate()` uses a method named `VRCInstantiate()` currently since VRC handles instantiate differently.
 - If you need to call `GetComponent<UdonBehaviour>()` you will need to use `(UdonBehaviour)GetComponent(typeof(UdonBehaviour))` at the moment since the generic get component is not exposed for UdonBehaviour yet. GetComponent<T>() works for other Unity component types though.
-- Udon currently only supports array `[]` collections and by extension UdonSharp only supports arrays at the moment. It looks like they might support `List<T>` at some point, but it is not there yet. 
+- Udon currently only supports array `[]` collections and by extension UdonSharp only supports arrays at the moment. It looks like they might support `List<T>` at some point, but it is not there yet.
 - Field initilizers are evaluated at compile time, if you have any init logic that depends on other objects in the scene you should use Start for this.
-- Use the `UdonSynced` attribute on fields that you want to sync.  
+- Use the `UdonSynced` attribute on fields that you want to sync.
 - Numeric casts are checked for overflow due to UdonVM limitations
 - The internal type of variables returned by `.GetType()` will not always match what you may expect since U# abstracts some types in order to make them work in Udon. For instance, any jagged array type will return a type of `object[]` instead of something like `int[][]` for a 2D int jagged array.
 
 ## Udon bugs that affect U#
 - Mutating methods on structs do not modify the struct (this can be seen on things like calling Normalize() on a Vector3) https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/raysetorigin-and-raysetdirection-not-working
-- Instantiated objects will lose their UdonBehaviours when instantiated from a prefab and cannot be interacted with/triggered https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/interactive-objects-break-after-being-clonedinstanciated-on-live-worlds
 
 ## Setup
 
 ### Requirements
-- Unity 2018.4.20f1
+- Unity 2019.4.31f1
 - [VRCSDK3 + UdonSDK](https://vrchat.com/home/download)
 - The latest [release](https://github.com/vrchat-community/UdonSharp/releases/latest) of UdonSharp
 
@@ -93,10 +88,10 @@ public class RotatingCubeBehaviour : UdonSharpBehaviour
 
 #### Other examples
 
-For more example scripts take a look at the wiki page for [examples](https://github.com/vrchat-community/UdonSharp/wiki/examples), the Examples folder included with U#, or the [community resources](https://github.com/vrchat-community/UdonSharp/wiki/community-resources) page on the wiki.
+For more example scripts take a look at the wiki page for [examples](https://github.com/Merlin-san/UdonSharp/wiki/examples), the Examples folder included with U#, or the [community resources](https://github.com/Merlin-san/UdonSharp/wiki/community-resources) page on the wiki.
 
 ## Credits
-  
+
 - See [CONTRIBUTORS.md](https://github.com/vrchat-community/UdonSharp/blob/master/CONTRIBUTORS.md) for people who have helped provide improvments to UdonSharp
 - The open source project [Harmony](https://github.com/pardeike/Harmony) helps Udonsharp provide a better editor experience
 

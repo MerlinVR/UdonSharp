@@ -1,11 +1,11 @@
 ﻿
+using UdonSharp;
 using UnityEditor;
-using UnityEngine;
 using VRC.SDKBase.Editor.BuildPipeline;
 
-namespace UdonSharp
+namespace UdonSharpEditor
 {
-    public class UdonSharpBuildChecks : IVRCSDKBuildRequestedCallback
+    internal class UdonSharpBuildChecks : IVRCSDKBuildRequestedCallback
     {
         public int callbackOrder => -1;
 
@@ -19,7 +19,7 @@ namespace UdonSharp
         public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
         {
             UdonSharpSettings settings = UdonSharpSettings.GetSettings();
-            bool shouldForceCompile = settings != null && settings.shouldForceCompile;
+            bool shouldForceCompile = settings.shouldForceCompile;
 
             // Unity doesn't like this and will throw errors if it ends up compiling scripts. But it seems to work. 
             // This is marked experimental for now since I don't know if it will break horribly in some case.
@@ -33,7 +33,7 @@ namespace UdonSharp
 
                 if (EditorApplication.isCompiling)
                 {
-                    Debug.LogError("[<color=#FF00FF>UdonSharp</color>] Scripts are in the process of compiling, please retry build after scripts have compiled.");
+                    UdonSharpUtils.LogWarning("Scripts are in the process of compiling, please retry build after scripts have compiled.");
                     UdonSharpUtils.ShowEditorNotification("Scripts are in the process of compiling, please retry build after scripts have compiled.");
                     return false;
                 }

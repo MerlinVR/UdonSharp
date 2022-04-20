@@ -5,7 +5,7 @@ namespace UdonSharp.Serialization
 {
     public abstract class Serializer
     {
-        protected TypeSerializationMetadata typeMetadata;
+        protected readonly TypeSerializationMetadata typeMetadata;
 
         protected Serializer(TypeSerializationMetadata typeMetadata)
         {
@@ -13,29 +13,33 @@ namespace UdonSharp.Serialization
         }
 
         // Serializers that will be checked against the type, this list is ordered specifically based on priority, do not arbitrarily reorder it
-        private static readonly List<Serializer> typeCheckSerializers = new List<Serializer>()
+        private static readonly List<Serializer> _typeCheckSerializers = new List<Serializer>()
         {
             new JaggedArraySerializer<object>(null), 
             new ArraySerializer<object>(null),
-            new UdonSharpBaseBehaviourSerializer(null),
-            new UdonSharpBehaviourSerializer<UdonSharpBehaviour>(null),
+            // new UdonSharpBaseBehaviourSerializer(null),
+            new UdonSharpBehaviourSerializer(null),
             new UnityObjectSerializer<UnityEngine.Object>(null),
+            new UserEnumSerializer<object>(null),
             //new SystemObjectSerializer(null),
             new DefaultSerializer<object>(null),
         };
 
-        private static Dictionary<TypeSerializationMetadata, Serializer> typeSerializerDictionary = new Dictionary<TypeSerializationMetadata, Serializer>();
+        private static Dictionary<TypeSerializationMetadata, Serializer> _typeSerializerDictionary = new Dictionary<TypeSerializationMetadata, Serializer>();
 
-        public static Serializer CreatePooled(TypeSerializationMetadata typeMetadata)
+        protected static Serializer CreatePooled(TypeSerializationMetadata typeMetadata)
         {
             if (typeMetadata == null)
                 throw new System.ArgumentException("Type metadata cannot be null for serializer creation");
 
             Serializer serializer;
-            if (!typeSerializerDictionary.TryGetValue(typeMetadata, out serializer))
+            lock (_pooledSerializerLock)
             {
-                serializer = Create(typeMetadata);
-                typeSerializerDictionary.Add(typeMetadata, serializer);
+                if (!_typeSerializerDictionary.TryGetValue(typeMetadata, out serializer))
+                {
+                    serializer = Create(typeMetadata);
+                    _typeSerializerDictionary.Add(typeMetadata, serializer);
+                }
             }
 
             return serializer;
@@ -43,32 +47,38 @@ namespace UdonSharp.Serialization
 
         public static Serializer<T> CreatePooled<T>()
         {
-            return (Serializer<T>)CreatePooled(typeof(T));
+            Serializer val = CreatePooled(typeof(T));
+
+            return (Serializer<T>)val;
         }
 
-        static TypeSerializationMetadata lookupPooledTypeData = new TypeSerializationMetadata();
+        private static readonly object _pooledSerializerLock = new object();
+        private static TypeSerializationMetadata _lookupPooledTypeData = new TypeSerializationMetadata();
 
         public static Serializer CreatePooled(System.Type type)
         {
-            lookupPooledTypeData.SetToType(type);
-
             Serializer serializer;
-            if (!typeSerializerDictionary.TryGetValue(lookupPooledTypeData, out serializer))
+            
+            lock (_pooledSerializerLock)
             {
-                TypeSerializationMetadata typeMetadata = new TypeSerializationMetadata(type);
-                serializer = Create(typeMetadata);
-                typeSerializerDictionary.Add(typeMetadata, serializer);
+                _lookupPooledTypeData.SetToType(type);
+                if (!_typeSerializerDictionary.TryGetValue(_lookupPooledTypeData, out serializer))
+                {
+                    TypeSerializationMetadata typeMetadata = new TypeSerializationMetadata(type);
+                    serializer = Create(typeMetadata);
+                    _typeSerializerDictionary.Add(typeMetadata, serializer);
+                }
             }
 
             return serializer;
         }
 
-        public static Serializer Create(TypeSerializationMetadata typeMetadata)
+        private static Serializer Create(TypeSerializationMetadata typeMetadata)
         {
             if (typeMetadata == null)
                 throw new System.ArgumentException("Type metadata cannot be null for serializer creation");
 
-            foreach (Serializer checkSerializer in typeCheckSerializers)
+            foreach (Serializer checkSerializer in _typeCheckSerializers)
             {
                 if (checkSerializer.HandlesTypeSerialization(typeMetadata))
                 {
@@ -86,7 +96,7 @@ namespace UdonSharp.Serialization
         /// </summary>
         /// <param name="typeMetadata"></param>
         /// <returns></returns>
-        public abstract bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata);
+        protected abstract bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata);
 
         /// <summary>
         /// Serializes the source C# object directly into the target Udon object and attempt to avoid creating new objects when possible.
@@ -125,7 +135,8 @@ namespace UdonSharp.Serialization
 
     public abstract class Serializer<T> : Serializer
     {
-        protected Serializer(TypeSerializationMetadata typeMetadata) : base(typeMetadata)
+        protected Serializer(TypeSerializationMetadata typeMetadata) 
+            :base(typeMetadata)
         {
         }
 

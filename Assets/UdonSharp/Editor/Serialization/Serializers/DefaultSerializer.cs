@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace UdonSharp.Serialization
 {
-    public class DefaultSerializer<T> : Serializer<T>
+    internal class DefaultSerializer<T> : Serializer<T>
     {
         public DefaultSerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)
@@ -15,7 +15,7 @@ namespace UdonSharp.Serialization
             return typeof(T);
         }
 
-        public override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
+        protected override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
         {
             VerifyTypeCheckSanity();
             return true;
@@ -38,6 +38,9 @@ namespace UdonSharp.Serialization
                 return;
             }
 
+            if (UsbSerializationContext.CollectDependencies)
+                return;
+
             targetObject = storage.Value;
         }
 
@@ -57,6 +60,9 @@ namespace UdonSharp.Serialization
                 return;
             }
 
+            if (UsbSerializationContext.CollectDependencies)
+                return;
+
             storage.Value = sourceObject;
         }
 
@@ -64,7 +70,7 @@ namespace UdonSharp.Serialization
         {
             VerifyTypeCheckSanity();
 
-            return (Serializer)System.Activator.CreateInstance(typeof(DefaultSerializer<>).MakeGenericType(typeMetadata.cSharpType), typeMetadata);
+            return (Serializer)Activator.CreateInstance(typeof(DefaultSerializer<>).MakeGenericType(typeMetadata.cSharpType), typeMetadata);
         }
     }
 }

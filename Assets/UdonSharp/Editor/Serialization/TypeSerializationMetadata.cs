@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections;
+﻿
+using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace UdonSharp.Serialization
 {
@@ -9,7 +8,7 @@ namespace UdonSharp.Serialization
     /// Version for type serialization.
     /// ONLY add versions where the comment below dictates, if you add them anywhere else, you will break serialization.
     /// </summary>
-    [System.Serializable]
+    [Serializable]
     public enum TypeSerializationVersion
     {
         Default,
@@ -17,11 +16,12 @@ namespace UdonSharp.Serialization
 
         // Add new versions before this line
         // DO NOT touch these and don't add anything after them
+        // ReSharper disable once InconsistentNaming
         __MostRecentVerIntnl,
         LatestVer = __MostRecentVerIntnl - 1,
     }
 
-    [System.Serializable]
+    [Serializable]
     public class FieldSerializationMetadata
     {
         /// <summary>
@@ -42,8 +42,7 @@ namespace UdonSharp.Serialization
 
         public override bool Equals(object obj)
         {
-            var metadata = obj as FieldSerializationMetadata;
-            return metadata != null &&
+            return obj is FieldSerializationMetadata metadata &&
                    fieldStorageIdx == metadata.fieldStorageIdx &&
                    fieldName == metadata.fieldName &&
                    EqualityComparer<TypeSerializationMetadata>.Default.Equals(fieldTypeMetadata, metadata.fieldTypeMetadata);
@@ -66,7 +65,7 @@ namespace UdonSharp.Serialization
     /// Assumes use of Odin serializer to serialize things that Unity can't serialize by default.
     /// There may be multiple metadatas defined for the same type, since objects may have been saved and serialized in different formats due to changes in the underlying script.
     /// </summary>
-    [System.Serializable]
+    [Serializable]
     public class TypeSerializationMetadata
     {
         /// <summary>
@@ -77,13 +76,13 @@ namespace UdonSharp.Serialization
         /// <summary>
         /// The underlying C# type which will often differ from the Udon storage type. This is what is used for the type's C# interface.
         /// </summary>
-        public System.Type cSharpType;
+        public Type cSharpType;
 
         /// <summary>
         /// The type that this type is stored as in Udon programs. For custom user-defined classes that aren't behaviours this will always be `object[]`
         /// For fields in behaviours this will usually be the most exact type that something can be stored as in Udon
         /// </summary>
-        public System.Type udonStorageType;
+        public Type udonStorageType;
 
         /// <summary>
         /// Used to describe the format of array element data. Will be null if this isn't an array
@@ -105,8 +104,7 @@ namespace UdonSharp.Serialization
 
         public override bool Equals(object obj)
         {
-            var metadata = obj as TypeSerializationMetadata;
-            return metadata != null &&
+            return obj is TypeSerializationMetadata metadata &&
                    version == metadata.version &&
                    EqualityComparer<Type>.Default.Equals(cSharpType, metadata.cSharpType) &&
                    EqualityComparer<Type>.Default.Equals(udonStorageType, metadata.udonStorageType) &&
@@ -129,12 +127,12 @@ namespace UdonSharp.Serialization
             return $"Serialization metadata - C# T:{cSharpType}, U# T: {udonStorageType}";
         }
 
-        public void SetToType(System.Type type)
+        public void SetToType(Type type)
         {
             cSharpType = type;
             if (cSharpType != null && cSharpType.IsArray)
             {
-                System.Type elementType = cSharpType;
+                Type elementType = cSharpType;
                 while (elementType.IsArray)
                     elementType = elementType.GetElementType();
 

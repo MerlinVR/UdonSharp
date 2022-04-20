@@ -1,42 +1,42 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using UnityEngine;
 
 namespace UdonSharp.Serialization
 {
-    public class ArraySerializer<T> : Serializer<T[]>
+    internal class ArraySerializer<T> : Serializer<T[]>
     {
         private Serializer<T> elementSerializer;
-        
-        Stack<IValueStorage> arrayStorages = new Stack<IValueStorage>();
+
+        private ConcurrentStack<IValueStorage> arrayStorages = new ConcurrentStack<IValueStorage>();
 
         public ArraySerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)
         {
-            if (typeMetadata != null)
+            if (typeMetadata == null) 
+                return;
+            
+            if (typeMetadata.arrayElementMetadata == null)
+                throw new ArgumentException("Array element metadata cannot be null on array type metadata");
+
+            elementSerializer = (Serializer<T>)CreatePooled(typeMetadata.arrayElementMetadata);
+
+            // If using the default serializer, we can just copy the array without iterating through each element.
+            if (elementSerializer is DefaultSerializer<T>) 
             {
-                if (typeMetadata.arrayElementMetadata == null)
-                    throw new ArgumentException("Array element metadata cannot be null on array type metadata");
-
-                elementSerializer = (Serializer<T>)CreatePooled(typeMetadata.arrayElementMetadata);
-
-                // If using the default serializer, we can just copy the array without iterating through each element.
-                if (elementSerializer is DefaultSerializer<T>) 
-                {
-                    elementSerializer = null;
-                }
+                elementSerializer = null;
             }
         }
 
         private IValueStorage GetNextStorage()
         {
-            if (arrayStorages.Count > 0)
-                return arrayStorages.Pop();
+            if (arrayStorages.TryPop(out var storage))
+                return storage;
             
             return ValueStorageUtil.CreateStorage(elementSerializer.GetUdonStorageType());
         }
 
-        public override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
+        protected override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
         {
             VerifyTypeCheckSanity();
             return typeMetadata.cSharpType.IsArray && !typeMetadata.cSharpType.GetElementType().IsArray;
@@ -46,7 +46,7 @@ namespace UdonSharp.Serialization
         {
             VerifyTypeCheckSanity();
 
-            return (Serializer)System.Activator.CreateInstance(typeof(ArraySerializer<>).MakeGenericType(typeMetadata.cSharpType.GetElementType()), typeMetadata);
+            return (Serializer)Activator.CreateInstance(typeof(ArraySerializer<>).MakeGenericType(typeMetadata.cSharpType.GetElementType()), typeMetadata);
         }
 
         public override void Write(IValueStorage targetObject, in T[] sourceObject)
@@ -68,11 +68,12 @@ namespace UdonSharp.Serialization
             Array targetArray = (Array)targetObject.Value;
 
             if (targetArray == null || targetArray.Length != sourceObject.Length)
-                targetObject.Value = targetArray = (Array)System.Activator.CreateInstance(GetUdonStorageType(), sourceObject.Length);
+                targetObject.Value = targetArray = (Array)Activator.CreateInstance(GetUdonStorageType(), sourceObject.Length);
 
             if (elementSerializer == null)
             {
-                Array.Copy(sourceObject, targetArray, targetArray.Length);
+                if (!UsbSerializationContext.CollectDependencies)
+                    Array.Copy(sourceObject, targetArray, targetArray.Length);
             }
             else
             {
@@ -82,7 +83,9 @@ namespace UdonSharp.Serialization
                 {
                     elementValueStorage.Value = targetArray.GetValue(i);
                     elementSerializer.Write(elementValueStorage, in sourceObject[i]);
-                    targetArray.SetValue(elementValueStorage.Value, i);
+                    
+                    if (!UsbSerializationContext.CollectDependencies)
+                        targetArray.SetValue(elementValueStorage.Value, i);
                 }
 
                 arrayStorages.Push(elementValueStorage);
@@ -110,12 +113,13 @@ namespace UdonSharp.Serialization
 
             if (targetObject == null || targetObject.Length != sourceArray.Length)
             {
-                targetObject = (T[])Activator.CreateInstance(typeMetadata.cSharpType, new object[] { sourceArray.Length });
+                targetObject = (T[])Activator.CreateInstance(typeMetadata.cSharpType, sourceArray.Length);
             }
 
             if (elementSerializer == null) // This type can just be serialized simply with a direct array copy. This prevents garbage from passing all the copies through an object.
             {
-                Array.Copy(sourceArray, targetObject, sourceArray.Length);
+                if (!UsbSerializationContext.CollectDependencies)
+                    Array.Copy(sourceArray, targetObject, sourceArray.Length);
             }
             else // The elements need special handling so use the element serializer
             {
@@ -126,7 +130,9 @@ namespace UdonSharp.Serialization
                     T elementObj = targetObject[i];
                     elementValueStorage.Value = sourceArray.GetValue(i);
                     elementSerializer.Read(ref elementObj, elementValueStorage);
-                    targetObject[i] = elementObj;
+                    
+                    if (!UsbSerializationContext.CollectDependencies)
+                        targetObject[i] = elementObj;
                 }
 
                 arrayStorages.Push(elementValueStorage);

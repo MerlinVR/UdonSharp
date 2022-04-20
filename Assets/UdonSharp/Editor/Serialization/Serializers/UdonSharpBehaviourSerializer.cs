@@ -1,23 +1,30 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
-using System.Reflection;
 using UdonSharpEditor;
 using UnityEngine;
 using VRC.Udon;
+using Object = UnityEngine.Object;
 
 namespace UdonSharp.Serialization
 {
     /// <summary>
     /// UdonSharpBehaviour Serialization Context, confusing abbreviation isn't it?
     /// </summary>
-    internal static class USBSerializationContext
+    internal static class UsbSerializationContext
     {
-        public static HashSet<UdonSharpBehaviour> serializedBehaviourSet = new HashSet<UdonSharpBehaviour>();
-        public static ProxySerializationPolicy currentPolicy = null;
-        public static int currentDepth = 0;
+        public static readonly HashSet<UdonSharpBehaviour> SerializedBehaviourSet = new HashSet<UdonSharpBehaviour>();
+        public static ProxySerializationPolicy CurrentPolicy;
+        public static int CurrentDepth;
+        public static HashSet<UnityEngine.Object> Dependencies = new HashSet<Object>();
+        public static readonly object UsbLock = new object();
+
+        public static bool CollectDependencies => CurrentPolicy?.CollectDependencies ?? false;
+
+        public static bool UseHeapSerialization => CollectDependencies || (CurrentPolicy?.IsPreBuildSerialize ?? false);
     }
 
-    public class UdonSharpBehaviourSerializer<T> : Serializer<T> where T : UdonSharpBehaviour 
+    internal class UdonSharpBehaviourSerializer : Serializer<UdonSharpBehaviour>
     {
         public UdonSharpBehaviourSerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)
@@ -29,121 +36,179 @@ namespace UdonSharp.Serialization
             return typeof(UdonBehaviour);
         }
 
-        public override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
+        protected override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
         {
             return typeMetadata.cSharpType == typeof(UdonSharpBehaviour) || typeMetadata.cSharpType.IsSubclassOf(typeof(UdonSharpBehaviour));
         }
 
-        public override void Read(ref T targetObject, IValueStorage sourceObject)
+        public override void Read(ref UdonSharpBehaviour targetObject, IValueStorage sourceObject)
         {
             UdonBehaviour sourceBehaviour = (UdonBehaviour)sourceObject.Value;
 
             if (sourceBehaviour == null)
             {
-                targetObject = null;
+                if (!UsbSerializationContext.CollectDependencies)
+                    targetObject = null;
+                
                 return;
             }
-
-            if (USBSerializationContext.currentPolicy == null)
-                throw new NullReferenceException("Serialization policy cannot be null");
-
-            targetObject = (T)UdonSharpEditorUtility.GetProxyBehaviour(sourceBehaviour, ProxySerializationPolicy.NoSerialization);
-
-            if (USBSerializationContext.currentDepth >= USBSerializationContext.currentPolicy.MaxSerializationDepth)
-                return;
-
-            if (USBSerializationContext.serializedBehaviourSet.Contains(targetObject))
-                return;
-
-            USBSerializationContext.serializedBehaviourSet.Add(targetObject);
-            USBSerializationContext.currentDepth++;
-
-            try
+            
+            lock (UsbSerializationContext.UsbLock)
             {
-                UdonSharpBehaviourFormatterEmitter.GetFormatter<T>().Read(ref targetObject, sourceObject);
-            }
-            finally
-            {
-                USBSerializationContext.currentDepth--;
+                if (UsbSerializationContext.CurrentPolicy == null)
+                    throw new NullReferenceException("Serialization policy cannot be null");
 
-                if (USBSerializationContext.currentDepth <= 0)
+                if (UsbSerializationContext.CollectDependencies)
+                    UsbSerializationContext.Dependencies.Add(sourceBehaviour);
+                
+                targetObject = UdonSharpEditorUtility.GetProxyBehaviour(sourceBehaviour);
+
+                if (UsbSerializationContext.CurrentDepth >= UsbSerializationContext.CurrentPolicy.MaxSerializationDepth)
+                    return;
+
+                if (UsbSerializationContext.SerializedBehaviourSet.Contains(targetObject))
+                    return;
+
+                UsbSerializationContext.SerializedBehaviourSet.Add(targetObject);
+                UsbSerializationContext.CurrentDepth++;
+
+                try
                 {
-                    Debug.Assert(USBSerializationContext.currentDepth == 0, "Serialization depth cannot be negative");
+                    Type behaviourType = UdonSharpProgramAsset.GetBehaviourClass(sourceBehaviour);
+                    IFormatter formatter = UdonSharpBehaviourFormatterEmitter.GetFormatter(behaviourType);
 
-                    USBSerializationContext.serializedBehaviourSet.Clear();
+                    object targetSysObj = targetObject;
+                    formatter.Read(ref targetSysObj, sourceObject);
+                    
+                    if (!UsbSerializationContext.CollectDependencies)
+                        targetObject = (UdonSharpBehaviour)targetSysObj;
+                }
+                finally
+                {
+                    UsbSerializationContext.CurrentDepth--;
+
+                    if (UsbSerializationContext.CurrentDepth <= 0)
+                    {
+                        Debug.Assert(UsbSerializationContext.CurrentDepth == 0,
+                            "Serialization depth cannot be negative");
+
+                        UsbSerializationContext.SerializedBehaviourSet.Clear();
+                    }
                 }
             }
         }
 
-        public override void Write(IValueStorage targetObject, in T sourceObject)
+        public override void Write(IValueStorage targetObject, in UdonSharpBehaviour sourceObject)
         {
             if (sourceObject == null)
             {
-                targetObject.Value = null;
+                if (!UsbSerializationContext.CollectDependencies)
+                    targetObject.Value = null;
+                
                 return;
             }
-
-            if (USBSerializationContext.currentPolicy == null)
-                throw new NullReferenceException("Serialization policy cannot be null");
-
-            UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(sourceObject);
-
-            if (USBSerializationContext.currentDepth >= USBSerializationContext.currentPolicy.MaxSerializationDepth)
+            
+            lock (UsbSerializationContext.UsbLock)
             {
-                if (backingBehaviour)
-                    targetObject.Value = backingBehaviour;
-                else
-                    targetObject.Value = null;
-
-                return;
-            }
-
-            USBSerializationContext.currentDepth++;
-
-            try
-            {
-                if (backingBehaviour)
+                if (UsbSerializationContext.CurrentPolicy == null)
+                    throw new NullReferenceException("Serialization policy cannot be null");
+                
+                if (UsbSerializationContext.CollectDependencies)
+                    UsbSerializationContext.Dependencies.Add(sourceObject);
+            
+                UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(sourceObject);
+            
+                if (UsbSerializationContext.CurrentDepth >= UsbSerializationContext.CurrentPolicy.MaxSerializationDepth)
                 {
-                    targetObject.Value = backingBehaviour;
-                }
-                else if (USBSerializationContext.currentPolicy.ChildProxyMode == ProxySerializationPolicy.ChildProxyCreateMode.Create)
-                {
-                    UdonBehaviour newBehaviour = UdonSharpEditorUtility.ConvertToUdonBehaviours(new UdonSharpBehaviour[] { sourceObject })[0];
-                    targetObject.Value = newBehaviour;
-                }
-                else if (USBSerializationContext.currentPolicy.ChildProxyMode == ProxySerializationPolicy.ChildProxyCreateMode.CreateWithUndo)
-                {
-                    UdonBehaviour newBehaviour = UdonSharpEditorUtility.ConvertToUdonBehavioursWithUndo(new UdonSharpBehaviour[] { sourceObject })[0];
-                    targetObject.Value = newBehaviour;
-                }
-                else
-                {
-                    targetObject.Value = null;
-                }
-
-                if (USBSerializationContext.serializedBehaviourSet.Contains(sourceObject))
+                    if (!UsbSerializationContext.CollectDependencies)
+                        targetObject.Value = backingBehaviour ? backingBehaviour : null;
+                    
                     return;
-
-                USBSerializationContext.serializedBehaviourSet.Add(sourceObject);
-
-                UdonSharpBehaviourFormatterEmitter.GetFormatter<T>().Write(targetObject, sourceObject);
-            }
-            finally
-            {
-                USBSerializationContext.currentDepth--;
-
-                if (USBSerializationContext.currentDepth <= 0)
+                }
+            
+                UsbSerializationContext.CurrentDepth++;
+                
+                try
                 {
-                    Debug.Assert(USBSerializationContext.currentDepth == 0, "Serialization depth cannot be negative");
+                    if (!UsbSerializationContext.CollectDependencies)
+                    {
+                        if (backingBehaviour)
+                        {
+                            targetObject.Value = backingBehaviour;
+                        }
+                        else
+                        {
+                            targetObject.Value = null;
+                        }
+                    }
 
-                    USBSerializationContext.serializedBehaviourSet.Clear();
+                    if (UsbSerializationContext.SerializedBehaviourSet.Contains(sourceObject))
+                        return;
+            
+                    UsbSerializationContext.SerializedBehaviourSet.Add(sourceObject);
+
+                    IFormatter formatter = UdonSharpBehaviourFormatterEmitter.GetFormatter(sourceObject.GetType());
+            
+                    formatter.Write(targetObject, sourceObject);
+                }
+                finally
+                {
+                    UsbSerializationContext.CurrentDepth--;
+            
+                    if (UsbSerializationContext.CurrentDepth <= 0)
+                    {
+                        Debug.Assert(UsbSerializationContext.CurrentDepth == 0,
+                            "Serialization depth cannot be negative");
+            
+                        UsbSerializationContext.SerializedBehaviourSet.Clear();
+                    }
                 }
             }
         }
 
         protected override Serializer MakeSerializer(TypeSerializationMetadata typeMetadata)
         {
-            return (Serializer)System.Activator.CreateInstance(typeof(UdonSharpBehaviourSerializer<>).MakeGenericType(typeMetadata.cSharpType), typeMetadata);
+            Serializer innerSerializer = (Serializer)Activator.CreateInstance(typeof(UdonSharpBehaviourSerializer), typeMetadata);
+
+            return (Serializer)Activator.CreateInstance(typeof(UdonSharpBehaviourTypedWrapper<>).MakeGenericType(typeMetadata.cSharpType), typeMetadata, innerSerializer);
+        }
+
+        private class UdonSharpBehaviourTypedWrapper<T> : Serializer<T> where T : UdonSharpBehaviour
+        {
+            private readonly UdonSharpBehaviourSerializer _innerSerializer;
+            
+            public UdonSharpBehaviourTypedWrapper(TypeSerializationMetadata typeMetadata, UdonSharpBehaviourSerializer innerSerializer) 
+                :base(typeMetadata)
+            {
+                _innerSerializer = innerSerializer;
+            }
+
+            protected override Serializer MakeSerializer(TypeSerializationMetadata typeMetadata)
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override Type GetUdonStorageType()
+            {
+                return _innerSerializer.GetUdonStorageType();
+            }
+
+            public override void Write(IValueStorage targetObject, in T sourceObject)
+            {
+                _innerSerializer.Serialize(targetObject, sourceObject);
+            }
+
+            public override void Read(ref T targetObject, IValueStorage sourceObject)
+            {
+                UdonSharpBehaviour refObj = targetObject;
+                _innerSerializer.Read(ref refObj, sourceObject);
+                targetObject = (T)refObj;
+            }
         }
     }
 }

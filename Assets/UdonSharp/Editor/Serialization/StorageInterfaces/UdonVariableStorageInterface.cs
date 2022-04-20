@@ -6,15 +6,16 @@ using UnityEngine;
 using VRC.Udon;
 using VRC.Udon.Common;
 using VRC.Udon.Common.Interfaces;
+using Object = UnityEngine.Object;
 
 namespace UdonSharp.Serialization
 {
     public class UdonVariableStorageInterface : IHeapStorage
     {
-        class VariableValueStorage<T> : ValueStorage<T>
+        private class VariableValueStorage<T> : ValueStorage<T>
         {
-            public string elementKey;
-            public UdonBehaviour behaviour;
+            private string elementKey;
+            private UdonBehaviour behaviour;
 
             public VariableValueStorage(string elementKey, UdonBehaviour behaviour)
             {
@@ -24,39 +25,36 @@ namespace UdonSharp.Serialization
 
             public override T Value
             {
-                get
-                {
-                    return GetVariable<T>(behaviour, elementKey); 
-                }
-                set
-                {
-                    SetVariable<T>(behaviour, elementKey, value);
-                }
+                get => GetVariable<T>(behaviour, elementKey);
+                set => SetVariable<T>(behaviour, elementKey, value);
             }
         }
 
         private static void SetVarInternal<T>(UdonBehaviour behaviour, string variableKey, T value)
         {
-            if (!behaviour.publicVariables.TrySetVariableValue<T>(variableKey, value))
+            variableKey = UdonSharpUtils.UnmanglePropertyFieldName(variableKey);
+            
+            if (behaviour.publicVariables.TrySetVariableValue<T>(variableKey, value)) 
+                return;
+            
+            UdonVariable<T> varVal = new UdonVariable<T>(variableKey, value);
+            if (!behaviour.publicVariables.TryAddVariable(varVal))
             {
-                UdonVariable<T> varVal = new UdonVariable<T>(variableKey, value);
-                if (!behaviour.publicVariables.TryAddVariable(varVal))
-                {
-                    if (!behaviour.publicVariables.RemoveVariable(variableKey) || !behaviour.publicVariables.TryAddVariable(varVal)) // Fallback in case the value already exists for some reason
-                        Debug.LogError($"Could not write variable '{variableKey}' to public variables on UdonBehaviour");
-                    else
-                        Debug.LogWarning($"Storage for variable '{variableKey}' of type '{typeof(T)}' did not match, updated storage type");
-                }
+                if (!behaviour.publicVariables.RemoveVariable(variableKey) || !behaviour.publicVariables.TryAddVariable(varVal)) // Fallback in case the value already exists for some reason
+                    Debug.LogError($"Could not write variable '{variableKey}' to public variables on UdonBehaviour");
+                else
+                    Debug.LogWarning($"Storage for variable '{variableKey}' of type '{typeof(T)}' did not match, updated storage type");
             }
         }
 
         private static void SetVariable<T>(UdonBehaviour behaviour, string variableKey, T value)
         {
-            System.Type type = typeof(T);
+            if (UsbSerializationContext.CollectDependencies)
+                return;
+            
+            Type type = typeof(T);
 
-            bool isNull = false;
-            if ((value is UnityEngine.Object unityEngineObject && unityEngineObject == null) || value == null)
-                isNull = true;
+            bool isNull = (value is Object unityEngineObject && unityEngineObject == null) || value == null;
 
             if (isNull)
             {
@@ -77,24 +75,24 @@ namespace UdonSharp.Serialization
 
         private static T GetVariable<T>(UdonBehaviour behaviour, string variableKey)
         {
-            T output;
-            if (behaviour.publicVariables.TryGetVariableValue<T>(variableKey, out output))
+            if (behaviour.publicVariables.TryGetVariableValue<T>(variableKey, out T output))
                 return output;
 
             // The type no longer matches exactly, but is trivially convertible
             // This will usually flow into a reassignment of the public variable type in SetVarInternal() when the value gets copied back to Udon
-            if (behaviour.publicVariables.TryGetVariableValue(variableKey, out object outputObj) && !outputObj.IsUnityObjectNull() && outputObj is T)
-                return (T)outputObj;
+            if (behaviour.publicVariables.TryGetVariableValue(variableKey, out object outputObj) && !outputObj.IsUnityObjectNull() && outputObj is T obj)
+                return obj;
 
             // Try to get the default value if there's no custom value specified
-            if (behaviour.programSource != null && behaviour.programSource is UdonSharpProgramAsset udonSharpProgramAsset)
+            // We don't care about default values when we're doing dependency checks because the default heap currently does not contain any UnityEngine.Object references.
+            // This may change in the future though, so we may want to look at caching only the 'serialized' heap values if that ever becomes the case.
+            if (behaviour.programSource != null && behaviour.programSource is UdonSharpProgramAsset udonSharpProgramAsset && !UsbSerializationContext.CollectDependencies && !UsbSerializationContext.UseHeapSerialization)
             {
                 udonSharpProgramAsset.UpdateProgram();
 
                 IUdonProgram program = udonSharpProgramAsset.GetRealProgram();
 
-                uint varAddress;
-                if (program.SymbolTable.TryGetAddressFromSymbol(variableKey, out varAddress))
+                if (program.SymbolTable.TryGetAddressFromSymbol(variableKey, out uint varAddress))
                 {
                     if (program.Heap.TryGetHeapVariable<T>(varAddress, out output))
                         return output;
@@ -104,26 +102,24 @@ namespace UdonSharp.Serialization
             return default;
         }
 
-        UdonBehaviour udonBehaviour;
-        static Dictionary<UdonSharpProgramAsset, Dictionary<string, System.Type>> variableTypeLookup = new Dictionary<UdonSharpProgramAsset, Dictionary<string, Type>>();
-        private System.Type GetElementType(string elementKey)
+        private UdonBehaviour udonBehaviour;
+        private static Dictionary<UdonSharpProgramAsset, Dictionary<string, Type>> _variableTypeLookup = new Dictionary<UdonSharpProgramAsset, Dictionary<string, Type>>();
+        private Type GetElementType(string elementKey)
         {
             UdonSharpProgramAsset programAsset = (UdonSharpProgramAsset)udonBehaviour.programSource;
 
-            Dictionary<string, System.Type> programTypeLookup;
-            if (!variableTypeLookup.TryGetValue(programAsset, out programTypeLookup))
+            if (!_variableTypeLookup.TryGetValue(programAsset, out var programTypeLookup))
             {
                 programTypeLookup = new Dictionary<string, Type>();
                 foreach (FieldDefinition def in programAsset.fieldDefinitions.Values)
                 {
-                    if (def.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public) || def.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Private))
-                        programTypeLookup.Add(def.fieldSymbol.symbolOriginalName, def.fieldSymbol.symbolCsType);
+                    // if (def.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Public) || def.fieldSymbol.declarationType.HasFlag(SymbolDeclTypeFlags.Private))
+                        programTypeLookup.Add(def.Name, def.SystemType);
                 }
-                variableTypeLookup.Add(programAsset, programTypeLookup);
+                _variableTypeLookup.Add(programAsset, programTypeLookup);
             }
 
-            System.Type fieldType;
-            if (!programTypeLookup.TryGetValue(elementKey, out fieldType))
+            if (!programTypeLookup.TryGetValue(elementKey, out var fieldType))
                 return null;
 
             return fieldType;
@@ -136,24 +132,22 @@ namespace UdonSharp.Serialization
 
         public IValueStorage GetElementStorage(string elementKey)
         {
-            System.Type elementType = GetElementType(elementKey);
+            Type elementType = GetElementType(elementKey);
             if (elementType == null)
                 return null;
 
-            return (IValueStorage)System.Activator.CreateInstance(typeof(VariableValueStorage<>).MakeGenericType(elementType), elementKey, udonBehaviour);
+            return (IValueStorage)Activator.CreateInstance(typeof(VariableValueStorage<>).MakeGenericType(elementType), elementKey, udonBehaviour);
         }
 
         public object GetElementValueWeak(string elementKey)
         {
-            object valueOut;
-            udonBehaviour.publicVariables.TryGetVariableValue(elementKey, out valueOut);
+            udonBehaviour.publicVariables.TryGetVariableValue(elementKey, out object valueOut);
             return valueOut;
         }
 
         public T GetElementValue<T>(string elementKey)
         {
-            T variableVal;
-            if (udonBehaviour.publicVariables.TryGetVariableValue<T>(elementKey, out variableVal))
+            if (udonBehaviour.publicVariables.TryGetVariableValue<T>(elementKey, out T variableVal))
                 return variableVal;
 
             return default;

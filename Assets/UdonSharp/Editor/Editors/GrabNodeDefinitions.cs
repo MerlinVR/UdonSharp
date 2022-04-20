@@ -1,6 +1,5 @@
 ﻿#if UNITY_EDITOR && UDONSHARP_DEBUG
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -9,7 +8,7 @@ using VRC.Udon.Editor;
 
 public class GrabNodeDefinitions : EditorWindow
 {
-    [MenuItem("Window/Udon Sharp/Node Definition Grabber")]
+    [MenuItem("VRChat SDK/Udon Sharp/Node Definition Grabber")]
     static void Init()
     {
         GrabNodeDefinitions window = GetWindow<GrabNodeDefinitions>(false, "Node Definition Grabber");

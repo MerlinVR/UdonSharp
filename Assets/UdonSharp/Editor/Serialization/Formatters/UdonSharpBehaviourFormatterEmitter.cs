@@ -1,10 +1,11 @@
 ﻿
-
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using UdonSharp.Compiler.Symbols;
 using UdonSharpEditor;
 using UnityEditor;
 using UnityEngine;
@@ -13,45 +14,40 @@ using VRC.Udon.Serialization.OdinSerializer.Utilities;
 
 namespace UdonSharp.Serialization
 {
-    internal class UdonSharpBehaviourFormatterEmitter
+    internal static class UdonSharpBehaviourFormatterEmitter
     {
-        const string RUNTIME_ASSEMBLY_NAME = "UdonSharp.Serialization.RuntimeEmittedFormatters";
+        private const string RUNTIME_ASSEMBLY_NAME = "UdonSharp.Serialization.RuntimeEmittedFormatters";
 
-        public delegate void ReadDataMethodDelegate<T>(IValueStorage[] sourceObject, ref T targetObject, bool includeNonSerialized);
+        private delegate void ReadDataMethodDelegate<T>(IValueStorage[] sourceObject, ref T targetObject, bool includeNonSerialized);
 
-        public delegate void WriteDataMethodDelegate<T>(IValueStorage[] targetObject, ref T sourceObject, bool includeNonSerialized);
+        private delegate void WriteDataMethodDelegate<T>(IValueStorage[] targetObject, ref T sourceObject, bool includeNonSerialized);
 
         // Force a ref equality lookup in case VRC implements an Equals or GetHashCode overrides in the future that don't act like we need them to
-        class RefEqualityComparer<RefT> : EqualityComparer<RefT> where RefT : class
+        private class RefEqualityComparer<TRef> : EqualityComparer<TRef> where TRef : class
         {
-            public override bool Equals(RefT x, RefT y) { return ReferenceEquals(x, y); }
-            public override int GetHashCode(RefT obj) { return RuntimeHelpers.GetHashCode(obj); }
+            public override bool Equals(TRef x, TRef y) { return ReferenceEquals(x, y); }
+            public override int GetHashCode(TRef obj) { return RuntimeHelpers.GetHashCode(obj); }
         }
-        
-        static IHeapStorage CreateHeapStorage(UdonBehaviour behaviour)
+
+        private static IHeapStorage CreateHeapStorage(UdonBehaviour behaviour)
         {
-            if (EditorApplication.isPlaying)
+            if (EditorApplication.isPlaying && !UsbSerializationContext.UseHeapSerialization)
             {
                 UdonHeapStorageInterface heapStorageInterface = new UdonHeapStorageInterface(behaviour);
 
-                if (heapStorageInterface.IsValid)
-                    return heapStorageInterface;
-                else
-                    return null;
+                return heapStorageInterface.IsValid ? heapStorageInterface : null;
             }
-            else
-            {
-                return new UdonVariableStorageInterface(behaviour);
-            }
+
+            return new UdonVariableStorageInterface(behaviour);
         }
 
-        class UdonBehaviourHeapData
+        private class UdonBehaviourHeapData
         {
             public IHeapStorage heapStorage;
             public IValueStorage[] heapFieldValues; // Direct references to each field in order on the heap storage.
         }
 
-        class EmittedFormatter<T> : Formatter<T> where T : UdonSharpBehaviour 
+        private class EmittedFormatter<T> : Formatter<T> where T : UdonSharpBehaviour 
         {
             // Initialize field layout for T
             public static void Init(FieldInfo[] publicFields, FieldInfo[] privateFields)
@@ -70,21 +66,20 @@ namespace UdonSharp.Serialization
                 UdonSharpBehaviourFormatterManager.fieldLayout = fieldLayout;
             }
 
-            class UdonSharpBehaviourFormatterManager
+            private class UdonSharpBehaviourFormatterManager
             {
-                static Dictionary<UdonBehaviour, UdonBehaviourHeapData> heapDataLookup = new Dictionary<UdonBehaviour, UdonBehaviourHeapData>(new RefEqualityComparer<UdonBehaviour>());
+                // ReSharper disable once StaticMemberInGenericType
+                private static Dictionary<UdonBehaviour, UdonBehaviourHeapData> _heapDataLookup = new Dictionary<UdonBehaviour, UdonBehaviourHeapData>(new RefEqualityComparer<UdonBehaviour>());
+                // ReSharper disable once StaticMemberInGenericType
                 public static string[] fieldLayout;
 
                 public static UdonBehaviourHeapData GetHeapData(UdonBehaviour udonBehaviour)
                 {
-                    UdonBehaviourHeapData heapData;
-                    if (heapDataLookup.TryGetValue(udonBehaviour, out heapData))
-                    {
+                    if (!UsbSerializationContext.UseHeapSerialization && _heapDataLookup.TryGetValue(udonBehaviour, out var heapData))
                         return heapData;
-                    }
 
                     if (fieldLayout == null)
-                        throw new System.NullReferenceException($"Formatter manager {typeof(UdonSharpBehaviourFormatterManager).FullName} has not been initialized.");
+                        throw new NullReferenceException($"Formatter manager {typeof(UdonSharpBehaviourFormatterManager).FullName} has not been initialized.");
 
                     IHeapStorage heapStorage = CreateHeapStorage(udonBehaviour);
                     if (heapStorage == null)
@@ -93,20 +88,19 @@ namespace UdonSharp.Serialization
                     IValueStorage[] heapFieldValues = new IValueStorage[fieldLayout.Length];
 
                     for (int i = 0; i < heapFieldValues.Length; ++i)
-                    {
                         heapFieldValues[i] = heapStorage.GetElementStorage(fieldLayout[i]);
-                    }
 
                     heapData = new UdonBehaviourHeapData() { heapStorage = heapStorage, heapFieldValues = heapFieldValues };
 
-                    heapDataLookup.Add(udonBehaviour, heapData);
+                    if (!UsbSerializationContext.UseHeapSerialization)
+                        _heapDataLookup.Add(udonBehaviour, heapData);
 
                     return heapData;
                 }
             }
 
-            ReadDataMethodDelegate<T> readDelegate;
-            WriteDataMethodDelegate<T> writeDelegate;
+            private ReadDataMethodDelegate<T> readDelegate;
+            private WriteDataMethodDelegate<T> writeDelegate;
 
             public EmittedFormatter(ReadDataMethodDelegate<T> readDelegate, WriteDataMethodDelegate<T> writeDelegate)
             {
@@ -119,30 +113,55 @@ namespace UdonSharp.Serialization
                 UdonBehaviourHeapData heapStorage = UdonSharpBehaviourFormatterManager.GetHeapData((UdonBehaviour)sourceObject.Value);
 
                 if (heapStorage != null)
-                    readDelegate(heapStorage.heapFieldValues, ref targetObject, EditorApplication.isPlaying);
+                    readDelegate(heapStorage.heapFieldValues, ref targetObject, EditorApplication.isPlaying && !UsbSerializationContext.CurrentPolicy.IsPreBuildSerialize);
             }
 
             public override void Write(IValueStorage targetObject, T sourceObject)
             {
-                UdonBehaviourHeapData heapStorage = UdonSharpBehaviourFormatterManager.GetHeapData(UdonSharpEditorUtility.GetBackingUdonBehaviour(sourceObject));
+                UdonBehaviour backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(sourceObject);
+                UdonBehaviourHeapData heapStorage = UdonSharpBehaviourFormatterManager.GetHeapData(backingBehaviour);
 
-                if (heapStorage != null)
-                    writeDelegate(heapStorage.heapFieldValues, ref sourceObject, EditorApplication.isPlaying);
+                if (heapStorage == null) 
+                    return;
+                
+                writeDelegate(heapStorage.heapFieldValues, ref sourceObject, EditorApplication.isPlaying && !UsbSerializationContext.CurrentPolicy.IsPreBuildSerialize);
+                    
+                if (!UsbSerializationContext.CollectDependencies && !EditorApplication.isPlaying)
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(backingBehaviour);
             }
         }
 
-        static Dictionary<System.Type, IFormatter> formatters = new Dictionary<System.Type, IFormatter>();
+        private static Dictionary<Type, IFormatter> _formatters = new Dictionary<Type, IFormatter>();
 
-        static readonly object emitLock = new object();
-        static System.Reflection.Emit.AssemblyBuilder runtimeEmittedAssembly;
-        static ModuleBuilder runtimeEmittedModule;
+        private static readonly object _emitLock = new object();
+        private static AssemblyBuilder _runtimeEmittedAssembly;
+        private static ModuleBuilder _runtimeEmittedModule;
+
+        private static readonly MethodInfo _getMethodInfoGeneric = typeof(UdonSharpBehaviourFormatterEmitter)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .First(e => e.Name == nameof(GetFormatter) && e.IsGenericMethod);
+
+        private static Dictionary<Type, MethodInfo> _generatedMethods = new Dictionary<Type, MethodInfo>();
+
+        public static IFormatter GetFormatter(Type type)
+        {
+            lock (_emitLock)
+            {
+                if (!_generatedMethods.TryGetValue(type, out var formatterGet))
+                {
+                    formatterGet = _getMethodInfoGeneric.MakeGenericMethod(type);
+                    _generatedMethods.Add(type, formatterGet);
+                }
+
+                return (IFormatter)formatterGet.Invoke(null, Array.Empty<object>());
+            }
+        }
 
         public static Formatter<T> GetFormatter<T>() where T : UdonSharpBehaviour
         {
-            lock (emitLock)
+            lock (_emitLock)
             {
-                IFormatter formatter;
-                if (formatters.TryGetValue(typeof(T), out formatter))
+                if (_formatters.TryGetValue(typeof(T), out IFormatter formatter))
                 {
                     return (Formatter<T>)formatter;
                 }
@@ -150,15 +169,31 @@ namespace UdonSharp.Serialization
                 List<FieldInfo> serializedFieldList = new List<FieldInfo>();
                 List<FieldInfo> nonSerializedFieldList = new List<FieldInfo>();
 
-                FieldInfo[] allFields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                Stack<Type> baseTypes = new Stack<Type>();
+
+                Type currentType = typeof(T);
+
+                while (currentType != null && 
+                       currentType != typeof(UdonSharpBehaviour))
+                {
+                    baseTypes.Push(currentType);
+                    currentType = currentType.BaseType;
+                }
+
+                List<FieldInfo> allFields = new List<FieldInfo>();
+
+                while (baseTypes.Count > 0)
+                {
+                    currentType = baseTypes.Pop();
+                    allFields.AddRange(currentType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
+                }
 
                 foreach (FieldInfo field in allFields)
                 {
-                    if (field.IsDefined(typeof(CompilerGeneratedAttribute), false))
-                        continue;
+                    // if (field.IsDefined(typeof(CompilerGeneratedAttribute), false))
+                    //     continue;
 
-                    if ((field.IsPublic && field.GetAttribute<System.NonSerializedAttribute>() == null) ||
-                        (!field.IsPublic && field.GetAttribute<SerializeField>() != null))
+                    if (FieldSymbol.IsFieldSerialized(field))
                     {
                         serializedFieldList.Add(field);
                     }
@@ -175,77 +210,78 @@ namespace UdonSharp.Serialization
 
                 InitializeRuntimeAssemblyBuilder();
 
-                Dictionary<System.Type, FieldBuilder> serializerFields;
+                BuildHelperType(typeof(T), publicFields, privateFields, out var serializerFields);
 
-                BuildHelperType(typeof(T), publicFields, privateFields, out serializerFields);
-
-                System.Type formatterType = typeof(EmittedFormatter<>).MakeGenericType(typeof(T));
-                System.Delegate readDel, writeDel;
+                Type formatterType = typeof(EmittedFormatter<>).MakeGenericType(typeof(T));
+                Delegate readDel, writeDel;
 
                 // Read
                 {
-                    System.Type readDelegateType = typeof(ReadDataMethodDelegate<>).MakeGenericType(typeof(T));
-                    MethodInfo readDataMethod = formatterType.GetMethods(Flags.InstancePublic).Where(e => e.Name == "Read" && e.GetParameters().Length == 2).First();
+                    Type readDelegateType = typeof(ReadDataMethodDelegate<>).MakeGenericType(typeof(T));
+                    MethodInfo readDataMethod = formatterType.GetMethods(Flags.InstancePublic).First(e => e.Name == "Read" && e.GetParameters().Length == 2);
                     DynamicMethod readMethod = new DynamicMethod($"Dynamic_{typeof(T).GetCompilableNiceFullName()}_Read", null, new[] { typeof(IValueStorage[]), typeof(T).MakeByRefType(), typeof(bool) }, true);
 
                     foreach (ParameterInfo param in readDataMethod.GetParameters())
                         readMethod.DefineParameter(param.Position, param.Attributes, param.Name);
 
-                    EmitReadMethod(readMethod.GetILGenerator(), typeof(T), publicFields, privateFields, serializerFields);
+                    EmitReadMethod(readMethod.GetILGenerator(), publicFields, privateFields, serializerFields);
 
                     readDel = readMethod.CreateDelegate(readDelegateType);
                 }
 
                 // Write
                 {
-                    System.Type writeDelegateType = typeof(WriteDataMethodDelegate<>).MakeGenericType(typeof(T));
-                    MethodInfo writeDataMethod = formatterType.GetMethods(Flags.InstancePublic).Where(e => e.Name == "Write" && e.GetParameters().Length == 2).First();
+                    Type writeDelegateType = typeof(WriteDataMethodDelegate<>).MakeGenericType(typeof(T));
+                    MethodInfo writeDataMethod = formatterType.GetMethods(Flags.InstancePublic).First(e => e.Name == "Write" && e.GetParameters().Length == 2);
                     DynamicMethod writeMethod = new DynamicMethod($"Dynamic_{typeof(T).GetCompilableNiceFullName()}_Write", null, new[] { typeof(IValueStorage[]), typeof(T).MakeByRefType(), typeof(bool) }, true);
 
                     foreach (ParameterInfo param in writeDataMethod.GetParameters())
                         writeMethod.DefineParameter(param.Position, param.Attributes, param.Name);
 
-                    EmitWriteMethod(writeMethod.GetILGenerator(), typeof(T), publicFields, privateFields, serializerFields);
+                    EmitWriteMethod(writeMethod.GetILGenerator(), publicFields, privateFields, serializerFields);
 
                     writeDel = writeMethod.CreateDelegate(writeDelegateType);
                 }
 
-                formatter = (Formatter<T>)System.Activator.CreateInstance(typeof(EmittedFormatter<T>), readDel, writeDel);
+                formatter = (Formatter<T>)Activator.CreateInstance(typeof(EmittedFormatter<T>), readDel, writeDel);
 
-                formatters.Add(typeof(T), formatter);
+                _formatters.Add(typeof(T), formatter);
                 return (Formatter<T>)formatter;
             }
         }
 
-        static void InitializeRuntimeAssemblyBuilder()
+        private static void InitializeRuntimeAssemblyBuilder()
         {
-            if (runtimeEmittedAssembly == null)
+            if (_runtimeEmittedAssembly == null)
             {
-                AssemblyName assemblyName = new AssemblyName(RUNTIME_ASSEMBLY_NAME);
+                AssemblyName assemblyName = new AssemblyName(RUNTIME_ASSEMBLY_NAME)
+                {
+                    CultureInfo = System.Globalization.CultureInfo.InvariantCulture,
+                    Flags = AssemblyNameFlags.None,
+                    ProcessorArchitecture = ProcessorArchitecture.MSIL,
+                    VersionCompatibility = System.Configuration.Assemblies.AssemblyVersionCompatibility.SameDomain
+                };
 
-                assemblyName.CultureInfo = System.Globalization.CultureInfo.InvariantCulture;
-                assemblyName.Flags = AssemblyNameFlags.None;
-                assemblyName.ProcessorArchitecture = ProcessorArchitecture.MSIL;
-                assemblyName.VersionCompatibility = System.Configuration.Assemblies.AssemblyVersionCompatibility.SameDomain;
-
-                runtimeEmittedAssembly = System.AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+                _runtimeEmittedAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
             }
 
-            if (runtimeEmittedModule == null)
+            if (_runtimeEmittedModule == null)
             {
-                runtimeEmittedModule = runtimeEmittedAssembly.DefineDynamicModule(RUNTIME_ASSEMBLY_NAME, true);
+                _runtimeEmittedModule = _runtimeEmittedAssembly.DefineDynamicModule(RUNTIME_ASSEMBLY_NAME, true);
             }
         }
+        
+        private static readonly MethodInfo _serializerCreateMethod = typeof(Serializer).GetMethod(nameof(Serializer.CreatePooled), BindingFlags.Public | BindingFlags.Static, null, new Type[] { }, null);
 
-        static System.Type BuildHelperType(System.Type formattedType,
-                                           FieldInfo[] publicFields,
-                                           FieldInfo[] privateFields,
-                                           out Dictionary<System.Type, FieldBuilder> serializerFields)
+        private static void BuildHelperType(Type formattedType,
+                                            FieldInfo[] publicFields,
+                                            FieldInfo[] privateFields,
+                                            out Dictionary<Type, FieldBuilder> serializerFields)
         {
-            string generatedTypeName = $"{runtimeEmittedModule.Name}.{formattedType.GetCompilableNiceFullName()}___{formattedType.Assembly.GetName()}___FormatterHelper___{System.Guid.NewGuid().ToString()}";
-            TypeBuilder typeBuilder = runtimeEmittedModule.DefineType(generatedTypeName, TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Class);
+            string generatedTypeName = $"{_runtimeEmittedModule.Name}.{formattedType.GetCompilableNiceFullName()}___{formattedType.Assembly.GetName()}___FormatterHelper___{Guid.NewGuid().ToString()}";
+            TypeBuilder typeBuilder = _runtimeEmittedModule.DefineType(generatedTypeName, TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Class);
 
-            serializerFields = new Dictionary<System.Type, FieldBuilder>();
+            serializerFields = new Dictionary<Type, FieldBuilder>();
 
             foreach (FieldInfo info in publicFields)
             {
@@ -263,26 +299,23 @@ namespace UdonSharp.Serialization
                 }
             }
 
+            //MethodInfo typeofMethod = typeof(System.Type).GetMethod("GetTypeFromHandle", Flags.StaticPublic, null, new[] { typeof(System.RuntimeTypeHandle) }, null);
+            ConstructorBuilder staticConstructor = typeBuilder.DefineTypeInitializer();
+            ILGenerator generator = staticConstructor.GetILGenerator();
+
+            foreach (var entry in serializerFields)
             {
-                MethodInfo serializerCreateMethod = typeof(Serializer).GetMethod("CreatePooled", Flags.StaticPublic, null, new System.Type[] { }, null);
-                //MethodInfo typeofMethod = typeof(System.Type).GetMethod("GetTypeFromHandle", Flags.StaticPublic, null, new[] { typeof(System.RuntimeTypeHandle) }, null);
-                ConstructorBuilder staticConstructor = typeBuilder.DefineTypeInitializer();
-                ILGenerator generator = staticConstructor.GetILGenerator();
-
-                foreach (var entry in serializerFields)
-                {
-                    generator.Emit(OpCodes.Call, serializerCreateMethod.MakeGenericMethod(entry.Key));
-                    generator.Emit(OpCodes.Stsfld, entry.Value);
-                }
-
-                generator.Emit(OpCodes.Ret);
+                generator.Emit(OpCodes.Call, _serializerCreateMethod.MakeGenericMethod(entry.Key));
+                generator.Emit(OpCodes.Stsfld, entry.Value);
             }
 
-            return typeBuilder.CreateType();
+            generator.Emit(OpCodes.Ret);
+
+            typeBuilder.CreateType();
         }
 
         // Is this even needed or will the generator do this anyways?
-        static void EmitConstInt(ILGenerator gen, int value)
+        private static void EmitConstInt(ILGenerator gen, int value)
         {
             switch (value)
             {
@@ -314,20 +347,16 @@ namespace UdonSharp.Serialization
                     gen.Emit(OpCodes.Ldc_I4_8);
                     break;
                 default:
-                    if (value < 128)
-                        gen.Emit(OpCodes.Ldc_I4_S, value);
-                    else
-                        gen.Emit(OpCodes.Ldc_I4, value);
+                    gen.Emit(value < 128 ? OpCodes.Ldc_I4_S : OpCodes.Ldc_I4, value);
 
                     break;
             }
         }
 
-        static void EmitReadMethod(ILGenerator generator, 
-                                   System.Type formattedType, 
+        private static void EmitReadMethod(ILGenerator generator, 
                                    FieldInfo[] publicFields, 
                                    FieldInfo[] privateFields, 
-                                   Dictionary<System.Type, FieldBuilder> serializerFields)
+                                   Dictionary<Type, FieldBuilder> serializerFields)
         {
             for (int i = 0; i < publicFields.Length; ++i)
             {
@@ -372,11 +401,10 @@ namespace UdonSharp.Serialization
             generator.Emit(OpCodes.Ret);
         }
 
-        static void EmitWriteMethod(ILGenerator generator,
-                                    System.Type formattedType,
+        private static void EmitWriteMethod(ILGenerator generator,
                                     FieldInfo[] publicFields,
                                     FieldInfo[] privateFields,
-                                    Dictionary<System.Type, FieldBuilder> serializerFields)
+                                    Dictionary<Type, FieldBuilder> serializerFields)
         {
             for (int i = 0; i < publicFields.Length; ++i)
             {

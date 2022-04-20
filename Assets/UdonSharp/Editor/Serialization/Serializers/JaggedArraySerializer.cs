@@ -1,57 +1,57 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Runtime.Serialization;
 
 namespace UdonSharp.Serialization
 {
-    public class JaggedArraySerializer<T> : Serializer<T>
+    internal class JaggedArraySerializer<T> : Serializer<T>
     {
         private Serializer rootArraySerializer;
 
-        private Stack<IValueStorage> innerValueStorages = new Stack<IValueStorage>();
+        private ConcurrentStack<IValueStorage> innerValueStorages = new ConcurrentStack<IValueStorage>();
 
         public JaggedArraySerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)
         {
-            if (typeMetadata != null)
-            {
-                if (!typeMetadata.cSharpType.GetElementType().IsArray)
-                    throw new SerializationException($"Cannot convert {typeMetadata.udonStorageType} to {typeMetadata.cSharpType}");
+            if (typeMetadata == null) 
+                return;
+            
+            if (!typeMetadata.cSharpType.GetElementType().IsArray)
+                throw new SerializationException($"Cannot convert {typeMetadata.udonStorageType} to {typeMetadata.cSharpType}");
 
-                if (typeMetadata.arrayElementMetadata == null)
-                    throw new ArgumentException("Array element metadata cannot be null on array type metadata");
+            if (typeMetadata.arrayElementMetadata == null)
+                throw new ArgumentException("Array element metadata cannot be null on array type metadata");
 
-                rootArraySerializer = CreatePooled(new TypeSerializationMetadata(typeMetadata.arrayElementMetadata.cSharpType.MakeArrayType()) { arrayElementMetadata = typeMetadata.arrayElementMetadata });
+            rootArraySerializer = CreatePooled(new TypeSerializationMetadata(typeMetadata.arrayElementMetadata.cSharpType.MakeArrayType()) { arrayElementMetadata = typeMetadata.arrayElementMetadata });
                 
-                int arrayDepth = 0;
+            int arrayDepth = 0;
 
-                System.Type arrayType = typeMetadata.cSharpType;
-                while (arrayType.IsArray)
-                {
-                    arrayDepth++;
-                    arrayType = arrayType.GetElementType();
-                }
-
-                if (arrayDepth <= 1)
-                    throw new SerializationException("Jagged array serializer must run on jagged arrays.");
+            Type arrayType = typeMetadata.cSharpType;
+            while (arrayType.IsArray)
+            {
+                arrayDepth++;
+                arrayType = arrayType.GetElementType();
             }
+
+            if (arrayDepth <= 1)
+                throw new SerializationException("Jagged array serializer must run on jagged arrays.");
         }
 
-        IValueStorage GetInnerValueStorage()
+        private IValueStorage GetInnerValueStorage()
         {
-            if (innerValueStorages.Count > 0)
-                return innerValueStorages.Pop();
+            if (innerValueStorages.TryPop(out var storage))
+                return storage;
 
             return ValueStorageUtil.CreateStorage(rootArraySerializer.GetUdonStorageType());
         }
 
-        public override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
+        protected override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
         {
             VerifyTypeCheckSanity();
             return typeMetadata.cSharpType.IsArray && typeMetadata.cSharpType.GetElementType().IsArray;
         }
 
-        void ConvertToCSharpArrayElement(ref object targetElement, object elementValue, System.Type cSharpType)
+        private void ConvertToCSharpArrayElement(ref object targetElement, object elementValue, Type cSharpType)
         {
             if (elementValue == null)
             {
@@ -64,14 +64,19 @@ namespace UdonSharp.Serialization
                 Array targetArray = (Array)targetElement;
                 Array sourceArray = (Array)elementValue;
 
-                if (targetArray == null || targetArray.Length != sourceArray.Length)
-                    targetElement = targetArray = (Array)Activator.CreateInstance(cSharpType, new object[] { sourceArray.Length });
+                if (!UsbSerializationContext.CollectDependencies)
+                {
+                    if (targetArray == null || targetArray.Length != sourceArray.Length)
+                        targetElement = targetArray = (Array)Activator.CreateInstance(cSharpType, sourceArray.Length);
+                }
 
                 for (int i = 0; i < sourceArray.Length; ++i)
                 {
                     object elementVal = targetArray.GetValue(i);
                     ConvertToCSharpArrayElement(ref elementVal, sourceArray.GetValue(i), cSharpType.GetElementType());
-                    targetArray.SetValue(elementVal, i);
+                    
+                    if (!UsbSerializationContext.CollectDependencies)
+                        targetArray.SetValue(elementVal, i);
                 }
             }
             else if (cSharpType.IsArray)
@@ -88,7 +93,7 @@ namespace UdonSharp.Serialization
             }
         }
 
-        void ConvertToUdonArrayElement(ref object targetElement, object elementValue, System.Type cSharpType)
+        private void ConvertToUdonArrayElement(ref object targetElement, object elementValue, Type cSharpType)
         {
             if (elementValue == null)
             {
@@ -100,15 +105,17 @@ namespace UdonSharp.Serialization
             {
                 Array targetArray = (Array)targetElement;
                 Array sourceArray = (Array)elementValue;
-
+                
                 if (targetArray == null || targetArray.Length != sourceArray.Length)
-                    targetElement = targetArray = (Array)Activator.CreateInstance(UdonSharpUtils.UserTypeToUdonType(cSharpType), new object[] { sourceArray.Length });
+                    targetElement = targetArray = (Array)Activator.CreateInstance(UdonSharpUtils.UserTypeToUdonType(cSharpType), sourceArray.Length);
 
                 for (int i = 0; i < sourceArray.Length; ++i)
                 {
                     object elementVal = targetArray.GetValue(i);
                     ConvertToUdonArrayElement(ref elementVal, sourceArray.GetValue(i), cSharpType.GetElementType());
-                    targetArray.SetValue(elementVal, i);
+                    
+                    if (!UsbSerializationContext.CollectDependencies)
+                        targetArray.SetValue(elementVal, i);
                 }
             }
             else if (cSharpType.IsArray)
@@ -168,7 +175,7 @@ namespace UdonSharp.Serialization
 
         protected override Serializer MakeSerializer(TypeSerializationMetadata typeMetadata)
         {
-            return (Serializer)System.Activator.CreateInstance(typeof(JaggedArraySerializer<>).MakeGenericType(typeMetadata.cSharpType), typeMetadata);
+            return (Serializer)Activator.CreateInstance(typeof(JaggedArraySerializer<>).MakeGenericType(typeMetadata.cSharpType), typeMetadata);
         }
     }
 }

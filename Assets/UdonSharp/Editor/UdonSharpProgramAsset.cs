@@ -7,25 +7,82 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using UdonSharp.Compiler;
+using UdonSharp.Compiler.Udon;
+using UdonSharp.Lib.Internal;
+using UdonSharp.Localization;
 using UdonSharpEditor;
-using UnityEditor;
 using UnityEngine;
 using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Editor.ProgramSources;
 using VRC.Udon.Editor.ProgramSources.Attributes;
-using VRC.Udon.EditorBindings;
 using VRC.Udon.ProgramSources;
 using VRC.Udon.Serialization.OdinSerializer;
+using Debug = UnityEngine.Debug;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 [assembly: UdonProgramSourceNewMenu(typeof(UdonSharp.UdonSharpProgramAsset), "Udon C# Program Asset")]
 
 namespace UdonSharp
 {
+    public enum UdonSharpProgramVersion
+    {
+        Unknown,
+        V0,
+        /// <summary>
+        /// Any fields that can't be serialized by Unity need to get marked with OdinSerialized
+        /// </summary>
+        V1SerializationUpdate,
+        NextVer,
+        CurrentVersion = NextVer - 1,
+    }
+    
     [CreateAssetMenu(menuName = "VRChat/Udon/Udon C# Program Asset", fileName = "New Udon C# Program Asset")]
     public class UdonSharpProgramAsset : UdonAssemblyProgramAsset
     {
+        [HideInInspector]
         public MonoScript sourceCsScript;
+
+        [SerializeField]
+        private UdonSharpProgramVersion scriptVersion = UdonSharpProgramVersion.Unknown;
+
+        /// <summary>
+        /// The version the attached C# script is on, determines if this needs an upgrade pass that rewrites the script file.
+        /// </summary>
+        public UdonSharpProgramVersion ScriptVersion
+        {
+            get => scriptVersion;
+            set
+            {
+                if (scriptVersion != value)
+                {
+                    scriptVersion = value;
+                    EditorUtility.SetDirty(this);
+                }
+            }
+        }
+        
+        [SerializeField]
+        private UdonSharpProgramVersion compiledVersion = UdonSharpProgramVersion.Unknown;
+
+        /// <summary>
+        /// The version this program asset has been built for. Is used for tracking what format serialized program data is in.
+        /// </summary>
+        public UdonSharpProgramVersion CompiledVersion
+        {
+            get => compiledVersion;
+            set
+            {
+                if (compiledVersion != value)
+                {
+                    compiledVersion = value;
+                    EditorUtility.SetDirty(this);
+                }
+            }
+        }
 
         [NonSerialized, OdinSerialize]
         public Dictionary<string, FieldDefinition> fieldDefinitions;
@@ -34,24 +91,21 @@ namespace UdonSharp
         public BehaviourSyncMode behaviourSyncMode = BehaviourSyncMode.Any;
 
         [HideInInspector]
-        public string behaviourIDHeapVarName;
+        public bool hasInteractEvent;
 
         [HideInInspector]
-        public List<string> compileErrors = new List<string>();
-
-        [HideInInspector]
-        public bool hasInteractEvent = false;
+        public long scriptID;
 
         [SerializeField, HideInInspector]
         private SerializationData serializationData;
 
-        private UdonBehaviour currentBehaviour = null;
+        private UdonBehaviour currentBehaviour;
 
-        internal bool showUtilityDropdown = false;
+        internal bool showUtilityDropdown;
 
         internal void DrawErrorTextAreas()
         {
-            UdonSharpGUI.DrawCompileErrorTextArea(this);
+            UdonSharpGUI.DrawCompileErrorTextArea();
             DrawAssemblyErrorTextArea();
         }
 
@@ -70,41 +124,31 @@ namespace UdonSharp
             EditorGUI.EndDisabledGroup();
         }
 
-        new internal void DrawProgramDisassembly()
+        internal new void DrawProgramDisassembly()
         {
             base.DrawProgramDisassembly();
         }
 
-        new void DrawPublicVariables(UdonBehaviour behaviour, ref bool dirty)
-        {
-            UdonSharpGUI.DrawPublicVariables(behaviour, this, ref dirty);
-        }
-
-        protected override void DrawProgramSourceGUI(UdonBehaviour udonBehaviour, ref bool dirty)
+        internal new void DrawProgramSourceGUI(UdonBehaviour udonBehaviour, ref bool dirty)
         {
             currentBehaviour = udonBehaviour;
 
             if (!udonBehaviour)
             {
+                EditorGUI.BeginDisabledGroup(sourceCsScript != null);
                 EditorGUI.BeginChangeCheck();
-                MonoScript newSourceCsScript = (MonoScript)EditorGUILayout.ObjectField("Source Script", sourceCsScript, typeof(MonoScript), false);
+                MonoScript newSourceCsScript = (MonoScript)EditorGUILayout.ObjectField(Loc.Get(LocStr.UI_SourceScript), sourceCsScript, typeof(MonoScript), false);
+                EditorGUI.EndDisabledGroup();
+                
                 if (EditorGUI.EndChangeCheck())
                 {
-                    bool shouldReplace = true;
-
-                    if (sourceCsScript != null)
-                        shouldReplace = EditorUtility.DisplayDialog("Modifying script on program asset", "If you modify a script on a program asset while it is being used by objects in a scene it can cause issues. Are you sure you want to change the source script?", "Ok", "Cancel");
-
-                    if (shouldReplace)
-                    {
-                        Undo.RecordObject(this, "Changed source C# script");
-                        sourceCsScript = newSourceCsScript;
-                        dirty = true;
-                    }
+                    Undo.RecordObject(this, "Changed source C# script");
+                    sourceCsScript = newSourceCsScript;
+                    dirty = true;
                 }
 
                 EditorGUI.BeginDisabledGroup(true);
-                EditorGUILayout.ObjectField("Serialized Udon Program Asset", serializedUdonProgramAsset, typeof(AbstractSerializedUdonProgramAsset), false);
+                EditorGUILayout.ObjectField(Loc.Get(LocStr.UI_SerializedUdonProgramAsset), serializedUdonProgramAsset, typeof(AbstractSerializedUdonProgramAsset), false);
                 EditorGUI.EndDisabledGroup();
 
                 if (sourceCsScript == null)
@@ -117,14 +161,13 @@ namespace UdonSharp
                 }
             }
 
-            object behaviourID = null;
             bool shouldUseRuntimeValue = EditorApplication.isPlaying && currentBehaviour != null;
 
             // UdonBehaviours won't have valid heap values unless they have been enabled once to run their initialization. 
             // So we check against a value we know will exist to make sure we can use the heap variables.
             if (shouldUseRuntimeValue)
             {
-                behaviourID = currentBehaviour.GetProgramVariable(behaviourIDHeapVarName);
+                var behaviourID = currentBehaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
                 if (behaviourID == null)
                     shouldUseRuntimeValue = false;
             }
@@ -133,7 +176,7 @@ namespace UdonSharp
             GUI.enabled = GUI.enabled || shouldUseRuntimeValue;
             shouldUseRuntimeValue &= GUI.enabled;
 
-            DrawPublicVariables(udonBehaviour, ref dirty);
+            // DrawPublicVariables(udonBehaviour, ref dirty);
 
             if (currentBehaviour != null && !shouldUseRuntimeValue && program != null)
             {
@@ -158,7 +201,7 @@ namespace UdonSharp
             }
 
             DrawErrorTextAreas();
-            UdonSharpGUI.DrawUtilities(udonBehaviour, this);
+            UdonSharpGUI.DrawUtilities(this);
 
             currentBehaviour = null;
         }
@@ -168,7 +211,7 @@ namespace UdonSharp
             if (sourceCsScript != null &&
                 !EditorApplication.isCompiling &&
                 !EditorApplication.isUpdating &&
-                !UdonSharpProgramAsset.AnyUdonSharpScriptHasError())
+                !AnyUdonSharpScriptHasError())
             {
                 CompileAllCsPrograms(true);
             }
@@ -188,51 +231,71 @@ namespace UdonSharp
         }
 
         [PublicAPI]
-        public void CompileCsProgram()
+        public static bool IsAnyProgramAssetSourceDirty()
         {
-            try
+            UdonSharpProgramAsset[] programs = GetAllUdonSharpPrograms();
+            
+            UdonSharpEditorCache cache = UdonSharpEditorCache.Instance;
+            bool needsCompile = false;
+            foreach (UdonSharpProgramAsset programAsset in programs)
             {
-                UdonSharpCompiler compiler = new UdonSharpCompiler(this);
-                compiler.Compile();
+                if (cache.IsSourceFileDirty(programAsset.sourceCsScript))
+                {
+                    needsCompile = true;
+                    break;
+                }
             }
-            catch (Exception e)
+
+            return needsCompile;
+        }
+
+        internal static bool IsAnyScriptDirty()
+        {
+            UdonSharpEditorCache cache = UdonSharpEditorCache.Instance;
+
+            foreach (MonoScript script in CompilationContext.GetAllFilteredScripts(true))
             {
-                compileErrors.Add(e.ToString());
-                throw e;
+                if (cache.IsSourceFileDirty(script))
+                {
+                    return true;
+                }
             }
+
+            return false;
+        }
+
+        internal static bool IsAnyProgramAssetOutOfDate()
+        {
+            UdonSharpProgramAsset[] programs = GetAllUdonSharpPrograms();
+            
+            bool isOutOfDate = false;
+            foreach (UdonSharpProgramAsset programAsset in programs)
+            {
+                if (programAsset.CompiledVersion != UdonSharpProgramVersion.CurrentVersion)
+                {
+                    isOutOfDate = true;
+                    break;
+                }
+            }
+
+            return isOutOfDate;
         }
 
         /// <summary>
         /// Compiles all U# programs in the project. If forceCompile is true, will skip checking for file changes to skip compile tasks
         /// </summary>
         /// <param name="forceCompile"></param>
+        /// <param name="editorBuild"></param>
         [PublicAPI]
         public static void CompileAllCsPrograms(bool forceCompile = false, bool editorBuild = true)
         {
-            UdonSharpProgramAsset[] programs = GetAllUdonSharpPrograms();
+            if (!forceCompile && !IsAnyScriptDirty())
+                return;
 
-            if (!forceCompile)
-            {
-                UdonSharpEditorCache cache = UdonSharpEditorCache.Instance;
-                bool needsCompile = false;
-                foreach (UdonSharpProgramAsset programAsset in programs)
-                {
-                    if (cache.IsSourceFileDirty(programAsset))
-                    {
-                        needsCompile = true;
-                        break;
-                    }
-                }
-
-                if (!needsCompile)
-                    return;
-            }
-
-            UdonSharpCompiler compiler = new UdonSharpCompiler(programs, editorBuild);
-            compiler.Compile();
+            UdonSharpCompilerV1.Compile(new UdonSharpCompileOptions() { IsEditorBuild = editorBuild });
         }
 
-        static UdonSharpProgramAsset[] _programAssetCache;
+        private static UdonSharpProgramAsset[] _programAssetCache;
         internal static void ClearProgramAssetCache()
         {
             _programAssetCache = null;
@@ -360,14 +423,11 @@ namespace UdonSharp
                 if (programAsset.sourceCsScript == null)
                     continue;
 
-                if (programAsset.compileErrors.Count > 0)
-                    return true;
-
                 if (!string.IsNullOrEmpty((string)assemblyErrorField.GetValue(programAsset)))
                     return true;
             }
 
-            return false;
+            return UdonSharpEditorCache.Instance.HasUdonSharpCompileError();
         }
 
         [PublicAPI]
@@ -380,7 +440,7 @@ namespace UdonSharp
         }
         
         [PublicAPI]
-        public static System.Type GetBehaviourClass(UdonBehaviour behaviour)
+        public static Type GetBehaviourClass(UdonBehaviour behaviour)
         {
             if (behaviour == null)
                 throw new NullReferenceException();
@@ -394,36 +454,24 @@ namespace UdonSharp
         }
 
         [PublicAPI]
-        public System.Type GetClass()
+        public Type GetClass()
         {
             // Needs to be an explicit null check because of Unity's object equality operator overloads
+            // ReSharper disable once ConvertIfStatementToReturnStatement
             if (sourceCsScript != null)
                 return sourceCsScript.GetClass();
 
             return null;
         }
+        
+        private static readonly FieldInfo _assemblyErrorField = typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        static UdonEditorInterface editorInterfaceInstance;
-        static UdonSharp.HeapFactory heapFactoryInstance;
-
-        internal bool AssembleCsProgram(uint heapSize)
+        internal void AssembleCsProgram(string assembly, uint heapSize)
         {
-            if (editorInterfaceInstance == null || heapFactoryInstance == null)
-            {
-                // The heap size is determined by the symbol count + the unique extern string count
-                heapFactoryInstance = new UdonSharp.HeapFactory();
-                editorInterfaceInstance = new UdonEditorInterface(null, heapFactoryInstance, null, null, null, null, null, null, null);
-                editorInterfaceInstance.AddTypeResolver(new UdonBehaviourTypeResolver()); // todo: can be removed with SDK's >= VRCSDK-UDON-2020.06.15.14.08_Public
-            }
-
-            heapFactoryInstance.FactoryHeapSize = heapSize;
-
-            FieldInfo assemblyError = typeof(UdonAssemblyProgramAsset).GetField("assemblyError", BindingFlags.NonPublic | BindingFlags.Instance);
-
             try
             {
-                program = editorInterfaceInstance.Assemble(udonAssembly);
-                assemblyError.SetValue(this, null);
+                program = CompilerUdonInterface.Assemble(assembly, heapSize);
+                _assemblyErrorField.SetValue(this, null);
 
                 hasInteractEvent = false;
 
@@ -439,13 +487,11 @@ namespace UdonSharp
             catch (Exception e)
             {
                 program = null;
-                assemblyError.SetValue(this, e.Message);
+                _assemblyErrorField.SetValue(this, e.Message);
                 Debug.LogException(e);
 
-                return false;
+                throw;
             }
-
-            return true;
         }
 
         internal AbstractSerializedUdonProgramAsset GetSerializedProgramAssetWithoutRefresh()
@@ -523,36 +569,17 @@ namespace UdonSharp
         }
     }
     
+#if UNITY_EDITOR
     [CustomEditor(typeof(UdonSharpProgramAsset))]
-    public class UdonSharpProgramAssetEditor : UdonAssemblyProgramAssetEditor
+    internal class UdonSharpProgramAssetEditor : Editor
     {
-        // Allow people to drag program assets onto objects in the scene and automatically create a corresponding UdonBehaviour with everything set up
-        // https://forum.unity.com/threads/drag-and-drop-scriptable-object-to-scene.546975/#post-4534333
-        void OnSceneDrag(SceneView sceneView)
+        public override void OnInspectorGUI()
         {
-            Event e = Event.current;
-            GameObject gameObject = HandleUtility.PickGameObject(e.mousePosition, false);
+            var programAsset = (UdonSharpProgramAsset)target;
 
-            if (e.type == EventType.DragUpdated)
-            {
-                if (gameObject)
-                    DragAndDrop.visualMode = DragAndDropVisualMode.Link;
-                else
-                    DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
-
-                e.Use();
-            }
-            else if (e.type == EventType.DragPerform)
-            {
-                DragAndDrop.AcceptDrag();
-                e.Use();
-                
-                if (gameObject)
-                {
-                    UdonBehaviour component = Undo.AddComponent<UdonBehaviour>(gameObject);
-                    component.programSource = target as UdonSharpProgramAsset;
-                }
-            }
+            bool refBool = false;
+            programAsset.DrawProgramSourceGUI(null, ref refBool);
         }
     }
+#endif
 }

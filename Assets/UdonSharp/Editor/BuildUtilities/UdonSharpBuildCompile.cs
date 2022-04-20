@@ -1,8 +1,9 @@
 ﻿
-using UnityEngine;
+using UdonSharp;
+using UdonSharp.Compiler;
 using VRC.SDKBase.Editor.BuildPipeline;
 
-namespace UdonSharp
+namespace UdonSharpEditor
 {
     internal class UdonSharpBuildCompile : IVRCSDKBuildRequestedCallback
     {
@@ -13,16 +14,22 @@ namespace UdonSharp
             if (requestedBuildType == VRCSDKRequestedBuildType.Avatar)
                 return true;
 
-            if (UdonSharpSettings.GetSettings()?.disableUploadCompile ?? false)
+            if (UdonSharpSettings.GetSettings().disableUploadCompile)
                 return true;
 
-            UdonSharpProgramAsset.CompileAllCsPrograms(true, false);
+            UdonSharpCompilerV1.CompileSync(new UdonSharpCompileOptions() { IsEditorBuild = false });
             UdonSharpEditorCache.SaveAllCache();
 
             if (UdonSharpProgramAsset.AnyUdonSharpScriptHasError())
             {
-                Debug.LogError("[<color=#FF00FF>UdonSharp</color>] Failed to compile UdonSharp scripts for build, check error log for details.");
+                UdonSharpUtils.LogError("Failed to compile UdonSharp scripts for build, check error log for details.");
                 UdonSharpUtils.ShowEditorNotification("Failed to compile UdonSharp scripts for build, check error log for details.");
+                return false;
+            }
+
+            if (UdonSharpEditorManager.RunAllUpgrades())
+            {
+                UdonSharpUtils.LogWarning(UdonSharpEditorManager.UPGRADE_MESSAGE);
                 return false;
             }
 

@@ -1,9 +1,9 @@
-﻿using System;
-using UnityEngine;
+﻿
+using System;
 
 namespace UdonSharp.Serialization
 {
-    public class UnityObjectSerializer<T> : Serializer<T> where T : UnityEngine.Object
+    internal class UnityObjectSerializer<T> : Serializer<T> where T : UnityEngine.Object
     {
         public UnityObjectSerializer(TypeSerializationMetadata typeMetadata)
             : base(typeMetadata)
@@ -15,7 +15,7 @@ namespace UdonSharp.Serialization
             return typeof(T);
         }
 
-        public override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
+        protected override bool HandlesTypeSerialization(TypeSerializationMetadata typeMetadata)
         {
             VerifyTypeCheckSanity();
             return typeMetadata.cSharpType == typeof(UnityEngine.Object) || typeMetadata.cSharpType.IsSubclassOf(typeof(UnityEngine.Object));
@@ -27,14 +27,22 @@ namespace UdonSharp.Serialization
 
             if (sourceObject == null)
             {
-                Debug.LogError($"Field for {typeof(T)} does not exist");
+                UdonSharpUtils.LogError($"Field for {typeof(T)} does not exist");
+                return;
+            }
+
+            if (UsbSerializationContext.CollectDependencies)
+            {
+                if (sourceObject.Value is UnityEngine.Object unityObject && unityObject != null)
+                    UsbSerializationContext.Dependencies.Add(unityObject);
+                    
                 return;
             }
 
             IValueStorage storage = sourceObject as ValueStorage<T>;
             if (storage == null)
             {
-                System.Type storageType = sourceObject.GetType().GetGenericArguments()[0];
+                Type storageType = sourceObject.GetType().GetGenericArguments()[0];
 
                 if (typeof(T).IsSubclassOf(storageType))
                 {
@@ -50,7 +58,7 @@ namespace UdonSharp.Serialization
                 }
                 else
                 {
-                    Debug.LogError($"Type {typeof(T)} not compatible with serializer {sourceObject}");
+                    UdonSharpUtils.LogError($"Type {typeof(T)} not compatible with serializer {sourceObject}");
                     return;
                 }
             }
@@ -64,19 +72,27 @@ namespace UdonSharp.Serialization
 
             if (targetObject == null)
             {
-                Debug.LogError($"Field for {typeof(T)} does not exist");
+                UdonSharpUtils.LogError($"Field for {typeof(T)} does not exist");
+                return;
+            }
+
+            if (UsbSerializationContext.CollectDependencies)
+            {
+                if (sourceObject != null)
+                    UsbSerializationContext.Dependencies.Add(sourceObject);
+                
                 return;
             }
 
             IValueStorage storage = targetObject as ValueStorage<T>;
             if (storage == null)
             {
-                System.Type storageType = targetObject.GetType().GetGenericArguments()[0];
+                Type storageType = targetObject.GetType().GetGenericArguments()[0];
                 if (typeof(T).IsSubclassOf(storageType))
                 {
                     storage = targetObject;
                 }
-                else if (sourceObject != null && storageType.IsAssignableFrom(sourceObject.GetType()))
+                else if (sourceObject != null && storageType.IsInstanceOfType(sourceObject))
                 {
                     storage = targetObject;
                 }
@@ -86,7 +102,7 @@ namespace UdonSharp.Serialization
                 }
                 else
                 {
-                    Debug.LogError($"Type {typeof(T)} not compatible with serializer {targetObject}");
+                    UdonSharpUtils.LogError($"Type {typeof(T)} not compatible with serializer {targetObject}");
                     return;
                 }
             }
@@ -104,7 +120,7 @@ namespace UdonSharp.Serialization
         {
             VerifyTypeCheckSanity();
 
-            return (Serializer)System.Activator.CreateInstance(typeof(UnityObjectSerializer<>).MakeGenericType(typeMetadata.cSharpType), typeMetadata);
+            return (Serializer)Activator.CreateInstance(typeof(UnityObjectSerializer<>).MakeGenericType(typeMetadata.cSharpType), typeMetadata);
         }
     }
 }

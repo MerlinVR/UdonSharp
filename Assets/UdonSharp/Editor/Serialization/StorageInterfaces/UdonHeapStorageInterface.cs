@@ -9,18 +9,18 @@ namespace UdonSharp.Serialization
 {
     public class UdonHeapStorageInterface : IHeapStorage
     {
-        class UdonHeapValueStorage<T> : ValueStorage<T>
+        private class UdonHeapValueStorage<T> : ValueStorage<T>
         {
-            IUdonHeap heap;
-            uint symbolAddress;
+            private IUdonHeap heap;
+            private uint symbolAddress;
 
             public UdonHeapValueStorage(IUdonHeap heap, IUdonSymbolTable symbolTable, string symbolKey)
             {
                 this.heap = heap;
                 
-                bool isValid = symbolTable.TryGetAddressFromSymbol(symbolKey, out symbolAddress) && 
+                bool isValid = symbolTable.TryGetAddressFromSymbol(UdonSharpUtils.UnmanglePropertyFieldName(symbolKey), out symbolAddress) && 
                                heap.GetHeapVariableType(symbolAddress) == typeof(T) &&
-                               heap.TryGetHeapVariable<T>(symbolAddress, out var validityCheckPlaceholder);
+                               heap.TryGetHeapVariable<T>(symbolAddress, out _);
 
                 if (!isValid)
                     symbolAddress = 0xFFFFFFFF;
@@ -28,16 +28,13 @@ namespace UdonSharp.Serialization
 
             public override T Value
             {
-                get
-                {
-                    if (symbolAddress == 0xFFFFFFFF)
-                        return default;
-
-                    return heap.GetHeapVariable<T>(symbolAddress);
-                }
+                get => symbolAddress == 0xFFFFFFFF ? default : heap.GetHeapVariable<T>(symbolAddress);
                 set
                 {
                     if (symbolAddress == 0xFFFFFFFF)
+                        return;
+
+                    if (UsbSerializationContext.CollectDependencies)
                         return;
 
                     heap.SetHeapVariable<T>(symbolAddress, value);
@@ -45,23 +42,20 @@ namespace UdonSharp.Serialization
             }
         }
 
-        UdonBehaviour behaviour;
-        IUdonHeap heap;
-        IUdonSymbolTable symbolTable;
-        List<IValueStorage> heapValueRefs = new List<IValueStorage>();
+        private UdonBehaviour behaviour;
+        private IUdonHeap heap;
+        private IUdonSymbolTable symbolTable;
+        private List<IValueStorage> heapValueRefs = new List<IValueStorage>();
 
-        public bool IsValid { get; } = false;
+        public bool IsValid { get; }
 
-        static FieldInfo programField;
+        private static readonly FieldInfo _programField = typeof(UdonBehaviour).GetField("_program", BindingFlags.NonPublic | BindingFlags.Instance);
 
         public UdonHeapStorageInterface(UdonBehaviour udonBehaviour)
         {
             behaviour = udonBehaviour;
 
-            if (programField == null)
-                programField = typeof(UdonBehaviour).GetField("_program", BindingFlags.NonPublic | BindingFlags.Instance);
-
-            IUdonProgram sourceProgram = (IUdonProgram)programField.GetValue(udonBehaviour);
+            IUdonProgram sourceProgram = (IUdonProgram)_programField.GetValue(udonBehaviour);
 
             if (sourceProgram != null)
             {
@@ -77,12 +71,9 @@ namespace UdonSharp.Serialization
 
         void IHeapStorage.SetElementValue<T>(string elementKey, T value)
         {
-            uint symbolAddress;
-            System.Type symbolType = null;
-
-            if (symbolTable.TryGetAddressFromSymbol(elementKey, out symbolAddress))
+            if (symbolTable.TryGetAddressFromSymbol(elementKey, out uint symbolAddress))
             {
-                symbolType = heap.GetHeapVariableType(symbolAddress);
+                var symbolType = heap.GetHeapVariableType(symbolAddress);
 
                 if (symbolType.IsAssignableFrom(typeof(T)))
                 {
@@ -93,12 +84,9 @@ namespace UdonSharp.Serialization
 
         T IHeapStorage.GetElementValue<T>(string elementKey)
         {
-            uint symbolAddress;
-            System.Type symbolType = null;
-
-            if (symbolTable.TryGetAddressFromSymbol(elementKey, out symbolAddress))
+            if (symbolTable.TryGetAddressFromSymbol(elementKey, out uint symbolAddress))
             {
-                symbolType = heap.GetHeapVariableType(symbolAddress);
+                var symbolType = heap.GetHeapVariableType(symbolAddress);
 
                 if (symbolType.IsAssignableFrom(typeof(T)))
                 {
@@ -111,14 +99,11 @@ namespace UdonSharp.Serialization
 
         public void SetElementValueWeak(string elementKey, object value)
         {
-            uint symbolAddress;
-            System.Type symbolType = null;
-
-            if (symbolTable.TryGetAddressFromSymbol(elementKey, out symbolAddress))
+            if (symbolTable.TryGetAddressFromSymbol(elementKey, out uint symbolAddress))
             {
-                symbolType = heap.GetHeapVariableType(symbolAddress);
+                var symbolType = heap.GetHeapVariableType(symbolAddress);
 
-                if (symbolType.IsAssignableFrom(value.GetType()))
+                if (symbolType.IsInstanceOfType(value))
                 {
                     heap.SetHeapVariable(symbolAddress, value, symbolType);
                 }
@@ -127,21 +112,14 @@ namespace UdonSharp.Serialization
 
         public object GetElementValueWeak(string elementKey)
         {
-            uint symbolAddress;
-
-            if (symbolTable.TryGetAddressFromSymbol(elementKey, out symbolAddress))
+            if (symbolTable.TryGetAddressFromSymbol(elementKey, out uint symbolAddress))
             {
                 return heap.GetHeapVariable(symbolAddress);
             }
 
             return null;
         }
-
-        public void InvalidateInterface()
-        {
-
-        }
-
+        
         public IValueStorage GetElementStorage(string elementKey)
         {
             UdonSharpProgramAsset programAsset = (UdonSharpProgramAsset)behaviour.programSource;
@@ -152,7 +130,7 @@ namespace UdonSharp.Serialization
                 return null;
             }
 
-            IValueStorage udonHeapValue = (IValueStorage)System.Activator.CreateInstance(typeof(UdonHeapValueStorage<>).MakeGenericType(fieldDefinition.fieldSymbol.symbolCsType), heap, symbolTable, elementKey);
+            IValueStorage udonHeapValue = (IValueStorage)System.Activator.CreateInstance(typeof(UdonHeapValueStorage<>).MakeGenericType(fieldDefinition.SystemType), heap, symbolTable, elementKey);
 
             heapValueRefs.Add(udonHeapValue);
 
