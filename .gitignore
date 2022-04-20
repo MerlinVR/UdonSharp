@@ -69,9 +69,11 @@ Assets/UdonSharp/Scripts/Editor.meta
 .idea/*
 Assets/Udon.meta
 [Aa]ssets/SerializedUdonPrograms*
-Packages/
+Packages/*
 
 # UdonSharp stuff
+# Except UdonSharp folder from Packages/* rule
+!Packages/com.vrchat.UdonSharp/
 /Assets/UdonSharp/UdonSharpSettings.asset
 /Assets/UdonSharp/UdonSharpSettings.asset.meta
 Assets/Merlin.meta
@@ -86,6 +88,7 @@ Assets/UdonSharp/UdonSharpDataLocator.asset
 Assets/UdonSharp/UdonSharpDataLocator.asset.meta
 Assets/UdonSharp/PrefabBuild
 Assets/UdonSharp/PrefabBuild.meta
+Assets/UdonSharp.meta
 
 # Package stuff
 Assets/Resources
