@@ -10,8 +10,8 @@
 		"url" : "https://github.com/vrchat/packages"
 	},
 	"gitDependencies" : {
-		"com.vrchat.base" : "https://github.com/vrchat/packages.git?path=/packages/com.vrchat.base#3.0.1",
-		"com.vrchat.worlds" : "https://github.com/vrchat/packages.git?path=/packages/com.vrchat.worlds#3.0.1"
+		"com.vrchat.base" : "https://github.com/vrchat/packages.git?path=/packages/com.vrchat.base#3.0.2",
+		"com.vrchat.worlds" : "https://github.com/vrchat/packages.git?path=/packages/com.vrchat.worlds#3.0.2"
 	},
 	"url" : "https://github.com/vrchat-community/UdonSharp.git?path=Assets/UdonSharp",
 	"samples" : [
