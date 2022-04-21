@@ -97,6 +97,7 @@ Assets/Resources.meta
 Packages/com.vrchat.vrcsdk3
 
 # Nuke Artifacts
+!**/Tools/Nuke/UdonSharpBuild/UdonSharpBuild.csproj
 Tools/Nuke/UdonSharpBuild/obj/
 Tools/Nuke/UdonSharpBuild/bin/
 Tools/Nuke/.nuke/temp/
