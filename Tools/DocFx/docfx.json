@@ -1,0 +1,21 @@
+{
+	"metadata" : [
+		{
+			"src" : [
+				{
+					"files" : [ "**/*.cs" ],
+					"exclude" : [ ],
+					"src" : "../../Packages/com.vrchat.UdonSharp/Runtime"
+				},
+				{
+					"files" : [ "**/*.cs" ],
+					"exclude" : [ ],
+					"src" : "../../Packages/com.vrchat.UdonSharp/Editor"
+				}
+			],
+			"dest" : "classes",
+			"disableGitFeatures" : false,
+			"disableDefaultFilter" : true
+		}
+	]
+}
