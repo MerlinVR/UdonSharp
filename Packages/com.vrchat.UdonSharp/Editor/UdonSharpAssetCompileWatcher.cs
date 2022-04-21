@@ -154,8 +154,11 @@ namespace UdonSharpEditor
                 {
                     foreach (string filePath in _modifiedFilePaths)
                     {
-                        MonoScript asset = AssetDatabase.LoadAssetAtPath<MonoScript>(filePath.Replace(Application.dataPath.Replace("/", "\\"), "Assets"));
-                        _modifiedScripts.Add(asset);
+                        string path = filePath.Substring(Application.dataPath.Length - "Assets".Length);
+                        MonoScript asset = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
+                        
+                        if (asset)
+                            _modifiedScripts.Add(asset);
                     }
 
                     _modifiedFilePaths.Clear();
