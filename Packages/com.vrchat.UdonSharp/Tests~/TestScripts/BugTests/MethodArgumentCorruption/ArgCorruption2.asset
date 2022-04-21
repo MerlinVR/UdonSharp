@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: ArgCorruption2
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 0a7b77f72d2fd6643997b0e1c039ea43,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: df5990fdc49cd1044b0a8391977b04df,
     type: 2}
   udonAssembly: 
   assemblyError: 
@@ -62,7 +62,7 @@ MonoBehaviour:
       Data: 3|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: UdonSharp.Tests.ArgCorruption3, Assembly-CSharp
+      Data: UdonSharp.Tests.ArgCorruption3, UdonSharp.Tests
     - Name: 
       Entry: 8
       Data: 

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: GetComponentTest
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 3de83d5436d87984fadf263314dd21a8,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: fd3218f92a2d1f2468fb88de6cbde0e9,
     type: 2}
   udonAssembly: 
   assemblyError: 
@@ -62,7 +62,7 @@ MonoBehaviour:
       Data: 3|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: UdonSharp.Tests.IntegrationTestSuite, Assembly-CSharp
+      Data: UdonSharp.Tests.IntegrationTestSuite, UdonSharp.Tests
     - Name: 
       Entry: 8
       Data: 

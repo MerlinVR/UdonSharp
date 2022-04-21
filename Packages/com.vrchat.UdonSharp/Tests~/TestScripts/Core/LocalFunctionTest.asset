@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: LocalFunctionTest
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 30fcf43a23e32194b85c8b6221377100,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: a7f9f935d1a61ee47ac656a48ce9008d,
     type: 2}
   udonAssembly: 
   assemblyError: 
@@ -62,7 +62,7 @@ MonoBehaviour:
       Data: 3|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: UdonSharp.Tests.IntegrationTestSuite, Assembly-CSharp
+      Data: UdonSharp.Tests.IntegrationTestSuite, UdonSharp.Tests
     - Name: 
       Entry: 8
       Data: 
@@ -182,7 +182,7 @@ MonoBehaviour:
       Data: 11|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: UdonSharp.Tests.LocalFunctionTest, Assembly-CSharp
+      Data: UdonSharp.Tests.LocalFunctionTest, UdonSharp.Tests
     - Name: 
       Entry: 8
       Data: 

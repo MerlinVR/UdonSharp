@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: InstantiatedObjectHeapTest
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 23dab7980c58c5e4ea727c77af4d5e75,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 79e81323a71c98c4bab0b09663b8363c,
     type: 2}
   udonAssembly: 
   assemblyError: 
@@ -62,7 +62,7 @@ MonoBehaviour:
       Data: 3|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: UdonSharp.Tests.IntegrationTestSuite, Assembly-CSharp
+      Data: UdonSharp.Tests.IntegrationTestSuite, UdonSharp.Tests
     - Name: 
       Entry: 8
       Data: 

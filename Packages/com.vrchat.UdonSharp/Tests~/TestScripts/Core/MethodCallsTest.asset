@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: MethodCallsTest
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 37621f53e4160dc4dabfb161a3ba8ab9,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 26d921822b60b954495f837cbd5f1dbf,
     type: 2}
   udonAssembly: 
   assemblyError: 
@@ -62,7 +62,7 @@ MonoBehaviour:
       Data: 3|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: UdonSharp.Tests.IntegrationTestSuite, Assembly-CSharp
+      Data: UdonSharp.Tests.IntegrationTestSuite, UdonSharp.Tests
     - Name: 
       Entry: 8
       Data: 
