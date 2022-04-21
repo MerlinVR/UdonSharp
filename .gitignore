@@ -66,7 +66,7 @@ Assets/VRChat Examples.meta
 Assets/UdonSharp/Scripts/Editor/
 Assets/VRCSDK.meta
 Assets/UdonSharp/Scripts/Editor.meta
-.idea/*
+**/.idea/*
 Assets/Udon.meta
 [Aa]ssets/SerializedUdonPrograms*
 Packages/*
@@ -95,3 +95,23 @@ Assets/Resources
 Assets/Resources.meta
 
 Packages/com.vrchat.vrcsdk3
+
+# Nuke Artifacts
+Tools/Nuke/UdonSharpBuild/obj/
+Tools/Nuke/UdonSharpBuild/bin/
+Tools/Nuke/.nuke/temp/
+
+
+# DocFx artifacts
+Packages/com.vrchat.UdonSharp/Editor/obj/
+Packages/com.vrchat.UdonSharp/Editor/obj.meta
+
+Tools/DocFx/obj/
+Docs/Published
+
+# Copied Images
+Tools/Docusaurus/static/images/
+
+Tools/Docusaurus/docs/
+
+Packages/com.vrchat.UdonSharp/Editor/BuildUtilities/obj/
