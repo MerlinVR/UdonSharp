@@ -1,7 +1,7 @@
 using Nuke.Common;
 using Nuke.Common.IO;
 
-namespace VRC.ClientSim.Build
+namespace VRC.UdonSharp.Build
 {
     partial class Build : NukeBuild
     {

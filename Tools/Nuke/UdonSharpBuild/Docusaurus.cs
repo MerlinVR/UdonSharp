@@ -13,7 +13,7 @@ using Nuke.Common.Tools.Npm;
 using Nuke.Common.Utilities;
 using YamlDotNet.Serialization;
 
-namespace VRC.ClientSim.Build
+namespace VRC.UdonSharp.Build
 {
     partial class Build
     {

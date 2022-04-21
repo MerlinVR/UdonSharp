@@ -2,7 +2,7 @@
 using Nuke.Common.IO;
 using Nuke.Common.Tools.DocFX;
 
-namespace VRC.ClientSim.Build
+namespace VRC.UdonSharp.Build
 {
     partial class Build
     {
