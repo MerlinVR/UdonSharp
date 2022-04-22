@@ -3,6 +3,7 @@ using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
+#pragma warning disable 162
 
 namespace UdonSharp.Tests
 {
@@ -64,10 +65,22 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Object switch 2", ObjectSwitch(2) == "two");
             tester.TestAssertion("Object switch 3", ObjectSwitch(2L) == "two long");
             tester.TestAssertion("Object switch 4", ObjectSwitch("testVal") == "the testVal");
+            // todo: handle null case on object switches
+            // tester.TestAssertion("Object switch 5", ObjectSwitchWithNull(null) == "null");
+            // tester.TestAssertion("Object switch 6", ObjectSwitchWithNull(1) == "default");
 
             tester.TestAssertion("Const variable switch 1", ConstVariableSwitch(1) == "one");
             tester.TestAssertion("Const variable switch 2", ConstVariableSwitch(2) == "two");
             tester.TestAssertion("Const variable switch 3", ConstVariableSwitch(3) == "no switch val found");
+            
+            tester.TestAssertion("Default case regression 1", TestDefaultCaseRegression(1) == 1);
+            tester.TestAssertion("Default case regression 2", TestDefaultCaseRegression(2) == 2);
+            tester.TestAssertion("Default case regression 3", TestDefaultCaseRegression(3) == -1);
+            
+            tester.TestAssertion("Default case fallthrough 1", TestDefaultCaseFallThrough(3) == -1);
+            tester.TestAssertion("Default case fallthrough 2", TestDefaultCaseFallThrough(4) == -1);
+            tester.TestAssertion("Default case fallthrough 3", TestDefaultCaseFallThrough(1) == 1);
+            tester.TestAssertion("Default case fallthrough 4", TestDefaultCaseFallThrough(2) == 2);
         }
 
         private string TestSwitch(int switchVal)
@@ -171,6 +184,25 @@ namespace UdonSharp.Tests
             return "no switch val found";
         }
         
+        private string ObjectSwitchWithNull(object val)
+        {
+            switch (val)
+            {
+                case null:
+                    return "null";
+                case "testVal":
+                    return "the testVal";
+                case 2:
+                    return "two";
+                case 2L:
+                    return "two long";
+                default:
+                    return "default";
+            }
+
+            return "no switch val found";
+        }
+        
         private string FloatSwitch(float val)
         {
             switch (val)
@@ -198,6 +230,35 @@ namespace UdonSharp.Tests
             }
 
             return "no switch val found";
+        }
+
+        // https://github.com/vrchat-community/UdonSharp/issues/26
+        private int TestDefaultCaseRegression(int val)
+        {
+            switch (val)
+            {
+                default:
+                    return -1;
+                case 1:
+                    return 1;
+                case 2:
+                    return 2;
+            }
+        }
+        
+        private int TestDefaultCaseFallThrough(int val)
+        {
+            switch (val)
+            {
+                case 4:
+                default:
+                case 3:
+                    return -1;
+                case 1:
+                    return 1;
+                case 2:
+                    return 2;
+            }
         }
     }
 }

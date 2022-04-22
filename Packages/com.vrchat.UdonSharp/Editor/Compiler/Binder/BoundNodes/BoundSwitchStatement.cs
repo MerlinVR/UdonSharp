@@ -65,7 +65,7 @@ namespace UdonSharp.Compiler.Binder
                     var section = SwitchSections[i];
                     JumpLabel sectionBodyLabel = context.Module.CreateLabel();
 
-                    foreach (var labelExpression in section.Item1)
+                    foreach (BoundExpression labelExpression in section.Item1)
                     {
                         context.Module.LabelJump(nextLabel);
 
@@ -93,13 +93,16 @@ namespace UdonSharp.Compiler.Binder
                         if (section.Item1.Count > 1)
                             context.Module.AddJump(sectionBodyLabel);
                     }
-                    
+
                     if (i == DefaultSectionIdx)
+                    {
+                        context.Module.AddJump(nextLabel);
                         context.Module.LabelJump(defaultLabel);
-                    
+                    }
+
                     context.Module.LabelJump(sectionBodyLabel);
 
-                    foreach (var statement in section.Item2)
+                    foreach (BoundStatement statement in section.Item2)
                     {
                         context.Emit(statement);
                     }
@@ -179,13 +182,13 @@ namespace UdonSharp.Compiler.Binder
                     if (DefaultSectionIdx == i)
                         context.Module.LabelJump(defaultJump);
                     
-                    foreach (var labelExpression in switchSection.Item1)
+                    foreach (BoundExpression labelExpression in switchSection.Item1)
                     {
                         int labelIdx = Convert.ToInt32(labelExpression.ConstantValue.Value);
                         jumpTableArr[labelIdx] = currentPos.Address;
                     }
 
-                    foreach (var statement in switchSection.Item2)
+                    foreach (BoundStatement statement in switchSection.Item2)
                     {
                         context.Emit(statement);
                     }
