@@ -350,6 +350,9 @@ namespace UdonSharp.Compiler.Symbols
 
             for (int i = 0; i < typeArguments.Length; ++i)
             {
+                if (typeSymbol.TypeArguments[i].TypeKind == TypeKind.TypeParameter)
+                    return baseType;
+                
                 if (!TryGetSystemType(typeSymbol.TypeArguments[i], out var typeArgument))
                     return null;
 
