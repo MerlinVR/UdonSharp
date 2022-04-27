@@ -52,6 +52,7 @@ public class <TemplateClassName> : UdonSharpBehaviour
             "Assets/Pavo Studio/", // Muscle editor
             "Assets/Plugins/RootMotion/", // FinalIK
             "Assets/CyanEmu/", // References VRC stuff that's excluded
+            "Assets/PolyFew/", // References Tuple type redundantly incorrectly and is not in an asmdef
         };
 
         // Compiler settings
