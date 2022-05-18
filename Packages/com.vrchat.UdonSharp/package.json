@@ -13,7 +13,7 @@
 		"com.vrchat.base" : "https://github.com/vrchat/packages.git?path=/packages/com.vrchat.base#3.0.2",
 		"com.vrchat.worlds" : "https://github.com/vrchat/packages.git?path=/packages/com.vrchat.worlds#3.0.2"
 	},
-	"url" : "https://github.com/vrchat-community/UdonSharp.git?path=/packages/com.vrchat.udonsharp",
+	"url" : "https://github.com/vrchat-community/UdonSharp.git?path=/Packages/com.vrchat.UdonSharp#1.0.0",
 	"samples" : [
 		{
 			"displayName" : "CustomInspectors",
