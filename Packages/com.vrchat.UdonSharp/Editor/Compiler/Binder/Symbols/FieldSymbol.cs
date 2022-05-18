@@ -99,16 +99,16 @@ namespace UdonSharp.Compiler.Symbols
             
             // Re-get the type symbol to register it as a dependency in the bind context
             TypeSymbol fieldType = context.GetTypeSymbol(RoslynSymbol.Type);
-            Type fieldSystemType = fieldType.UdonType.SystemType;
+            // Type fieldSystemType = fieldType.UdonType.SystemType;
 
-            if (InitializerSyntax != null && 
-                (!HasAttribute<CompileInitAttribute>() && 
-                 fieldSystemType != typeof(VRCUrl) && 
-                 fieldSystemType != typeof(VRCUrl[])))
-            {
-                BinderSyntaxVisitor bodyVisitor = new BinderSyntaxVisitor(this, context);
-                InitializerExpression = bodyVisitor.VisitVariableInitializer(InitializerSyntax, fieldType);
-            }
+            // if (InitializerSyntax != null && 
+            //     (!HasAttribute<CompileInitAttribute>() && 
+            //      fieldSystemType != typeof(VRCUrl) && 
+            //      fieldSystemType != typeof(VRCUrl[])))
+            // {
+            //     BinderSyntaxVisitor bodyVisitor = new BinderSyntaxVisitor(this, context);
+            //     InitializerExpression = bodyVisitor.VisitVariableInitializer(InitializerSyntax, fieldType);
+            // }
 
             _resolved = true;
         }

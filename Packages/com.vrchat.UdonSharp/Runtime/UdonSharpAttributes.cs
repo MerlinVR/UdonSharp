@@ -116,6 +116,7 @@ namespace UdonSharp
     /// </summary>
     [PublicAPI]
     [AttributeUsage(AttributeTargets.Field)]
+    [Obsolete("This attribute currently does nothing")]
     public class CompileInitAttribute : Attribute
     {}
 }
