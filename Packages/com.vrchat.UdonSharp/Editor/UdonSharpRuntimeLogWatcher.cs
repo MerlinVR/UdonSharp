@@ -43,6 +43,8 @@ namespace UdonSharpEditor
             return udonSharpSettings.listenForVRCExceptions || udonSharpSettings.watcherMode != UdonSharpSettings.LogWatcherMode.Disabled;
         }
 
+        private static bool _didMissingDataError;
+        
         private static bool InitializeScriptLookup()
         {
             if (EditorApplication.isCompiling || EditorApplication.isUpdating)
@@ -67,7 +69,13 @@ namespace UdonSharpEditor
                 }
                 else
                 {
-                    Debug.LogError("[UdonSharp] Could not locate VRChat data directory for exception watcher");
+                    if (!_didMissingDataError)
+                    {
+                        UdonSharpUtils.LogError("Could not locate VRChat data directory for exception watcher, make sure you have VRChat installed and have run it at least once or turn off exception watching in the UdonSharp project settings.");
+                        _didMissingDataError = true;
+                    }
+
+                    return false;
                 }
             }
 
