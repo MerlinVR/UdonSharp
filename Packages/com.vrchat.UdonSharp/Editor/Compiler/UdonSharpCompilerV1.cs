@@ -295,6 +295,9 @@ namespace UdonSharp.Compiler
                     continue;
                 }
                 
+                if (hasError)
+                    continue;
+                
                 rootProgramLookup.Add(assetPath.Replace('\\', '/'), new ProgramAssetInfo() { programAsset = udonSharpProgram ? udonSharpProgram : null, scriptClass = udonSharpProgram != null ? udonSharpProgram.GetClass() : null });
             }
 
