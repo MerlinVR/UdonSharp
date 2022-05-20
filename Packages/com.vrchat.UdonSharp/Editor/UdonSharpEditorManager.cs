@@ -745,8 +745,14 @@ namespace UdonSharpEditor
 
             if (!_didSceneUpgrade && !EditorApplication.isCompiling && !EditorApplication.isUpdating)
             {
-                UdonSharpEditorUtility.UpgradeSceneBehaviours(GetAllUdonBehaviours());
-                _didSceneUpgrade = true;
+                try
+                {
+                    UdonSharpEditorUtility.UpgradeSceneBehaviours(GetAllUdonBehaviours());
+                }
+                finally
+                {
+                    _didSceneUpgrade = true;
+                }
             }
         }
 
@@ -1599,9 +1605,17 @@ namespace UdonSharpEditor
                 return true;
 
             UpgradeAssetsIfNeeded();
-            
-            if (!EditorApplication.isCompiling && !EditorApplication.isUpdating)
-                UdonSharpEditorUtility.UpgradeSceneBehaviours(GetAllUdonBehaviours());
+
+            try
+            {
+                if (!EditorApplication.isCompiling && !EditorApplication.isUpdating)
+                    UdonSharpEditorUtility.UpgradeSceneBehaviours(GetAllUdonBehaviours());
+            }
+            catch (Exception e)
+            {
+                UdonSharpUtils.LogError($"Hit exception while attempting to upgrade scene behaviours: {e}");
+                return true;
+            }
             
             return false;
         }

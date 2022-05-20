@@ -437,6 +437,27 @@ namespace UdonSharpEditor
         {
             if (EditorApplication.isPlaying)
                 return;
+
+            if (UdonSharpUtils.DoesUnityProjectHaveCompileErrors())
+            {
+                UdonSharpUtils.LogError("C# scripts have compile errors, cannot run scene upgrade.");
+                return;
+            }
+            
+            UdonSharpProgramAsset.CompileAllCsPrograms();
+            UdonSharpCompilerV1.WaitForCompile();
+                
+            if (UdonSharpProgramAsset.AnyUdonSharpScriptHasError())
+            {
+                // Give chance to compile and resolve errors in case they are fixed already
+                UdonSharpCompilerV1.CompileSync();
+                    
+                if (UdonSharpProgramAsset.AnyUdonSharpScriptHasError())
+                {
+                    UdonSharpUtils.LogError("U# scripts have compile errors, scene upgrade deferred until script errors are resolved.");
+                    return;
+                }
+            }
             
             // Create proxies if they do not exist
             foreach (UdonBehaviour udonBehaviour in behaviours)
