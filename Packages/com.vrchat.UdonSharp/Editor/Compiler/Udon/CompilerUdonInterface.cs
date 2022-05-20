@@ -137,7 +137,7 @@ namespace UdonSharp.Compiler.Udon
 
                 foreach (string definitionPath in assemblyDefinitionPaths)
                 {
-                    var assemblyDefinition = AssetDatabase.LoadAssetAtPath<UdonSharpAssemblyDefinition>(definitionPath);
+                    UdonSharpAssemblyDefinition assemblyDefinition = AssetDatabase.LoadAssetAtPath<UdonSharpAssemblyDefinition>(definitionPath);
                     if (assemblyDefinition == null || assemblyDefinition.sourceAssembly == null) 
                         continue;
                     
@@ -158,8 +158,17 @@ namespace UdonSharp.Compiler.Udon
                         break;
                     }
                 }
-                
-                assemblies.Add(allAssemblies.First(e => e.GetName().Name == "Assembly-CSharp"));
+
+                var cSharpAssembly = allAssemblies.FirstOrDefault(e => e.GetName().Name == "Assembly-CSharp");
+
+                if (cSharpAssembly != null)
+                {
+                    assemblies.Add(cSharpAssembly);
+                }
+                else
+                {
+                    UdonSharpUtils.LogWarning("No Assembly-CSharp assembly found");
+                }
 
                 UdonSharpAssemblies = assemblies.ToImmutableArray();
                 UdonSharpAssemblyDefinitions = assemblyDefinitions.ToImmutableArray();
