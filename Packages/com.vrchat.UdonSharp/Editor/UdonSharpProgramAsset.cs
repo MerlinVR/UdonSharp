@@ -322,10 +322,13 @@ namespace UdonSharp
                 {
                     if (_programAssetCache != null && fallbackAsset != null && !_programAssetCache.Contains(fallbackAsset))
                     {
-                        Debug.LogWarning($"Repairing program asset {fallbackAsset} which Unity has broken");
+                        Debug.LogWarning($"Repairing program asset '{fallbackAsset}' which Unity has broken");
                         neededFallback = true;
+
+                        string assetPath = AssetDatabase.GetAssetPath(fallbackAsset);
                         
-                        AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(fallbackAsset), ImportAssetOptions.ForceUpdate);
+                        if (!string.IsNullOrEmpty(assetPath))
+                            AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
                     }
                 }
 
@@ -336,11 +339,13 @@ namespace UdonSharp
                     {
                         if (_programAssetCache != null && fallbackAsset != null && !_programAssetCache.Contains(fallbackAsset))
                         {
-                            Debug.LogWarning($"Repairing program asset {fallbackAsset} which Unity has broken pass 2");
+                            Debug.LogWarning($"Repairing program asset '{fallbackAsset}' which Unity has broken pass 2");
                             neededFallback = true;
-
-                            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(fallbackAsset),
-                                ImportAssetOptions.ForceUpdate);
+                            
+                            string assetPath = AssetDatabase.GetAssetPath(fallbackAsset);
+                        
+                            if (!string.IsNullOrEmpty(assetPath))
+                                AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
                         }
                     }
                 }
@@ -364,21 +369,20 @@ namespace UdonSharp
         }
 
         [MenuItem("Window/Udon Sharp/Refresh All UdonSharp Assets")]
-        static public void UdonSharpCheckAbsent()
+        public static void UdonSharpCheckAbsent()
         {
             Debug.Log( "Checking Absent" );
             
             int cycles = -1;
             int lastNumAssets;
             int currentNumAssets;
-            string[] udonSharpDataAssets;
 
             // Loop until we stop picking up assets.
             do
             {
-                udonSharpDataAssets = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}");
+                string[] udonSharpDataAssets = AssetDatabase.FindAssets($"t:{nameof(UdonSharpProgramAsset)}");
                 lastNumAssets = udonSharpDataAssets.Length;
-                string[] udonSharpNames = new string[udonSharpDataAssets.Length];
+                
                 Debug.Log( $"Found {udonSharpDataAssets.Length} assets." );
 
                 _programAssetCache = new UdonSharpProgramAsset[udonSharpDataAssets.Length];
