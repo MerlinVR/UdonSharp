@@ -93,6 +93,7 @@ Assets/UdonSharp.meta
 # Package stuff
 Assets/Resources
 Assets/Resources.meta
+Assets/Samples
 
 Packages/com.vrchat.vrcsdk3
 
