@@ -733,7 +733,7 @@ namespace UdonSharpEditor
             UpdateSerializedProgramAssets(allBehaviours);
         }
 
-        private static bool _didSceneUpgrade;
+        internal static bool _didSceneUpgrade;
         
         private static void OnEditorUpdate()
         {

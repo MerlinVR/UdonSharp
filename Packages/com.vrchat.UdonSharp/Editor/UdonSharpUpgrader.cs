@@ -39,6 +39,7 @@ namespace UdonSharpEditor
         {
             UdonSharpProgramAsset.GetAllUdonSharpPrograms().ForEach(QueueUpgrade);
             UdonSharpEditorCache.Instance.QueueUpgradePass();
+            UdonSharpEditorManager._didSceneUpgrade = false;
         }
 
         private static bool _needsProgramUpgradePass;
