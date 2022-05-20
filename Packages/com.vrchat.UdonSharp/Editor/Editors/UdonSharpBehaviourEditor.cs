@@ -12,6 +12,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using VRC.Udon;
+using VRC.Udon.Editor;
 using VRC.Udon.Serialization.OdinSerializer;
 using Object = UnityEngine.Object;
 
@@ -73,7 +74,7 @@ namespace UdonSharpEditor
 
     // [CustomEditor(typeof(UdonSharpBehaviour), true)]
     // [CanEditMultipleObjects]
-    // [CustomUdonBehaviourInspector(typeof(UdonSharpProgramAsset))]
+    [CustomUdonBehaviourInspector(typeof(UdonSharpProgramAsset))]
     internal class UdonSharpBehaviourEditor : Editor
     {
         [MenuItem("Assets/Create/U# Script", false, 5)]
