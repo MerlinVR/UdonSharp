@@ -176,24 +176,35 @@ namespace UdonSharpEditor
                 // Needs setup
                 if (udonSharpBehaviour == null)
                 {
-                    UdonSharpEditorUtility.SetIgnoreEvents(true);
-                
-                    try
+                    // In particularly bad cases, Unity can drop the script data and make the U# behaviour effectively null temporarily. 
+                    // We do not want to create additional components in this case since it's possible for users to recover the original state sometimes
+                    // So we only run setup if the version has not already been set since UdonSharpBehaviours without versions can be created by populating a U# program asset on a UdonBehaviour
+                    if (UdonSharpEditorUtility.GetBehaviourVersion(targetBehaviour) < UdonSharpBehaviourVersion.V1)
                     {
-                        udonSharpBehaviour = (UdonSharpBehaviour)Undo.AddComponent(targetBehaviour.gameObject, UdonSharpEditorUtility.GetUdonSharpBehaviourType(targetBehaviour));
+                        UdonSharpEditorUtility.SetIgnoreEvents(true);
+                    
+                        try
+                        {
+                            udonSharpBehaviour = (UdonSharpBehaviour)Undo.AddComponent(targetBehaviour.gameObject, UdonSharpEditorUtility.GetUdonSharpBehaviourType(targetBehaviour));
 
-                        UdonSharpEditorUtility.SetBackingUdonBehaviour(udonSharpBehaviour, targetBehaviour);
-                        UdonSharpEditorUtility.MoveComponentRelativeToComponent(udonSharpBehaviour, targetBehaviour, true);
-                        UdonSharpEditorUtility.SetBehaviourVersion(targetBehaviour, UdonSharpBehaviourVersion.CurrentVersion);
-                        UdonSharpEditorUtility.SetSceneBehaviourUpgraded(targetBehaviour);
+                            UdonSharpEditorUtility.SetBackingUdonBehaviour(udonSharpBehaviour, targetBehaviour);
+                            UdonSharpEditorUtility.MoveComponentRelativeToComponent(udonSharpBehaviour, targetBehaviour, true);
+                            UdonSharpEditorUtility.SetBehaviourVersion(targetBehaviour, UdonSharpBehaviourVersion.CurrentVersion);
+                            UdonSharpEditorUtility.SetSceneBehaviourUpgraded(targetBehaviour);
+                        }
+                        finally
+                        {
+                            UdonSharpEditorUtility.SetIgnoreEvents(false);
+                        }
                     }
-                    finally
+                    else
                     {
-                        UdonSharpEditorUtility.SetIgnoreEvents(false);
+                        UdonSharpUtils.LogWarning($"Inspected UdonBehaviour '{targetBehaviour.name}' does not have an associated U# behaviour, but has a version that indicates it should.", targetBehaviour);
                     }
                 }
                 
-                udonSharpBehaviour.enabled = targetBehaviour.enabled;
+                if (udonSharpBehaviour != null)
+                    udonSharpBehaviour.enabled = targetBehaviour.enabled;
                 
             #if !UDONSHARP_DEBUG
                 targetBehaviour.hideFlags = HideFlags.HideInInspector;
