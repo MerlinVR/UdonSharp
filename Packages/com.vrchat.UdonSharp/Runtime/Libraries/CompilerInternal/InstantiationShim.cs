@@ -12,24 +12,13 @@ namespace UdonSharp.Lib.Internal
         [UsedImplicitly]
         public static GameObject Instantiate(GameObject original)
         {
-            Transform originalTransform = original.transform;
-            Vector3 originalPosition = originalTransform.position;
-            Quaternion originalRotation = originalTransform.rotation;
-            GameObject instantiatedObject = Instantiate_Extern(original);
-            instantiatedObject.transform.SetPositionAndRotation(originalPosition, originalRotation);
-
-            return instantiatedObject;
-        }
-
-        private static GameObject InstantiateNoPositionFix(GameObject original)
-        {
             return Instantiate_Extern(original);
         }
 
         [UsedImplicitly]
         public static GameObject Instantiate(GameObject original, Vector3 position, Quaternion rotation)
         {
-            GameObject instantiatedObject = InstantiateNoPositionFix(original);
+            GameObject instantiatedObject = Instantiate(original);
             Transform objectTransform = instantiatedObject.transform;
             objectTransform.SetPositionAndRotation(position, rotation);
 
@@ -59,7 +48,7 @@ namespace UdonSharp.Lib.Internal
         [UsedImplicitly]
         public static GameObject Instantiate(GameObject original, Vector3 position, Quaternion rotation, Transform parent)
         {
-            GameObject instantiatedObject = InstantiateNoPositionFix(original);
+            GameObject instantiatedObject = Instantiate(original);
             Transform objectTransform = instantiatedObject.transform;
             objectTransform.SetPositionAndRotation(position, rotation);
             objectTransform.SetParent(parent, true);
