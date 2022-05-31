@@ -480,6 +480,12 @@ namespace UdonSharpEditor
                     
                     Type udonSharpBehaviourType = GetUdonSharpBehaviourType(udonBehaviour);
 
+                    if (udonSharpBehaviourType == null)
+                    {
+                        UdonSharpUtils.LogError($"Class script referenced by program asset '{udonBehaviour.programSource}' has no Type", udonBehaviour.programSource);
+                        continue;
+                    }
+
                     if (!udonSharpBehaviourType.IsSubclassOf(typeof(UdonSharpBehaviour)))
                     {
                         UdonSharpUtils.LogError($"Class script referenced by program asset '{udonBehaviour.programSource}' is not an UdonSharpBehaviour", udonBehaviour.programSource);
