@@ -172,7 +172,8 @@ namespace UdonSharpEditor
         {
             lock (_modifiedFileLock) // The watcher runs on a different thread, and I don't feel like using a concurrent list.
             {
-                _modifiedFilePaths.Add(args.FullPath);
+                // There's some platform args.FullPath may be a relative path.
+                _modifiedFilePaths.Add(Path.GetFullPath(args.FullPath));
             }
         }
     }
