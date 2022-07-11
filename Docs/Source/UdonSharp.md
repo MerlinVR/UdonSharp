@@ -39,7 +39,7 @@ public class Example : UdonSharpBehaviour
 | Name | Summary |
 | --- | --- |
 | NotSynced | |
-| None | No interpolation |
+| None | No interpolation (Default) |
 | Linear | Lerp |
 | Smooth | *Some kind of smoothed syncing* |
 
