@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using UnityEditor;
@@ -86,7 +87,8 @@ namespace VRC.PackageManagement.Resolver
                 var project = new UnityProject(_projectDir);
                 StringBuilder readout = new StringBuilder();
                 // Here is where we detect if all dependencies are installed
-                foreach (var pair in manifest.locked)
+                var allDependencies = manifest.dependencies.Union(manifest.locked);
+                foreach (var pair in allDependencies)
                 {
                     var id = pair.Key;
                     var version = pair.Value.version;
