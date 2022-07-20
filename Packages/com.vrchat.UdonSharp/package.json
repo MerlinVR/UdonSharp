@@ -12,7 +12,6 @@
 	"vpmDependencies" : {
 		"com.vrchat.worlds" : "3.1.x"
 	},
-	"url" : "https://github.com/vrchat-community/UdonSharp.git?path=/Packages/com.vrchat.UdonSharp#1.0.1",
 	"samples" : [
 		{
 			"displayName" : "CustomInspectors",
