@@ -14,4 +14,4 @@
 
 ## I would like to contribute, how can I help the project?
 
-This fork is new, and we're working on our Contribution guidelines - we'll udpate this file when it's ready.
+This fork is new, and we're working on our Contribution guidelines - we'll update this file when it's ready.
