@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: vrchat/creators-docs-builder
-          token: ${{ secrets.GH_PAT }}
+          ssh-key: ${{ secrets.ACTION_REPO_KEY }}
           path: action
       
       - name: Build Docs
