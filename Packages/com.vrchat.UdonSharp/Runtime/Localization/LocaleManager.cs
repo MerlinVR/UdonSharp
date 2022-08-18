@@ -173,32 +173,29 @@ namespace UdonSharp.Localization
     /// </summary>
     public static class Loc
     {
-        static LocaleInstance instance;
-
-        static Loc()
-        {
-            InitLocalization();
-        }
+        private static LocaleInstance _instance;
 
         public static void InitLocalization()
         {
-            if (instance == null)
+            if (_instance == null)
                 ReloadLocalization();
         }
 
         internal static void ReloadLocalization()
         {
-            instance = new LocaleInstance("en-us");
+            _instance = new LocaleInstance("en-us");
         }
 
         public static string Get(LocStr locKey)
         {
-            return instance.GetString(locKey);
+            InitLocalization();
+            return _instance.GetString(locKey);
         }
 
         public static string Format(LocStr locKey, params object[] parameters)
         {
-            return string.Format(instance.GetString(locKey), parameters);
+            InitLocalization();
+            return string.Format(_instance.GetString(locKey), parameters);
         }
     }
 
