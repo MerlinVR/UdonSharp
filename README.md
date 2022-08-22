@@ -85,16 +85,19 @@ public class RotatingCubeBehaviour : UdonSharpBehaviour
     }
 }
 ```
-
+  
 #### Other examples
 
 For more example scripts take a look at the wiki page for [examples](https://github.com/Merlin-san/UdonSharp/wiki/examples), the Examples folder included with U#, or the [community resources](https://github.com/Merlin-san/UdonSharp/wiki/community-resources) page on the wiki.
 
+### Visual Studio Code Integration
+
+You can follow [this video guide](https://www.youtube.com/watch?v=ihVAKiJdd40) to get Intellisense for C# within your Unity project in Visual Stido Code (VS Code), inlcuding libraries such as UdonSharp.
+  
 ## Credits
 
 - See [CONTRIBUTORS.md](https://github.com/vrchat-community/UdonSharp/blob/master/CONTRIBUTORS.md) for people who have helped provide improvments to UdonSharp
 - The open source project [Harmony](https://github.com/pardeike/Harmony) helps Udonsharp provide a better editor experience
-
 
 # 
 [![Discord](https://img.shields.io/badge/Discord-Merlin%27s%20Discord%20Server-blueviolet?logo=discord)](https://discord.gg/Ub2n8ZA)
