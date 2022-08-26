@@ -514,6 +514,7 @@ A component used to create portals to other rooms.
 
 ### Synced Variables
 These are the variables that are listed as available for syncing across the network. Note that partial support exists for byte, sbyte, short, ushort, and ulong, but are currently bugged and may not give you the results you expect.
+
 | | | Variables | | |
 | --- | --- | --- | --- | --- |
 | [Color](https://docs.unity3d.com/ScriptReference/Color.html) | [Color32](https://docs.unity3d.com/ScriptReference/Color32.html) | [Quaternion](https://docs.unity3d.com/ScriptReference/Quaternion.html) | [Vector2](https://docs.unity3d.com/ScriptReference/Vector2.html) | [Vector3](https://docs.unity3d.com/ScriptReference/Vector3.html) | 

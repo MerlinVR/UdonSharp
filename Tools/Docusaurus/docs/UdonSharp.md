@@ -1,13 +1,10 @@
 # UdonSharp
 
-* [Attributes](#attributes)
-
----
-
 # Attributes
 All supported attributes in UdonSharp
-| |Attribute| |
-| --- | --- | --- |
+
+| | Attribute | | 
+|--- | --- | --- |
 |[Header](https://docs.unity3d.com/ScriptReference/HeaderAttribute.html)|[HideInInspector](https://docs.unity3d.com/ScriptReference/HideInInspector.html)|[NonSerialized](https://docs.microsoft.com/dotnet/api/system.nonserializedattribute)|
 |[SerializeField](https://docs.unity3d.com/ScriptReference/SerializeField.html)|[Space](https://docs.unity3d.com/ScriptReference/SpaceAttribute.html)|[Tooltip](https://docs.unity3d.com/ScriptReference/TooltipAttribute.html)|
 |[ColorUsage](https://docs.unity3d.com/ScriptReference/ColorUsageAttribute.html)|[GradientUsage](https://docs.unity3d.com/ScriptReference/GradientUsageAttribute.html)|[TextArea](https://docs.unity3d.com/ScriptReference/TextAreaAttribute.html)|
@@ -18,7 +15,7 @@ All supported attributes in UdonSharp
 ## UdonSynced
 `[UdonSynced]` / `[UdonSynced(UdonSyncMode)]`
 
-*See [Synced Variables](https://github.com/Merlin-san/UdonSharp/wiki/vrchat-api#synced-variables) for variables that can be synced.*
+*See [Synced Variables](vrchat-api#synced-variables) for variables that can be synced.*
 
 ### Example
 ```cs
