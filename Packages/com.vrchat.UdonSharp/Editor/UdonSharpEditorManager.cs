@@ -63,9 +63,9 @@ namespace UdonSharpEditor
 
             HashSet<UdonBehaviour> allBehaviours = new HashSet<UdonBehaviour>();
 
-            foreach (var rootObject in rootObjects)
+            foreach (GameObject rootObject in rootObjects)
             {
-                foreach (var behaviour in rootObject.GetComponentsInChildren<UdonSharpBehaviour>(true))
+                foreach (UdonSharpBehaviour behaviour in rootObject.GetComponentsInChildren<UdonSharpBehaviour>(true))
                 {
                     try
                     {
@@ -91,9 +91,9 @@ namespace UdonSharpEditor
             if (!BuildPipeline.isBuildingPlayer)
                 return;
 
-            foreach (var rootObject in rootObjects)
+            foreach (GameObject rootObject in rootObjects)
             {
-                foreach (var behaviour in rootObject.GetComponentsInChildren<UdonSharpBehaviour>(true))
+                foreach (UdonSharpBehaviour behaviour in rootObject.GetComponentsInChildren<UdonSharpBehaviour>(true))
                 {
                     Object.DestroyImmediate(behaviour);
                 }
