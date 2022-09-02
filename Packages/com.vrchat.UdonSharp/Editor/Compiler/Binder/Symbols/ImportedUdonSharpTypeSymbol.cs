@@ -48,7 +48,7 @@ namespace UdonSharp.Compiler.Symbols
                     // return context.GetTypeSymbol(typeSymbol);
             }
             
-            throw new System.NotImplementedException();
+            throw new System.NotImplementedException($"Handling for Symbol {roslynSymbol} is not implemented");
         }
 
         private static Symbol MakeMethodSymbol(IMethodSymbol methodSymbol, AbstractPhaseContext context)
