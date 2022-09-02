@@ -578,9 +578,11 @@ namespace UdonSharpEditor
             // A little jank atm, can bleed into some inspectors like the material inspector that Unity adds in some cases
             _rootInspectorElement.RegisterCallback<AttachToPanelEvent>(evt =>
             {
-                InspectorElement inspectorElement = _rootInspectorElement.GetFirstAncestorOfType<InspectorElement>();
-                VisualElement editorElement = inspectorElement.parent;
-        
+                VisualElement editorElement = _rootInspectorElement.GetFirstAncestorOfType<InspectorElement>()?.parent;
+
+                if (editorElement == null)
+                    return;
+                
                 VisualElement bar = new VisualElement
                 {
                     name = BAR_NAME,
@@ -612,6 +614,27 @@ namespace UdonSharpEditor
         
                 editorElement.Add(bar);
             });
+            
+            _rootInspectorElement.RegisterCallback<DetachFromPanelEvent>(evt =>
+            {
+                VisualElement editorElement = _rootInspectorElement.GetFirstAncestorOfType<InspectorElement>()?.parent;
+
+                if (editorElement == null)
+                    return;
+
+                List<VisualElement> removeList = new List<VisualElement>();
+
+                foreach (VisualElement child in editorElement.Children())
+                {
+                    if (child.name == BAR_NAME)
+                        removeList.Add(child);
+                }
+
+                foreach (VisualElement element in removeList)
+                {
+                    editorElement.Remove(element);
+                }
+            });
 
             return _rootInspectorElement;
         }
@@ -640,7 +663,7 @@ namespace UdonSharpEditor
                 {
                     EditorGUILayout.HelpBox("Selected U# behaviour program source reference is not valid.", MessageType.Warning);
                     
-                    UdonSharpProgramAsset programAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset((UdonBehaviour)target);
+                    UdonSharpProgramAsset programAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset((UdonSharpBehaviour)target);
 
                     if (programAsset && 
                         programAsset.sourceCsScript == null &&
@@ -659,7 +682,7 @@ namespace UdonSharpEditor
                 return CreateIMGUIInspector(() =>
                 {
                     EditorGUILayout.HelpBox("Multi-object editing not supported.", MessageType.None);
-                });
+                }, true);
             }
             
             VisualElement userEditorElement = _userEditor.CreateInspectorGUI();
