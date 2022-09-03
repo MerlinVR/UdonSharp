@@ -52,10 +52,8 @@ namespace UdonSharp.Updater
         }
 
 #if UNITY_EDITOR
-        private static string GetUtilitiesPath(UdonSharpDataLocator locator)
+        private static string GetUtilitiesPath(string locatorPath)
         {
-            string locatorPath = AssetDatabase.GetAssetPath(locator);
-        
             return Path.Combine(Path.GetDirectoryName(locatorPath), "UtilityScripts");
         }
         
@@ -63,11 +61,8 @@ namespace UdonSharp.Updater
         {
             if (!AssetDatabase.IsValidFolder(Path.GetDirectoryName(DEFAULT_DATA_PATH)))
                 AssetDatabase.CreateFolder("Assets", "UdonSharp");
-            
-            UdonSharpDataLocator locator = CreateInstance<UdonSharpDataLocator>();
-            AssetDatabase.CreateAsset(locator, DEFAULT_DATA_PATH);
 
-            string utilsTargetPath = GetUtilitiesPath(locator);
+            string utilsTargetPath = GetUtilitiesPath(DEFAULT_DATA_PATH);
             
             string utilsSourcePath = Path.Combine(UdonSharpLocator.SamplesPath, "Utilities");
             
@@ -75,6 +70,9 @@ namespace UdonSharp.Updater
                 DeepCopyDirectory(utilsSourcePath, utilsTargetPath);
             else
                 Debug.LogWarning("No utilities directory found to copy from for UdonSharp utility scripts");
+            
+            UdonSharpDataLocator locator = CreateInstance<UdonSharpDataLocator>();
+            AssetDatabase.CreateAsset(locator, DEFAULT_DATA_PATH);
 
             Debug.Log("Created UdonSharp data directory", locator);
 
