@@ -39,11 +39,11 @@ Then modify the scene however you'd like - you learn about all the examples in [
 
 
    Instead of creating assets from an UdonBehaviour you can also do the following:
-8. Right-click in your project asset explorer
-9. Navigate to Create > U# script
-10. Click U# script, this will open a create file dialog
-11. Choose a name for your script and click Save
-12. This will create a .cs script file and an UdonSharp program asset that's set up for the script in the same directory
+1. Right-click in your project asset explorer
+2. Navigate to Create > U# script 
+3. Click U# script, this will open a create file dialog
+4. Choose a name for your script and click Save
+5. This will create a .cs script file and an UdonSharp program asset that's set up for the script in the same directory
 
 ## Test Your World
 When you're ready to try out your World, find and choose the menu item "VRChat SDK > Show Control Panel".
