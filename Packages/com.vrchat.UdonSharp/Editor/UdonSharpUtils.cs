@@ -173,7 +173,7 @@ namespace UdonSharp
                    IsUserDefinedEnum(type);
         }
         
-        private static Dictionary<Type, Type> _inheritedTypeMap;
+        private static volatile Dictionary<Type, Type> _inheritedTypeMap;
         private static readonly object _inheritedTypeMapLock = new object();
 
         private static Dictionary<Type, Type> GetInheritedTypeMap()
@@ -188,12 +188,20 @@ namespace UdonSharp
                 
                 Dictionary<Type, Type> typeMap = new Dictionary<Type, Type>();
 
-                IEnumerable<Type> typeList = AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == "VRCSDK3").GetTypes().Where(t => t != null && t.Namespace != null && t.Namespace.StartsWith("VRC.SDK3.Components"));
+                IEnumerable<Type> typeList = AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == "VRCSDK3").GetTypes();
 
                 foreach (Type childType in typeList)
                 {
-                    if (childType.BaseType != null && childType.BaseType.Namespace.StartsWith("VRC.SDKBase"))
+                    if (childType.BaseType?.Namespace != null &&
+                        childType.BaseType.Namespace.StartsWith("VRC.SDKBase", StringComparison.Ordinal) && 
+                        childType.BaseType.Name != "VRCNetworkBehaviour")
                     {
+                        if (typeMap.ContainsKey(childType.BaseType))
+                        {
+                            LogWarning($"Inherited type map already contains an entry for {childType.BaseType}, existing pair: ({childType.BaseType}, {typeMap[childType.BaseType]})");
+                            continue;
+                        }
+                        
                         typeMap.Add(childType.BaseType, childType);
                     }
                 }
