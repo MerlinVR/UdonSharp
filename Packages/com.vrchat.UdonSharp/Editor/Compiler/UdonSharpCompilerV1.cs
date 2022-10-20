@@ -327,6 +327,8 @@ namespace UdonSharp.Compiler
             string[] defines = UdonSharpUtils.GetProjectDefines(options.IsEditorBuild);
 
             EditorApplication.LockReloadAssemblies();
+            
+            CompilerUdonInterface.AssemblyCacheInit();
 
             Task compileTask = new Task(() => Compile(compilationContext, rootProgramLookup, allSourcePaths, defines));
             CurrentJob = new CompileJob() { Context = compilationContext, Task = compileTask, CompileTimer = Stopwatch.StartNew(), CompileOptions = options };
@@ -399,7 +401,6 @@ namespace UdonSharp.Compiler
             Stopwatch setupTimer = Stopwatch.StartNew();
             
             CompilerUdonInterface.CacheInit();
-            CompilerUdonInterface.AssemblyCacheInit();
             
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.Setup;
             ModuleBinding[] syntaxTrees = compilationContext.LoadSyntaxTreesAndCreateModules(allSourcePaths, scriptingDefines);
