@@ -1,96 +1,69 @@
 # UdonSharp
-## A compiler for compiling C# to Udon assembly
 
-UdonSharp is a compiler that compiles C# to Udon assembly. UdonSharp is not currently conformant to any version of the C# language specification, so there are many things that are not implemented or will not work.
+UdonSharp is a compiler that translates C# to Udon assembly, so you can create interactive VRChat worlds by writing C# code.
 
-## Features that Udon supports which are currently not supported by U#
-- UdonSharp is currently at feature parity with the Udon graph as far as I am aware. Please message me or make an issue if you find something that should be supported, but is not.
+You can find the full docs at [https://udonsharp.docs.vrchat.com](https://udonsharp.docs.vrchat.com).
 
-## C# features supported
-- Flow control
-  - Supports: `if` `else` `while` `for` `do` `foreach` `switch` `return` `break` `continue` `ternary operator (condition ? true : false)` `??`
-- Implicit and explicit type conversions
-- Arrays and array indexers
-- All builtin arithmetic operators
-- Conditional short circuiting `(true || CheckIfTrue())` will not execute CheckIfTrue()
-- `typeof()`
-- Extern methods with out or ref parameters (such as many variants of `Physics.Raycast()`)
-- User defined methods with parameters and return values, supports out/ref, extension methods, and `params`
-- User defined properties
-- Static user methods
-- UdonSharpBehaviour inheritence, virtual methods, etc.
-- Unity/Udon event callbacks with arguments. For instance, registering a OnPlayerJoined event with a VRCPlayerApi argument is valid.
-- String interpolation
-- Field initializers
-- Jagged arrays
-- Referencing other custom UdonSharpBehaviour classes, accessing fields, and calling methods on them
-- Recursive method calls are supported via the `[RecursiveMethod]` attribute
-
-## Differences from regular Unity C# to note
-- For the best experience making UdonSharp scripts, make your scripts inherit from `UdonSharpBehaviour` instead of `MonoBehaviour`
-- If you need to call `GetComponent<UdonBehaviour>()` you will need to use `(UdonBehaviour)GetComponent(typeof(UdonBehaviour))` at the moment since the generic get component is not exposed for UdonBehaviour yet. GetComponent<T>() works for other Unity component types though.
-- Udon currently only supports array `[]` collections and by extension UdonSharp only supports arrays at the moment. It looks like they might support `List<T>` at some point, but it is not there yet.
-- Field initilizers are evaluated at compile time, if you have any init logic that depends on other objects in the scene you should use Start for this.
-- Use the `UdonSynced` attribute on fields that you want to sync.
-- Numeric casts are checked for overflow due to UdonVM limitations
-- The internal type of variables returned by `.GetType()` will not always match what you may expect since U# abstracts some types in order to make them work in Udon. For instance, any jagged array type will return a type of `object[]` instead of something like `int[][]` for a 2D int jagged array.
-
-## Udon bugs that affect U#
-- Mutating methods on structs do not modify the struct (this can be seen on things like calling Normalize() on a Vector3) https://vrchat.canny.io/vrchat-udon-closed-alpha-bugs/p/raysetorigin-and-raysetdirection-not-working
-
-## Setup
-
-### Requirements
+## Requirements
 - Unity 2019.4.31f1
-- [VRCSDK3 + UdonSDK](https://vrchat.com/home/download)
-- The latest [release](https://github.com/vrchat-community/UdonSharp/releases/latest) of UdonSharp
+- VRChat World SDK (can be automatically resolved, see below)
 
-### Installation
-1. Read the getting started with Udon doc page https://docs.vrchat.com/docs/getting-started-with-udon this has basic installation instructions for Udon.
-2. Install the latest version of the VRCSDK3 linked on the getting started.
-3. Get the latest release of UdonSharp from [here](https://github.com/vrchat-community/UdonSharp/releases/latest) and install it to your project.
+## Getting Started
 
-### Getting started
+If you're comfortable using GitHub, follow the directions in the [UdonSharp Template repo](https://github.com/vrchat-community/template-udonsharp) to quickly make your own ready-to-use repository.
+Otherwise, you can [download the VRChat Creator Companion](https://vrchat.com/home/download), and then choose Projects > New > UdonSharp to create a new ready-to-use Unity Project.
+
+Use Unity 2019.4.31.f1 to open the project. Press "OK" on the dialog that offers to download the required VRChat packages.
+
+![image](https://user-images.githubusercontent.com/737888/185468226-33492169-c1f5-4b27-b5c4-83febb5e6e66.png)
+
+
+## Loading the Example World
+
+Find the "VRChat SDK" item in the menu bar at the top of the Unity Editor window, press it to open, then choose "Samples > UdonExampleScene".
+
+![samples-udonexample-scene](https://user-images.githubusercontent.com/737888/186485286-2758cec3-ec89-4598-a451-9fa12fa27616.png)
+
+Once the scene opens, choose "File > Save As..." and give the scene a new name.
+
+Then modify the scene however you'd like - you learn about all the examples in [the UdonExampleScene](https://docs.vrchat.com/docs/udon-example-scene) or learn about [Getting Started with Udon](https://docs.vrchat.com/docs/getting-started-with-udon).
+
+## Making your own Scripts
+
 1. Make a new object in your scene
 2. Add an `Udon Behaviour` component to your object
 3. Below the "New Program" button click the dropdown and select "Udon C# Program Asset"
 4. Now click the New Program button, this will create a new UdonSharp program asset for you
 5. Click the Create Script button and choose a save destination and name for the script.
-6. This will create a template script that's ready for you to start working on, open the script in your editor of choice and start programming
+6. This will create a template script that's ready for you to start working on, open the script in your editor of choice and start programming.
 
-#### Asset explorer asset creation
 
-Instead of creating assets from an UdonBehaviour you can also do the following:
+   Instead of creating assets from an UdonBehaviour you can also do the following:
 1. Right-click in your project asset explorer
-2. Navigate to Create > U# script
+2. Navigate to Create > U# script 
 3. Click U# script, this will open a create file dialog
 4. Choose a name for your script and click Save
 5. This will create a .cs script file and an UdonSharp program asset that's set up for the script in the same directory
 
-### Example scripts
+## Test Your World
+When you're ready to try out your World, find and choose the menu item "VRChat SDK > Show Control Panel".
+* Sign into your VRChat Account in the "Authentication" tab.
+* Switch to the "Builder" tab and choose "Build & Test".
+* After a quick build process, VRChat should open up in your test world!
+* If you have any issues making a test world, check out [our docs on Using Build & Test](https://docs.vrchat.com/docs/using-build-test).
 
-#### The rotating cube demo
+## Publish Your World
 
-This rotates the object that it's attached to by 90 degrees every second
+When you're ready to publish your World so you can use it regularly:
+* Return to the VRChat SDK Control Panel in your Unity Project
+* Switch to the "Builder" tab and press "Build and Publish for Windows".
+* This will build your World and add some publishing options to your Game window.
+* Fill out the fields "World Name", "Description" and "Sharing", and check the terms box "the above information is accurate...".
+* Press "Upload".
 
-```cs
-using UnityEngine;
-using UdonSharp;
+Return to VRChat - open the "Worlds" menu, then scroll down to the section named "Mine". Choose your world from the list and press "Go" to check it out!
 
-public class RotatingCubeBehaviour : UdonSharpBehaviour
-{
-    private void Update()
-    {
-        transform.Rotate(Vector3.up, 90f * Time.deltaTime);
-    }
-}
-```
-  
-#### Other examples
-
-For more example scripts take a look at the wiki page for [examples](https://github.com/Merlin-san/UdonSharp/wiki/examples), the Examples folder included with U#, or the [community resources](https://github.com/Merlin-san/UdonSharp/wiki/community-resources) page on the wiki.
-
-### Visual Studio Code Integration
+## Visual Studio Code Integration
 
 You can follow [this video guide](https://www.youtube.com/watch?v=ihVAKiJdd40) to get Intellisense for C# within your Unity project in Visual Stido Code (VS Code), inlcuding libraries such as UdonSharp.
   
