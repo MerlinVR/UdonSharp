@@ -4,6 +4,9 @@ UdonSharp is a compiler that translates C# to Udon assembly, so you can create i
 
 You can find the full docs at [https://udonsharp.docs.vrchat.com](https://udonsharp.docs.vrchat.com).
 
+# :warning: IMPORTANT! :warning:
+The old 0.x version of UdonSharp which used to be delivered as a .unitypackage is deprecated and no longer supported. You can use the [Creator Companion](https://vcc.docs.vrchat.com/) to migrate your projects to this new version and keep it updated moving forward.
+
 ## Requirements
 - Unity 2019.4.31f1
 - VRChat World SDK (can be automatically resolved, see below)
