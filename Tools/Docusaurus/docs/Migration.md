@@ -33,6 +33,3 @@ UdonSharp 0.x (the .unitypackage version) is deprecated and no longer supported.
 **Symptoms**: Errors in your console which mention the above library. It might not be at the front of the sentence, but something like `System.TypeInitializationException: the type initializer for blah blah blah...Assets/SketchfabForUnity/Dependencies/Libraries/Newtonsoft.Json.dll`
 
 **How to Fix**: Remove any copies of Newtonsoft.Json.dll from your Assets folder, the VRCSDK will provide it for any package that needs it through the Package Manager.
-
-
-[UdonSharp] Script 'Assets/_pi_/_LTCGI/Scripts/LTCGI_UdonAdapter.cs' does not belong to a U# assembly, have you made a U# assembly definition for the assembly the script is a part of?
