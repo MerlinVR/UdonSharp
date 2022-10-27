@@ -26,7 +26,7 @@ const sidebars = {
     {
       type: 'category',
       label: 'Getting Started',
-      items: ['setup', 'examples', 'community-resources', 'configuration', 'frequently-asked-questions'],
+      items: ['setup', 'examples', 'community-resources', 'configuration', 'migration', 'frequently-asked-questions'],
       collapsed: false,
     },
     {
