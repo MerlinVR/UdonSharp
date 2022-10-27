@@ -10,9 +10,9 @@ UdonSharp 0.x (the .unitypackage version) is deprecated and no longer supported.
 
 **Issue**: UdonSharp always warned against using nested prefabs, and now they will completely break in some circumstances.
 
-**Symptoms**:
+**Symptoms**: Errors like `Cannot upgrade scene behaviour 'SomethingOrOther' since its prefab must be upgraded`
 
-**How to Fix**:
+**How to Fix**: Unpack the prefab in your 0.x UdonSharp project first. You can also open the "Udon Sharp" menu item and choose "Force Upgrade".
 
 ### Does Not Belong to U# Assembly
 
