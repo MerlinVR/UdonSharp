@@ -18,6 +18,8 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace UdonSharpEditor
 {
+    using SyntaxTree = Microsoft.CodeAnalysis.SyntaxTree;
+    
     [InitializeOnLoad]
     internal class UdonSharpUpgrader
     {
