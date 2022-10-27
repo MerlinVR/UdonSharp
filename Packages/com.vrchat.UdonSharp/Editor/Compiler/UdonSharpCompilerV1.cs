@@ -836,15 +836,22 @@ namespace UdonSharp.Compiler
                 return;
             }
 
-            if (!field.Type.IsExtern)
+            TypeSymbol fieldType = field.Type;
+
+            if (!fieldType.IsExtern && fieldType.IsEnum)
             {
-                context.AddDiagnostic(DiagnosticSeverity.Error, field.RoslynSymbol.Locations.First(), $"Cannot sync type '{field.Type}'");
+                fieldType = fieldType.UdonType;
+            }
+
+            if (!fieldType.IsExtern)
+            {
+                context.AddDiagnostic(DiagnosticSeverity.Error, field.RoslynSymbol.Locations.First(), $"Cannot sync type '{fieldType}'");
                 return;
             }
             
-            if (!UdonNetworkTypes.CanSync(field.Type.UdonType.SystemType))
+            if (!UdonNetworkTypes.CanSync(fieldType.UdonType.SystemType))
             {
-                context.AddDiagnostic(DiagnosticSeverity.Error, field.RoslynSymbol.Locations.First(), $"'{field.Name}' type '{field.Type}' is not supported by Udon sync");
+                context.AddDiagnostic(DiagnosticSeverity.Error, field.RoslynSymbol.Locations.First(), $"'{field.Name}' type '{fieldType}' is not supported by Udon sync");
             }
             
             UdonBehaviourSyncModeAttribute syncModeAttribute = emitContext.EmitType.GetAttribute<UdonBehaviourSyncModeAttribute>();
@@ -856,7 +863,7 @@ namespace UdonSharp.Compiler
                     context.AddDiagnostic(DiagnosticSeverity.Error, field.RoslynSymbol.Locations.First(), $"'{field.Name}' cannot be synced on an UdonBehaviour with sync mode None");
                     break;
                 case BehaviourSyncMode.Continuous:
-                    if (field.Type.IsArray)
+                    if (fieldType.IsArray)
                     {
                         context.AddDiagnostic(DiagnosticSeverity.Error, field.RoslynSymbol.Locations.First(), $"'{field.Name}' is an array which is not supported by Continuous sync, switch the behaviour to use Manual sync if you want to sync array fields");
                     }
@@ -878,13 +885,13 @@ namespace UdonSharp.Compiler
                     goto default;
                 default:
                     
-                    if (fieldSyncAttribute.NetworkSyncType == UdonSyncMode.Linear && !UdonNetworkTypes.CanSyncLinear(field.Type.UdonType.SystemType))
+                    if (fieldSyncAttribute.NetworkSyncType == UdonSyncMode.Linear && !UdonNetworkTypes.CanSyncLinear(fieldType.UdonType.SystemType))
                     {
-                        context.AddDiagnostic(DiagnosticSeverity.Error, field.RoslynSymbol.Locations.First(), $"'{field.Name}' type '{field.Type}' is not supported for linear sync");
+                        context.AddDiagnostic(DiagnosticSeverity.Error, field.RoslynSymbol.Locations.First(), $"'{field.Name}' type '{fieldType}' is not supported for linear sync");
                     }
-                    else if (fieldSyncAttribute.NetworkSyncType == UdonSyncMode.Smooth && !UdonNetworkTypes.CanSyncSmooth(field.Type.UdonType.SystemType))
+                    else if (fieldSyncAttribute.NetworkSyncType == UdonSyncMode.Smooth && !UdonNetworkTypes.CanSyncSmooth(fieldType.UdonType.SystemType))
                     {
-                        context.AddDiagnostic(DiagnosticSeverity.Error, field.RoslynSymbol.Locations.First(), $"'{field.Name}' type '{field.Type}' is not supported for smooth sync");
+                        context.AddDiagnostic(DiagnosticSeverity.Error, field.RoslynSymbol.Locations.First(), $"'{field.Name}' type '{fieldType}' is not supported for smooth sync");
                     }
                     break;
             }
