@@ -838,15 +838,17 @@ namespace UdonSharp.Compiler
 
             TypeSymbol fieldType = field.Type;
 
-            if (!fieldType.IsExtern && fieldType.IsEnum)
-            {
-                fieldType = fieldType.UdonType;
-            }
-
             if (!fieldType.IsExtern)
             {
-                context.AddDiagnostic(DiagnosticSeverity.Error, field.RoslynSymbol.Locations.First(), $"Cannot sync type '{fieldType}'");
-                return;
+                if (fieldType.IsEnum || (fieldType.IsArray && fieldType.ElementType.IsEnum))
+                {
+                    fieldType = fieldType.UdonType;
+                }
+                else
+                {
+                    context.AddDiagnostic(DiagnosticSeverity.Error, field.RoslynSymbol.Locations.First(), $"Cannot sync type '{fieldType}'");
+                    return;
+                }
             }
             
             if (!UdonNetworkTypes.CanSync(fieldType.UdonType.SystemType))
