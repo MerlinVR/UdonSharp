@@ -368,7 +368,7 @@ namespace UdonSharp
             return (UdonSharpProgramAsset[])_programAssetCache.Clone();
         }
 
-        [MenuItem("Window/Udon Sharp/Refresh All UdonSharp Assets")]
+        [MenuItem("VRChat SDK/Udon Sharp/Refresh All UdonSharp Assets")]
         public static void UdonSharpCheckAbsent()
         {
             Debug.Log( "Checking Absent" );
