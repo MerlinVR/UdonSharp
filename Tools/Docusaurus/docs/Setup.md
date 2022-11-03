@@ -6,7 +6,7 @@
 
 **Installation**
 
-You can get UdonSharp by using the [VRChat Creator Companion](https://vcc.docs.vrchat.com/) also known as the VCC, its [CLI](https://vcc.docs.vrchat.com/vpm/cli/), or a [starter template](https://github.com/vrchat-community/template-udonsharp). 
+You can get UdonSharp by using the [VRChat Creator Companion](https://vcc.docs.vrchat.com/) (also known as the VCC), its [CLI](https://vcc.docs.vrchat.com/vpm/cli/), or a [starter template](https://github.com/vrchat-community/template-udonsharp). 
 
 ## Create a new UdonSharp project with the VCC:
 - Install the latest version of the [Creator Companion](https://vrchat.com/home/download).
@@ -14,9 +14,9 @@ You can get UdonSharp by using the [VRChat Creator Companion](https://vcc.docs.v
 - Press "Open Project". That's it!
 
 ## Create a new UdonSharp Project with Source Control:
-- Visit the [UdonSharp Project Template repo](https://github.com/vrchat-community/template-udonsharp).
+- Visit the [UdonSharp Project Template repository](https://github.com/vrchat-community/template-udonsharp).
 - Press "Use this template".
-- Clone the project to your computer using your favorite git client.
+- Clone the project to your computer using your favorite Git client.
 - Open the project directly in Unity, or add it to the VCC for easy access and updating later.
 
 ## Add UdonSharp to an existing Udon Project:
