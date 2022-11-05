@@ -1,0 +1,43 @@
+name: Preview on Netlify
+on:
+  workflow_dispatch: {}
+  pull_request:
+    paths:
+      - 'Tools/Docusaurus/**/**.*'
+
+jobs:
+  publish:
+    name: Publish Doc Site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          lfs: 'true'
+
+      - name: Checkout Action Repo
+        uses: actions/checkout@v3
+        with:
+          repository: vrchat/creators-docs-builder
+          token: ${{ secrets.GH_PAT }}
+          path: action
+
+      - name: Build Docs
+        uses: ./action
+        id: build-docs
+        with:
+          inputDir: 'Tools/Docusaurus'
+          outputDir: 'Docs/Published'
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v1.2
+        with:
+          publish-dir: Docs/Published/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy from GitHub Actions"
+          enable-pull-request-comment: true
+          enable-commit-comment: true
+          overwrites-pull-request-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 1
