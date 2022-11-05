@@ -316,7 +316,7 @@ namespace UdonSharp
                     _programAssetCache[i] = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(AssetDatabase.GUIDToAssetPath(udonSharpDataAssets[i]));
 
                 bool neededFallback = false;
-                var fallbackAssets1 = Resources.FindObjectsOfTypeAll<UdonProgramAsset>().OfType<UdonSharpProgramAsset>();
+                IEnumerable<UdonSharpProgramAsset> fallbackAssets1 = Resources.FindObjectsOfTypeAll<UdonProgramAsset>().OfType<UdonSharpProgramAsset>();
 
                 foreach (UdonSharpProgramAsset fallbackAsset in fallbackAssets1)
                 {
@@ -334,7 +334,7 @@ namespace UdonSharp
 
                 if (!neededFallback)
                 {
-                    var fallbackAssets2 = AssetDatabase.FindAssets($"t:{nameof(UdonProgramAsset)}").Select(e => AssetDatabase.LoadAssetAtPath<UdonProgramAsset>(AssetDatabase.GUIDToAssetPath(e))).OfType<UdonSharpProgramAsset>();
+                    IEnumerable<UdonSharpProgramAsset> fallbackAssets2 = AssetDatabase.FindAssets($"t:{nameof(UdonProgramAsset)}").Select(e => AssetDatabase.LoadAssetAtPath<UdonProgramAsset>(AssetDatabase.GUIDToAssetPath(e))).OfType<UdonSharpProgramAsset>();
                     foreach (UdonSharpProgramAsset fallbackAsset in fallbackAssets2)
                     {
                         if (_programAssetCache != null && fallbackAsset != null && !_programAssetCache.Contains(fallbackAsset))
@@ -365,6 +365,23 @@ namespace UdonSharp
                 }
             }
 
+            bool cacheNeedsCleanup = false;
+            
+            foreach (UdonSharpProgramAsset programAsset in _programAssetCache)
+            {
+                if (programAsset == null)
+                {
+                    cacheNeedsCleanup = true;
+                    break;
+                }
+            }
+
+            if (cacheNeedsCleanup)
+            {
+                UdonSharpUtils.LogWarning("Null program assets were found in cache and cleaned up.");
+                _programAssetCache = _programAssetCache.Where(e => e != null).ToArray();
+            }
+            
             return (UdonSharpProgramAsset[])_programAssetCache.Clone();
         }
 

@@ -1,4 +1,5 @@
 ﻿
+using System;
 using UdonSharp;
 using UnityEditor;
 
@@ -23,6 +24,21 @@ namespace UdonSharpEditor
                     UdonSharpProgramAsset.ClearProgramAssetCache();
                 }
             }
+        }
+    }
+
+    internal class UdonSharpProgramAssetModificationPreProcessor : UnityEditor.AssetModificationProcessor
+    {
+        private static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions options)
+        {
+            if (!assetPath.EndsWith(".asset", StringComparison.OrdinalIgnoreCase) || AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(assetPath) == null)
+            {
+                return AssetDeleteResult.DidNotDelete;
+            }
+            
+            UdonSharpProgramAsset.ClearProgramAssetCache();
+
+            return AssetDeleteResult.DidNotDelete;
         }
     }
 }
