@@ -299,8 +299,7 @@ namespace UdonSharp
         internal static void ClearProgramAssetCache()
         {
             _programAssetCache = null;
-            UdonSharpEditorUtility._programAssetLookup = null;
-            UdonSharpEditorUtility._programAssetTypeLookup = null;
+            UdonSharpEditorUtility.ResetCaches();
         }
 
         [PublicAPI]

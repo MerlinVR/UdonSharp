@@ -88,8 +88,8 @@ namespace UdonSharpEditor
             throw new NotImplementedException();
         }
 
-        internal static Dictionary<MonoScript, UdonSharpProgramAsset> _programAssetLookup;
-        internal static Dictionary<Type, UdonSharpProgramAsset> _programAssetTypeLookup;
+        private static Dictionary<MonoScript, UdonSharpProgramAsset> _programAssetLookup;
+        private static Dictionary<Type, UdonSharpProgramAsset> _programAssetTypeLookup;
         
         private static void InitTypeLookups()
         {
@@ -110,6 +110,12 @@ namespace UdonSharpEditor
                         _programAssetTypeLookup.Add(programAsset.GetClass(), programAsset);
                 }
             }
+        }
+
+        internal static void ResetCaches()
+        {
+            _programAssetLookup = null;
+            _programAssetTypeLookup = null;
         }
 
         private static UdonSharpProgramAsset GetUdonSharpProgramAsset(MonoScript programScript)
@@ -945,6 +951,9 @@ namespace UdonSharpEditor
 
             UdonSharpProgramAsset programAsset = GetUdonSharpProgramAsset(proxy);
             
+            if (programAsset == null)
+                throw new InvalidOperationException($"Cannot run serialization on U# behaviour '{proxy}', the U# program asset on this component is null. Try restarting Unity and if problems persist, verify that you have a UdonSharpProgramAsset with the script '{proxy.GetType()}' assigned to it.");
+
             if (programAsset.ScriptVersion < UdonSharpProgramVersion.CurrentVersion)
                 throw new InvalidOperationException($"Cannot run serialization on U# behaviour '{proxy}' with outdated script version, wait until program assets have compiled.");
 
@@ -985,7 +994,10 @@ namespace UdonSharpEditor
                 return;
 
             UdonSharpProgramAsset programAsset = GetUdonSharpProgramAsset(proxy);
-            
+
+            if (programAsset == null)
+                throw new InvalidOperationException($"Cannot run serialization on U# behaviour '{proxy}', the U# program asset on this component is null. Try restarting Unity and if problems persist, verify that you have a UdonSharpProgramAsset with the script '{proxy.GetType()}' assigned to it.");
+
             if (programAsset.ScriptVersion < UdonSharpProgramVersion.CurrentVersion)
                 throw new InvalidOperationException($"Cannot run serialization on U# behaviour '{proxy}' with outdated script version, wait until program assets have compiled.");
 
