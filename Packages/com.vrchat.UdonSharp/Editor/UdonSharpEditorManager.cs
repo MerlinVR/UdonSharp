@@ -950,7 +950,7 @@ namespace UdonSharpEditor
                 if (!(unityObject is Component || unityObject is GameObject))
                     continue;
                 
-                if (!PrefabUtility.IsPartOfAnyPrefab(unityObject))
+                if (!PrefabUtility.IsPartOfPrefabAsset(unityObject))
                     continue;
 
                 var prefabAssetType = PrefabUtility.GetPrefabAssetType(unityObject);
@@ -1768,6 +1768,7 @@ namespace UdonSharpEditor
                         Directory.CreateDirectory(dirPath);
 
                     GameObject prefabInstance = Object.Instantiate(prefabRoot, instantiatedObjectRoot.transform);
+                    prefabInstance.name = prefabRoot.name;
                     
                     // Update the data on the U# behaviours
                     foreach (UdonSharpBehaviour behaviour in prefabInstance.GetComponentsInChildren<UdonSharpBehaviour>(true))
