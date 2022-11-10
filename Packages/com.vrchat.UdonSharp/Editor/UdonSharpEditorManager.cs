@@ -1831,19 +1831,21 @@ namespace UdonSharpEditor
 
                 foreach (UdonBehaviour behaviour in prefabRoot.GetComponentsInChildren<UdonBehaviour>(true))
                 {
-                    List<Object> unityObjectList = (List<Object>)_serializedObjectReferencesField.GetValue(behaviour);
+                    SerializedObject behaviourObj = new SerializedObject(behaviour);
 
-                    if (unityObjectList == null)
-                        continue;
-
-                    for (int i = 0; i < unityObjectList.Count; ++i)
+                    SerializedProperty iterator = behaviourObj.GetIterator();
+                    while (iterator.Next(true))
                     {
-                        if (mappingManager.TryRemapObject(unityObjectList[i], out var newObject))
+                        if (iterator.propertyType == SerializedPropertyType.ObjectReference &&
+                            iterator.objectReferenceValue != null && 
+                            mappingManager.TryRemapObject(iterator.objectReferenceValue, out Object newObject))
                         {
-                            unityObjectList[i] = newObject;
+                            iterator.objectReferenceValue = newObject;
                             prefabModified = true;
                         }
                     }
+                    
+                    behaviourObj.ApplyModifiedPropertiesWithoutUndo();
                 }
 
                 if (stripBehavioursForBuild)
