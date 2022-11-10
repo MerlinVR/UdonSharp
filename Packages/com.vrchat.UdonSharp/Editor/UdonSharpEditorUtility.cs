@@ -289,8 +289,22 @@ namespace UdonSharpEditor
             {
                 UdonSharpCompilerV1.CompileSync();
             }
+            
+            List<GameObject> prefabRoots = new List<GameObject>();
 
-            GameObject[] prefabRoots = prefabRootEnumerable.ToArray();
+            // Skip upgrades on any intermediate prefab assets which may be considered invalid during the build process, mostly to avoid spamming people's console with logs that may be confusing but also gives slightly faster builds.
+            string intermediatePrefabPath = UdonSharpLocator.IntermediatePrefabPath.Replace("\\", "/");
+            
+            foreach (GameObject prefabRoot in prefabRootEnumerable)
+            {
+                string prefabPath = AssetDatabase.GetAssetPath(prefabRoot);
+                if (prefabPath.StartsWith(intermediatePrefabPath))
+                {
+                    continue;
+                }
+                
+                prefabRoots.Add(prefabRoot);
+            }
 
             bool NeedsNewProxy(UdonBehaviour udonBehaviour)
             {
