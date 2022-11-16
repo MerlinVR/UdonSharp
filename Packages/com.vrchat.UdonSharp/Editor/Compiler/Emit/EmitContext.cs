@@ -575,7 +575,7 @@ namespace UdonSharp.Compiler.Emit
                                 {
                                     _mathTruncateDecimalMethodSymbol = GetTypeSymbol(typeof(Math))
                                         .GetMembers<MethodSymbol>(nameof(Math.Truncate), this)
-                                        .Where(x => x.ReturnType == floatType).First();
+                                        .First(e => e.ReturnType.UdonType == floatType.UdonType);
                                 }
                                 mathTruncateMethodSymbol = _mathTruncateDecimalMethodSymbol;
                             }
@@ -586,7 +586,7 @@ namespace UdonSharp.Compiler.Emit
                                 {
                                     _mathTruncateDoubleMethodSymbol = GetTypeSymbol(typeof(Math))
                                         .GetMembers<MethodSymbol>(nameof(Math.Truncate), this)
-                                        .Where(x => x.ReturnType == floatType).First();
+                                        .First(e => e.ReturnType.UdonType == floatType.UdonType);
                                 }
                                 mathTruncateMethodSymbol = _mathTruncateDoubleMethodSymbol;
                             }
