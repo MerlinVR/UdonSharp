@@ -567,14 +567,13 @@ namespace UdonSharp.Compiler.Emit
                                 ? GetTypeSymbol(SpecialType.System_Decimal)
                                 : GetTypeSymbol(SpecialType.System_Double);
 
-                            if (!_mathTruncateMethodSymbolTable.ContainsKey(floatType.UdonType))
+                            if (!_mathTruncateMethodSymbolTable.TryGetValue(floatType.UdonType, out MethodSymbol mathTruncateMethodSymbol))
                             {
-                                _mathTruncateMethodSymbolTable.Add(floatType.UdonType,
-                                    GetTypeSymbol(typeof(Math)).GetMembers<MethodSymbol>(nameof(Math.Truncate), this)
-                                    .First(e => e.ReturnType.UdonType == floatType.UdonType));
-                            }
+                                mathTruncateMethodSymbol = GetTypeSymbol(typeof(Math)).GetMembers<MethodSymbol>(nameof(Math.Truncate), this)
+                                    .First(e => e.ReturnType.UdonType == floatType.UdonType);
 
-                            MethodSymbol mathTruncateMethodSymbol = _mathTruncateMethodSymbolTable[floatType.UdonType];
+                                _mathTruncateMethodSymbolTable.Add(floatType.UdonType, mathTruncateMethodSymbol);
+                            }
 
                             sourceValue = CastValue(sourceValue, floatType, true);
 
