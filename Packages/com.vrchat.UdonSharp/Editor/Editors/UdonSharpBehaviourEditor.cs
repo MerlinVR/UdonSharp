@@ -802,7 +802,7 @@ namespace UdonSharpEditor
                 // Fallback handling for jagged array drawer
                 List<FieldInfo> jaggedArrayFields = null;
 
-                foreach (FieldInfo field in target.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance))
+                foreach (FieldInfo field in target.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
                 {
                     if (UdonSharpUtils.IsUserJaggedArray(field.FieldType) && 
                         field.IsDefined(typeof(OdinSerializeAttribute)) && // We only want Odin serialized fields since other jagged arrays will not be saved
