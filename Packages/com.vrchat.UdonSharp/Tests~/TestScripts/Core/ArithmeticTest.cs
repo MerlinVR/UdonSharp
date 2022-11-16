@@ -355,13 +355,13 @@ namespace UdonSharp.Tests
             decimal testNegativeDecimal = -4.7m;
 
             truncatedValue = (int)testNegativeFloat;
-            tester.TestAssertion("Float to Int Truncation", truncatedValue == -4);
+            tester.TestAssertion("Negative Float to Int Truncation", truncatedValue == -4);
 
             truncatedValue = (int)testNegativeDouble;
-            tester.TestAssertion("Double to Int Truncation", truncatedValue == -4);
+            tester.TestAssertion("Negative Double to Int Truncation", truncatedValue == -4);
 
             truncatedValue = (int)testNegativeDecimal;
-            tester.TestAssertion("Decimal to Int Truncation", truncatedValue == -4);
+            tester.TestAssertion("Negative Decimal to Int Truncation", truncatedValue == -4);
         }
         
         void UintBitOps()
