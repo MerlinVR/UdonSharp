@@ -346,9 +346,22 @@ namespace UdonSharp.Tests
             double testDouble = 4.7f;
             truncatedValue = (int)testFloat;
             tester.TestAssertion("Float to Int Truncation", truncatedValue == 4);
-        
+
             truncatedValue = (int)testDouble;
             tester.TestAssertion("Double to Int Truncation", truncatedValue == 4);
+
+            float testNegativeFloat = -4.7f;
+            double testNegativeDouble = -4.7;
+            decimal testNegativeDecimal = -4.7m;
+
+            truncatedValue = (int)testNegativeFloat;
+            tester.TestAssertion("Float to Int Truncation", truncatedValue == -4);
+
+            truncatedValue = (int)testNegativeDouble;
+            tester.TestAssertion("Double to Int Truncation", truncatedValue == -4);
+
+            truncatedValue = (int)testNegativeDecimal;
+            tester.TestAssertion("Decimal to Int Truncation", truncatedValue == -4);
         }
         
         void UintBitOps()
