@@ -469,8 +469,7 @@ namespace UdonSharp.Compiler.Emit
             return enumArrayValue;
         }
 
-        private MethodSymbol _mathTruncateDecimalMethodSymbol;
-        private MethodSymbol _mathTruncateDoubleMethodSymbol;
+        private Dictionary<ExternTypeSymbol, MethodSymbol> _mathTruncateMethodSymbolTable = new Dictionary<ExternTypeSymbol, MethodSymbol>();
 
         private void CastValue(Value sourceValue, Value targetValue, bool explicitCast)
         {
@@ -564,32 +563,18 @@ namespace UdonSharp.Compiler.Emit
                         if (UdonSharpUtils.IsFloatType(sourceType.UdonType.SystemType) &&
                             UdonSharpUtils.IsIntegerType(targetType.UdonType.SystemType))
                         {
-                            TypeSymbol floatType;
+                            TypeSymbol floatType = sourceType.UdonType.SystemType == typeof(decimal)
+                                ? GetTypeSymbol(SpecialType.System_Decimal)
+                                : GetTypeSymbol(SpecialType.System_Double);
 
-                            MethodSymbol mathTruncateMethodSymbol;
+                            if (!_mathTruncateMethodSymbolTable.ContainsKey(floatType.UdonType))
+                            {
+                                _mathTruncateMethodSymbolTable.Add(floatType.UdonType,
+                                    GetTypeSymbol(typeof(Math)).GetMembers<MethodSymbol>(nameof(Math.Truncate), this)
+                                    .First(e => e.ReturnType.UdonType == floatType.UdonType));
+                            }
 
-                            if (sourceType.UdonType.SystemType == typeof(decimal))
-                            {
-                                floatType = GetTypeSymbol(SpecialType.System_Decimal);
-                                if (_mathTruncateDecimalMethodSymbol == null)
-                                {
-                                    _mathTruncateDecimalMethodSymbol = GetTypeSymbol(typeof(Math))
-                                        .GetMembers<MethodSymbol>(nameof(Math.Truncate), this)
-                                        .First(e => e.ReturnType.UdonType == floatType.UdonType);
-                                }
-                                mathTruncateMethodSymbol = _mathTruncateDecimalMethodSymbol;
-                            }
-                            else
-                            {
-                                floatType = GetTypeSymbol(SpecialType.System_Double);
-                                if (_mathTruncateDoubleMethodSymbol == null)
-                                {
-                                    _mathTruncateDoubleMethodSymbol = GetTypeSymbol(typeof(Math))
-                                        .GetMembers<MethodSymbol>(nameof(Math.Truncate), this)
-                                        .First(e => e.ReturnType.UdonType == floatType.UdonType);
-                                }
-                                mathTruncateMethodSymbol = _mathTruncateDoubleMethodSymbol;
-                            }
+                            MethodSymbol mathTruncateMethodSymbol = _mathTruncateMethodSymbolTable[floatType.UdonType];
 
                             sourceValue = CastValue(sourceValue, floatType, true);
 
