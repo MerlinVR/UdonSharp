@@ -336,6 +336,8 @@ namespace UdonSharpEditor
             "[RoomManager] Room metadata is unchanged, skipping update",
             "Setting Custom Properties for Local Player: avatarEyeHeight",
             "HTTPFormUseage:UrlEncoded",
+            "Curl error 42: Callback aborted",
+            "Curl error 23: Callback aborted",
             // Big catch-alls for random irrelevant VRC stuff
             "[API] ",
             "[Behaviour] ",
@@ -352,11 +354,10 @@ namespace UdonSharpEditor
 
             if (settings.watcherMode == UdonSharpSettings.LogWatcherMode.Prefix)
             {
-                string prefixStr = trimmedMessage;
                 bool prefixFound = false;
                 foreach (string prefix in settings.logWatcherMatchStrings)
                 {
-                    if (!string.IsNullOrEmpty(prefix) && prefixStr.StartsWith(prefix))
+                    if (!string.IsNullOrEmpty(prefix) && trimmedMessage.StartsWith(prefix))
                     {
                         prefixFound = true;
                         break;
@@ -369,7 +370,7 @@ namespace UdonSharpEditor
 
             foreach (string filteredPrefix in _filteredPrefixes)
             {
-                if (trimmedMessage.StartsWith(filteredPrefix))
+                if (trimmedMessage.StartsWith(filteredPrefix, StringComparison.Ordinal))
                     return;
             }
 
