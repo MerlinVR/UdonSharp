@@ -570,7 +570,7 @@ namespace UdonSharp.Compiler.Emit
                             if (!_mathTruncateMethodSymbolTable.TryGetValue(floatType.UdonType, out MethodSymbol mathTruncateMethodSymbol))
                             {
                                 mathTruncateMethodSymbol = GetTypeSymbol(typeof(Math)).GetMembers<MethodSymbol>(nameof(Math.Truncate), this)
-                                    .First(e => e.ReturnType.UdonType == floatType.UdonType);
+                                    .First(e => e.Parameters[0].Type == floatType.UdonType);
 
                                 _mathTruncateMethodSymbolTable.Add(floatType.UdonType, mathTruncateMethodSymbol);
                             }
