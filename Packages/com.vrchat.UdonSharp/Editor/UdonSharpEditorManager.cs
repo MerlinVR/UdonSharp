@@ -1473,9 +1473,9 @@ namespace UdonSharpEditor
                         continue;
                     }
 
-                    if (scriptAsset.sourceCsScript.GetType() != proxyType)
+                    if (scriptAsset.sourceCsScript.GetClass() != proxyType)
                     {
-                        UdonSharpUtils.LogError($"Script asset '{scriptAsset}' found for type '{proxyType}' actually has type '{scriptAsset.sourceCsScript.GetType()}' this is not valid.", proxy);
+                        UdonSharpUtils.LogError($"Script asset '{scriptAsset}' found for type '{proxyType}' actually has type '{scriptAsset.sourceCsScript.GetClass()}' this is not valid.", proxy);
                         continue;
                     }
                     
