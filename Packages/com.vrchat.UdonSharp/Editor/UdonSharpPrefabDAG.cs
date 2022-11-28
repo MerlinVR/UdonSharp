@@ -12,7 +12,7 @@ namespace UdonSharpEditor
     /// If a prefab nests another prefab, the prefab is considered a 'child' of the prefab that it is nesting. Because the parents must be visited and resolved before the children.
     /// </summary>
     // ReSharper disable once InconsistentNaming
-    internal class UdonSharpPrefabDAG : IEnumerable<GameObject>
+    internal class UdonSharpPrefabDAG : IEnumerable<string>
     {
         private class Vertex
         {
@@ -24,6 +24,7 @@ namespace UdonSharpEditor
         private List<Vertex> _vertices = new List<Vertex>();
         private Dictionary<GameObject, Vertex> _vertexLookup = new Dictionary<GameObject, Vertex>();
         private List<GameObject> _sortedVertices = new List<GameObject>();
+        private List<string> _sortedPaths = new List<string>();
 
         public UdonSharpPrefabDAG(IEnumerable<GameObject> allPrefabRoots)
         {
@@ -55,6 +56,8 @@ namespace UdonSharpEditor
                     if (PrefabUtility.IsAnyPrefabInstanceRoot(child))
                     {
                         GameObject parentPrefab = PrefabUtility.GetCorrespondingObjectFromSource(child);
+
+                        parentPrefab = parentPrefab.transform.root.gameObject;
                         
                         Debug.Assert(parentPrefab);
                         Debug.Assert(parentPrefab != child);
@@ -138,15 +141,19 @@ namespace UdonSharpEditor
                     throw new Exception($"Invalid DAG state: node '{vertex.Prefab}' was not visited.");
                 }
             }
+
+            _sortedPaths = _sortedVertices.Select(AssetDatabase.GetAssetPath).ToList();
         }
 
         /// <summary>
         /// Iterates the DAG in topological order where all parents are visited before their children.
         /// Will iterate orphan nodes that don't have any parents or children first.
+        /// We return paths here because of the assumption that Unity may create a new set of prefab objects when reimporting a prefab after saving it.
+        /// The upgrade process is expected to load the prefabs from their path in sequence of upgrade
         /// </summary>
-        public IEnumerator<GameObject> GetEnumerator()
+        public IEnumerator<string> GetEnumerator()
         {
-            return _sortedVertices.GetEnumerator();
+            return _sortedPaths.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
