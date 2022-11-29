@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UdonSharp;
 using UnityEditor;
 using UnityEngine;
 
@@ -28,121 +29,142 @@ namespace UdonSharpEditor
 
         public UdonSharpPrefabDAG(IEnumerable<GameObject> allPrefabRoots)
         {
-            foreach (GameObject prefabRoot in allPrefabRoots)
+            try
             {
-                Vertex vert = new Vertex() { Prefab = prefabRoot };
-                _vertices.Add(vert);
-                _vertexLookup.Add(prefabRoot, vert);
-            }
-
-            foreach (Vertex vertex in _vertices)
-            {
-                if (PrefabUtility.IsPartOfVariantPrefab(vertex.Prefab))
+                foreach (GameObject prefabRoot in allPrefabRoots)
                 {
-                    Vertex parent = _vertexLookup[PrefabUtility.GetCorrespondingObjectFromSource(vertex.Prefab)];
-                    Debug.Assert(parent != vertex);
-                    
-                    vertex.Parents.Add(parent);
-                    parent.Children.Add(vertex);
+                    Vertex vert = new Vertex() { Prefab = prefabRoot };
+                    _vertices.Add(vert);
+                    _vertexLookup.Add(prefabRoot, vert);
                 }
-
-                foreach (GameObject child in vertex.Prefab.GetComponentsInChildren<Transform>(true).Select(e => e.gameObject))
+                
+                foreach (Vertex vertex in _vertices)
                 {
-                    if (child == vertex.Prefab)
+                    if (PrefabUtility.IsPartOfVariantPrefab(vertex.Prefab))
                     {
-                        continue;
-                    }
+                        Vertex parent = _vertexLookup[PrefabUtility.GetCorrespondingObjectFromSource(vertex.Prefab)];
 
-                    if (PrefabUtility.IsAnyPrefabInstanceRoot(child))
-                    {
-                        GameObject parentPrefab = PrefabUtility.GetCorrespondingObjectFromSource(child);
-
-                        parentPrefab = parentPrefab.transform.root.gameObject;
-                        
-                        Debug.Assert(parentPrefab);
-                        Debug.Assert(parentPrefab != child);
-
-                        Vertex parent = _vertexLookup[parentPrefab];
+                        if (parent == vertex)
+                        {
+                            throw new Exception($"Parent of vertex cannot be the same as the vertex '{vertex.Prefab}'");
+                        }
                         
                         vertex.Parents.Add(parent);
                         parent.Children.Add(vertex);
                     }
-                }
-            }
-            
-            // Do sorting
-            HashSet<Vertex> visitedVertices = new HashSet<Vertex>();
 
-            // Orphaned nodes with no parents or children go first
-            foreach (Vertex vertex in _vertices)
-            {
-                if (vertex.Children.Count == 0 && vertex.Parents.Count == 0)
-                {
-                    visitedVertices.Add(vertex);
-                    _sortedVertices.Add(vertex.Prefab);
-                }
-            }
-
-            Queue<Vertex> openSet = new Queue<Vertex>();
-
-            // Find root nodes with no parents
-            foreach (Vertex vertex in _vertices)
-            {
-                if (!visitedVertices.Contains(vertex) && vertex.Parents.Count == 0)
-                {
-                    openSet.Enqueue(vertex);
-                }
-            }
-
-            while (openSet.Count > 0)
-            {
-                Vertex vertex = openSet.Dequeue();
-
-                if (visitedVertices.Contains(vertex))
-                {
-                    continue;
-                }
-
-                if (vertex.Parents.Count > 0)
-                {
-                    bool neededParentVisit = false;
-
-                    foreach (Vertex vertexParent in vertex.Parents)
+                    foreach (GameObject child in vertex.Prefab.GetComponentsInChildren<Transform>(true).Select(e => e.gameObject))
                     {
-                        if (!visitedVertices.Contains(vertexParent))
+                        if (child == vertex.Prefab)
                         {
-                            neededParentVisit = true;
-                            openSet.Enqueue(vertexParent);
+                            continue;
+                        }
+
+                        if (PrefabUtility.IsAnyPrefabInstanceRoot(child))
+                        {
+                            GameObject parentPrefab = PrefabUtility.GetCorrespondingObjectFromSource(child);
+
+                            if (parentPrefab == null)
+                            {
+                                throw new Exception($"ParentPrefab of '{child}' is null");
+                            }
+
+                            parentPrefab = parentPrefab.transform.root.gameObject;
+
+                            if (parentPrefab == child)
+                            {
+                                throw new Exception($"ParentPrefab cannot be the same as child '{child}'");
+                            }
+
+                            // If a nested prefab is referenced that does *not* have any UdonBehaviours on it, it will not be in the vertex list, and does not need to be linked.
+                            if (_vertexLookup.TryGetValue(parentPrefab, out Vertex parent))
+                            {
+                                vertex.Parents.Add(parent);
+                                parent.Children.Add(vertex);
+                            }
+                        }
+                    }
+                }
+                
+                // Do sorting
+                HashSet<Vertex> visitedVertices = new HashSet<Vertex>();
+
+                // Orphaned nodes with no parents or children go first
+                foreach (Vertex vertex in _vertices)
+                {
+                    if (vertex.Children.Count == 0 && vertex.Parents.Count == 0)
+                    {
+                        visitedVertices.Add(vertex);
+                        _sortedVertices.Add(vertex.Prefab);
+                    }
+                }
+
+                Queue<Vertex> openSet = new Queue<Vertex>();
+
+                // Find root nodes with no parents
+                foreach (Vertex vertex in _vertices)
+                {
+                    if (!visitedVertices.Contains(vertex) && vertex.Parents.Count == 0)
+                    {
+                        openSet.Enqueue(vertex);
+                    }
+                }
+
+                while (openSet.Count > 0)
+                {
+                    Vertex vertex = openSet.Dequeue();
+
+                    if (visitedVertices.Contains(vertex))
+                    {
+                        continue;
+                    }
+
+                    if (vertex.Parents.Count > 0)
+                    {
+                        bool neededParentVisit = false;
+
+                        foreach (Vertex vertexParent in vertex.Parents)
+                        {
+                            if (!visitedVertices.Contains(vertexParent))
+                            {
+                                neededParentVisit = true;
+                                openSet.Enqueue(vertexParent);
+                            }
+                        }
+
+                        if (neededParentVisit)
+                        {
+                            // Re-queue to visit after we have traversed the node's parents
+                            openSet.Enqueue(vertex);
+                            continue;
                         }
                     }
 
-                    if (neededParentVisit)
+                    visitedVertices.Add(vertex);
+                    _sortedVertices.Add(vertex.Prefab);
+
+                    foreach (Vertex vertexChild in vertex.Children)
                     {
-                        // Re-queue to visit after we have traversed the node's parents
-                        openSet.Enqueue(vertex);
-                        continue;
+                        openSet.Enqueue(vertexChild);
                     }
                 }
 
-                visitedVertices.Add(vertex);
-                _sortedVertices.Add(vertex.Prefab);
-
-                foreach (Vertex vertexChild in vertex.Children)
+                // Sanity check
+                foreach (Vertex vertex in _vertices)
                 {
-                    openSet.Enqueue(vertexChild);
+                    if (!visitedVertices.Contains(vertex))
+                    {
+                        throw new Exception($"Invalid DAG state: node '{vertex.Prefab}' was not visited.");
+                    }
                 }
-            }
 
-            // Sanity check
-            foreach (Vertex vertex in _vertices)
+                _sortedPaths = _sortedVertices.Select(AssetDatabase.GetAssetPath).ToList();
+            }
+            catch (Exception e)
             {
-                if (!visitedVertices.Contains(vertex))
-                {
-                    throw new Exception($"Invalid DAG state: node '{vertex.Prefab}' was not visited.");
-                }
+                UdonSharpUtils.LogError($"Exception while sorting prefabs for upgrade. Falling back to non-sorted set, nested prefabs may not upgrade properly. Exception: {e}");
+                _sortedPaths = allPrefabRoots.Select(AssetDatabase.GetAssetPath).ToList();
             }
-
-            _sortedPaths = _sortedVertices.Select(AssetDatabase.GetAssetPath).ToList();
         }
 
         /// <summary>
