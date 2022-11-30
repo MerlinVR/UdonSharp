@@ -4,6 +4,21 @@ UdonSharp 0.x (the .unitypackage version) is deprecated and no longer supported.
 
 [Migrating Projects using the Creator Companion](https://vcc.docs.vrchat.com/vpm/migrating).
 
+## New Features in UdonSharp 1.0
+* **More C# features** in your UdonSharp programs:
+	* `static` methods
+	* Generic `static` methods
+	* `params`, `out`, `ref`, and default parameters
+	* Extension methods
+	* Inheritance, virtual methods, and abstract classes
+	* Partial classes
+	* Enums
+- **Multi-edit** multiple UdonSharp scripts in the Unity inspector
+- **Prefab variants**, **instances**, and **nesting** are now fully supported
+- **Editor scripting** has been overhauled and simplified
+- **Compiler fixes** and **optimizations**
+- **Fixed various bugs**, edge cases, and other rough edges
+
 ## Known Issues
 
 ### Nested Prefabs
@@ -23,7 +38,7 @@ UdonSharp 0.x (the .unitypackage version) is deprecated and no longer supported.
 **How to Fix**:
 1. Use the Project window to find the file ending in `.asmdef` in the same or a parent directory of the script in question. 
 2. Right-click in the folder which has this Assembly Definition and choose `Create > U# Assembly Definition`. 
-3. Select this new U# asmdef, and use the Inspector to set its "Source Assembly" to the other Assembly Definition File. 
+3. Select this new U# asmdef, and use the inspector to set its "Source Assembly" to the other Assembly Definition File. 
 4. You may need to restart Unity after doing this.
 
 ### Newtonsoft.Json.Dll
@@ -32,4 +47,11 @@ UdonSharp 0.x (the .unitypackage version) is deprecated and no longer supported.
 
 **Symptoms**: Errors in your console which mention the above library. It might not be at the front of the sentence, but something like `System.TypeInitializationException: the type initializer for blah blah blah...Assets/SketchfabForUnity/Dependencies/Libraries/Newtonsoft.Json.dll`
 
-**How to Fix**: Remove any copies of Newtonsoft.Json.dll from your Assets folder, the VRCSDK will provide it for any package that needs it through the Package Manager.
+**How to Fix**: Remove any copies of Newtonsoft.Json.dll from your Assets folder. The VRCSDK will provide it for any package that needs it through the Package Manager.
+
+### Other breaking changes
+- Your U# behaviour name must match the .cs file name
+- Duplicate program assets may not reference the same `.cs` file
+- Program assets must point to a script and may not be empty
+- Editor scripting is now different: Data is owned by a C# proxy of the UdonSharpBehaviour, and the corresponding UdonBehaviour is empty until runtime.
+- Obsoleted overloads for station and player join events may no longer be used
