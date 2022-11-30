@@ -32,6 +32,7 @@ namespace UdonSharp.Tests
             DecimalOps();
             BitwiseNot();
             UdonBehaviourFieldCompoundAssignment();
+            CastCharToFloat();
         }
 
         void IntBinaryOps()
@@ -445,6 +446,21 @@ namespace UdonSharp.Tests
             self._testVec.x += 3;
             
             tester.TestAssertion("Field struct compound assignment", _testVec.x == 4);
+        }
+
+        void CastCharToFloat()
+        {
+            float af = 97.5f;
+            double ad = 98.5;
+            decimal am = 99.5m;
+            tester.TestAssertion("Cast float to char", (char)af == 'a');
+            tester.TestAssertion("Cast double to char", (char)ad == 'b');
+            tester.TestAssertion("Cast decimal to char", (char)am == 'c');
+
+            char c = 'a';
+            tester.TestAssertion("Cast char to float", c == 97f);
+            tester.TestAssertion("Cast char to double", c == 97.0);
+            tester.TestAssertion("Cast char to decimal", c == 97m);
         }
     }
 }
