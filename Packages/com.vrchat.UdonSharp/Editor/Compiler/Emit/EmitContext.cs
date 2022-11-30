@@ -469,7 +469,7 @@ namespace UdonSharp.Compiler.Emit
             return enumArrayValue;
         }
 
-        private MethodSymbol _mathfFloorMethodSymbol;
+        private Dictionary<ExternTypeSymbol, MethodSymbol> _mathTruncateMethodSymbolTable = new Dictionary<ExternTypeSymbol, MethodSymbol>();
 
         private void CastValue(Value sourceValue, Value targetValue, bool explicitCast)
         {
@@ -563,14 +563,21 @@ namespace UdonSharp.Compiler.Emit
                         if (UdonSharpUtils.IsFloatType(sourceType.UdonType.SystemType) &&
                             UdonSharpUtils.IsIntegerType(targetType.UdonType.SystemType))
                         {
-                            TypeSymbol floatType = GetTypeSymbol(SpecialType.System_Single);
+                            TypeSymbol floatType = sourceType.UdonType.SystemType == typeof(decimal)
+                                ? GetTypeSymbol(SpecialType.System_Decimal)
+                                : GetTypeSymbol(SpecialType.System_Double);
+
+                            if (!_mathTruncateMethodSymbolTable.TryGetValue(floatType.UdonType, out MethodSymbol mathTruncateMethodSymbol))
+                            {
+                                mathTruncateMethodSymbol = GetTypeSymbol(typeof(Math)).GetMembers<MethodSymbol>(nameof(Math.Truncate), this)
+                                    .First(e => e.Parameters[0].Type == floatType.UdonType);
+
+                                _mathTruncateMethodSymbolTable.Add(floatType.UdonType, mathTruncateMethodSymbol);
+                            }
+
                             sourceValue = CastValue(sourceValue, floatType, true);
 
-                            if (_mathfFloorMethodSymbol == null)
-                                _mathfFloorMethodSymbol =
-                                    GetTypeSymbol(typeof(Mathf)).GetMember<MethodSymbol>("Floor", this);
-
-                            sourceValue = EmitValue(BoundInvocationExpression.CreateBoundInvocation(this, null, _mathfFloorMethodSymbol,
+                            sourceValue = EmitValue(BoundInvocationExpression.CreateBoundInvocation(this, null, mathTruncateMethodSymbol,
                                 null,
                                 new BoundExpression[] {BoundAccessExpression.BindAccess(sourceValue)}));
                         
