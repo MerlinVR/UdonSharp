@@ -358,7 +358,7 @@ namespace UdonSharp.Compiler
             string[] paramNames = new string[methodSymbol.Parameters.Length];
             string returnName = null;
             
-            if (CompilerUdonInterface.IsUdonEvent(methodName))
+            if (CompilerUdonInterface.IsUdonEvent(methodSymbol))
             {
                 var paramArgs = CompilerUdonInterface.GetUdonEventArgs(methodName);
                 methodName = CompilerUdonInterface.GetUdonEventName(methodName);

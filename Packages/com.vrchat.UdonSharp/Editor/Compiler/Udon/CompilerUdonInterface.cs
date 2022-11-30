@@ -233,10 +233,19 @@ namespace UdonSharp.Compiler.Udon
             return ExternAssemblySet.Contains(type.Assembly);
         }
 
-        public static bool IsUdonEvent(string eventName)
+        public static bool IsUdonEvent(MethodSymbol method)
         {
             CacheInit();
-            return _builtinEventLookup.ContainsKey(eventName);
+            
+            // ReSharper disable once InvokeAsExtensionMethod
+            if (_builtinEventLookup.ContainsKey(method.Name) &&
+                !method.Parameters.Any(e => e.IsByRef) && // Builtin events should never have out/ref params
+                Enumerable.SequenceEqual(method.Parameters.Select(e => e.Type.UdonType.SystemType), GetUdonEventArgs(method.Name).Select(e => e.Item2)))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public static string GetUdonEventName(string eventName)

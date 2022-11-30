@@ -16,8 +16,6 @@ namespace UdonSharp.Compiler.Symbols
     {
         public ExportAddress ExportedMethodAddress { get; }
         
-        public bool IsUdonEvent { get; }
-        
         public bool NeedsExportFromReference { get; private set; }
 
         /// <summary>
@@ -29,7 +27,6 @@ namespace UdonSharp.Compiler.Symbols
         public UdonSharpBehaviourMethodSymbol(IMethodSymbol sourceSymbol, AbstractPhaseContext context)
             : base(sourceSymbol, context)
         {
-            IsUdonEvent = CompilerUdonInterface.IsUdonEvent(sourceSymbol.Name);
             ExportedMethodAddress = new ExportAddress(ExportAddress.AddressKind.String, this);
         }
 

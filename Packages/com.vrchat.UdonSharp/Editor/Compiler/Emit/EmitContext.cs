@@ -780,7 +780,7 @@ namespace UdonSharp.Compiler.Emit
                 return false;
             
             return methodSymbol.RoslynSymbol.DeclaredAccessibility == Accessibility.Public ||
-                   CompilerUdonInterface.IsUdonEvent(methodSymbol.Name) ||
+                   CompilerUdonInterface.IsUdonEvent(methodSymbol) ||
                    (methodSymbol is UdonSharpBehaviourMethodSymbol udonSharpBehaviourMethodSymbol && udonSharpBehaviourMethodSymbol.NeedsExportFromReference);
         }
 

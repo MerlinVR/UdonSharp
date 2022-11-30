@@ -408,7 +408,7 @@ namespace UdonSharp.Compiler.Binder
             
             if (symbol.IsExtern)
             {
-                if (CompilerUdonInterface.IsUdonEvent(symbol.Name) &&
+                if (CompilerUdonInterface.IsUdonEvent(symbol) &&
                     symbol.ContainingType == context.GetTypeSymbol(typeof(UdonSharpBehaviour))) // Pass through for making base calls on the U# behaviour type return noop
                     return new BoundUdonSharpBehaviourInvocationExpression(node, symbol, instanceExpression, parameterExpressions);
 
