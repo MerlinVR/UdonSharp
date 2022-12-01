@@ -404,6 +404,18 @@ namespace UdonSharp.Tests
             
             s += stringChar;
             tester.TestAssertion("Char addition non const", s == "abcdef42ab");
+            
+            s += 1;
+            tester.TestAssertion("Int addition", s == "abcdef42ab1");
+
+            s = "ab";
+            s += gameObject;
+            tester.TestAssertion("Object addition", s == "ab" + gameObject.ToString());
+            
+            object o = "ab";
+            o = o + "cd";
+            o += "ef";
+            tester.TestAssertion("String Op +(object, string)", o.ToString() == "abcdef");
         }
         
         void BitwiseNot()

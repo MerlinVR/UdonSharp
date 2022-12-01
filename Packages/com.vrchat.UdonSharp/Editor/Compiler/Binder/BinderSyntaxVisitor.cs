@@ -587,32 +587,41 @@ namespace UdonSharp.Compiler.Binder
         public override BoundNode VisitAssignmentExpression(AssignmentExpressionSyntax node)
         {
             BoundAccessExpression assignmentTarget = VisitAccessExpression(node.Left);
-            
+
             if (node.Kind() != SyntaxKind.SimpleAssignmentExpression)
             {
-                MethodSymbol operatorSymbol = (MethodSymbol) GetSymbol(node);
-                
+                MethodSymbol operatorSymbol = (MethodSymbol)GetSymbol(node);
+
                 BoundExpression rhsExpression = VisitExpression(node.Right);
 
-                // Apparently Roslyn returns string + string for string += char, but returns string + object for string + char /shrug
-                // Do ToString here if the constant folding can't convert the char
-                if (assignmentTarget.ValueType == Context.GetTypeSymbol(SpecialType.System_String) &&
-                    rhsExpression.ValueType == Context.GetTypeSymbol(SpecialType.System_Char))
-                {
-                    if (rhsExpression.IsConstant)
-                        rhsExpression = new BoundConstantExpression(rhsExpression.ConstantValue.Value.ToString(), Context.GetTypeSymbol(SpecialType.System_String));
-                    else
-                        rhsExpression = BoundInvocationExpression.CreateBoundInvocation(Context, node, Context.GetTypeSymbol(SpecialType.System_Char).GetMember<MethodSymbol>("ToString", Context), rhsExpression, Array.Empty<BoundExpression>());
-                }
                 if (operatorSymbol is ExternBuiltinOperatorSymbol builtinOperatorSymbol)
                 {
-                    operatorSymbol = new ExternSynthesizedOperatorSymbol(builtinOperatorSymbol.OperatorType,
-                        assignmentTarget.ValueType, Context);
+                    if (builtinOperatorSymbol.ReturnType == Context.GetTypeSymbol(SpecialType.System_String) &&
+                        builtinOperatorSymbol.OperatorType == BuiltinOperatorType.Addition &&
+                        builtinOperatorSymbol.Parameters[0].Type != builtinOperatorSymbol.Parameters[1].Type)
+                    {
+                        if (rhsExpression.IsConstant && builtinOperatorSymbol.Parameters[1].Type == Context.GetTypeSymbol(SpecialType.System_Object))
+                        {
+                            rhsExpression = new BoundConstantExpression(rhsExpression.ConstantValue.Value.ToString(),
+                                Context.GetTypeSymbol(SpecialType.System_String));
+                            operatorSymbol = new ExternSynthesizedOperatorSymbol(BuiltinOperatorType.Addition,
+                                Context.GetTypeSymbol(SpecialType.System_String), Context);
+                        }
+                        else
+                        {
+                            operatorSymbol = new ExternBuiltinOperatorSymbol(builtinOperatorSymbol.RoslynSymbol, Context);
+                        }
+                    }
+                    else
+                    {
+                        operatorSymbol = new ExternSynthesizedOperatorSymbol(builtinOperatorSymbol.OperatorType, assignmentTarget.ValueType, Context);
+                    }
                 }
-                
+
                 return BoundInvocationExpression.CreateBoundInvocation(Context, node, operatorSymbol, null,
-                    new[] {assignmentTarget, ConvertExpression(node, rhsExpression, operatorSymbol.Parameters[1].Type)});
+                    new[] { assignmentTarget, ConvertExpression(node, rhsExpression, operatorSymbol.Parameters[1].Type) });
             }
+
             return new BoundAssignmentExpression(node, assignmentTarget, VisitExpression(node.Right, assignmentTarget.ValueType));
         }
 
