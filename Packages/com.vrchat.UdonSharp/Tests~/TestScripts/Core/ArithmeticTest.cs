@@ -32,6 +32,7 @@ namespace UdonSharp.Tests
             DecimalOps();
             BitwiseNot();
             UdonBehaviourFieldCompoundAssignment();
+            NullEquals();
             CastCharToFloat();
         }
 
@@ -459,7 +460,13 @@ namespace UdonSharp.Tests
             
             tester.TestAssertion("Field struct compound assignment", _testVec.x == 4);
         }
-
+        
+        void NullEquals()
+        {
+            tester.TestAssertion("Null equals null", null == null);
+            tester.TestAssertion("Null doesn't equal null", !(null != null));
+        }
+        
         void CastCharToFloat()
         {
             float af = 97.5f;
