@@ -12,6 +12,7 @@ using UdonSharp.Compiler.Assembly;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Symbols;
 using UdonSharp.Compiler.Udon;
+using UdonSharp.Core;
 using UdonSharpEditor;
 using UnityEditor;
 using UnityEditor.Compilation;
@@ -357,13 +358,19 @@ namespace UdonSharp.Compiler
             string methodName = methodSymbol.Name;
             string[] paramNames = new string[methodSymbol.Parameters.Length];
             string returnName = null;
+
+            if (!methodSymbol.IsStatic && !CompilerUdonInterface.IsUdonEvent(methodSymbol) && CompilerUdonInterface.IsUdonEventName(methodName))
+            {
+                // If the user has declared an event with the same name as a built-in one but with different arguments, we imitate Unity here and complain for our built-in events
+                throw new CompilerException($"Method with same name as built-in event '{methodSymbol}' cannot be declared with parameter types that do not match the event.", methodSymbol.RoslynSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()?.GetLocation());
+            }
             
             if (CompilerUdonInterface.IsUdonEvent(methodSymbol))
             {
-                var paramArgs = CompilerUdonInterface.GetUdonEventArgs(methodName);
+                ImmutableArray<(string, Type)> paramArgs = CompilerUdonInterface.GetUdonEventArgs(methodName);
                 methodName = CompilerUdonInterface.GetUdonEventName(methodName);
 
-                for (int i = 0; i < paramNames.Length; ++i)
+                for (int i = 0; i < paramNames.Length && i < paramArgs.Length; ++i)
                     paramNames[i] = paramArgs[i].Item1;
             }
             else
