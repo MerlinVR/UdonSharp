@@ -531,8 +531,8 @@ To find out how many bytes of serialized data were, use `byteCount` in the [`OnP
 | ushort | 0 to 65,535                     | 2 bytes |
 | int    | -2,147,483,648 to 2,147,483,647 | 4 bytes |
 | uint   | 0 to 4,294,967,295              | 4 bytes |
-| long   | 0 to 65,535                     | 8 bytes |
-| ulong  | 0 to 65,535                     | 8 bytes |
+| long   | -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807 | 8 bytes |
+| ulong  | 0 to 18,446,744,073,709,551,615 | 8 bytes |
 ### Floating-point numeric types
 | Type   | Approximate range             | Precision     | Size    |
 |--------|-------------------------------|---------------|---------|
@@ -541,14 +541,14 @@ To find out how many bytes of serialized data were, use `byteCount` in the [`OnP
 ### Vector mathematics types and structures (Unity)
 | Type        | Range         | Size     |
 |-------------|---------------|----------|
-| [Vector2](https://docs.unity3d.com/ScriptReference/Vector2.html)   | same as float | 4 bytes  |
-| [Vector3](https://docs.unity3d.com/ScriptReference/Vector3.html)   | same as float | 8 bytes  |
-| [Vector4](https://docs.unity3d.com/ScriptReference/Vector4.html)   | same as float | 16 bytes |
-| [Quaternion](https://docs.unity3d.com/ScriptReference/Quaternion.html)| same as float | 4 bytes  |
+| [Vector2](https://docs.unity3d.com/ScriptReference/Vector2.html)   | same as float | 8 bytes  |
+| [Vector3](https://docs.unity3d.com/ScriptReference/Vector3.html)   | same as float | 16 bytes  |
+| [Vector4](https://docs.unity3d.com/ScriptReference/Vector4.html)   | same as float | 32 bytes |
+| [Quaternion](https://docs.unity3d.com/ScriptReference/Quaternion.html)| same as float | 16 bytes  |
 ### Color structures
 | Type     | Range / Precision | Size    |
 |----------|-------------------|---------|
-| [Color](https://docs.unity3d.com/ScriptReference/Color.html)  | same as float     | 4 bytes |
+| [Color](https://docs.unity3d.com/ScriptReference/Color.html)  | same as float     | 16 bytes |
 | [Color32](https://docs.unity3d.com/ScriptReference/Color32.html)| same as byte      | 4 bytes |
 ### Text types and structures
 | Type   | Range            | Size           |
