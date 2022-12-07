@@ -536,8 +536,8 @@ To find out how many bytes of serialized data were, use `byteCount` in the [`OnP
 ### Floating-point numeric types
 | Type   | Approximate range             | Precision     | Size    |
 |--------|-------------------------------|---------------|---------|
-| float  | ±1.5 x 10−45 to ±3.4 x 1038   | ~6-9 digits   | 4 bytes |
-| double | ±5.0 × 10−324 to ±1.7 × 10308 | ~15-17 digits | 8 bytes |
+| float  | ±1.5 x 10^(−45) to ±3.4 x 10^(38)   | ~6-9 digits   | 4 bytes |
+| double | ±5.0 × 10^(−324) to ±1.7 × 10^(308) | ~15-17 digits | 8 bytes |
 ### Vector mathematics types and structures (Unity)
 | Type        | Range         | Size     |
 |-------------|---------------|----------|
