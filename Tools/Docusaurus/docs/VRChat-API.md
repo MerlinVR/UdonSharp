@@ -512,11 +512,50 @@ A component used to create portals to other rooms.
 
 # Supported Features
 
-### Synced Variables
-These are the variables that are listed as available for syncing across the network. Note that partial support exists for byte, sbyte, short, ushort, and ulong, but are currently bugged and may not give you the results you expect.
-
-| | | Variables | | |
-| --- | --- | --- | --- | --- |
-| [Color](https://docs.unity3d.com/ScriptReference/Color.html) | [Color32](https://docs.unity3d.com/ScriptReference/Color32.html) | [Quaternion](https://docs.unity3d.com/ScriptReference/Quaternion.html) | [Vector2](https://docs.unity3d.com/ScriptReference/Vector2.html) | [Vector3](https://docs.unity3d.com/ScriptReference/Vector3.html) | 
-| [Vector4](https://docs.unity3d.com/ScriptReference/Vector4.html) | bool | char | double | float |
-| int | long | string | uint | [VRCUrl](#vrcurl) |
+## Synced Variables
+These variables are available for syncing across the network with the [UdonSynced](https://udonsharp.docs.vrchat.com/udonsharp/#udonsynced) attribute.
+:::note
+In the lists below, 'size' refers to the size in memory. When networked, the data is serialized, which may lead to more data being transmitted. For example, syncing a `bool` will send **at least** 1 byte of data (instead of 1 bit) in addition to any networking overhead.
+To find out how many bytes of serialized data were, use `byteCount` in the [`OnPostSerialization`](https://docs.vrchat.com/docs/network-components#onpostserialization) event. You can find more information about syncing on Udon's [Network Specs](https://docs.vrchat.com/docs/network-details#data-and-specs) page.
+:::
+### Boolean  types
+| Type | Size    |
+| ---- | ------- |
+| bool | 1 bit  |
+### Integral numeric types
+| Type   | Range                           | Size    |
+|--------|---------------------------------|---------|
+| sbyte  | -128 to 127                     | 1 byte  |
+| byte   | 0 to 255                        | 1 byte  |
+| short  | -32,768 to 32,767               | 2 bytes |
+| ushort | 0 to 65,535                     | 2 bytes |
+| int    | -2,147,483,648 to 2,147,483,647 | 4 bytes |
+| uint   | 0 to 4,294,967,295              | 4 bytes |
+| long   | 0 to 65,535                     | 8 bytes |
+| ulong  | 0 to 65,535                     | 8 bytes |
+### Floating-point numeric types
+| Type   | Approximate range             | Precision     | Size    |
+|--------|-------------------------------|---------------|---------|
+| float  | ±1.5 x 10−45 to ±3.4 x 1038   | ~6-9 digits   | 4 bytes |
+| double | ±5.0 × 10−324 to ±1.7 × 10308 | ~15-17 digits | 8 bytes |
+### Vector mathematics types and structures (Unity)
+| Type        | Range         | Size     |
+|-------------|---------------|----------|
+| [Vector2](https://docs.unity3d.com/ScriptReference/Vector2.html)   | same as float | 4 bytes  |
+| [Vector3](https://docs.unity3d.com/ScriptReference/Vector3.html)   | same as float | 8 bytes  |
+| [Vector4](https://docs.unity3d.com/ScriptReference/Vector4.html)   | same as float | 16 bytes |
+| [Quaternion](https://docs.unity3d.com/ScriptReference/Quaternion.html)| same as float | 4 bytes  |
+### Color structures
+| Type     | Range / Precision | Size    |
+|----------|-------------------|---------|
+| [Color](https://docs.unity3d.com/ScriptReference/Color.html)  | same as float     | 4 bytes |
+| [Color32](https://docs.unity3d.com/ScriptReference/Color32.html)| same as byte      | 4 bytes |
+### Text types and structures
+| Type   | Range            | Size           |
+|--------|------------------|----------------|
+| char   | U+0000 to U+FFFF | 2 bytes        |
+| string | same as char     | 2 bytes / char |
+### Other structures
+| Type   | Range            | Size           |
+|--------|------------------|----------------|
+| [VRCUrl](#vrcurl) | U+0000 to U+FFFF | 2 bytes / char |
