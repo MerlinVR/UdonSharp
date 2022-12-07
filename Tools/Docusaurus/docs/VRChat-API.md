@@ -542,8 +542,8 @@ To find out how many bytes of serialized data were, use `byteCount` in the [`OnP
 | Type        | Range         | Size     |
 |-------------|---------------|----------|
 | [Vector2](https://docs.unity3d.com/ScriptReference/Vector2.html)   | same as float | 8 bytes  |
-| [Vector3](https://docs.unity3d.com/ScriptReference/Vector3.html)   | same as float | 16 bytes  |
-| [Vector4](https://docs.unity3d.com/ScriptReference/Vector4.html)   | same as float | 32 bytes |
+| [Vector3](https://docs.unity3d.com/ScriptReference/Vector3.html)   | same as float | 12 bytes  |
+| [Vector4](https://docs.unity3d.com/ScriptReference/Vector4.html)   | same as float | 16 bytes |
 | [Quaternion](https://docs.unity3d.com/ScriptReference/Quaternion.html)| same as float | 16 bytes  |
 ### Color structures
 | Type     | Range / Precision | Size    |
