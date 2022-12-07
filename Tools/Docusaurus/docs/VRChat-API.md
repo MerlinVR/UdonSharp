@@ -515,7 +515,7 @@ A component used to create portals to other rooms.
 ## Synced Variables
 These variables are available for syncing across the network with the [UdonSynced](https://udonsharp.docs.vrchat.com/udonsharp/#udonsynced) attribute.
 :::note
-In the lists below, 'size' refers to the size in memory. When networked, the data is serialized, which may lead to more data being transmitted. For example, syncing a `bool` will send **at least** 1 byte of data (instead of 1 bit) in addition to any networking overhead.
+In the lists below, 'size' refers to the **approximate** size in memory. When networked, the data is serialized, which may lead to more data being transmitted. For example, syncing a `bool` will send **at least** 1 byte of data (instead of 1 bit) in addition to any networking overhead.
 To find out how many bytes of serialized data were, use `byteCount` in the [`OnPostSerialization`](https://docs.vrchat.com/docs/network-components#onpostserialization) event. You can find more information about syncing on Udon's [Network Specs](https://docs.vrchat.com/docs/network-details#data-and-specs) page.
 :::
 ### Boolean  types
