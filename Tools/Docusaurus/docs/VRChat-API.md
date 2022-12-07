@@ -521,7 +521,7 @@ To find out how many bytes of serialized data were, use `byteCount` in the [`OnP
 ### Boolean  types
 | Type | Size    |
 | ---- | ------- |
-| bool | 1 bit  |
+| bool | 1 byte  |
 ### Integral numeric types
 | Type   | Range                           | Size    |
 |--------|---------------------------------|---------|
