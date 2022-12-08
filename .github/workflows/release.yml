@@ -38,13 +38,7 @@ jobs:
           filename: "../../${{env.zipFile}}" # make the zip file two directories up, since we start two directories in above
           
       - run: find "Packages/${{env.packageName}}/" -name \*.meta >> metaList
-          
-      - name: Create UnityPackage
-        uses: pCYSl5EDgo/create-unitypackage@cfcd3cf0391a5ef1306342794866a9897c32af0b
-        with:
-          package-path: ${{ env.unityPackage }}
-          include-files: metaList
-        
+                  
         
       - name: Make Release
         uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5
