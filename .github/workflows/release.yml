@@ -29,7 +29,7 @@ jobs:
         run: |
           echo "zipFile=${{ env.packageName }}".zip >> $GITHUB_ENV
           echo "unityPackage=${{ env.packageName }}-${{ steps.version.outputs.prop }}.unitypackage" >> $GITHUB_ENV
-          echo "releaseNotesPath=$Tools/Docusaurus/news/releases/release-{{ steps.version.outputs.prop }}.md" >> GITHUB_ENV
+          echo "releaseNotesPath=Tools/Docusaurus/news/releases/release-${{ steps.version.outputs.prop }}.md" >> GITHUB_ENV
         
       - name: Create Zip
         uses: thedoctor0/zip-release@09336613be18a8208dfa66bd57efafd9e2685657
@@ -49,4 +49,4 @@ jobs:
             ${{ env.zipFile }}
             ${{ env.unityPackage }}
             Packages/${{ env.packageName }}/package.json
-          body_path: "${{ env.releaseNotesPath }}"
+          body_path: ${{ env.releaseNotesPath }}
