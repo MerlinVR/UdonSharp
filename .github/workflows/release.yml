@@ -38,7 +38,7 @@ jobs:
           directory: "Packages/${{env.packageName}}/"
           filename: "../../${{env.zipFile}}" # make the zip file two directories up, since we start two directories in above
           
-      - run: find "Packages/${{env.packageName}}/" -name \*.meta >> metaList
+      # - run: find "Packages/${{env.packageName}}/" -name \*.meta >> metaList
                   
         
       - name: Make Release
@@ -49,4 +49,3 @@ jobs:
             ${{ env.zipFile }}
             ${{ env.unityPackage }}
             Packages/${{ env.packageName }}/package.json
-          body_path: ${{ env.releaseNotesPath }}
