@@ -4,7 +4,7 @@ title: Release 1.1.6
 date: 2022-12-02
 authors: [merlin]
 tags: [release]
-draft: true
+draft: false
 ---
 
 ## Changelog
