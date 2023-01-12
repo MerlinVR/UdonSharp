@@ -758,8 +758,16 @@ namespace UdonSharpEditor
                     UdonSharpUtils.LogWarning($"UdonSharpBehaviour '{udonBehaviour}' could not be upgraded since it is missing a proxy", udonBehaviour);
                     continue;
                 }
-                
-                CopyUdonToProxy(proxy, ProxySerializationPolicy.RootOnly);
+
+                try
+                {
+                    CopyUdonToProxy(proxy, ProxySerializationPolicy.RootOnly);
+                }
+                catch (Exception e)
+                {
+                    UdonSharpUtils.LogError($"Encountered exception while upgrading scene behaviour {proxy}, exception: {e}", proxy);
+                    continue;
+                }
 
                 // Nuke out old data now because we want only the C# side to own the data from this point on
                 
