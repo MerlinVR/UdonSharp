@@ -1513,6 +1513,12 @@ namespace UdonSharpEditor
 
                     UdonSharpProgramAsset programAsset = UdonSharpEditorUtility.GetUdonSharpProgramAsset(proxyBehaviour);
                     
+                    if (programAsset == null)
+                    {
+                        UdonSharpUtils.LogError($"Program asset on {proxyBehaviour} is not valid, make sure the U# script has a program asset associated with it.", proxyBehaviour);
+                        continue;
+                    }
+                    
                     if (programAsset.ScriptVersion < UdonSharpProgramVersion.V1SerializationUpdate)
                         continue;
 
