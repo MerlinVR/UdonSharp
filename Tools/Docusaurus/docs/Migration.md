@@ -1,8 +1,6 @@
 # Migration
 
-UdonSharp 0.x (the .unitypackage version) is deprecated and no longer supported. This new version is easy to get through the [Creator Companion](https://vcc.docs.vrchat.com), which will help you keep it up-to-date as well.
-
-[Migrating Projects using the Creator Companion](https://vcc.docs.vrchat.com/vpm/migrating).
+UdonSharp 0.x (the .unitypackage version) is deprecated and no longer supported. This new version is easy to get through the [Creator Companion](https://vcc.docs.vrchat.com), which will help you keep it up-to-date as well. We recommend you [Migrate your Projects using the Creator Companion](https://vcc.docs.vrchat.com/vpm/migrating). If you want to do the migration manually, read [Manual Migration](#manual-migration).
 
 ## New Features in UdonSharp 1.0
 * **More C# features** in your UdonSharp programs:
@@ -55,3 +53,11 @@ UdonSharp 0.x (the .unitypackage version) is deprecated and no longer supported.
 - Program assets must point to a script and may not be empty
 - Editor scripting is now different: Data is owned by a C# proxy of the UdonSharpBehaviour, and the corresponding UdonBehaviour is empty until runtime.
 - Obsoleted overloads for station and player join events may no longer be used
+
+## Manual Migration
+
+Follow these steps to upgrade a project that uses a version of UdonSharp below 1.0 without using the Creator Companion:
+
+1. Delete the VRCSDK folder, Udon folder, UdonSharp folder, and Gizmos/UdonSharp folders from your project's "Assets" folder.
+2. Download and install the Unity Package versions of the World SDK from `link coming soon`.
+3. Download and install the Unity Package version of the UdonSharp SDK from `link coming soon`.
