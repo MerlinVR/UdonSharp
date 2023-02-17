@@ -58,6 +58,7 @@ UdonSharp 0.x (the .unitypackage version) is deprecated and no longer supported.
 
 Follow these steps to upgrade a project that uses a version of UdonSharp below 1.0 without using the Creator Companion:
 
-1. Delete the VRCSDK folder, Udon folder, UdonSharp folder, and Gizmos/UdonSharp folders from your project's "Assets" folder.
-2. Download and install the Unity Package versions of the World SDK from `link coming soon`.
-3. Download and install the Unity Package version of the UdonSharp SDK from `link coming soon`.
+1. Back up your project.
+2. Delete the VRCSDK folder, Udon folder, UdonSharp folder, and Gizmos/UdonSharp folders from your project's "Assets" folder.
+3. Download and install the Unity Package versions of the World SDK from `link coming soon`.
+4. Download and install the Unity Package version of the UdonSharp SDK from `link coming soon`.
