@@ -211,6 +211,7 @@ namespace UdonSharp
         [PublicAPI] public virtual void OnVideoStart() { }
         [PublicAPI] public virtual void OnPreSerialization() { }
         [PublicAPI] public virtual void OnDeserialization() { }
+        [PublicAPI] public virtual void OnDeserialization(VRC.Udon.Common.DeserializationResult result) { }
         [PublicAPI] public virtual void OnPlayerTriggerEnter(VRC.SDKBase.VRCPlayerApi player) { }
         [PublicAPI] public virtual void OnPlayerTriggerExit(VRC.SDKBase.VRCPlayerApi player) { }
         [PublicAPI] public virtual void OnPlayerTriggerStay(VRC.SDKBase.VRCPlayerApi player) { }
