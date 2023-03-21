@@ -1,60 +1,7 @@
 # Events
 
-* [Unity Events](#unity-events)
 * [Udon Events](#udon-events)
-
-# Unity Events
-These are the method stubs available for Unity events.
-[Unity MonoBehaviour Documentation](https://docs.unity3d.com/ScriptReference/MonoBehaviour.html)
-
-- FixedUpdate
-- LateUpdate
-- OnCollisionEnter2D
-- OnAnimatorIK
-- OnAnimatorMove
-- OnAudioFilterRead
-- OnBecameVisible
-- O- nBecameInvisible
-- OnCollionEnter
-- OnCollisionExit
-- OnCollisionExit2D
-- OnCollisionStay
-- OnCollisionStay2D
-- OnControllerColliderHit
-- OnDestroy
-- OnDrawGizmos
-- OnDrawGizmosSelected
-- OnDisable
-- OnEnable
-- OnJointBreak
-- OnJointBreak2D
-- OnMouseDown
-- OnMouseDrag
-- OnMouseEnter
-- OnMouseExit
-- OnMouseOver
-- OnMouseUp
-- OnMouseUpAsButton
-- OnParticleCollision
-- OnParticleTrigger
-- OnPostRender
-- OnPreCull
-- OnPreRender
-- OnRenderImage
-- OnRenderObject
-- OnTransformChildrenChanged
-- OnTransformParentChanged
-- OnTriggerEnter
-- OnTriggerEnter2D
-- OnTriggerExit
-- OnTriggerExit2D
-- OnTriggerStay
-- OnTriggerStay2D
-- OnValidate
-- OnWillRenderObject
-- Reset
-- Start
-- Update
+* [Unity Events](#unity-events)
 
 # Udon Events
 These are the method stubs you can override via `UdonSharpBehaviour`.
@@ -148,3 +95,56 @@ public override void <method>() {}
 |`void`|OnImageLoadError(IVRCImageDownload result)|Triggered when an image download fails. See [Image Loading](https://docs.vrchat.com/docs/image-loading).|
 |`void`|OnStringLoadSuccess(IVRCStringDownload result)|Triggered when a string download succeeds. See [String Loading](https://docs.vrchat.com/docs/string-loading).|
 |`void`|OnStringLoadError(IVRCStringDownload result)|Triggered when a string download fails. See [String Loading](https://docs.vrchat.com/docs/string-loading).|
+
+# Unity Events
+These are the method stubs available for Unity events.
+[Unity MonoBehaviour Documentation](https://docs.unity3d.com/ScriptReference/MonoBehaviour.html)
+
+- FixedUpdate
+- LateUpdate
+- OnCollisionEnter2D
+- OnAnimatorIK
+- OnAnimatorMove
+- OnAudioFilterRead
+- OnBecameVisible
+- O- nBecameInvisible
+- OnCollionEnter
+- OnCollisionExit
+- OnCollisionExit2D
+- OnCollisionStay
+- OnCollisionStay2D
+- OnControllerColliderHit
+- OnDestroy
+- OnDrawGizmos
+- OnDrawGizmosSelected
+- OnDisable
+- OnEnable
+- OnJointBreak
+- OnJointBreak2D
+- OnMouseDown
+- OnMouseDrag
+- OnMouseEnter
+- OnMouseExit
+- OnMouseOver
+- OnMouseUp
+- OnMouseUpAsButton
+- OnParticleCollision
+- OnParticleTrigger
+- OnPostRender
+- OnPreCull
+- OnPreRender
+- OnRenderImage
+- OnRenderObject
+- OnTransformChildrenChanged
+- OnTransformParentChanged
+- OnTriggerEnter
+- OnTriggerEnter2D
+- OnTriggerExit
+- OnTriggerExit2D
+- OnTriggerStay
+- OnTriggerStay2D
+- OnValidate
+- OnWillRenderObject
+- Reset
+- Start
+- Update
