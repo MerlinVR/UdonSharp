@@ -14,7 +14,7 @@ These are the method stubs available for Unity events.
 - OnAnimatorMove
 - OnAudioFilterRead
 - OnBecameVisible
-- O- nBecameInvisible
+- OnBecameInvisible
 - OnCollionEnter
 - OnCollisionExit
 - OnCollisionExit2D
