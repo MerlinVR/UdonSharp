@@ -96,7 +96,7 @@ namespace UdonSharpEditor
 
             folderPath = folderPath.Replace('\\', '/');
             
-            string chosenFilePath = EditorUtility.SaveFilePanelInProject("Save UdonSharp File", "", "cs", "Save UdonSharp file", folderPath);
+            string chosenFilePath = EditorUtility.SaveFilePanel("Save UdonSharp File", folderPath, "", "cs");
 
             if (chosenFilePath.Length > 0)
             {
