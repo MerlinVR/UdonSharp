@@ -26,7 +26,7 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           editUrl: ({versionDocsDirPath, docPath}) =>
-              `https://github.com/vrchat-community/UdonSharp/edit/master/Docs/Source/${docPath}`,
+              `https://github.com/vrchat-community/UdonSharp/edit/master/Tools/Docusaurus/docs/${docPath}`,
           
         },
         blog: {
