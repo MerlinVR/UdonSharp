@@ -131,7 +131,13 @@ public class <TemplateClassName> : UdonSharpBehaviour
         {
             string fileName = SanitizeName(Path.GetFileNameWithoutExtension(file));
 
-            string filePath = Path.GetDirectoryName(file);
+            string filePath = Path.GetDirectoryName(file).Replace('\\', '/');
+
+            string projectRoot = Path.GetDirectoryName( Application.dataPath ).Replace('\\', '/');
+
+            //make sure the path is relative to the project root
+            if (filePath.StartsWith(projectRoot))
+                filePath = filePath.Substring(projectRoot.Length + 1); //add 1 to remove trailing slash
 
             return $"{filePath}/{fileName}{Path.GetExtension(file)}";
         }

@@ -60,5 +60,5 @@ Follow these steps to upgrade a project that uses a version of UdonSharp below 1
 
 1. Back up your project.
 2. Delete the VRCSDK folder, Udon folder, UdonSharp folder, and Gizmos/UdonSharp folders from your project's "Assets" folder.
-3. Download and install the Unity Package versions of the World SDK from `link coming soon`.
-4. Download and install the Unity Package version of the UdonSharp SDK from `link coming soon`.
+3. Download and install the [Unity Package versions of the World SDK](https://vrchat.com/download/sdk3-worlds).
+4. Download and install the [Unity Package version of the UdonSharp SDK](https://github.com/vrchat-community/UdonSharp/releases/download/1.1.7/com.vrchat.udonsharp-1.1.7.unitypackage).

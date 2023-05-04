@@ -15,7 +15,7 @@ All supported attributes in UdonSharp
 ## UdonSynced
 `[UdonSynced]` / `[UdonSynced(UdonSyncMode)]`
 
-*See [Synced Variables](vrchat-api#synced-variables) for variables that can be synced.*
+*See [Synced Variables](/vrchat-api#synced-variables) for variables that can be synced.*
 
 ### Example
 ```cs
