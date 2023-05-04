@@ -241,6 +241,7 @@ namespace UdonSharp
         [PublicAPI] public virtual void InputMoveVertical(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
         [PublicAPI] public virtual void InputLookHorizontal(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
         [PublicAPI] public virtual void InputLookVertical(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        [PublicAPI] public virtual void OnAsyncGpuReadbackComplete(VRC.SDK3.Rendering.VRCAsyncGPUReadbackRequest request) { }
 
         [Obsolete("The OnStationEntered() event is deprecated use the OnStationEntered(VRCPlayerApi player) event instead", true)]
         public virtual void OnStationEntered() { }
