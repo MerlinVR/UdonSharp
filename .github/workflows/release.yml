@@ -2,10 +2,6 @@ name: Build Release
 
 on: 
   workflow_dispatch:
-  push:
-    branches: 
-        - 'releases/**'
-    paths: Packages/com.vrchat.UdonSharp/**
 
 env:
   packageName: "com.vrchat.UdonSharp"
