@@ -10,7 +10,7 @@
 		"url" : "https://github.com/vrchat/packages"
 	},
 	"vpmDependencies" : {
-		"com.vrchat.worlds" : "^3.2.x"
+		"com.vrchat.worlds" : "^3.1.x"
 	},
 	"samples" : [
 		{
