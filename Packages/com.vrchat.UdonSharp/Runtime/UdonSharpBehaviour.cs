@@ -219,6 +219,7 @@ namespace UdonSharp
         [PublicAPI] public virtual void OnPlayerCollisionExit(VRC.SDKBase.VRCPlayerApi player) { }
         [PublicAPI] public virtual void OnPlayerCollisionStay(VRC.SDKBase.VRCPlayerApi player) { }
         [PublicAPI] public virtual void OnPlayerParticleCollision(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnControllerColliderHitPlayer(VRC.SDK3.ControllerColliderPlayerHit hit) { }
         [PublicAPI] public virtual void OnPlayerRespawn(VRC.SDKBase.VRCPlayerApi player) { }
         [PublicAPI] public virtual void OnImageLoadSuccess(VRC.SDK3.Image.IVRCImageDownload result) { }
         [PublicAPI] public virtual void OnImageLoadError(VRC.SDK3.Image.IVRCImageDownload result) { }

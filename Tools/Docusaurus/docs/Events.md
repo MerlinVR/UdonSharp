@@ -63,6 +63,7 @@ public override void <method>() {}
 |`void`|OnPlayerCollisionStay(VRCPlayerApi player)|Player stays on a collider|
 |`void`|OnPlayerCollisionExit(VRCPlayerApi player)|Player leaves the collider|
 |`void`|OnPlayerParticleCollision(VRCPlayerApi player)|A collision particle hits the player|
+|`void`|OnControllerColliderHitPlayer(ControllerColliderPlayerHit hit)|CharacterController collides with a player|
 
 ## Udon Station Events
 | Return type | Name | Description |
