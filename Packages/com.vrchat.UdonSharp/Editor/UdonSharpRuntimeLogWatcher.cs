@@ -55,8 +55,12 @@ namespace UdonSharpEditor
                 AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
 
                 // Now setup the filesystem watcher
+                #if UNITY_EDITOR_LINUX
+                string VRCDataPath =  Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.local/share/Steam/steamapps/compatdata/438100/pfx/drive_c/users/steamuser/AppData/LocalLow/VRChat/VRChat/";
+                #else // UNITY_EDITOR_WIN || UNITY_EDITOR_MAC
                 string[] splitPath = Application.persistentDataPath.Split('/', '\\');
                 string VRCDataPath = string.Join("\\", splitPath.Take(splitPath.Length - 2)) + "\\VRChat\\VRChat";
+                #endif				
 
                 if (Directory.Exists(VRCDataPath))
                 {
