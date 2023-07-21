@@ -193,7 +193,7 @@ namespace UdonSharp
         [PublicAPI] public virtual void PostLateUpdate() { }
         [PublicAPI] public virtual void Interact() { }
         [PublicAPI] public virtual void OnAvatarChanged(VRC.SDKBase.VRCPlayerApi player) { }
-        [PublicAPI] public virtual void OnAvatarEyeHeightChanged(VRC.SDKBase.VRCPlayerApi player, float newEyeHeightAsMeters) { }
+        [PublicAPI] public virtual void OnAvatarEyeHeightChanged(VRC.SDKBase.VRCPlayerApi player, float prevEyeHeightAsMeters) { }
         [PublicAPI] public virtual void OnDrop() { }
         [PublicAPI] public virtual void OnOwnershipTransferred(VRC.SDKBase.VRCPlayerApi player) { }
         [PublicAPI] public virtual void OnPickup() { }
