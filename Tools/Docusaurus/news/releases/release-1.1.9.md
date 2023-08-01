@@ -9,6 +9,7 @@ draft: false
 ## Summary
 
 Adds event definitions for Avatar Scaling. See [Functions for Player-Controlled Scaling](https://creators.vrchat.com/worlds/udon/players/player-avatar-scaling/#functions-for-player-controlled-scaling) for the details.
+Also merges in some community docs changes!
 
 ### Changes
 
