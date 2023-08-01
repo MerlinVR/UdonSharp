@@ -109,7 +109,7 @@ These are the method stubs available for Unity events.
 - OnAudioFilterRead
 - OnBecameVisible
 - OnBecameInvisible
-- OnCollionEnter
+- OnCollisionEnter
 - OnCollisionExit
 - OnCollisionExit2D
 - OnCollisionStay
