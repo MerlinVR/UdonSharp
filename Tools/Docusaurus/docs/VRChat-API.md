@@ -293,7 +293,7 @@ VRC Object Pool provides a lightweight method of managing an array of game objec
 
 Objects are made active by the pool via the TryToSpawn node, which will return the object that was made active, or a null object if none are available. Objects may be returned to the pool by the pool's owner, and automatically disabled, via the Return node.
 
-When objects are enabled by the pool the OnEnable event is fired, which a Unity behaviour on the object. Note that the OnEnable() event fires before the udon Start() event.
+When objects are enabled by the pool, the OnEnable event is fired, which an UdonBehaviour on the object may listen for. Note that the OnEnable() event fires before the udon Start() event.
 
 Late joiners will have the objects automatically made active or inactive where appropriate.
 
