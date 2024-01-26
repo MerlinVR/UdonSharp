@@ -87,7 +87,7 @@
 #### Properties
 | Static | Type | Name | Summary |
 | :---: | --- | --- | --- |
-| ✔️ | bool | isMaster | Returns if the local player is the instance master |
+| ✔️ | bool | IsMaster | Returns if the local player is the instance master |
 | ✔️ | [VRCPlayerApi](#vrcplayerapi) | LocalPlayer | Returns the current player |
 | ✔️ | bool | IsNetworkSettled | Returns true if the network is ready |
 
