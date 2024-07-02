@@ -21,7 +21,7 @@ No, you can not access the player's camera. You can, however, get the head posit
 
 See [VRCPlayerApi.GetTrackingData](https://github.com/Merlin-san/UdonSharp/wiki/vrchat-api#vrchatplayerapi)
  
-`Vector3 headPos = localPlayer.GetTrackingData(TrackingData.Head).position`
+`Vector3 headPos = localPlayer.GetTrackingData(TrackingDataType.Head).position;`
 
 ### Can I have more than one UdonSharp Udon Behavior on a GameObject?
 Yes.
