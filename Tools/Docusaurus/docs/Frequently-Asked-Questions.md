@@ -35,4 +35,4 @@ If you are learning UdonSharp and not familiar with C# already, you may run acro
 - Method overloads
 - Properties
 
-The UdonSharp [readme](https://github.com/Merlin-san/UdonSharp/blob/master/README.md#c-features-supported) lists additional specific C# features that do not work.
+The [main UdonSharp page](https://udonsharp.docs.vrchat.com/#differences-from-regular-unity-c-to-note) lists additional differences between UdonSharp and C#.
