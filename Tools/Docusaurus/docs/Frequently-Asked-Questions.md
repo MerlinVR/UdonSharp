@@ -19,7 +19,7 @@ You can use prefabs with Udon and U#, but changes to serialized fields on those 
 ### Can I access the player camera?
 No, you can not access the player's camera. You can, however, get the head position and rotation.
 
-See [VRCPlayerApi.GetTrackingData](https://github.com/Merlin-san/UdonSharp/wiki/vrchat-api#vrchatplayerapi)
+See [VRCPlayerApi.GetTrackingData](https://creators.vrchat.com/worlds/udon/players/player-positions/#gettrackingdata)
  
 `Vector3 headPos = localPlayer.GetTrackingData(TrackingDataType.Head).position;`
 
