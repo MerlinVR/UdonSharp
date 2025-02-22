@@ -560,6 +560,16 @@ namespace UdonSharp.Compiler.Emit
                     ExecuteBoundInvocation(GetNumericConversionMethod(sourceType.UdonType, targetType.UdonType));
                     return;
                 }
+                
+                // User enum -> integer
+                // Specifically to handle non-int types like byte, sbyte, etc.
+                if (sourceType.IsEnum && UdonSharpUtils.IsIntegerType(sourceType.UdonType.SystemType) && UdonSharpUtils.IsIntegerType(targetType.UdonType.SystemType) &&
+                    sourceType.UdonType.SystemType != targetType.UdonType.SystemType)
+                {
+                    MethodSymbol conversionMethod = GetNumericConversionMethod(sourceType.UdonType, targetType);
+                    ExecuteBoundInvocation(conversionMethod);
+                    return;
+                }
 
                 // integer -> extern enum
                 if (UdonSharpUtils.IsIntegerType(sourceType.UdonType.SystemType) &&
