@@ -53,7 +53,7 @@ namespace UdonSharp.Compiler.Symbols
                 {
                     if (field.InitializerExpression != null)
                     {
-                        context.Module.AddCommentTag($"{field.Name} = {field.InitializerExpression.SyntaxNode.ToFullString().RemoveNewLines().TrimLength(60, true)}");
+                        context.Module.AddCommentTag($"{field.Name} = {field.InitializerExpression.SyntaxNode?.ToFullString().RemoveNewLines().TrimLength(60, true)}");
                         
                         Value value = context.EmitValue(field.InitializerExpression);
                         
