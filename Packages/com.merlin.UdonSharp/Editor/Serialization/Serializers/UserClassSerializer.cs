@@ -96,7 +96,7 @@ namespace UdonSharp.Serialization
                 if (cSharpFieldInfo.FieldType != fieldInfo.fieldType)
                 {
                     // This may be called through the field setup during compile which uses a dynamic assembly so the types won't match
-                    if (!cSharpFieldInfo.FieldType.Assembly.FullName.StartsWith("UdonSharpRoslynCompileAssembly", StringComparison.Ordinal) || cSharpFieldInfo.FieldType.FullName != fieldInfo.fieldType.FullName)
+                    if (!cSharpFieldInfo.FieldType.Assembly.FullName.StartsWith(UdonSharpCompilerV1.UdonSharpAssemblyNamePrefix, StringComparison.Ordinal) || cSharpFieldInfo.FieldType.FullName != fieldInfo.fieldType.FullName)
                     {
                         UdonSharpUtils.LogWarning($"Field type mismatch on field {fieldInfo.fieldName} in type {typeof(T)}; expected {cSharpFieldInfo.FieldType}, got {fieldInfo.fieldType}");
                         continue;
@@ -194,7 +194,7 @@ namespace UdonSharp.Serialization
                 if (cSharpFieldInfo.FieldType != fieldInfo.fieldType)
                 {
                     // This may be called through the field setup during compile which uses a dynamic assembly so the types won't match
-                    if (!cSharpFieldInfo.FieldType.Assembly.FullName.StartsWith("UdonSharpRoslynCompileAssembly", StringComparison.Ordinal) || cSharpFieldInfo.FieldType.FullName != fieldInfo.fieldType.FullName)
+                    if (!cSharpFieldInfo.FieldType.Assembly.FullName.StartsWith(UdonSharpCompilerV1.UdonSharpAssemblyNamePrefix, StringComparison.Ordinal) || cSharpFieldInfo.FieldType.FullName != fieldInfo.fieldType.FullName)
                     {
                         UdonSharpUtils.LogWarning($"Field type mismatch on field {fieldInfo.fieldName} in type {typeof(T)}; expected {cSharpFieldInfo.FieldType}, got {fieldInfo.fieldType}");
                         continue;

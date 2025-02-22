@@ -49,6 +49,7 @@ namespace UdonSharp.Compiler
     {
         private static int _assemblyCounter;
         private const int MAX_PARALLELISM = 6;
+        public const string UdonSharpAssemblyNamePrefix = "UdonSharpRoslynCompileAssembly";
 
         private class CompileJob
         {
@@ -481,7 +482,7 @@ namespace UdonSharp.Compiler
             
             // Run compilation for the semantic views
             CSharpCompilation compilation = CSharpCompilation.Create(
-                $"UdonSharpRoslynCompileAssembly{_assemblyCounter++}",
+                $"{UdonSharpAssemblyNamePrefix}{_assemblyCounter++}",
                 syntaxTrees.Select(e => e.tree),
                 CompilationContext.GetMetadataReferences(),
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, concurrentBuild: compilationContext.Options.ConcurrentBuild));
