@@ -205,12 +205,8 @@ namespace UdonSharpEditor
                                         if (userIdx != -1)
                                         {
                                             userIdx += searchStr.Length;
-
-                                            int endIdx = userIdx;
-
-                                            // while (fullFileContents[endIdx] != '\r' && fullFileContents[endIdx] != '\n') endIdx++; // Seek to end of name
                                             
-                                            endIdx = fullFileContents.IndexOf(" (usr_", userIdx, StringComparison.Ordinal);
+                                            int endIdx = fullFileContents.IndexOf(" (", userIdx, StringComparison.Ordinal);
 
                                             string username = fullFileContents.Substring(userIdx, endIdx - userIdx);
 
@@ -219,7 +215,7 @@ namespace UdonSharpEditor
                                             // Use the log path as well since Build & Test can have multiple of the same display named users
                                             Random random = new Random((username + logPath).GetHashCode());
 
-                                            Color randomUserColor = Color.HSVToRGB((float)random.NextDouble(), 1.00f, EditorGUIUtility.isProSkin ? 0.9f : 0.6f);
+                                            Color randomUserColor = Color.HSVToRGB((float)random.NextDouble(),  EditorGUIUtility.isProSkin ? 0.6f : 1.00f, EditorGUIUtility.isProSkin ? 0.9f : 0.6f);
                                             string colorStr = ColorUtility.ToHtmlStringRGB(randomUserColor);
 
                                             logState.nameColor = colorStr;
