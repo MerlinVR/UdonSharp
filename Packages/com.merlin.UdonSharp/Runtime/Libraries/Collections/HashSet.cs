@@ -3,8 +3,7 @@ using UnityEngine;
 // ReSharper disable GenericEnumeratorNotDisposed
 
 namespace UdonSharp.Lib.Internal.Collections
-{    
-    // todo: this isn't hooked up to the compiler yet
+{
     internal class HashSetIterator<T>
     {
         private HashSetEntry<T>[] _buckets;
@@ -23,7 +22,7 @@ namespace UdonSharp.Lib.Internal.Collections
             if (entry != null && entry.next != null)
             {
                 _entry = entry.next;
-                _current = entry.value;
+                _current = _entry.value;
                 return true;
             }
             
@@ -48,6 +47,7 @@ namespace UdonSharp.Lib.Internal.Collections
 
         public T Current => _current;
     }
+    
     internal class HashSetEntry<T>
     {
         public T value;
@@ -559,6 +559,30 @@ namespace UdonSharp.Lib.Internal.Collections
                 LoadSerializedData();
             
             return new HashSetIterator<T>(_buckets);
+        }
+        
+        public static HashSet<T> CreateFromArray(T[] items)
+        {
+            HashSet<T> hashSet = new HashSet<T>();
+
+            foreach (T item in items)
+            {
+                hashSet.Add(item);
+            }
+
+            return hashSet;
+        }
+        
+        public static HashSet<T> CreateFromList(System.Collections.Generic.List<T> items)
+        {
+            HashSet<T> hashSet = new HashSet<T>();
+
+            foreach (T item in items)
+            {
+                hashSet.Add(item);
+            }
+
+            return hashSet;
         }
     }
 }
