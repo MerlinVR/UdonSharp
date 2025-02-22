@@ -210,7 +210,7 @@ namespace UdonSharp.Compiler.Binder
         // This will only be visited from within a method declaration so it means it only gets hit if there's a local method declaration which is not supported.
         public override BoundNode VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
-            throw new NotSupportedException(LocStr.CE_LocalMethodsNotSupported, node.GetLocation());
+            throw new NotSupportedException(LocStr.CE_LocalMethodsNotSupported, node);
         }
 
         public override BoundNode VisitLocalFunctionStatement(LocalFunctionStatementSyntax node)
@@ -220,27 +220,27 @@ namespace UdonSharp.Compiler.Binder
         
         public override BoundNode VisitTryStatement(TryStatementSyntax node)
         {
-            throw new System.NotSupportedException("Try/Catch/Finally is not supported by UdonSharp since Udon does not have a way to handle exceptions");
+            throw new NotSupportedException("Try/Catch/Finally is not supported by UdonSharp since Udon does not have a way to handle exceptions", node);
         }
 
         public override BoundNode VisitCatchClause(CatchClauseSyntax node)
         {
-            throw new System.NotSupportedException("Try/Catch/Finally is not supported by UdonSharp since Udon does not have a way to handle exceptions");
+            throw new NotSupportedException("Try/Catch/Finally is not supported by UdonSharp since Udon does not have a way to handle exceptions", node);
         }
 
         public override BoundNode VisitFinallyClause(FinallyClauseSyntax node)
         {
-            throw new System.NotSupportedException("Try/Catch/Finally is not supported by UdonSharp since Udon does not have a way to handle exceptions");
+            throw new NotSupportedException("Try/Catch/Finally is not supported by UdonSharp since Udon does not have a way to handle exceptions", node);
         }
 
         public override BoundNode VisitThrowStatement(ThrowStatementSyntax node)
         {
-            throw new System.NotSupportedException("UdonSharp does not support throwing exceptions since Udon does not have support for exception throwing at the moment");
+            throw new NotSupportedException("UdonSharp does not support throwing exceptions since Udon does not have support for exception throwing at the moment", node);
         }
 
         public override BoundNode VisitThrowExpression(ThrowExpressionSyntax node)
         {
-            throw new System.NotSupportedException("UdonSharp does not support throwing exceptions since Udon does not have support for exception throwing at the moment");
+            throw new NotSupportedException("UdonSharp does not support throwing exceptions since Udon does not have support for exception throwing at the moment", node);
         }
 
         public override BoundNode VisitArrowExpressionClause(ArrowExpressionClauseSyntax node)
@@ -392,11 +392,14 @@ namespace UdonSharp.Compiler.Binder
             
             if (node.Expression is MemberAccessExpressionSyntax accessExpressionSyntax)
                 instanceExpression = VisitExpression(accessExpressionSyntax.Expression);
+            
+            if (methodSymbol == null)
+            {
+                throw new InvalidOperationException();
+            }
 
             // Implicit this on member functions for this behaviour
-            if (instanceExpression == null && 
-                !methodSymbol.IsStatic && 
-                methodSymbol.IsExtern)
+            if (instanceExpression == null && !methodSymbol.IsStatic)
             {
                 instanceExpression = BoundAccessExpression.BindThisAccess(OwningSymbol.ContainingType);
             }
@@ -448,6 +451,19 @@ namespace UdonSharp.Compiler.Binder
                     continue;
                 }
 
+                // Handle '_' discard on out parameters
+                if (methodSymbol.Parameters[i].IsOut)
+                {
+                    if ((argument.Expression.Kind() == SyntaxKind.IdentifierName && ((IdentifierNameSyntax)argument.Expression).Identifier.ValueText == "_") || // out _
+                        (argument.Expression.Kind() == SyntaxKind.DeclarationExpression && ((DeclarationExpressionSyntax)argument.Expression).Designation.Kind() == SyntaxKind.DiscardDesignation)) // out var _, out <type> _
+                    {
+                        boundArguments[i] = BoundAccessExpression.BindDiscardAccess(methodSymbol.Parameters[i].Type, node);
+                        
+                        handledArgsCount++;
+                        continue;
+                    }
+                }
+                
                 boundArguments[i] = VisitExpression(argument.Expression, methodSymbol.Parameters[i].Type);
                 handledArgsCount++;
             }
@@ -480,7 +496,10 @@ namespace UdonSharp.Compiler.Binder
                 void SetParamsArray()
                 {
                     TypeSymbol paramType = methodSymbol.Parameters.Last().Type;
-                    boundArguments[boundArguments.Length - 1] = new BoundConstArrayCreationExpression(node, paramType,
+                    BoundExpression arraySize = new BoundConstantExpression(new ConstantValue<int>(paramExpressions.Length), Context.GetTypeSymbol(SpecialType.System_Int32), node);
+                    
+                    boundArguments[boundArguments.Length - 1] = new BoundArrayCreationExpression(node, Context, paramType,
+                        new [] { arraySize },
                         paramExpressions.Select(e => ConvertExpression(node, e, paramType.ElementType)).ToArray());
                 }
 
@@ -508,7 +527,7 @@ namespace UdonSharp.Compiler.Binder
                 }
             }
 
-            var invocation = BoundInvocationExpression.CreateBoundInvocation(Context, node, methodSymbol, instanceExpression, boundArguments);
+            BoundInvocationExpression invocation = BoundInvocationExpression.CreateBoundInvocation(Context, node, methodSymbol, instanceExpression, boundArguments);
             
             if ((instanceExpression == null || instanceExpression.IsThis) && node.Expression is MemberAccessExpressionSyntax accessExpressionSyntax2 && 
                 accessExpressionSyntax2.Expression.Kind() == SyntaxKind.BaseExpression)
@@ -898,6 +917,27 @@ namespace UdonSharp.Compiler.Binder
 
             if (iteratorExpression.ValueType == Context.GetTypeSymbol(typeof(Transform)))
                 return new BoundForEachChildTransformStatement(node, iteratorExpression, iteratorVal, foreachStatement);
+
+            if (iteratorExpression.ValueType.IsGenericType)
+            {
+                if (TypeSymbol.TryGetSystemType(iteratorExpression.ValueType, out Type systemType))
+                {
+                    Type genericTypeDefinition = systemType.GetGenericTypeDefinition();
+                    
+                    if (genericTypeDefinition == typeof(List<>))
+                        return new BoundForEachListElementStatement(Context, node, iteratorExpression, iteratorVal, foreachStatement);
+                
+                    if (genericTypeDefinition == typeof(Dictionary<,>))
+                        return new BoundForEachDictionaryElementStatement(Context, node, iteratorExpression, iteratorVal, foreachStatement);
+
+                    if (genericTypeDefinition == typeof(HashSet<>) ||
+                        genericTypeDefinition == typeof(Queue<>) ||
+                        genericTypeDefinition == typeof(Stack<>))
+                    {
+                        return new BoundForEachIteratorElementStatement(Context, node, iteratorExpression, iteratorVal, foreachStatement);
+                    }
+                }
+            }
 
             return new BoundForEachStatement(node, iteratorExpression, iteratorVal, foreachStatement);
         }

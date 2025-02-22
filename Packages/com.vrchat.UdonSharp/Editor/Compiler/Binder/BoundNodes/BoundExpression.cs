@@ -18,6 +18,11 @@ namespace UdonSharp.Compiler.Binder
         
         public bool IsThis { get; protected set; }
 
+        /// <summary>
+        /// The expression that gets evaluated to get the value of this expression,
+        /// for example a field access expression would have a source expression of the instance expression; with `a.b` the source expression would be `a`
+        /// On the other hand an assignment expression `a = b` would have a source expression of `b`
+        /// </summary>
         protected BoundExpression SourceExpression { get; }
 
         protected BoundExpression(SyntaxNode node, BoundExpression sourceExpression = null)
@@ -62,23 +67,8 @@ namespace UdonSharp.Compiler.Binder
             ConstantType = constantType;
         }
 
-        public BoundConstantExpression(object constantValue, TypeSymbol typeSymbol)
-            :base(null, null)
-        {
-            ConstantType = typeSymbol;
-
-            Type targetType = typeSymbol.UdonType.SystemType;
-
-            if (typeSymbol.IsEnum && typeSymbol.IsExtern)
-                constantValue = Enum.ToObject(targetType, constantValue);
-            
-            ConstantValue =
-                (IConstantValue) Activator.CreateInstance(typeof(ConstantValue<>).MakeGenericType(typeSymbol.UdonType.SystemType),
-                    constantValue);
-        }
-        
-        public BoundConstantExpression(object constantValue, TypeSymbol typeSymbol, SyntaxNode node)
-            :base(null, null)
+        public BoundConstantExpression(object constantValue, TypeSymbol typeSymbol, SyntaxNode node = null)
+            :base(node, null)
         {
             ConstantType = typeSymbol;
 

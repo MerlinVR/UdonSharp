@@ -40,6 +40,7 @@ namespace UdonSharp.Compiler.Emit
 
         private Value _returnValue;
         private Value _udonReturnValue;
+        private Value _instanceValue;
 
         internal MethodSymbol CurrentEmitMethod { get; private set; }
 
@@ -92,7 +93,7 @@ namespace UdonSharp.Compiler.Emit
             if (executionOrder != null)
             {
                 if (executionOrder.order < (int.MinValue + 1000000))
-                    throw new CompilerException($"Execution orders below int.MinValue + 1000000 are reserved for internal use in U#");
+                    throw new CompilerException("Execution orders below int.MinValue + 1000000 are reserved for internal use in U#");
                     
                 Module.ExecutionOrder = executionOrder.order;
             }
@@ -195,7 +196,7 @@ namespace UdonSharp.Compiler.Emit
             {
                 HashSet<MethodSymbol> newEmitSet = new HashSet<MethodSymbol>();
                 
-                foreach (var methodSymbol in setToEmit)
+                foreach (MethodSymbol methodSymbol in setToEmit)
                 {
                     if (emittedSet.Contains(methodSymbol))
                         continue;
@@ -229,7 +230,23 @@ namespace UdonSharp.Compiler.Emit
                     }
 
                     emittedSet.Add(methodSymbol);
-                        
+
+                    if (methodSymbol.IsConstructor)
+                    {
+                        TypeSymbol containingType = methodSymbol.ContainingType;
+
+                        foreach (FieldSymbol fieldSymbol in containingType.GetMembers<FieldSymbol>(this))
+                        {
+                            if (fieldSymbol.IsConst)
+                                continue;
+                            
+                            if (fieldSymbol.DirectDependencies.IsDefaultOrEmpty)
+                                continue;
+                            
+                            newEmitSet.UnionWith(fieldSymbol.DirectDependencies.OfType<MethodSymbol>());
+                        }
+                    }
+                    
                     newEmitSet.UnionWith(methodSymbol.DirectDependencies.OfType<MethodSymbol>());
                 }
 
@@ -244,7 +261,7 @@ namespace UdonSharp.Compiler.Emit
 
         private void InitConstFields()
         {
-            foreach (var field in DeclaredFields)
+            foreach (FieldSymbol field in DeclaredFields)
             {
                 Value fieldVal = RootTable.GetUserValue(field);
                 
@@ -297,7 +314,7 @@ namespace UdonSharp.Compiler.Emit
 
             while (currentTable != null)
             {
-                foreach (var currentValue in currentTable.Values)
+                foreach (Value currentValue in currentTable.Values)
                 {
                     if (currentValue.IsConstant || visitedValues.Contains(currentValue))
                         continue;
@@ -348,7 +365,7 @@ namespace UdonSharp.Compiler.Emit
 
         public void UpdateRecursiveStackMaxSize(int maxSize)
         {
-            _maxRecursiveStackPush = (maxSize > _maxRecursiveStackPush) ? maxSize : _maxRecursiveStackPush;
+            _maxRecursiveStackPush = Math.Max(maxSize, _maxRecursiveStackPush);
         }
 
         public Value GetConstantValue(TypeSymbol type, object value)
@@ -374,6 +391,14 @@ namespace UdonSharp.Compiler.Emit
         public Value GetUserValue(Symbol valueSymbol)
         {
             return TopTable.GetUserValue(valueSymbol);
+        }
+
+        /// <summary>
+        /// Gets the value used to track the current instance of non-U# behaviour user types
+        /// </summary>
+        public Value GetInstanceValue()
+        {
+            return _instanceValue ?? (_instanceValue = RootTable.CreateInternalValue(GetTypeSymbol(SpecialType.System_Object).MakeArrayType(this), "userTypeInstance"));
         }
 
         public void EmitReturn()
@@ -444,7 +469,7 @@ namespace UdonSharp.Compiler.Emit
                 return enumArrayValue;
 
             int maxEnumVal = 0;
-            foreach (var enumVal in Enum.GetValues(enumType))
+            foreach (object enumVal in Enum.GetValues(enumType))
                 maxEnumVal = (int)enumVal > maxEnumVal ? (int)enumVal : maxEnumVal;
 
             // After a survey of what enums are exposed by Udon, it doesn't seem like anything goes above this limit. The only things I see that go past this are some System.Reflection enums which are unlikely to ever be exposed.
@@ -478,7 +503,7 @@ namespace UdonSharp.Compiler.Emit
 
         private Dictionary<ExternTypeSymbol, MethodSymbol> _mathTruncateMethodSymbolTable = new Dictionary<ExternTypeSymbol, MethodSymbol>();
 
-        private void CastValue(Value sourceValue, Value targetValue, bool explicitCast)
+        private void CastValue(Value sourceValue, Value targetValue)
         {
             if (targetValue.UserType is TypeParameterSymbol)
                 throw new InvalidOperationException("Target cast type cannot be a generic type parameter");
@@ -542,7 +567,7 @@ namespace UdonSharp.Compiler.Emit
                 {
                     Value enumArray = GetEnumArrayForType(targetType.UdonType.SystemType);
 
-                    Value indexValue = CastValue(sourceValue, GetTypeSymbol(SpecialType.System_Int32), true);
+                    Value indexValue = CastValue(sourceValue, GetTypeSymbol(SpecialType.System_Int32));
                     var boundElementAccess = BoundAccessExpression.BindElementAccess(this, null, BoundAccessExpression.BindAccess(enumArray),
                         new BoundExpression[]
                         {
@@ -582,7 +607,7 @@ namespace UdonSharp.Compiler.Emit
                                 _mathTruncateMethodSymbolTable.Add(floatType.UdonType, mathTruncateMethodSymbol);
                             }
 
-                            sourceValue = CastValue(sourceValue, floatType, true);
+                            sourceValue = CastValue(sourceValue, floatType);
 
                             sourceValue = EmitValue(BoundInvocationExpression.CreateBoundInvocation(this, null, mathTruncateMethodSymbol,
                                 null,
@@ -595,7 +620,7 @@ namespace UdonSharp.Compiler.Emit
                         {
                             TypeSymbol ushortType = GetTypeSymbol(SpecialType.System_UInt16);
 
-                            sourceValue = CastValue(sourceValue, ushortType, true);
+                            sourceValue = CastValue(sourceValue, ushortType);
 
                             conversionMethod = GetNumericConversionMethod(ushortType, targetType);
                         }
@@ -638,7 +663,7 @@ namespace UdonSharp.Compiler.Emit
             return false;
         }
 
-        public Value CastValue(Value sourceValue, TypeSymbol targetType, bool explicitCast)
+        public Value CastValue(Value sourceValue, TypeSymbol targetType)
         {
             if (targetType is TypeParameterSymbol)
                 throw new InvalidOperationException("Target cast type cannot be a generic type parameter");
@@ -648,11 +673,11 @@ namespace UdonSharp.Compiler.Emit
             
             Value resultValue = GetReturnValue(targetType);
 
-            CastValue(sourceValue, resultValue, explicitCast);
+            CastValue(sourceValue, resultValue);
             return resultValue;
         }
 
-        public Value EmitValueAssignment(Value targetValue, BoundExpression sourceExpression, bool explicitCast = false)
+        public Value EmitValueAssignment(Value targetValue, BoundExpression sourceExpression)
         {
             targetValue.MarkDirty();
             
@@ -661,7 +686,7 @@ namespace UdonSharp.Compiler.Emit
                 Value expressionResult = EmitValue(sourceExpression);
 
                 if (expressionResult != targetValue)
-                    CastValue(expressionResult, targetValue, explicitCast);
+                    CastValue(expressionResult, targetValue);
 
                 return expressionResult;
             }
@@ -1031,7 +1056,7 @@ namespace UdonSharp.Compiler.Emit
 
         public void RegisterCowValues(Value.CowValue[] values, BoundExpression expression, string key)
         {
-            if (!_expressionCowValueTracker.TryGetValue(expression, out var valueLookup))
+            if (!_expressionCowValueTracker.TryGetValue(expression, out Dictionary<string, Value.CowValue[]> valueLookup))
             {
                 valueLookup = new Dictionary<string, Value.CowValue[]>();
                 _expressionCowValueTracker.Add(expression, valueLookup);
@@ -1042,7 +1067,8 @@ namespace UdonSharp.Compiler.Emit
 
         public void ReleaseCowValues(BoundExpression expression)
         {
-            if (!_expressionCowValueTracker.TryGetValue(expression, out var valuesMap)) return;
+            if (!_expressionCowValueTracker.TryGetValue(expression, out Dictionary<string, Value.CowValue[]> valuesMap)) 
+                return;
             
             foreach (var valueMap in valuesMap)
             {

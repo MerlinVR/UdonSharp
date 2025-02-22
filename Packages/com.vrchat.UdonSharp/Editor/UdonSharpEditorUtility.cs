@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using UdonSharp;
 using UdonSharp.Compiler;
 using UdonSharp.Serialization;
@@ -16,6 +17,8 @@ using UnityEngine.Profiling;
 using VRC.Udon;
 using VRC.Udon.Common;
 using VRC.Udon.Common.Interfaces;
+using VRC.Udon.Editor.ProgramSources;
+using VRC.Udon.EditorBindings;
 using VRC.Udon.Serialization.OdinSerializer.Utilities;
 using Object = UnityEngine.Object;
 
@@ -38,6 +41,99 @@ namespace UdonSharpEditor
     /// </summary>
     public static class UdonSharpEditorUtility
     {
+        [PublicAPI]
+        public static UdonAssemblyProgramAsset UdonSharpProgramToAssemblyProgram(UdonSharpProgramAsset udonSharpProgramAsset, string savePath)
+        {
+            if (EditorApplication.isPlaying)
+                throw new System.NotSupportedException("USharpEditorUtility.UdonSharpProgramToAssemblyProgram() cannot be called in play mode");
+
+            UdonAssemblyProgramAsset newProgramAsset = ScriptableObject.CreateInstance<UdonAssemblyProgramAsset>();
+            AssetDatabase.CreateAsset(newProgramAsset, savePath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+
+            newProgramAsset = AssetDatabase.LoadAssetAtPath<UdonAssemblyProgramAsset>(savePath);
+            
+            UdonSharpCompilerV1.CompileSync();
+
+            string programAssembly = UdonSharpEditorCache.Instance.GetUASMStr(udonSharpProgramAsset);
+
+            // Strip comments/inline code
+            StringBuilder asmBuilder = new StringBuilder();
+
+            using (StringReader reader = new StringReader(programAssembly))
+            {
+                string line = reader.ReadLine();
+
+                while (line != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(line) &&
+                        !line.TrimStart().StartsWith("#", System.StringComparison.Ordinal))
+                        asmBuilder.AppendFormat("{0}\n", line);
+
+                    line = reader.ReadLine();
+                }
+            }
+
+            programAssembly = asmBuilder.ToString();
+
+            FieldInfo assemblyField = typeof(UdonAssemblyProgramAsset).GetField("udonAssembly", BindingFlags.NonPublic | BindingFlags.Instance);
+            assemblyField.SetValue(newProgramAsset, programAssembly);
+
+            IUdonProgram program = null;
+
+            try
+            {
+                UdonSharp.HeapFactory heapFactory = new UdonSharp.HeapFactory();
+
+                UdonEditorInterface editorInterface = new UdonEditorInterface(null, heapFactory, null, null, null, null, null, null, null);
+                heapFactory.FactoryHeapSize = udonSharpProgramAsset.GetSerializedUdonProgramAsset().RetrieveProgram().Heap.GetHeapCapacity();
+
+                program = editorInterface.Assemble(programAssembly);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError(e);
+
+                return null;
+            }
+
+            FieldInfo assemblyProgramField = typeof(UdonProgramAsset).GetField("program", BindingFlags.NonPublic | BindingFlags.Instance);
+            assemblyProgramField.SetValue(newProgramAsset, program);
+
+            IUdonProgram uSharpProgram = udonSharpProgramAsset.GetRealProgram();
+            IUdonProgram assemblyProgram = (IUdonProgram)assemblyProgramField.GetValue(newProgramAsset);
+
+            if (uSharpProgram == null || assemblyProgram == null)
+                return null;
+
+            ImmutableArray<string> symbols = uSharpProgram.SymbolTable.GetSymbols();
+
+            foreach (string symbol in symbols)
+            {
+                uint symbolAddress = uSharpProgram.SymbolTable.GetAddressFromSymbol(symbol);
+                System.Type symbolType = uSharpProgram.Heap.GetHeapVariableType(symbolAddress);
+                object symbolValue = uSharpProgram.Heap.GetHeapVariable(symbolAddress);
+                
+                assemblyProgram.Heap.SetHeapVariable(assemblyProgram.SymbolTable.GetAddressFromSymbol(symbol), symbolValue, symbolType);
+            }
+
+            EditorUtility.SetDirty(newProgramAsset);
+
+            newProgramAsset.SerializedProgramAsset.StoreProgram(assemblyProgram);
+            EditorUtility.SetDirty(newProgramAsset.SerializedProgramAsset);
+
+            AssetDatabase.SaveAssets();
+
+            // This doesn't work unfortunately due to how Udon tries to locate the serialized asset when importing an assembly
+            //string serializedAssetPath = $"{Path.GetDirectoryName(savePath)}/{Path.GetFileNameWithoutExtension(savePath)}_serialized.asset";
+            
+            //AssetDatabase.MoveAsset(AssetDatabase.GetAssetPath(newProgramAsset.SerializedProgramAsset), serializedAssetPath);
+            //AssetDatabase.SaveAssets();
+
+            return newProgramAsset;
+        }
+        
         /// <summary>
         /// Deletes an UdonSharp program asset and the serialized program asset associated with it
         /// </summary>
@@ -1175,6 +1271,7 @@ namespace UdonSharpEditor
 
                     ProxySerializationPolicy lastPolicy = UsbSerializationContext.CurrentPolicy;
                     UsbSerializationContext.CurrentPolicy = serializationPolicy;
+                    UsbSerializationContext.SerializedObjectMap = new Dictionary<object, object>(new ReferenceEqualityComparer<object>());
 
                     Serializer.CreatePooled(proxy.GetType()).WriteWeak(udonBehaviourStorage, proxy);
 
@@ -1219,6 +1316,7 @@ namespace UdonSharpEditor
 
                     ProxySerializationPolicy lastPolicy = UsbSerializationContext.CurrentPolicy;
                     UsbSerializationContext.CurrentPolicy = serializationPolicy;
+                    UsbSerializationContext.SerializedObjectMap = new Dictionary<object, object>(new ReferenceEqualityComparer<object>());
 
                     object proxyObj = proxy;
                     Serializer.CreatePooled(proxy.GetType()).ReadWeak(ref proxyObj, udonBehaviourStorage);

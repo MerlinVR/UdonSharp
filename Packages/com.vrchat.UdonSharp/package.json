@@ -1,16 +1,15 @@
 {
-	"name" : "com.vrchat.udonsharp",
+	"name" : "com.merlin.udonsharp",
 	"displayName" : "UdonSharp",
-	"version" : "1.1.9",
-	"unity" : "2019.4",
+	"version" : "1.2.0",
+	"unity" : "2022.4",
 	"description" : "A compiler for compiling C# to Udon assembly",
 	"author" : {
-		"name" : "VRChat",
-		"email" : "developer@vrchat.com",
-		"url" : "https://github.com/vrchat/packages"
+		"name" : "Merlin",
+		"url" : "https://github.com/MerlinVR/UdonSharp"
 	},
 	"vpmDependencies" : {
-		"com.vrchat.worlds" : "^3.1.x"
+		"com.vrchat.worlds" : "^3.2.x"
 	},
 	"samples" : [
 		{

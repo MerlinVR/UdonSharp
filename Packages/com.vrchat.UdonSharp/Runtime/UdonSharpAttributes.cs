@@ -29,7 +29,7 @@ namespace UdonSharp
     }
 
     [PublicAPI]
-    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Field)]
     public class UdonSyncedAttribute : Attribute
     {
         public UdonSyncMode NetworkSyncType { get; }
@@ -88,7 +88,7 @@ namespace UdonSharp
     /// This attribute has a performance overhead which makes the marked method perform slower and usually generate more garbage. So use it only on methods that **need** to be called recursively.
     /// </summary>
     [PublicAPI]
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public class RecursiveMethodAttribute : Attribute
     {
     }
@@ -98,7 +98,7 @@ namespace UdonSharp
     /// Fields marked with this will instead have the target property's setter called. The setter is expected to set the field if you want the field to change.
     /// </summary>
     [PublicAPI]
-    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Field)]
     public class FieldChangeCallbackAttribute : Attribute
     {
         public string CallbackPropertyName { get; private set; }
@@ -110,14 +110,5 @@ namespace UdonSharp
             CallbackPropertyName = targetPropertyName;
         }
     }
-
-    /// <summary>
-    /// Marks a field to only run its initializer at compile time. This may be used on particularly expensive initializers, or initializers that run code which is not currently valid in Udon.
-    /// </summary>
-    [PublicAPI]
-    [AttributeUsage(AttributeTargets.Field)]
-    [Obsolete("This attribute currently does nothing")]
-    public class CompileInitAttribute : Attribute
-    {}
 }
 

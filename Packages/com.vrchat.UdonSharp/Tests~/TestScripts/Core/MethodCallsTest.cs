@@ -29,6 +29,12 @@ namespace UdonSharp.Tests
         {
             return a + b + c + d + string.Join("", elements);
         }
+        
+        private bool MyOutMethod(out int a)
+        {
+            a = 10;
+            return true;
+        }
 
         public void ExecuteTests()
         {
@@ -193,6 +199,19 @@ namespace UdonSharp.Tests
             {
                 player.GetPickupInHand(VRC_Pickup.PickupHand.Left);
             }
+            
+            bool outResult = MyOutMethod(out int outVal);
+            
+            tester.TestAssertion("Out method", outResult && outVal == 10);
+            
+            // Just make sure we can compile this
+            outResult = MyOutMethod(out _);
+            
+            tester.TestAssertion("Out method discard", outResult);
+
+            outResult = MyOutMethod(out int _);
+            
+            tester.TestAssertion("Out method discard 2", outResult);
         }
     }
 }

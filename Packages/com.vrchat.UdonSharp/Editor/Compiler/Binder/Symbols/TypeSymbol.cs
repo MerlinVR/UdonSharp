@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Udon;
+using NotSupportedException = UdonSharp.Core.NotSupportedException;
 
 namespace UdonSharp.Compiler.Symbols
 {
@@ -29,7 +30,7 @@ namespace UdonSharp.Compiler.Symbols
 
         public bool IsEnum => RoslynSymbol.TypeKind == TypeKind.Enum;
 
-        public bool IsUdonSharpBehaviour => !IsArray && ((INamedTypeSymbol) RoslynSymbol).IsUdonSharpBehaviour();
+        public bool IsUdonSharpBehaviour => !IsArray && (((INamedTypeSymbol) RoslynSymbol).IsUdonSharpBehaviour());
 
         public ExternTypeSymbol UdonType { get; protected set; }
 
@@ -43,32 +44,51 @@ namespace UdonSharp.Compiler.Symbols
 
                 return _elementType;
             }
-            protected set => _elementType = value;
+            private set => _elementType = value;
         }
         
         public TypeSymbol BaseType { get; }
         public ImmutableArray<TypeSymbol> TypeArguments { get; }
+        
+        public bool IsGenericType => TypeArguments.Length > 0;
+        
+        // public TypeSymbol GetGenericTypeDefinition(AbstractPhaseContext context)
+        // {
+        //     if (!IsGenericType)
+        //         return this;
+        //
+        //     // Get generic type definition of the original symbol
+        //     return context.GetTypeSymbol(((INamedTypeSymbol) RoslynSymbol).ConstructUnboundGenericType());
+        // }
+        
+        public virtual bool IsFullyConstructedGeneric => TypeArguments.All(e => e != null && !(e is TypeParameterSymbol) && (!e.IsGenericType || e.IsFullyConstructedGeneric));
+
+        public ImmutableArray<FieldSymbol> FieldSymbols { get; private set; }
 
         protected TypeSymbol(ISymbol sourceSymbol, AbstractPhaseContext context)
             : base(sourceSymbol, context)
         {
             // ReSharper disable once VirtualMemberCallInConstructor
             if (RoslynSymbol.BaseType != null && !IsExtern) // We don't use the base type on extern types and if we bind the base here, it can cause loops due to how Udon maps types
-                BaseType = context.GetTypeSymbol(RoslynSymbol.BaseType);
+                BaseType = context.GetTypeSymbolWithoutRedirect(RoslynSymbol.BaseType);
             
             if (IsArray)
-                ElementType = context.GetTypeSymbol(((IArrayTypeSymbol)sourceSymbol).ElementType);
+                ElementType = context.GetTypeSymbolWithoutRedirect(((IArrayTypeSymbol)sourceSymbol).ElementType);
 
             if (sourceSymbol is INamedTypeSymbol sourceNamedType)
             {
                 TypeArguments = sourceNamedType.TypeArguments.Length > 0
-                    ? sourceNamedType.TypeArguments.Select(context.GetTypeSymbol).ToImmutableArray()
+                    ? sourceNamedType.TypeArguments.Select(context.GetTypeSymbolWithoutRedirect).ToImmutableArray()
                     : ImmutableArray<TypeSymbol>.Empty;
 
                 if (RoslynSymbol.OriginalDefinition != RoslynSymbol)
-                    OriginalSymbol = context.GetSymbol(RoslynSymbol.OriginalDefinition);
+                {
+                    OriginalSymbol = context.GetTypeSymbolWithoutRedirect(RoslynSymbol.OriginalDefinition);
+                }
                 else
+                {
                     OriginalSymbol = this;
+                }
             }
             else
             {
@@ -105,7 +125,7 @@ namespace UdonSharp.Compiler.Symbols
                 return;
             }
 
-            if (TypeArguments.Length > 0 && this == OriginalSymbol)
+            if (IsGenericType && !IsFullyConstructedGeneric)
             {
                 _bound = true;
                 return;
@@ -116,12 +136,13 @@ namespace UdonSharp.Compiler.Symbols
             if (IsUdonSharpBehaviour)
             {
                 if (RoslynSymbol.AllInterfaces.Length > 2) // Be lazy and ignore the serialization callback receiver since this is temporary
-                    throw new NotImplementedException("Interfaces are not yet handled by U#");
+                    throw new NotSupportedException("Interfaces are not yet handled by U#");
                 
                 SetupAttributes(context);
             }
 
             ImmutableArray<ISymbol> members = RoslynSymbol.GetMembers();
+            List<FieldSymbol> fields = new List<FieldSymbol>();
 
             foreach (ISymbol member in members.Where(member => (!member.IsImplicitlyDeclared || member.Kind == SymbolKind.Field)))
             {
@@ -131,14 +152,21 @@ namespace UdonSharp.Compiler.Symbols
                     case IPropertySymbol property when !property.IsStatic && IsUdonSharpBehaviour:
                     case IMethodSymbol method when !method.IsStatic && IsUdonSharpBehaviour:
                         Symbol boundSymbol = context.GetSymbol(member);
-                        
+
                         if (!boundSymbol.IsBound)
+                        {
                             using (context.OpenMemberBindScope(boundSymbol))
                                 boundSymbol.Bind(context);
-                        
+                        }
+
+                        if (boundSymbol is FieldSymbol field)
+                            fields.Add(field);
+
                         break;
                 }
             }
+
+            FieldSymbols = fields.ToImmutableArray();
 
             _bound = true;
         }
@@ -158,12 +186,19 @@ namespace UdonSharp.Compiler.Symbols
                 {
                     if (dependency is TypeSymbol typeSymbol)
                     {
+                        // if (typeSymbol.IsGenericType && !typeSymbol.IsFullyConstructedGeneric)
+                        //     continue;
+                        
                         if (!referencedTypes.ContainsKey(typeSymbol))
                             referencedTypes.Add(typeSymbol, new HashSet<Symbol>());
                     }
                     else
                     {
                         TypeSymbol containingType = dependency.ContainingType;
+                        
+                        // if (containingType.IsGenericType && !containingType.IsFullyConstructedGeneric)
+                        //     continue;
+                        
                         if (!referencedTypes.ContainsKey(containingType))
                             referencedTypes.Add(containingType, new HashSet<Symbol>());
 
@@ -181,6 +216,9 @@ namespace UdonSharp.Compiler.Symbols
                 TypeSymbol currentSymbol = ElementType;
                 while (currentSymbol.IsArray)
                     currentSymbol = currentSymbol.ElementType;
+                
+                // if (currentSymbol.IsGenericType && !currentSymbol.IsFullyConstructedGeneric)
+                //     return referencedTypes;
                 
                 if (!referencedTypes.ContainsKey(currentSymbol))
                     referencedTypes.Add(currentSymbol, new HashSet<Symbol>());
@@ -248,14 +286,7 @@ namespace UdonSharp.Compiler.Symbols
 
         public IEnumerable<Symbol> GetMembers(AbstractPhaseContext context)
         {
-            List<Symbol> symbols = new List<Symbol>();
-            
-            foreach (ISymbol member in RoslynSymbol.GetMembers())
-            {
-                symbols.Add(GetMember(member, context));
-            }
-
-            return symbols;
+            return RoslynSymbol.GetMembers().Select(member => GetMember(member, context)).ToList();
         }
 
         public IEnumerable<Symbol> GetMembers(string name, AbstractPhaseContext context)
@@ -287,8 +318,16 @@ namespace UdonSharp.Compiler.Symbols
 
         public TypeSymbol MakeArrayType(AbstractPhaseContext context)
         {
-            return context.GetTypeSymbol(context.CompileContext.RoslynCompilation.CreateArrayTypeSymbol(RoslynSymbol));
+            return context.GetTypeSymbolWithoutRedirect(context.CompileContext.RoslynCompilation.CreateArrayTypeSymbol(RoslynSymbol));
         }
+
+        public virtual int GetUserFieldIndex(FieldSymbol field)
+        {
+            // Only valid in ImportedUdonSharpTypeSymbol
+            throw new InvalidOperationException();
+        }
+
+        public virtual int UserTypeAllocationSize => throw new NotSupportedException("User type allocation size is not supported on this type", RoslynSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()?.GetLocation());
 
         /// <summary>
         /// Implemented by derived type symbols to create their own relevant symbol for the roslyn symbol
@@ -329,6 +368,11 @@ namespace UdonSharp.Compiler.Symbols
 
             return false;
         }
+
+        public TypeSymbol ConstructGenericType(AbstractPhaseContext context, params TypeSymbol[] genericArguments)
+        {
+            return context.GetTypeSymbolWithoutRedirect(((INamedTypeSymbol)RoslynSymbol).Construct(genericArguments.Select(e => e.RoslynSymbol).ToArray()));
+        }
         
         private static readonly SymbolDisplayFormat _externFullTypeFormat =
             new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
@@ -344,6 +388,10 @@ namespace UdonSharp.Compiler.Symbols
                 return null;
             
             if (!typeSymbol.IsGenericType && !baseType.IsGenericType)
+                return baseType;
+            
+            // Nested types can be technically generic, but won't have type arguments and won't need to be constructed
+            if (typeSymbol.TypeArguments.Length == 0)
                 return baseType;
                 
             Type[] typeArguments = new Type[typeSymbol.TypeArguments.Length];
@@ -393,6 +441,11 @@ namespace UdonSharp.Compiler.Symbols
             return null;
         }
         
+        public static bool TryGetSystemType(TypeSymbol typeSymbol, out Type systemType)
+        {
+            return TryGetSystemType(typeSymbol.RoslynSymbol, out systemType);
+        }
+        
         public static bool TryGetSystemType(ITypeSymbol typeSymbol, out Type systemType)
         {
             systemType = null;
@@ -415,7 +468,11 @@ namespace UdonSharp.Compiler.Symbols
                 typeSymbol = currentType;
             }
 
-            INamedTypeSymbol namedType = (INamedTypeSymbol)typeSymbol;
+            if (!(typeSymbol is INamedTypeSymbol namedType))
+            {
+                UdonSharpUtils.LogError($"Invalid type symbol {typeSymbol}");
+                return false;
+            }
             
             Stack<INamedTypeSymbol> containingTypeStack = null;
 
@@ -465,7 +522,7 @@ namespace UdonSharp.Compiler.Symbols
                 {
                     INamedTypeSymbol currentNamedType = containingTypeStack.Pop();
                     string currentTypeName = currentNamedType.ToDisplayString(_externTypeFormat);
-                    if (currentNamedType.IsGenericType)
+                    if (currentNamedType.Arity != 0)
                         currentTypeName += $"`{currentNamedType.TypeArguments.Length}";
                         
                     currentFoundType = MakeGenericTypeInternal(currentFoundType.GetNestedType(currentTypeName), currentNamedType);

@@ -4,12 +4,14 @@ using JetBrains.Annotations;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using UdonSharp.Compiler;
 using UnityEditor;
 using UnityEngine;
 using VRC.Udon.Serialization.OdinSerializer;
 using VRC.Udon.Serialization.OdinSerializer.Utilities;
 using Debug = UnityEngine.Debug;
+using SerializationUtility = VRC.Udon.Serialization.OdinSerializer.SerializationUtility;
 
 namespace UdonSharp
 {
@@ -19,6 +21,11 @@ namespace UdonSharp
     [InitializeOnLoad]
     internal class UdonSharpEditorCache
     {
+        private const string CACHE_DIR_PATH = "Library/UdonSharpCache/";
+        private const string CACHE_FILE_PATH = "Library/UdonSharpCache/UdonSharpEditorCache.dat"; // Old cache ended in .asset
+        private const string UASM_DIR_PATH = "Library/UdonSharpCache/UASM/";
+        private const string SERIALIZATION_INFO_PATH = "Library/UdonSharpCache/SerializedClassData.dat";
+        
     #region Instance and serialization management
         [Serializable]
         internal struct CompileDiagnostic
@@ -42,9 +49,6 @@ namespace UdonSharp
 
             public CompileDiagnostic[] diagnostics;
         }
-
-        private const string CACHE_DIR_PATH = "Library/UdonSharpCache/";
-        private const string CACHE_FILE_PATH = "Library/UdonSharpCache/UdonSharpEditorCache.dat"; // Old cache ended in .asset
 
         public static UdonSharpEditorCache Instance => GetInstance();
 
@@ -171,6 +175,7 @@ namespace UdonSharp
 
             FlushDirtyDebugInfos();
             FlushUasmCache();
+            FlushSerializationInfo();
         }
     #endregion
 
@@ -499,10 +504,7 @@ namespace UdonSharp
                     _classDebugInfoLookup.Add(sourceProgram, debugInfos);
                 }
 
-                if (!debugInfos.ContainsKey(debugInfoType))
-                    debugInfos.Add(debugInfoType, debugInfo);
-                else
-                    debugInfos[debugInfoType] = debugInfo;
+                debugInfos[debugInfoType] = debugInfo;
             }
         }
 
@@ -527,8 +529,6 @@ namespace UdonSharp
     #endregion
 
     #region UASM cache
-        const string UASM_DIR_PATH = "Library/UdonSharpCache/UASM/";
-
         // UdonSharpProgramAsset GUID to uasm lookup
         private Dictionary<string, string> _uasmCache = new Dictionary<string, string>();
 
@@ -584,16 +584,177 @@ namespace UdonSharp
                 if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out string guid, out long _))
                     return;
 
-                if (_uasmCache.ContainsKey(guid))
-                {
-                    _uasmCache[guid] = uasm;
-                }
-                else
-                {
-                    _uasmCache.Add(guid, uasm);
-                }
+                _uasmCache[guid] = uasm;
             }
         }
+    #endregion
+
+    #region Serialization Info
+
+        [Serializable]
+        internal class UdonFieldInfo
+        {
+            public string fieldName;
+            public Type fieldType;
+            public int fieldIndex;
+            public bool isStrongBoxed;
+            
+            public UdonFieldInfo()
+            {
+            }
+            
+            public UdonFieldInfo(UdonFieldInfo other)
+            {
+                fieldName = other.fieldName;
+                fieldType = other.fieldType;
+                fieldIndex = other.fieldIndex;
+                isStrongBoxed = other.isStrongBoxed;
+            }
+        }
+        
+        [Serializable]
+        internal class UdonClassInfo
+        {
+            public Type classType;
+            public UdonFieldInfo[] fields = Array.Empty<UdonFieldInfo>();
+        }
+        
+        [Serializable]
+        internal class UdonClassCache
+        {
+            public UdonClassInfo[] classInfos = Array.Empty<UdonClassInfo>();
+        }
+        
+        private Dictionary<string, UdonClassInfo> _serializationInfo;
+        
+        private static readonly object _serializationInfoLock = new object();
+        
+        private void FlushSerializationInfo()
+        {
+            lock (_serializationInfoLock)
+            {
+                if (_serializationInfo == null)
+                    return;
+
+                string directoryName = Path.GetDirectoryName(SERIALIZATION_INFO_PATH);
+                
+                if (!Directory.Exists(directoryName))
+                    Directory.CreateDirectory(directoryName);
+                
+                byte[] serializedData = SerializationUtility.SerializeValue(_serializationInfo, DataFormat.Binary);
+                File.WriteAllBytes(SERIALIZATION_INFO_PATH, serializedData);
+            }
+        }
+        
+        internal void SetSerializationInfo(Type type, UdonClassInfo classInfo)
+        {
+            lock (_serializationInfoLock)
+            {
+                if (_serializationInfo == null)
+                    _serializationInfo = new Dictionary<string, UdonClassInfo>();
+
+                if (type.IsConstructedGenericType)
+                {
+                    type = type.GetGenericTypeDefinition();
+                    classInfo.classType = type;
+
+                    foreach (UdonFieldInfo field in classInfo.fields)
+                    {
+                        FieldInfo genericField = type.GetField(field.fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                        
+                        if (genericField != null)
+                        {
+                            field.fieldType = genericField.FieldType;
+                        }
+                    }
+                }
+                
+                _serializationInfo[type.FullName] = classInfo;
+            }
+        }
+        
+        internal void ClearSerializationInfos()
+        {
+            lock (_serializationInfoLock)
+            {
+                _serializationInfo?.Clear();
+            }
+        }
+        
+        internal UdonClassInfo GetSerializationInfo(Type type)
+        {
+            lock (_serializationInfoLock)
+            {
+                if (_serializationInfo == null)
+                {
+                    _serializationInfo = new Dictionary<string, UdonClassInfo>();
+
+                    if (File.Exists(SERIALIZATION_INFO_PATH))
+                    {
+                        Dictionary<string, UdonClassInfo> classCache = SerializationUtility.DeserializeValue<Dictionary<string, UdonClassInfo>>(File.ReadAllBytes(SERIALIZATION_INFO_PATH), DataFormat.Binary);
+
+                        if (classCache != null)
+                        {
+                            List<string> classesToRemove = new List<string>();
+
+                            // It's possible that the class cache has some classes that are no longer valid due to users deleting or renaming the types, so we'll prune those out
+                            foreach (var currentInfo in classCache)
+                            {
+                                if (currentInfo.Value.classType == null)
+                                {
+                                    classesToRemove.Add(currentInfo.Key);
+                                }
+                            }
+
+                            foreach (string key in classesToRemove)
+                            {
+                                classCache.Remove(key);
+                            }
+
+                            _serializationInfo = classCache;
+                        }
+                    }
+                }
+
+                Type[] genericArguments = null;
+                
+                if (type.IsConstructedGenericType)
+                {
+                    genericArguments = type.GetGenericArguments();
+                    type = type.GetGenericTypeDefinition();
+                }
+
+                if (!_serializationInfo.TryGetValue(type.FullName, out UdonClassInfo classInfo))
+                {
+                    return null;
+                }
+
+                if (genericArguments == null)
+                {
+                    return classInfo;
+                }
+
+                UdonClassInfo constructedClassInfo = new UdonClassInfo()
+                {
+                    classType = type.MakeGenericType(genericArguments),
+                    fields = classInfo.fields.Select(e => new UdonFieldInfo(e)).ToArray(), // Copy the fields so we don't modify the cached data
+                };
+
+                foreach (UdonFieldInfo fieldInfo in constructedClassInfo.fields)
+                {
+                    // Get matching field from the constructed type and update the field type
+                    FieldInfo constructedField = constructedClassInfo.classType.GetField(fieldInfo.fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+                    if (constructedField != null)
+                    {
+                        fieldInfo.fieldType = constructedField.FieldType;
+                    }
+                }
+
+                return constructedClassInfo;
+            }
+        }
+
     #endregion
     }
 }

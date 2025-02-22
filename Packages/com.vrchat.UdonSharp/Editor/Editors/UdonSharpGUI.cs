@@ -409,6 +409,16 @@ namespace UdonSharpEditor
                 if (editorState.ShowProgramDisassembly)
                     programAsset.DrawProgramDisassembly();
             }
+            
+            // if (GUILayout.Button("Export to Assembly Asset"))
+            // {
+            //     string savePath = EditorUtility.SaveFilePanelInProject("Assembly asset save location", Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(programAsset.sourceCsScript)), "asset", "Choose a save location for the assembly asset");
+            //
+            //     if (savePath.Length > 0)
+            //     {
+            //         UdonSharpEditorUtility.UdonSharpProgramToAssemblyProgram(programAsset, savePath);
+            //     }
+            // }
         }
 
         /// <summary>
@@ -453,6 +463,7 @@ namespace UdonSharpEditor
                     AssetDatabase.Refresh();
 
                     programAsset.sourceCsScript = AssetDatabase.LoadAssetAtPath<MonoScript>(chosenFilePath);
+                    EditorUtility.SetDirty(programAsset);
 
                     return true;
                 }

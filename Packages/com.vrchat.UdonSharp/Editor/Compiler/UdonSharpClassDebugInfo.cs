@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
-using UnityEngine;
 using VRC.Udon.Serialization.OdinSerializer;
 
 namespace UdonSharp.Compiler
@@ -41,11 +40,18 @@ namespace UdonSharp.Compiler
         private MethodSymbol _currentMethod;
         private MethodDebugInfo _currentDebugInfo;
 
+        private static readonly SymbolDisplayFormat _methodDisplayFormat = new SymbolDisplayFormat(
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
+            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+            memberOptions: SymbolDisplayMemberOptions.IncludeParameters | SymbolDisplayMemberOptions.IncludeModifiers | SymbolDisplayMemberOptions.IncludeType | SymbolDisplayMemberOptions.IncludeContainingType,
+            parameterOptions: SymbolDisplayParameterOptions.IncludeName | SymbolDisplayParameterOptions.IncludeType,
+            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
+        
         internal void StartMethodEmit(MethodSymbol methodSymbol, EmitContext context)
         {
             _currentMethod = methodSymbol;
             _currentDebugInfo = new MethodDebugInfo();
-            _currentDebugInfo.methodName = methodSymbol.Name;
+            _currentDebugInfo.methodName = methodSymbol.RoslynSymbol.ToDisplayString(_methodDisplayFormat);
             if (methodSymbol.RoslynSymbol.DeclaringSyntaxReferences.Length > 0)
             {
                 _currentDebugInfo.containingFilePath = context.CompileContext

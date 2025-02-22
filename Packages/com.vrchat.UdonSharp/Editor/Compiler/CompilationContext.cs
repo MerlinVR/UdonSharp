@@ -96,6 +96,8 @@ namespace UdonSharp.Compiler
         public UdonSharpCompileOptions Options { get; }
         
         private Dictionary<TypeSymbol, ImmutableArray<TypeSymbol>> _inheritedTypes;
+        
+        private ConcurrentBag<TypeSymbol> _referencedImportedUserTypes = new ConcurrentBag<TypeSymbol>();
 
         public CompilationContext(UdonSharpCompileOptions options)
         {
@@ -127,9 +129,22 @@ namespace UdonSharp.Compiler
                 arrayDepth++;
                 systemType = systemType.GetElementType();
             }
+
+            Type[] genericArguments = null;
+            
+            if (systemType.IsConstructedGenericType)
+            {
+                genericArguments = systemType.GetGenericArguments();
+                systemType = systemType.GetGenericTypeDefinition();
+            }
             
             ITypeSymbol typeSymbol = RoslynCompilation.GetTypeByMetadataName(systemType.FullName);
 
+            if (genericArguments != null && genericArguments.All(e => !e.IsGenericParameter))
+            {
+                typeSymbol = ((INamedTypeSymbol)typeSymbol).Construct(genericArguments.Select(e => GetTypeSymbol(e, context).RoslynSymbol).ToArray());
+            }
+            
             for (int i = 0; i < arrayDepth; ++i)
                 typeSymbol = RoslynCompilation.CreateArrayTypeSymbol(typeSymbol, 1);
             
@@ -184,7 +199,13 @@ namespace UdonSharp.Compiler
             {
                 string programSource = UdonSharpUtils.ReadFileTextSync(currentSource);
 
-                var programSyntaxTree = CSharpSyntaxTree.ParseText(programSource, CSharpParseOptions.Default.WithDocumentationMode(DocumentationMode.None).WithPreprocessorSymbols(scriptingDefines).WithLanguageVersion(LanguageVersion.CSharp7_3));
+            #if UNITY_2022_3_OR_NEWER
+                const LanguageVersion version = LanguageVersion.CSharp9;
+            #else
+                const LanguageVersion version = LanguageVersion.CSharp7_3;
+            #endif
+                
+                SyntaxTree programSyntaxTree = CSharpSyntaxTree.ParseText(programSource, CSharpParseOptions.Default.WithDocumentationMode(DocumentationMode.None).WithPreprocessorSymbols(scriptingDefines).WithLanguageVersion(version));
 
                 syntaxTrees.Add(new ModuleBinding() { tree = programSyntaxTree, filePath = currentSource, sourceText = programSource });
             });
@@ -341,7 +362,7 @@ namespace UdonSharp.Compiler
 
         private TypeSymbol _udonSharpBehaviourType;
 
-        static string GetUniqueID(Dictionary<string, int> idLookup, string id)
+        private static string GetUniqueID(Dictionary<string, int> idLookup, string id)
         {
             if (!idLookup.TryGetValue(id, out var foundID))
             {
@@ -516,6 +537,16 @@ namespace UdonSharp.Compiler
                 return types;
             
             return ImmutableArray<TypeSymbol>.Empty;
+        }
+        
+        public void AddReferencedUserType(TypeSymbol typeSymbol)
+        {
+            _referencedImportedUserTypes.Add(typeSymbol);
+        }
+        
+        public TypeSymbol[] GetReferencedUserClasses()
+        {
+            return _referencedImportedUserTypes.Distinct().Where(e => e != null && e.IsBound && !e.IsArray && !e.IsValueType && !e.IsEnum && !e.RoslynSymbol.IsStatic && (!e.IsGenericType || e.IsFullyConstructedGeneric)).ToArray();
         }
     }
 }

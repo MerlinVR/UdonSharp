@@ -11,8 +11,8 @@ namespace UdonSharp.Serialization
     /// </summary>
     public interface IFormatter
     {
-        void Write(IValueStorage targetObject, object sourceObject);
         void Read(ref object targetObject, IValueStorage sourceObject);
+        void Write(IValueStorage targetObject, object sourceObject);
     }
 
     public abstract class Formatter<T> : IFormatter

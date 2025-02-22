@@ -24,15 +24,18 @@ namespace UdonSharp.Compiler.Assembly
         public uint CurrentAddress => _currentAddress;
         
         public int ExecutionOrder { get; set; }
+        
+        public string FilePath { get; set; }
 
         public ValueTable RootTable { get; }
 
         public Dictionary<Symbol, ExportAddress> Exports { get; } = new Dictionary<Symbol, ExportAddress>();
 
-        public AssemblyModule(CompilationContext context)
+        public AssemblyModule(CompilationContext context, string filePath)
         {
             CompileContext = context;
             RootTable = new ValueTable(this, null);
+            FilePath = filePath;
         }
 
         public AssemblyInstruction this[int index]
@@ -96,6 +99,12 @@ namespace UdonSharp.Compiler.Assembly
 
         public void AddCopy(Value sourceValue, Value targetValue)
         {
+            if (sourceValue == null)
+                throw new ArgumentNullException(nameof(sourceValue));
+            
+            if (targetValue == null)
+                throw new ArgumentNullException(nameof(targetValue));
+            
             if (targetValue.IsConstant)
                 throw new ArgumentException("Cannot copy to const value");
             

@@ -18,9 +18,9 @@ namespace UdonSharp.Compiler.Binder
         private static PropertySymbol BuildProperty(AbstractPhaseContext context, BoundExpression sourceExpression)
         {
             TypeSymbol arrayType = sourceExpression.ValueType;
-            TypeSymbol elementType = arrayType.ElementType;
+            TypeSymbol elementType = arrayType is ImportedUdonSharpTypeSymbol ? context.GetTypeSymbol(SpecialType.System_Object) : arrayType.ElementType;
             
-            Type systemType = arrayType.ElementType.UdonType.SystemType;
+            Type systemType = elementType.UdonType.SystemType;
             if (systemType == typeof(UnityEngine.Object) ||
                 systemType.IsSubclassOf(typeof(UnityEngine.Object)))
             {

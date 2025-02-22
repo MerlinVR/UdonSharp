@@ -10,7 +10,6 @@ using UdonSharp.Compiler.Binder;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Core;
 using UdonSharp.Localization;
-using UnityEngine;
 using NotSupportedException = UdonSharp.Core.NotSupportedException;
 
 namespace UdonSharp.Compiler.Symbols
@@ -20,50 +19,50 @@ namespace UdonSharp.Compiler.Symbols
         protected MethodSymbol(IMethodSymbol sourceSymbol, AbstractPhaseContext context)
             : base(sourceSymbol, context)
         {
-            if (sourceSymbol != null)
+            if (sourceSymbol == null) 
+                return;
+            
+            ContainingType = context.GetTypeSymbolWithoutRedirect(sourceSymbol.ContainingType);
+            IsConstructor = sourceSymbol.MethodKind == MethodKind.Constructor;
+
+            ITypeSymbol returnType = sourceSymbol.ReturnType;
+
+            if (returnType != context.GetTypeSymbol(SpecialType.System_Void).RoslynSymbol)
+                ReturnType = context.GetTypeSymbolWithoutRedirect(returnType);
+            else if (IsConstructor)
+                ReturnType = ContainingType;
+
+            if (sourceSymbol.Parameters != null)
             {
-                ContainingType = context.GetTypeSymbol(sourceSymbol.ContainingType);
-                IsConstructor = sourceSymbol.MethodKind == MethodKind.Constructor;
+                List<ParameterSymbol> parameterSymbols = new List<ParameterSymbol>();
 
-                ITypeSymbol returnType = sourceSymbol.ReturnType;
-
-                if (returnType != context.GetTypeSymbol(SpecialType.System_Void).RoslynSymbol)
-                    ReturnType = context.GetTypeSymbol(returnType);
-                else if (IsConstructor)
-                    ReturnType = context.GetTypeSymbol(sourceSymbol.ContainingType);
-
-                if (sourceSymbol.Parameters != null)
+                foreach (IParameterSymbol parameterSymbol in sourceSymbol.Parameters)
                 {
-                    List<ParameterSymbol> parameterSymbols = new List<ParameterSymbol>();
+                    ParameterSymbol newSymbol = (ParameterSymbol) context.GetSymbolNoRedirect(parameterSymbol);
 
-                    foreach (IParameterSymbol parameterSymbol in sourceSymbol.Parameters)
-                    {
-                        ParameterSymbol newSymbol = (ParameterSymbol) context.GetSymbol(parameterSymbol);
-
-                        parameterSymbols.Add(newSymbol);
-                    }
-
-                    Parameters = ImmutableArray.CreateRange<ParameterSymbol>(parameterSymbols);
-                }
-                else
-                {
-                    Parameters = ImmutableArray<ParameterSymbol>.Empty;
+                    parameterSymbols.Add(newSymbol);
                 }
 
-                if (!IsGenericMethod && RoslynSymbol != RoslynSymbol.OriginalDefinition)
-                    TypeArguments = sourceSymbol.TypeArguments.Length > 0 ? sourceSymbol.TypeArguments.Select(context.GetTypeSymbol).ToImmutableArray() : ImmutableArray<TypeSymbol>.Empty;
-                else
-                    TypeArguments = sourceSymbol.TypeArguments.Length > 0 ? sourceSymbol.TypeArguments.Select(context.GetTypeSymbolWithoutRedirect).ToImmutableArray() : ImmutableArray<TypeSymbol>.Empty;
-
-                if (RoslynSymbol.IsOverride && RoslynSymbol.OverriddenMethod != null) // abstract methods can be overrides, but not have overriden methods
-                    OverridenMethod = (MethodSymbol) context.GetSymbol(RoslynSymbol.OverriddenMethod);
-
-                IsOperator = RoslynSymbol.MethodKind == MethodKind.BuiltinOperator ||
-                             RoslynSymbol.MethodKind == MethodKind.UserDefinedOperator;
-
-                if (RoslynSymbol.OriginalDefinition != RoslynSymbol)
-                    OriginalSymbol = context.GetSymbolNoRedirect(RoslynSymbol.OriginalDefinition);
+                Parameters = parameterSymbols.ToImmutableArray();
             }
+            else
+            {
+                Parameters = ImmutableArray<ParameterSymbol>.Empty;
+            }
+
+            // if (!IsGenericMethod && RoslynSymbol != RoslynSymbol.OriginalDefinition)
+            //     TypeArguments = sourceSymbol.TypeArguments.Length > 0 ? sourceSymbol.TypeArguments.Select(context.GetTypeSymbol).ToImmutableArray() : ImmutableArray<TypeSymbol>.Empty;
+            // else
+                TypeArguments = sourceSymbol.TypeArguments.Length > 0 ? sourceSymbol.TypeArguments.Select(context.GetTypeSymbolWithoutRedirect).ToImmutableArray() : ImmutableArray<TypeSymbol>.Empty;
+
+            if (RoslynSymbol.IsOverride && RoslynSymbol.OverriddenMethod != null) // abstract methods can be overrides, but not have overriden methods
+                OverridenMethod = (MethodSymbol) context.GetSymbolNoRedirect(RoslynSymbol.OverriddenMethod);
+
+            IsOperator = RoslynSymbol.MethodKind == MethodKind.BuiltinOperator ||
+                         RoslynSymbol.MethodKind == MethodKind.UserDefinedOperator;
+
+            if (RoslynSymbol.OriginalDefinition != RoslynSymbol)
+                OriginalSymbol = context.GetSymbolNoRedirect(RoslynSymbol.OriginalDefinition);
         }
 
         public bool IsConstructor { get; protected set; }
@@ -81,22 +80,22 @@ namespace UdonSharp.Compiler.Symbols
         
         public BoundNode MethodBody { get; private set; }
 
-        public override bool IsBound => MethodBody != null || RoslynSymbol.IsAbstract || IsUntypedGenericMethod;
+        public override bool IsBound => MethodBody != null || RoslynSymbol.IsAbstract || IsUntypedGenericMethod || (RoslynSymbol.MethodKind == MethodKind.Constructor && RoslynSymbol.DeclaringSyntaxReferences.Length == 0);
 
         public bool IsUntypedGenericMethod
         {
             get
             {
                 return (RoslynSymbol.IsGenericMethod && RoslynSymbol.OriginalDefinition == RoslynSymbol) || 
-                        TypeArguments.Any(e => e is TypeParameterSymbol) ||
-                        ContainingType.TypeArguments.Any(e => e is TypeParameterSymbol);
+                        TypeArguments.Any(e => !e.IsFullyConstructedGeneric) ||
+                        ContainingType.TypeArguments.Any(e => !e.IsFullyConstructedGeneric);
             }
         }
 
         public bool HasOverrides => _overrides != null && _overrides.Count > 0;
         public bool IsGenericMethod => RoslynSymbol?.IsGenericMethod ?? false;
 
-        public MethodSymbol ConstructGenericMethod(AbstractPhaseContext context, TypeSymbol[] typeArguments)
+        public MethodSymbol ConstructGenericMethod(AbstractPhaseContext context, IEnumerable<TypeSymbol> typeArguments)
         {
             return (MethodSymbol)context.GetSymbol(RoslynSymbol.OriginalDefinition.Construct(typeArguments.Select(e => e.RoslynSymbol).ToArray()));
         }
@@ -150,7 +149,10 @@ namespace UdonSharp.Compiler.Symbols
             if (OverridenMethod != null)
                 OverridenMethod.AddOverride(this);
 
-            if (methodSymbol.MethodKind != MethodKind.PropertyGet && methodSymbol.MethodKind != MethodKind.PropertySet &&
+            if (methodSymbol.MethodKind != MethodKind.PropertyGet && 
+                methodSymbol.MethodKind != MethodKind.PropertySet &&
+                methodSymbol.MethodKind != MethodKind.Constructor &&
+                methodSymbol.MethodKind != MethodKind.UserDefinedOperator &&
                 ((MethodDeclarationSyntax) methodSymbol.DeclaringSyntaxReferences.First().GetSyntax()).Modifiers.Any(SyntaxKind.PartialKeyword))
                 throw new NotSupportedException(LocStr.CE_PartialMethodsNotSupported, methodSymbol.DeclaringSyntaxReferences.FirstOrDefault());
 
@@ -164,6 +166,24 @@ namespace UdonSharp.Compiler.Symbols
                     MethodBody = bodyVisitor.VisitExpression(methodSyntax.ExpressionBody, ReturnType);
                 else
                     throw new CompilerException("No method body or expression body found", methodSyntax.GetLocation());
+            }
+            else if (declaringSyntax is OperatorDeclarationSyntax operatorSyntax)
+            {
+                if (operatorSyntax.Body != null)
+                    MethodBody = bodyVisitor.Visit(operatorSyntax.Body);
+                else if (operatorSyntax.ExpressionBody != null)
+                    MethodBody = bodyVisitor.VisitExpression(operatorSyntax.ExpressionBody, ReturnType);
+                else
+                    throw new CompilerException("No method body or expression body found", operatorSyntax.GetLocation());
+            }
+            else if (declaringSyntax is ConversionOperatorDeclarationSyntax conversionSyntax)
+            {
+                if (conversionSyntax.Body != null)
+                    MethodBody = bodyVisitor.Visit(conversionSyntax.Body);
+                else if (conversionSyntax.ExpressionBody != null)
+                    MethodBody = bodyVisitor.VisitExpression(conversionSyntax.ExpressionBody, ReturnType);
+                else
+                    throw new CompilerException("No method body or expression body found", conversionSyntax.GetLocation());
             }
             else if (declaringSyntax is AccessorDeclarationSyntax propertySyntax)
             {
@@ -181,6 +201,10 @@ namespace UdonSharp.Compiler.Symbols
             else if (declaringSyntax is ArrowExpressionClauseSyntax arrowExpression)
             {
                 MethodBody = bodyVisitor.VisitExpression(arrowExpression.Expression, ReturnType);
+            }
+            else if (declaringSyntax is ConstructorDeclarationSyntax constructorDeclaration)
+            {
+                MethodBody = bodyVisitor.Visit(constructorDeclaration.Body);
             }
             else
             {
@@ -229,7 +253,7 @@ namespace UdonSharp.Compiler.Symbols
             EmitContext.MethodLinkage linkage = context.GetMethodLinkage(this, false);
             
             context.Module.AddCommentTag("");
-            context.Module.AddCommentTag(RoslynSymbol.ToDisplayString().Replace("\n", "").Replace("\r", ""));
+            context.Module.AddCommentTag(RoslynSymbol.ToDisplayString().RemoveNewLines());
             context.Module.AddCommentTag("");
             context.Module.LabelJump(linkage.MethodLabel);
             

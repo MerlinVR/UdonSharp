@@ -196,6 +196,7 @@ namespace UdonSharp
         [PublicAPI] public virtual void OnAvatarEyeHeightChanged(VRC.SDKBase.VRCPlayerApi player, float prevEyeHeightAsMeters) { }
         [PublicAPI] public virtual void OnDrop() { }
         [PublicAPI] public virtual void OnOwnershipTransferred(VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnMasterTransferred(VRC.SDKBase.VRCPlayerApi newMaster) { }
         [PublicAPI] public virtual void OnPickup() { }
         [PublicAPI] public virtual void OnPickupUseDown() { }
         [PublicAPI] public virtual void OnPickupUseUp() { }
@@ -214,6 +215,10 @@ namespace UdonSharp
         [PublicAPI] public virtual void OnPreSerialization() { }
         [PublicAPI] public virtual void OnDeserialization() { }
         [PublicAPI] public virtual void OnDeserialization(VRC.Udon.Common.DeserializationResult result) { }
+    #if UNITY_2022_3_OR_NEWER
+        [PublicAPI] public virtual void OnPlayerDataUpdated(VRC.SDKBase.VRCPlayerApi player, VRC.SDK3.Persistence.PlayerData.Info[] infos) { }
+        [PublicAPI] public virtual void OnPlayerRestored(VRC.SDKBase.VRCPlayerApi player) { }
+    #endif
         [PublicAPI] public virtual void OnPlayerTriggerEnter(VRC.SDKBase.VRCPlayerApi player) { }
         [PublicAPI] public virtual void OnPlayerTriggerExit(VRC.SDKBase.VRCPlayerApi player) { }
         [PublicAPI] public virtual void OnPlayerTriggerStay(VRC.SDKBase.VRCPlayerApi player) { }
@@ -227,9 +232,22 @@ namespace UdonSharp
         [PublicAPI] public virtual void OnImageLoadError(VRC.SDK3.Image.IVRCImageDownload result) { }
         [PublicAPI] public virtual void OnStringLoadSuccess(VRC.SDK3.StringLoading.IVRCStringDownload result) { }
         [PublicAPI] public virtual void OnStringLoadError(VRC.SDK3.StringLoading.IVRCStringDownload result) { }
+        [PublicAPI] public virtual void OnPlayerSuspendChanged(VRC.SDKBase.VRCPlayerApi player) { }
 
         [PublicAPI] public virtual void OnPostSerialization(VRC.Udon.Common.SerializationResult result) { }
         [PublicAPI] public virtual bool OnOwnershipRequest(VRC.SDKBase.VRCPlayerApi requestingPlayer, VRC.SDKBase.VRCPlayerApi requestedOwner) => true;
+		
+        #region Creator Economy
+    #if UNITY_2022_3_OR_NEWER
+        [PublicAPI] public virtual void OnPurchaseConfirmed(VRC.Economy.IProduct product, VRC.SDKBase.VRCPlayerApi player, bool purchasedNow) { }
+        [PublicAPI] public virtual void OnPurchaseExpired(VRC.Economy.IProduct product, VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnPurchasesLoaded(VRC.Economy.IProduct[] products, VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnProductEvent(VRC.Economy.IProduct product, VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnListPurchases(VRC.Economy.IProduct[] products, VRC.SDKBase.VRCPlayerApi player) { }
+        [PublicAPI] public virtual void OnListAvailableProducts(VRC.Economy.IProduct[] products) { }
+        [PublicAPI] public virtual void OnListProductOwners(VRC.Economy.IProduct product, string[] owners) { }
+    #endif
+        #endregion
 
         [PublicAPI] public virtual void MidiNoteOn(int channel, int number, int velocity) { }
         [PublicAPI] public virtual void MidiNoteOff(int channel, int number, int velocity) { }
@@ -242,8 +260,13 @@ namespace UdonSharp
         [PublicAPI] public virtual void InputMoveHorizontal(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
         [PublicAPI] public virtual void InputMoveVertical(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
         [PublicAPI] public virtual void InputLookHorizontal(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
-        [PublicAPI] public virtual void InputLookVertical(float value, VRC.Udon.Common.UdonInputEventArgs args) { }
+        [PublicAPI] public virtual void InputLookVertical(float value, VRC.Udon.Common.UdonInputEventArgs args) { }                 
+        [PublicAPI] public virtual void OnInputMethodChanged(VRC.SDKBase.VRCInputMethod inputMethod) { }
+        [PublicAPI] public virtual void OnLanguageChanged(string language) { }
         [PublicAPI] public virtual void OnAsyncGpuReadbackComplete(VRC.SDK3.Rendering.VRCAsyncGPUReadbackRequest request) { }
+    #if UNITY_2022_3_OR_NEWER
+        [PublicAPI] public virtual void OnScreenUpdate(VRC.SDK3.Platform.ScreenUpdateData data) {}
+    #endif
 
         [Obsolete("The OnStationEntered() event is deprecated use the OnStationEntered(VRCPlayerApi player) event instead", true)]
         public virtual void OnStationEntered() { }

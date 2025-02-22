@@ -9,7 +9,7 @@ namespace UdonSharp.Compiler.Symbols
         public ExternFieldSymbol(IFieldSymbol sourceSymbol, AbstractPhaseContext context)
             : base(sourceSymbol, context)
         {
-            Type = context.GetTypeSymbol(sourceSymbol.Type);
+            Type = context.GetTypeSymbolWithoutRedirect(sourceSymbol.Type);
         }
 
         public override bool IsExtern => true;

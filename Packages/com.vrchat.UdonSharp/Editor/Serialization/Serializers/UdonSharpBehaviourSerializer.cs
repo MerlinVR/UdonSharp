@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UdonSharpEditor;
 using UnityEngine;
 using VRC.Udon;
+using VRC.Udon.Serialization.OdinSerializer.Utilities;
 using Object = UnityEngine.Object;
 
 namespace UdonSharp.Serialization
@@ -18,6 +19,7 @@ namespace UdonSharp.Serialization
         public static int CurrentDepth;
         public static HashSet<UnityEngine.Object> Dependencies = new HashSet<Object>();
         public static readonly object UsbLock = new object();
+        public static Dictionary<object, object> SerializedObjectMap = new Dictionary<object, object>(new ReferenceEqualityComparer<object>());
 
         public static bool CollectDependencies => CurrentPolicy?.CollectDependencies ?? false;
 
@@ -66,10 +68,9 @@ namespace UdonSharp.Serialization
                 if (UsbSerializationContext.CurrentDepth >= UsbSerializationContext.CurrentPolicy.MaxSerializationDepth)
                     return;
 
-                if (UsbSerializationContext.SerializedBehaviourSet.Contains(targetObject))
+                if (!UsbSerializationContext.SerializedBehaviourSet.Add(targetObject))
                     return;
 
-                UsbSerializationContext.SerializedBehaviourSet.Add(targetObject);
                 UsbSerializationContext.CurrentDepth++;
 
                 try

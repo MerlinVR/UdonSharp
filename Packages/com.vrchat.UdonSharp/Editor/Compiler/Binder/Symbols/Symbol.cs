@@ -54,11 +54,16 @@ namespace UdonSharp.Compiler.Symbols
             RoslynSymbol = sourceSymbol;
 
             if (sourceSymbol?.ContainingType != null && !(sourceSymbol is ITypeParameterSymbol))
-                ContainingType = context.GetTypeSymbol(sourceSymbol.ContainingType);
+                ContainingType = context.GetTypeSymbolWithoutRedirect(sourceSymbol.ContainingType);
         }
 
         internal bool HasAttribute<T>() where T : Attribute
         {
+            if (SymbolAttributes.IsDefaultOrEmpty)
+            {
+                return false;
+            }
+            
             foreach (Attribute symbolAttribute in SymbolAttributes)
             {
                 if (symbolAttribute is T)

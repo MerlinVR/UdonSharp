@@ -282,6 +282,13 @@ namespace UdonSharp.Compiler.Udon
         {
             if (externSymbol is TypeParameterSymbol)
                 return "T";
+
+            if (!TypeSymbol.TryGetSystemType(externSymbol.UdonType, out Type systemType))
+            {
+                UdonSharpUtils.LogError("Could not get system type for extern symbol");
+            }
+            
+            TypeSymbol.TryGetSystemType(externSymbol.UdonType, out Type type);
             
             return GetUdonTypeName(externSymbol.UdonType.SystemType);
         }

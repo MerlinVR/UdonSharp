@@ -211,6 +211,45 @@ namespace UdonSharp.Compiler
             }
         }
 
+        private static void BuildClassSerializationInfo()
+        {
+            // Build serialization info
+            UdonSharpEditorCache.Instance.ClearSerializationInfos();
+
+            foreach (TypeSymbol referencedUserType in CurrentJob.Context.GetReferencedUserClasses())
+            {
+                System.Collections.Generic.List<UdonSharpEditorCache.UdonFieldInfo> fieldInfos = new System.Collections.Generic.List<UdonSharpEditorCache.UdonFieldInfo>();
+
+                foreach (FieldSymbol fieldSymbol in referencedUserType.FieldSymbols)
+                {
+                    if (!TypeSymbol.TryGetSystemType(fieldSymbol.Type.RoslynSymbol, out Type fieldType))
+                    {
+                        UdonSharpUtils.LogWarning($"Could not resolve field type {fieldSymbol.Type.RoslynSymbol} on field {fieldSymbol}");
+                        continue;
+                    }
+                    
+                    if (fieldSymbol.IsStatic || fieldSymbol.IsConst)
+                        continue;
+                    
+                    fieldInfos.Add(new UdonSharpEditorCache.UdonFieldInfo()
+                    {
+                        fieldName = fieldSymbol.Name,
+                        fieldType = fieldType,
+                        fieldIndex = referencedUserType.GetUserFieldIndex(fieldSymbol),
+                        isStrongBoxed = UdonSharpUtils.IsStrongBoxedType(fieldSymbol.Type.UdonType.SystemType),
+                    });
+                }
+                
+                if (fieldInfos.Count == 0)
+                    continue;
+                
+                if (TypeSymbol.TryGetSystemType(referencedUserType.RoslynSymbol, out Type userType))
+                {
+                    UdonSharpEditorCache.Instance.SetSerializationInfo(userType, new UdonSharpEditorCache.UdonClassInfo() { classType = userType, fields = fieldInfos.ToArray() });
+                }
+            }
+        }
+
         internal static void WaitForCompile()
         {
             if (CurrentJob == null) return;
@@ -338,7 +377,7 @@ namespace UdonSharp.Compiler
 
         private static bool ValidateProgramAssetCollisions(UdonSharpProgramAsset[] allProgramAssets)
         {
-            Dictionary<MonoScript, List<UdonSharpProgramAsset>> scriptToAssetMap = new Dictionary<MonoScript, List<UdonSharpProgramAsset>>();
+            Dictionary<MonoScript, System.Collections.Generic.List<UdonSharpProgramAsset>> scriptToAssetMap = new Dictionary<MonoScript, System.Collections.Generic.List<UdonSharpProgramAsset>>();
 
             foreach (UdonSharpProgramAsset programAsset in allProgramAssets)
             {
@@ -348,7 +387,7 @@ namespace UdonSharp.Compiler
                 // Add program asset to map to check if there are any duplicate program assets that point to the same script
                 if (!scriptToAssetMap.TryGetValue(programAsset.sourceCsScript, out var programAssetList))
                 {
-                    programAssetList = new List<UdonSharpProgramAsset>();
+                    programAssetList = new System.Collections.Generic.List<UdonSharpProgramAsset>();
                     scriptToAssetMap.Add(programAsset.sourceCsScript, programAssetList);
                 }
 
@@ -418,7 +457,7 @@ namespace UdonSharp.Compiler
             if (compilationContext.ErrorCount > 0)
                 return;
 
-            List<ModuleBinding> rootTrees = new List<ModuleBinding>();
+            System.Collections.Generic.List<ModuleBinding> rootTrees = new System.Collections.Generic.List<ModuleBinding>();
             
             foreach (ModuleBinding treeBinding in syntaxTrees)
             {
@@ -586,6 +625,7 @@ namespace UdonSharp.Compiler
             
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.Emit;
             
+            BuildClassSerializationInfo();
             EmitAllPrograms(rootTypes, compilationContext, assembly);
         }
 
@@ -720,7 +760,7 @@ namespace UdonSharp.Compiler
                 
                 INamedTypeSymbol rootTypeSymbol = binding.Item1;
                 ModuleBinding moduleBinding = binding.Item2;
-                AssemblyModule assemblyModule = new AssemblyModule(compilationContext);
+                AssemblyModule assemblyModule = new AssemblyModule(compilationContext, moduleBinding.filePath);
                 moduleBinding.assemblyModule = assemblyModule;
                 
                 EmitContext moduleEmitContext = new EmitContext(assemblyModule, rootTypeSymbol);
@@ -729,17 +769,15 @@ namespace UdonSharp.Compiler
 
                 long typeID = UdonSharpInternalUtility.GetTypeID(typeName);
                 
-                moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeIDHeapKey,
-                    moduleEmitContext.GetTypeSymbol(SpecialType.System_Int64), typeID);
-                moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeNameHeapKey,
-                    moduleEmitContext.GetTypeSymbol(SpecialType.System_String), typeName);
+                moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeIDHeapKey, moduleEmitContext.GetTypeSymbol(SpecialType.System_Int64), typeID);
+                moduleEmitContext.RootTable.CreateReflectionValue(CompilerConstants.UsbTypeNameHeapKey, moduleEmitContext.GetTypeSymbol(SpecialType.System_String), typeName);
 
                 TypeSymbol udonSharpBehaviourType = moduleEmitContext.GetTypeSymbol(typeof(UdonSharpBehaviour));
                 
                 if (moduleEmitContext.EmitType.BaseType != udonSharpBehaviourType ||
                     compilationContext.HasInheritedUdonSharpBehaviours(moduleEmitContext.EmitType))
                 {
-                    List<long> baseTypeArr = new List<long>();
+                    System.Collections.Generic.List<long> baseTypeArr = new System.Collections.Generic.List<long>();
 
                     TypeSymbol currentType = moduleEmitContext.EmitType;
 
@@ -901,12 +939,11 @@ namespace UdonSharp.Compiler
 
         private static readonly object _assembleLock = new object();
 
-        private static void AssembleProgram((INamedTypeSymbol, ModuleBinding) binding,
-            System.Reflection.Assembly assembly)
+        private static void AssembleProgram((INamedTypeSymbol, ModuleBinding) binding, System.Reflection.Assembly assembly)
         {
             INamedTypeSymbol rootTypeSymbol = binding.Item1;
             ModuleBinding rootBinding = binding.Item2;
-            List<Value> assemblyValues = rootBinding.assemblyModule.RootTable.GetAllUniqueChildValues();
+            System.Collections.Generic.List<Value> assemblyValues = rootBinding.assemblyModule.RootTable.GetAllUniqueChildValues();
             string generatedUasm = rootBinding.assemblyModule.BuildUasmStr();
 
             rootBinding.programAsset.AssembleCsProgram(generatedUasm, rootBinding.assemblyModule.GetHeapSize());
@@ -966,7 +1003,7 @@ namespace UdonSharp.Compiler
                             IValueStorage typeStorage = (IValueStorage)Activator.CreateInstance(typeof(SimpleValueStorage<>).MakeGenericType(serializer.GetUdonStorageType()), null);
                             serializer.WriteWeak(typeStorage, fieldValue);
 
-                            program.Heap.SetHeapVariable(valAddress, typeStorage.Value, typeStorage.Value.GetType());
+                            program.Heap.SetHeapVariable(valAddress, typeStorage.Value, serializer.GetUdonStorageType());
                         }
                         // We set synced strings to an empty string by default
                         else if (field.FieldType == typeof(string) &&

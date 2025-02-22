@@ -26,7 +26,7 @@ namespace UdonSharp.Compiler.Binder
 
         public override Value EmitValue(EmitContext context)
         {
-            return context.CastValue(context.EmitValue(SourceExpression), TargetType, IsExplicit);
+            return context.CastValue(context.EmitValue(SourceExpression), TargetType);
         }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using UdonSharp;
 using UdonSharp.Compiler;
@@ -52,8 +53,6 @@ namespace UdonSharpEditor
             
             if (_logDirectoryWatcher == null && ShouldListenForVRC())
             {
-                AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
-
                 // Now setup the filesystem watcher
                 #if UNITY_EDITOR_LINUX
                 string VRCDataPath =  Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.local/share/Steam/steamapps/compatdata/438100/pfx/drive_c/users/steamuser/AppData/LocalLow/VRChat/VRChat/";
@@ -64,6 +63,8 @@ namespace UdonSharpEditor
 
                 if (Directory.Exists(VRCDataPath))
                 {
+                    AssemblyReloadEvents.beforeAssemblyReload += CleanupLogWatcher;
+                    
                     _logDirectoryWatcher = new FileSystemWatcher(VRCDataPath, "output_log_*.txt");
                     _logDirectoryWatcher.IncludeSubdirectories = false;
                     _logDirectoryWatcher.NotifyFilter = NotifyFilters.LastWrite;
@@ -199,7 +200,7 @@ namespace UdonSharpEditor
                                     {
                                         string fullFileContents = reader.ReadToEnd();
 
-                                        const string searchStr = "[Behaviour] User Authenticated: ";
+                                        const string searchStr = "User Authenticated: ";
                                         int userIdx = fullFileContents.IndexOf(searchStr, StringComparison.Ordinal);
                                         if (userIdx != -1)
                                         {
@@ -207,7 +208,9 @@ namespace UdonSharpEditor
 
                                             int endIdx = userIdx;
 
-                                            while (fullFileContents[endIdx] != '\r' && fullFileContents[endIdx] != '\n') endIdx++; // Seek to end of name
+                                            // while (fullFileContents[endIdx] != '\r' && fullFileContents[endIdx] != '\n') endIdx++; // Seek to end of name
+                                            
+                                            endIdx = fullFileContents.IndexOf(" (usr_", userIdx, StringComparison.Ordinal);
 
                                             string username = fullFileContents.Substring(userIdx, endIdx - userIdx);
 
@@ -229,7 +232,7 @@ namespace UdonSharpEditor
                                     }
                                     else
                                     {
-                                        reader.BaseStream.Seek(logState.lineOffset - 4 < 0 ? 0 : logState.lineOffset - 4, SeekOrigin.Begin); // Subtract 4 characters to pick up the newlines from the prior line for the log forwarding
+                                        reader.BaseStream.Seek(Math.Max(logState.lineOffset - 4, 0), SeekOrigin.Begin); // Subtract 4 characters to pick up the newlines from the prior line for the log forwarding
                                     }
 
                                     newLogContent = reader.ReadToEnd();
@@ -314,7 +317,7 @@ namespace UdonSharpEditor
                     int currentErrorIndex = contents.IndexOf(errorMatchStr, StringComparison.Ordinal);
                     while (currentErrorIndex != -1)
                     {
-                        HandleLogError(contents.Substring(currentErrorIndex, contents.Length - currentErrorIndex), $"VRChat client runtime Udon exception detected!", $"{ state.playerName ?? "Unknown"}");
+                        HandleLogError(contents.Substring(currentErrorIndex, contents.Length - currentErrorIndex), "VRChat client runtime Udon exception detected!", $"{ state.playerName ?? "Unknown"}");
 
                         currentErrorIndex = contents.IndexOf(errorMatchStr, currentErrorIndex + errorMatchStr.Length, StringComparison.Ordinal);
                     }
@@ -409,12 +412,14 @@ namespace UdonSharpEditor
                 return;
 
             const string exceptionMessageStr = "Exception Message:";
-            const string separatorStr = "----------------------";
+            // const string separatorStr = "----------------------";
             int errorMessageStart = errorStr.IndexOf(exceptionMessageStr, StringComparison.Ordinal) + exceptionMessageStr.Length;
             if (errorMessageStart == -1)
                 return;
 
-            int errorMessageEnd = errorStr.IndexOf(separatorStr, errorMessageStart, StringComparison.Ordinal);
+            const string endSeparator = "----------------------\r\nInner Exception:";
+            int errorMessageEnd = errorStr.IndexOf(endSeparator, errorMessageStart, StringComparison.Ordinal);
+            // errorMessageEnd = errorMessageEnd != -1 ? errorStr.IndexOf("\n\n", errorMessageEnd, StringComparison.Ordinal) : errorMessageEnd;
 
             if (errorMessageEnd == -1 || errorMessageEnd < errorMessageStart)
             {
@@ -436,11 +441,51 @@ namespace UdonSharpEditor
             long programID;
             // string programName;
 
+            List<uint> stackAddresses = new List<uint>();
+
             try
             {
                 Match programCounterMatch = Regex.Match(errorStr, @"Program Counter was at: (?<counter>\d+)");
 
                 programCounter = int.Parse(programCounterMatch.Groups["counter"].Value);
+
+                int stackDumpIdx = errorStr.IndexOf("Stack Dump:", StringComparison.Ordinal);
+                int heapDumpIdx = errorStr.IndexOf("Heap Dump:", stackDumpIdx, StringComparison.Ordinal);
+                
+                if (stackDumpIdx != -1)
+                {
+                    int stackEnd = errorStr.IndexOf("----------------------", stackDumpIdx, StringComparison.Ordinal);
+                    string stackDumpStr = errorStr.Substring(stackDumpIdx, stackEnd - stackDumpIdx);
+                    string heapDumpStr = errorStr.Substring(heapDumpIdx, errorStr.Length - heapDumpIdx);
+
+                    // Match stuff in the format <index>: <0xaddress>
+                    MatchCollection stackMatches = Regex.Matches(stackDumpStr, @"[\n\r\s]+[\d]+: (?<address>0x[0-9A-F]+)");
+                    
+                    foreach (Match match in stackMatches)
+                    {
+                        // We'll manually parse each address out of the stack dump
+                        string addressStr = match.Groups["address"].Value;
+                        
+                        int valueStart = heapDumpStr.IndexOf(addressStr, StringComparison.Ordinal);
+                        if (valueStart == -1)
+                            continue;
+                        
+                        valueStart = heapDumpStr.IndexOf(":", valueStart, StringComparison.Ordinal) + 1; 
+                        if (valueStart == -1)
+                            continue;
+                        
+                        int valueEnd = heapDumpStr.IndexOf("\n", valueStart, StringComparison.Ordinal);
+                        if (valueEnd == -1)
+                            continue;
+                        
+                        string valueStr = heapDumpStr.Substring(valueStart, valueEnd - valueStart).Trim();
+                        
+                        if (uint.TryParse(valueStr, out uint address))
+                        {
+                            stackAddresses.Add(address);
+                        }
+                    }
+                }
                 
                 Match programTypeMatch = Regex.Match(errorStr, @"Heap Dump:[\n\r\s]+[\d]x[\d]+: (?<programID>[-]?[\d]+)[\n\r\s]+[\d]x[\d]+: (?<programName>[\w]+)");
 
@@ -464,9 +509,42 @@ namespace UdonSharpEditor
             if (debugInfo == null)
                 return;
 
+            StringBuilder stackBuilder = new StringBuilder();
+            
+            string BuildStackString(int address)
+            {
+                debugInfo.GetPositionFromProgramCounter(address, out string stackPath, out string stackMethod, out int stackLine, out int _);
+                
+                if (stackPath == null)
+                    return null;
+                
+                string escapedPath = stackPath.Replace("\\", "/");
+                return $" at {stackMethod} in <a href=\"{escapedPath}\" line=\"{stackLine + 1}\">{stackPath}:{stackLine + 1}</a>";
+            }
+            
+            if (stackAddresses.Count > 0)
+            {
+                string firstStack = BuildStackString(programCounter);
+                
+                if (firstStack != null)
+                {
+                    stackBuilder.AppendLine(firstStack);
+                }
+                
+                stackAddresses.Reverse();
+                foreach (uint address in stackAddresses)
+                {
+                    string stackStr = BuildStackString((int)address);
+                    if (stackStr != null)
+                    {
+                        stackBuilder.AppendLine(stackStr);
+                    }
+                }
+            }
+            
             debugInfo.GetPositionFromProgramCounter(programCounter, out string filePath, out string methodName, out int line, out int lineChar);
 
-            UdonSharpUtils.LogRuntimeError($"{logPrefix}\n{errorMessage}", prePrefix != null ? $"[<color=#575ff2>{prePrefix}</color>]" : "", filePath, line, lineChar + 1);
+            UdonSharpUtils.LogRuntimeError($"{logPrefix}\n{errorMessage}", prePrefix != null ? $"[<color=#575ff2>{prePrefix}</color>]" : "", filePath, line, lineChar + 1, stackBuilder.ToString());
         }
     }
 }

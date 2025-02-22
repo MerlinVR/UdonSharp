@@ -160,8 +160,7 @@ namespace UdonSharp.Compiler.Symbols
             {
                 foreach (IParameterSymbol parameter in parameters)
                 {
-                    paramStr +=
-                        $"_{CompilerUdonInterface.GetUdonTypeName(context.GetTypeSymbol(parameter.Type))}";
+                    paramStr += $"_{CompilerUdonInterface.GetUdonTypeName(context.GetTypeSymbol(parameter.Type))}";
                 }
             }
             else // Unary operators, we just use the regular binary operator internally and handle it in the bound operator
@@ -170,8 +169,7 @@ namespace UdonSharp.Compiler.Symbols
                 paramStr += $"_{CompilerUdonInterface.GetUdonTypeName(context.GetTypeSymbol(parameters[0].Type))}";
             }
             
-            string returnStr =
-                $"__{CompilerUdonInterface.GetUdonTypeName(ReturnType)}";
+            string returnStr = $"__{CompilerUdonInterface.GetUdonTypeName(ReturnType)}";
 
             return $"{functionNamespace}.{methodName}{paramStr}{returnStr}";
         }

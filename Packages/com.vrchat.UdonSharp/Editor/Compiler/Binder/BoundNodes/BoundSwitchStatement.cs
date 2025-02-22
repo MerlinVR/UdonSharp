@@ -161,7 +161,7 @@ namespace UdonSharp.Compiler.Binder
             
             context.Module.AddJumpIfFalse(defaultJump, lessThanMaxCondition);
 
-            Value convertedValue = context.CastValue(expressionValue, context.GetTypeSymbol(SpecialType.System_Int32), true);
+            Value convertedValue = context.CastValue(expressionValue, context.GetTypeSymbol(SpecialType.System_Int32));
             Value jumpTable = context.CreateGlobalInternalValue(context.GetTypeSymbol(SpecialType.System_UInt32).MakeArrayType(context));
             Value jumpAddress = context.EmitValue(BoundAccessExpression.BindElementAccess(context, SyntaxNode,
                 BoundAccessExpression.BindAccess(jumpTable),

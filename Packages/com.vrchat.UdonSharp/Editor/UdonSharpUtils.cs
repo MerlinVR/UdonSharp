@@ -85,6 +85,25 @@ namespace UdonSharp
             return IsIntegerType(type) || IsFloatType(type);
         }
 
+        /// <summary>
+        /// Whether a type should be 'StrongBoxed' on a non-UdonBehaviour user class. Aka should it have a 1-sized array wrapper around it.
+        /// </summary>
+        public static bool IsStrongBoxedType(System.Type type)
+        {
+        #if UDONSHARP_BOX_VALUE_TYPES
+            return false;
+        #else
+            if (!type.IsValueType)
+                return false;
+            
+            // Enums in Udon don't have array types so we can't strongbox them
+            if (type.IsEnum)
+                return false;
+
+            return true;
+        #endif
+        }
+
         public static bool IsExplicitlyAssignableFrom(this System.Type targetType, System.Type assignee)
         {
             // Normal explicit assign
@@ -146,6 +165,19 @@ namespace UdonSharp
         {
             return propertyName?.Replace('<', '_').Replace('>', '_');
         }
+        
+        internal static string RemoveNewLines(this string input)
+        {
+            return input?.Replace("\n", "").Replace("\r", "");
+        }
+        
+        internal static string TrimLength(this string input, int maxLength, bool addEllipsis = false)
+        {
+            if (input.Length <= maxLength)
+                return input;
+
+            return input.Substring(0, maxLength) + (addEllipsis ? "..." : "");
+        }
 
         public static bool IsUserDefinedBehaviour(System.Type type)
         {
@@ -166,11 +198,85 @@ namespace UdonSharp
                    (type.IsArray && type.GetElementType().IsEnum && !CompilerUdonInterface.IsExternType(type.GetElementType()));
         }
 
+        private static readonly Dictionary<Type, Type> _forwardedTypes = new Dictionary<Type, Type>()
+        {
+            { typeof(List<>), typeof(UdonSharp.Lib.Internal.Collections.List<>) },
+            { typeof(Dictionary<,>), typeof(UdonSharp.Lib.Internal.Collections.Dictionary<,>) },
+            { typeof(KeyValuePair<,>), typeof(UdonSharp.Lib.Internal.Collections.DictionaryKeyValue<,>) },
+            { typeof(Dictionary<,>.Enumerator), typeof(UdonSharp.Lib.Internal.Collections.DictionaryIterator<,>) },
+            { typeof(HashSet<>), typeof(UdonSharp.Lib.Internal.Collections.HashSet<>) },
+            { typeof(HashSet<>.Enumerator), typeof(UdonSharp.Lib.Internal.Collections.HashSetIterator<>) },
+            { typeof(Queue<>), typeof(UdonSharp.Lib.Internal.Collections.Queue<>) },
+            { typeof(Queue<>.Enumerator), typeof(UdonSharp.Lib.Internal.Collections.QueueIterator<>) },
+            { typeof(Stack<>), typeof(UdonSharp.Lib.Internal.Collections.Stack<>) },
+            { typeof(Stack<>.Enumerator), typeof(UdonSharp.Lib.Internal.Collections.StackIterator<>) },
+        };
+        
+        public static Type GetForwardedType(Type type)
+        {
+            int arrayDepth = 0;
+            Type elementType = type;
+            while (elementType.IsArray)
+            {
+                elementType = elementType.GetElementType();
+                ++arrayDepth;
+            }
+            
+            if (!elementType.IsGenericType || !_forwardedTypes.TryGetValue(elementType.GetGenericTypeDefinition(), out Type forwardedType))
+                return type;
+            
+            Type forwarded = forwardedType.MakeGenericType(elementType.GetGenericArguments());
+            
+            while (arrayDepth-- > 0)
+                forwarded = forwarded.MakeArrayType();
+            
+            return forwarded;
+        }
+        
+        private static bool IsForwardedType(Type type)
+        {
+            return type.IsGenericType && _forwardedTypes.ContainsKey(type.GetGenericTypeDefinition());
+        }
+        
+        public static bool IsListType(System.Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>);
+        }
+        
+        public static bool IsHashSetType(System.Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(HashSet<>);
+        }
+        
+        public static bool IsQueueType(System.Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Queue<>);
+        }
+        
+        public static bool IsStackType(System.Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Stack<>);
+        }
+        
+        public static bool IsDictionaryType(System.Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>);
+        }
+        
+        public static bool IsUserDefinedClass(System.Type type)
+        {
+            return (!CompilerUdonInterface.IsExternType(type) && !type.IsValueType && !type.IsArray &&
+                    !IsUserDefinedBehaviour(type)) ||
+                   (type.IsArray && IsUserDefinedClass(type.GetElementType())) ||
+                   IsForwardedType(type);
+        }
+
         public static bool IsUserDefinedType(System.Type type)
         {
             return IsUserDefinedBehaviour(type) ||
                    IsUserJaggedArray(type) ||
-                   IsUserDefinedEnum(type);
+                   IsUserDefinedEnum(type) ||
+                   IsUserDefinedClass(type);
         }
         
         private static volatile Dictionary<Type, Type> _inheritedTypeMap;
@@ -260,15 +366,29 @@ namespace UdonSharp
                 {
                     if (!type.GetElementType().IsArray)
                     {
+                        Type elementType = type.GetElementType();
+                        
                         if (IsUserDefinedEnum(type))
-                            udonType = type.GetElementType().GetEnumUnderlyingType().MakeArrayType();
+                        {
+                            udonType = elementType.GetEnumUnderlyingType().MakeArrayType();
+                        }
+                        else if (IsUserDefinedClass(elementType))
+                        {
+                            udonType = typeof(object[]);
+                        }
                         else
+                        {
                             udonType = typeof(UnityEngine.Component[]);// Hack because VRC doesn't expose the array type of UdonBehaviour
+                        }
                     }
                     else // Jagged arrays
                     {
                         udonType = typeof(object[]);
                     }
+                }
+                else if (IsUserDefinedClass(type))
+                {
+                    udonType = typeof(object[]);
                 }
                 else
                 {
@@ -329,24 +449,41 @@ namespace UdonSharp
             Debug.LogError($"[<color=#FF00FF>UdonSharp</color>] {message}", context);
         }
 
+        #if !UNITY_2022_3_OR_NEWER
         private static readonly MethodInfo _displayProgressBar = typeof(Editor).Assembly.GetTypes().FirstOrDefault(e => e.Name == "AsyncProgressBar")?.GetMethod("Display");
         private static readonly MethodInfo _clearProgressBar = typeof(Editor).Assembly.GetTypes().FirstOrDefault(e => e.Name == "AsyncProgressBar")?.GetMethod("Clear");
+        #endif
+        private static int _progressId;
         
         public static void ShowAsyncProgressBar(string text, float progress)
         {
+            #if UNITY_2022_3_OR_NEWER
+            if (_progressId == 0)
+            {
+                _progressId = Progress.Start("U# Compile", "Compiling UdonSharp scripts...");
+            }
+            Progress.Report(_progressId, progress, text);
+            #else
             _displayProgressBar.Invoke(null, new object[] {text, progress});
+            #endif
         }
 
         public static void ClearAsyncProgressBar()
         {
+            #if UNITY_2022_3_OR_NEWER
+            if (_progressId == 0) return;
+            Progress.Remove(_progressId);
+            _progressId = 0;
+            #else
             _clearProgressBar.Invoke(null, null);
+            #endif
         }
 
-        public static void LogRuntimeError(string message, string prefix, string filePath, int line, int character)
+        public static void LogRuntimeError(string message, string prefix, string filePath, int line, int character, string callStack)
         {
             MethodInfo buildErrorLogMethod = typeof(UnityEngine.Debug).GetMethod("LogPlayerBuildError", BindingFlags.NonPublic | BindingFlags.Static);
 
-            string errorMessage = $"[<color=#FF00FF>UdonSharp</color>]{prefix} {filePath}({line + 1},{character}): {message}";
+            string errorMessage = string.IsNullOrEmpty(callStack) ? $"[<color=#FF00FF>UdonSharp</color>]{prefix} {filePath}({line + 1},{character}): {message}" : $"[<color=#FF00FF>UdonSharp</color>]{prefix} {filePath}({line + 1},{character}): \n{callStack}\n{message}";
 
             buildErrorLogMethod.Invoke(null, new object[] {
                         errorMessage,

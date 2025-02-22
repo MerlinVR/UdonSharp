@@ -1,4 +1,5 @@
 ﻿
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Assembly;
@@ -25,13 +26,40 @@ namespace UdonSharp.Compiler.Binder
         public override Value EmitValue(EmitContext context)
         {
             JumpLabel returnPoint = context.Module.CreateLabel();
-            Value returnPointVal =
-                context.CreateGlobalInternalValue(context.GetTypeSymbol(SpecialType.System_UInt32));
+            Value returnPointVal = context.CreateGlobalInternalValue(context.GetTypeSymbol(SpecialType.System_UInt32));
 
             context.Module.AddPush(returnPointVal);
-            var linkage = context.GetMethodLinkage(Method, !IsBaseCall);
+            EmitContext.MethodLinkage linkage = context.GetMethodLinkage(Method, !IsBaseCall);
 
-            Value[] parameterValues = GetParameterValues(context);
+            Value.CowValue instanceCow = null;
+
+            if (Method.IsConstructor)
+            {
+                Value.CowValue[] instanceValues = context.GetExpressionCowValues(this, "instance");
+
+                if (instanceValues == null)
+                {
+                    // using (context.InterruptAssignmentScope())
+                    {
+                        instanceCow = context.EmitValue(new BoundArrayCreationExpression(SyntaxNode, context,
+                                context.GetTypeSymbol(SpecialType.System_Object).MakeArrayType(context),
+                                new BoundExpression[]
+                                {
+                                    BoundAccessExpression.BindAccess(context.GetConstantValue(context.GetTypeSymbol(SpecialType.System_Int32), Method.ContainingType.UserTypeAllocationSize))
+                                }, 
+                                null))
+                            .GetCowValue(context);
+                    }
+                    
+                    context.RegisterCowValues(new [] { instanceCow }, this, "instance");
+                }
+            }
+            else if (!Method.IsStatic && !SourceExpression.IsThis)
+            {
+                instanceCow = EmitInstanceValue(context);
+            }
+            
+            Value[] parameterValues = EmitParameterValues(context);
 
             Value[] recursiveValues = null;
             bool isRecursiveCall = context.IsRecursiveMethodEmit;
@@ -49,6 +77,8 @@ namespace UdonSharp.Compiler.Binder
                 PushRecursiveValues(selfLinkage.ParameterValues, context);
             }
             
+            Value instanceValue = instanceCow?.Value;
+
             ReleaseCowReferences(context);
 
             if (isRecursiveCall)
@@ -58,7 +88,7 @@ namespace UdonSharp.Compiler.Binder
                 for (int i = 0; i < linkage.ParameterValues.Length; ++i)
                     context.EmitValueAssignment(linkage.ParameterValues[i], BoundAccessExpression.BindAccess(paramCows[i]));
 
-                foreach (var paramCow in paramCows)
+                foreach (Value.CowValue paramCow in paramCows)
                     paramCow.Dispose();
             }
             else
@@ -66,22 +96,40 @@ namespace UdonSharp.Compiler.Binder
                 for (int i = 0; i < linkage.ParameterValues.Length; ++i)
                     context.Module.AddCopy(parameterValues[i], linkage.ParameterValues[i]);
             }
-
+            
             context.TopTable.DirtyAllValues();
+
+            Value stackInstanceVal = null;
+            
+            // We can use the existing stack instance value if we are calling a method on the same instance as the current method
+            if (instanceValue != null && (!(SourceExpression?.IsThis ?? true) || Method.IsConstructor || context.CurrentEmitMethod.ContainingType != Method.ContainingType))
+            {
+                stackInstanceVal = context.CreateInternalValue(context.GetTypeSymbol(SpecialType.System_Object).MakeArrayType(context));
+                context.Module.AddCopy(context.GetInstanceValue(), stackInstanceVal); // Copy the current instance value to the stack
+                context.Module.AddCopy(instanceValue, context.GetInstanceValue()); // Set the instance value to the new instance
+            }
 
             if (isRecursiveCall)
             {
-                Value[] collectedValues = context.CollectRecursiveValues().Where(e => !recursiveValues.Contains(e)).ToArray();
+                Value[] values = recursiveValues;
+                IEnumerable<Value> collectedValues = context.CollectRecursiveValues().Where(e => !values.Contains(e));
                 
-                PushRecursiveValues(collectedValues, context);
+                if (stackInstanceVal != null)
+                    collectedValues = collectedValues.Append(stackInstanceVal);
+                
+                Value[] recursiveValuesArray = collectedValues.ToArray();
+                
+                PushRecursiveValues(recursiveValuesArray, context);
 
-                recursiveValues = recursiveValues.Concat(collectedValues).ToArray();
+                recursiveValues = recursiveValues.Concat(recursiveValuesArray).ToArray();
 
                 stackSizeCheckVal.DefaultValue = recursiveValues.Length;
                 context.UpdateRecursiveStackMaxSize(recursiveValues.Length);
             }
-                
+            
             context.Module.AddCommentTag($"Calling {Method}");
+            
+            // Jump to the method
             context.Module.AddJump(linkage.MethodLabel);
 
             context.Module.LabelJump(returnPoint);
@@ -100,6 +148,9 @@ namespace UdonSharp.Compiler.Binder
                 PopRecursiveValues(recursiveValues, context);
             }
 
+            if (stackInstanceVal != null)
+                context.Module.AddCopy(stackInstanceVal, context.GetInstanceValue());
+
             // Handle out/ref parameters
             for (int i = 0; i < Method.Parameters.Length; ++i)
             {
@@ -117,6 +168,11 @@ namespace UdonSharp.Compiler.Binder
             if (IsPropertySetter)
             {
                 return parameterValues.Last();
+            }
+
+            if (Method.IsConstructor)
+            {
+                return instanceValue;
             }
 
             if (Method.ReturnType != null)

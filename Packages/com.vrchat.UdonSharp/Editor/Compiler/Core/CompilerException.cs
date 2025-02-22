@@ -14,6 +14,12 @@ namespace UdonSharp.Core
         {
         }
 
+        public CompilerException(string message, SyntaxNode node)
+            : base(message)
+        {
+            Location = node.GetLocation();
+        }
+
         public CompilerException(string message, Location sourceLocation = null)
             : base(message)
         {

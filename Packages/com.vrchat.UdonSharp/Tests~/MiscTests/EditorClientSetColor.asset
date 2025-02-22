@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: EditorClientSetColor
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: d715eedf299e2cc4db15b6d4e8e2e7c7,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 4c5c7765e88990b4a8b58343ba78a08f,
     type: 2}
   udonAssembly: 
   assemblyError: 

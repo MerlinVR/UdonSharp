@@ -7,6 +7,8 @@ namespace UdonSharp.Compiler.Symbols
 {
     internal class TypeParameterSymbol : TypeSymbol
     {
+        public override bool IsFullyConstructedGeneric => false;
+
         public TypeParameterSymbol(ITypeParameterSymbol sourceSymbol, AbstractPhaseContext context) 
             :base(sourceSymbol, context)
         {

@@ -6,6 +6,7 @@ using System.Reflection;
 using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
+using UdonSharp.Lib.Internal;
 using UnityEngine;
 using VRC.Udon.Common.Interfaces;
 
@@ -27,6 +28,12 @@ namespace UdonSharp.Compiler.Binder
         {
             Property = property;
             ParameterExpressions = parameterExpressions;
+            
+            if (property.GetMethod != null)
+                context.MarkSymbolReferenced(property.GetMethod);
+            
+            if (property.SetMethod != null)
+                context.MarkSymbolReferenced(property.SetMethod);
         }
 
         private BoundExpression[] GetParameters(EmitContext context, BoundExpression valueExpression = null)
@@ -52,7 +59,7 @@ namespace UdonSharp.Compiler.Binder
                     context.RegisterCowValues(propertyParams, this, "propertyParams");
                 }
 
-                List<BoundExpression> expressions = new List<BoundExpression>();
+                System.Collections.Generic.List<BoundExpression> expressions = new System.Collections.Generic.List<BoundExpression>();
                 expressions.AddRange(propertyParams.Select(BindAccess));
                 if (valueExpression != null)
                     expressions.Add(valueExpression);
@@ -135,6 +142,9 @@ namespace UdonSharp.Compiler.Binder
 
         public static BoundAccessExpression BindPropertyAccess(AbstractPhaseContext context, SyntaxNode node, PropertySymbol propertySymbol, BoundExpression sourceExpression, BoundExpression[] parameterExpressions = null)
         {
+            if (TryCreateShimPropertyAccess(context, node, propertySymbol, sourceExpression, parameterExpressions, out BoundAccessExpression shimAccessExpression))
+                return shimAccessExpression;
+            
             if (propertySymbol is ExternPropertySymbol externProperty)
             {
                 Type propertyType = externProperty.ContainingType.UdonType.SystemType;
@@ -145,7 +155,7 @@ namespace UdonSharp.Compiler.Binder
                         BindingFlags.Static | BindingFlags.Public);
 
                     if (property != null)
-                        return new BoundConstantExpression(property.GetValue(null), propertySymbol.Type);
+                        return new BoundConstantExpression(property.GetValue(null), propertySymbol.Type, node);
                 }
 
                 if (propertySymbol.ToString() == "UnityEngine.Behaviour.enabled")
@@ -158,6 +168,42 @@ namespace UdonSharp.Compiler.Binder
             }
             
             return new BoundUserPropertyAccessExpression(context, node, propertySymbol, sourceExpression, parameterExpressions);
+        }
+        
+        private static bool TryCreateShimPropertyAccess(AbstractPhaseContext context, SyntaxNode node, PropertySymbol propertySymbol, BoundExpression sourceExpression, BoundExpression[] parameterExpressions, out BoundAccessExpression shimAccessExpression)
+        {
+            if (!propertySymbol.ContainingType.IsGenericType)
+            {
+                shimAccessExpression = null;
+                return false;
+            }
+
+            if (!TypeSymbol.TryGetSystemType(propertySymbol.ContainingType, out Type originalType))
+            {
+                shimAccessExpression = null;
+                return false;
+            }
+            
+            Type forwardedType = UdonSharpUtils.GetForwardedType(originalType);
+
+            if (forwardedType == originalType)
+            {
+                shimAccessExpression = null;
+                return false;
+            }
+            
+            TypeSymbol shimType = context.GetTypeSymbol(forwardedType);
+        
+            PropertySymbol shimProperty = shimType.GetMember<PropertySymbol>(propertySymbol.Name, context);
+        
+            if (shimProperty != null)
+            {
+                shimAccessExpression = new BoundUserPropertyAccessExpression(context, node, shimProperty, sourceExpression, parameterExpressions);
+                return true;
+            }
+            
+            shimAccessExpression = null;
+            return false;
         }
 
         private sealed class BoundUserPropertyAccessExpression : BoundPropertyAccessExpression

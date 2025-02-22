@@ -213,7 +213,7 @@ namespace UdonSharp.Compiler.Assembly
             {
                 WriteIndentedLine($"PUSH, {SourceValue.UniqueID}", builder);
                 WriteIndentedLine($"PUSH, {TargetValue.UniqueID}", builder);
-                WriteIndentedLine($"COPY", builder);
+                WriteIndentedLine("COPY", builder);
             }
 
             public override string ToString()

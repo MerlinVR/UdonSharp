@@ -36,7 +36,7 @@ namespace UdonSharp.Compiler.Binder
             CompilationContext.MethodExportLayout layout =
                 context.CompileContext.GetUsbMethodLayout(Method, context);
 
-            Value.CowValue instanceCowValue = GetInstanceValue(context);
+            Value.CowValue instanceCowValue = EmitInstanceValue(context);
             Value instanceValue = instanceCowValue.Value;
             BoundAccessExpression instanceAccess = BoundAccessExpression.BindAccess(instanceValue);
 
@@ -58,7 +58,7 @@ namespace UdonSharp.Compiler.Binder
                     .First(e => e.Parameters.Length == 2 && 
                                 e.Parameters[0].Type == stringType);
 
-                Value[] parameterValues = GetParameterValues(context);
+                Value[] parameterValues = EmitParameterValues(context);
                 instanceValue = instanceCowValue.Value;
                 instanceAccess = BoundAccessExpression.BindAccess(instanceValue); // Re-bind here since the parameters may have changed the cowvalue
 
@@ -72,7 +72,7 @@ namespace UdonSharp.Compiler.Binder
 
                     for (int i = 0; i < parameterValues.Length; ++i)
                     {
-                        Value paramIntermediate = context.CreateInternalValue(parameterValues[i].UserType);
+                        Value paramIntermediate = context.CreateInternalValue(ParameterExpressions[i].ValueType);
                         context.Module.AddCopy(parameterValues[i], paramIntermediate);
                         parameterValues[i] = paramIntermediate;
                     }
@@ -141,10 +141,9 @@ namespace UdonSharp.Compiler.Binder
                         BoundAccessExpression currentAccessExpression = (BoundAccessExpression)ParameterExpressions[i];
 
                         currentAccessExpression.EmitSet(context, CreateBoundInvocation(context, SyntaxNode,
-                            getProgramVariableMethod, instanceAccess, new[]
+                            getProgramVariableMethod, instanceAccess, new BoundExpression[]
                             {
-                                BoundAccessExpression.BindAccess(context.GetConstantValue(stringType,
-                                    layout.ParameterExportNames[i]))
+                                BoundAccessExpression.BindAccess(context.GetConstantValue(stringType, layout.ParameterExportNames[i]))
                             }));
                     }
                 }
@@ -152,7 +151,7 @@ namespace UdonSharp.Compiler.Binder
             
             if (IsPropertySetter)
             {
-                return GetParameterValues(context).Last();
+                return EmitParameterValues(context).Last();
             }
 
             if (Method.ReturnType != null)

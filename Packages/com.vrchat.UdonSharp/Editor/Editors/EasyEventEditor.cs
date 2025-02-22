@@ -259,7 +259,7 @@ namespace Merlin
             // Call here to find the scriptAttributeUtilityType in case it's needed for when overrides are disabled
             FieldInfo drawerTypeMap = GetDrawerTypeMap();
 
-            if (enableOverride)
+            if (enableOverride && drawerTypeMap != null)
             {
                 System.Type[] mapArgs = drawerTypeMap.FieldType.GetGenericArguments();
 
@@ -937,14 +937,25 @@ namespace Merlin
             if (findMethod == null)
             {
                 // Rather not reinvent the wheel considering this function calls different functions depending on the number of args the event has...
+            #if UNITY_2022_3_OR_NEWER
                 findMethod = eventObject.GetType().GetMethod("FindMethod", BindingFlags.NonPublic | BindingFlags.Instance, null,
-                        new System.Type[] {
+                    new System.Type[] {
+                        typeof(string),
+                        typeof(System.Type),
+                        typeof(PersistentListenerMode),
+                        typeof(System.Type)
+                    },
+                    null);
+            #else
+                findMethod = eventObject.GetType().GetMethod("FindMethod", BindingFlags.NonPublic | BindingFlags.Instance, null,
+                    new System.Type[] {
                         typeof(string),
                         typeof(object),
                         typeof(PersistentListenerMode),
                         typeof(System.Type)
-                        },
+                    },
                     null);
+            #endif
 
                 cachedFindMethodInfo = findMethod;
             }
@@ -954,8 +965,12 @@ namespace Merlin
                 Debug.LogError("Could not find FindMethod function!");
                 return null;
             }
-
+            
+        #if UNITY_2022_3_OR_NEWER
+            return findMethod.Invoke(eventObject, new object[] { functionName, targetObject.GetType(), listenerMode, argType }) as MethodInfo;
+        #else
             return findMethod.Invoke(eventObject, new object[] { functionName, targetObject, listenerMode, argType }) as MethodInfo;
+        #endif
         }
 
         System.Type[] GetEventParams(UnityEventBase eventIn)

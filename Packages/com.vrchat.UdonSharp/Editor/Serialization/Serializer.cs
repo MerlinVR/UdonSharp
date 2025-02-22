@@ -21,6 +21,12 @@ namespace UdonSharp.Serialization
             new UdonSharpBehaviourSerializer(null),
             new UnityObjectSerializer<UnityEngine.Object>(null),
             new UserEnumSerializer<object>(null),
+            new ListSerializer<object>(null),
+            new DictionarySerializer<object>(null),
+            new HashSetSerializer<object>(null),
+            new QueueSerializer<object>(null),
+            new StackSerializer<object>(null),
+            new UserClassSerializer<object>(null),
             //new SystemObjectSerializer(null),
             new DefaultSerializer<object>(null),
         };

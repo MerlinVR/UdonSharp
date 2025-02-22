@@ -8,7 +8,6 @@ using System.Linq;
 using System.Reflection;
 using UdonSharp.Compiler;
 using UdonSharp.Compiler.Udon;
-using UdonSharp.Lib.Internal;
 using UdonSharp.Localization;
 using UdonSharpEditor;
 using UnityEngine;
@@ -167,7 +166,7 @@ namespace UdonSharp
             // So we check against a value we know will exist to make sure we can use the heap variables.
             if (shouldUseRuntimeValue)
             {
-                var behaviourID = currentBehaviour.GetProgramVariable(CompilerConstants.UsbTypeIDHeapKey);
+                var behaviourID = currentBehaviour.GetProgramVariable(Lib.Internal.CompilerConstants.UsbTypeIDHeapKey);
                 if (behaviourID == null)
                     shouldUseRuntimeValue = false;
             }

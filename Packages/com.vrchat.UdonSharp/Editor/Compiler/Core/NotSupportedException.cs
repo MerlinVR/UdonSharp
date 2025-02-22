@@ -12,6 +12,11 @@ namespace UdonSharp.Core
             : base(message, sourceLocation)
         {
         }
+        
+        public NotSupportedException(string message, SyntaxNode node)
+            : base(message, node)
+        {
+        }
 
         public NotSupportedException(Localization.LocStr stringIdentifier, Location sourceLocation = null)
             : base(Localization.Loc.Get(stringIdentifier), sourceLocation)

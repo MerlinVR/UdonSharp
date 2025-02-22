@@ -1,11 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+#if UNITY_EDITOR
 using UdonSharpEditor;
+#endif
 using UnityEditor;
 using UnityEngine;
 
 namespace UdonSharp.Tests
 {
+#if UNITY_EDITOR
     [CustomEditor(typeof(DefaultHeapValueTest))]
     public class DefaultHeapValueTestInspector : Editor
     {
@@ -25,4 +28,5 @@ namespace UdonSharp.Tests
             heapValueTest.syncedObjectIntVal = (int)heapValueTest.objectIntVal;
         }
     }
+#endif
 }

@@ -133,6 +133,15 @@ namespace UdonSharp.Compiler.Binder
             {
                 TypeSymbol gameObjectType = context.GetTypeSymbol(typeof(GameObject));
                 TypeSymbol typeArgument = symbol.TypeArguments[0];
+
+                // Explicit check for GetComponents calls that take a List<T> which we don't support atm, but may be wrapped in the future.
+                TypeSymbol listType = context.GetTypeSymbol(typeof(List<>));
+                if ((symbol.Parameters.Length > 0 && symbol.Parameters[0].Type.OriginalSymbol == listType) ||
+                    (symbol.Parameters.Length > 1 && symbol.Parameters[1].Type.OriginalSymbol == listType))
+                {
+                    createdInvocation = null;
+                    return false;
+                }
              
                 // udon-workaround: Work around the udon bug where it checks the strongbox type instead of variable type and blows up when the strong box is `object`
                 if (instanceExpression.ValueType == gameObjectType)
@@ -354,7 +363,8 @@ namespace UdonSharp.Compiler.Binder
         {
             if (symbol.Name == "CompareTo" &&
                 symbol.ContainingType != null &&
-                symbol.ContainingType == context.GetTypeSymbol(typeof(IComparable)))
+                symbol.ContainingType == context.GetTypeSymbol(typeof(IComparable)) &&
+                instanceExpression != null && instanceExpression.ValueType.IsExtern)
             {
                 createdInvocation = new BoundExternInvocation(node, context,
                     new ExternSynthesizedMethodSymbol(context, "CompareTo", instanceExpression.ValueType,
@@ -363,6 +373,83 @@ namespace UdonSharp.Compiler.Binder
                     instanceExpression, parameterExpressions);
                 
                 return true;
+            }
+
+            createdInvocation = null;
+            return false;
+        }
+
+        private static bool TryCreateForwardedTypeShimInvocation(AbstractPhaseContext context, SyntaxNode node, MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions, out BoundInvocationExpression createdInvocation)
+        {
+            if (symbol.ContainingType != null && symbol.ContainingType.IsGenericType)
+            {
+                if (!TypeSymbol.TryGetSystemType(symbol.ContainingType, out Type sourceType))
+                {
+                    createdInvocation = null;
+                    return false;
+                }
+                
+                Type forwardedType = UdonSharpUtils.GetForwardedType(sourceType);
+                
+                if (forwardedType == null)
+                {
+                    createdInvocation = null;
+                    return false;
+                }
+                
+                TypeSymbol forwardedTypeSymbol = context.GetTypeSymbol(forwardedType);
+                
+                MethodSymbol forwardedMethod = forwardedTypeSymbol.GetMembers<MethodSymbol>(symbol.Name, context)
+                    .FirstOrDefault(e => e.Parameters
+                        .Select(p => p.Type)
+                        .SequenceEqual(parameterExpressions.Select(p => p.ValueType)));
+
+                if (forwardedMethod != null)
+                {
+                    if (forwardedMethod.IsStatic)
+                    {
+                        createdInvocation = new BoundStaticUserMethodInvocation(node, forwardedMethod, parameterExpressions);
+                    }
+                    else
+                    {
+                        createdInvocation = new BoundInstanceUserMethodInvocation(node, forwardedMethod, instanceExpression, parameterExpressions);
+                    }
+
+                    context.MarkSymbolReferenced(forwardedMethod);
+
+                    return true;
+                }
+            }
+            
+            createdInvocation = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Allows for what I suppose might be called compile-time polymorphism on stuff like generics when T implements an interface or derives from a user class
+        /// Say, for example you have a T that is required to implement IDisposable, you can call Dispose on it, and it will call the Dispose method on the object without needing any lookups/indirection
+        /// </summary>
+        private static bool TryCreateInterfaceOrDerivedMethodSpecializedInvocation(AbstractPhaseContext context, SyntaxNode node,
+            MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
+            out BoundInvocationExpression createdInvocation)
+        {
+            if (symbol.ContainingType != null && instanceExpression != null && !instanceExpression.ValueType.IsExtern && 
+                                                  (symbol.ContainingType.RoslynSymbol.TypeKind == TypeKind.Interface || 
+                                                    (symbol.ContainingType == context.GetTypeSymbol(SpecialType.System_Object) && (symbol.Name == "ToString" || symbol.Name == "GetHashCode" || symbol.Name == "Equals"))))
+            {
+                MethodSymbol derivedMethod = instanceExpression.ValueType.GetMembers<MethodSymbol>(symbol.Name, context).FirstOrDefault(e => 
+                    e.IsStatic == symbol.IsStatic &&
+                    e.Parameters.Length == symbol.Parameters.Length &&
+                    e.ReturnType == symbol.ReturnType &&
+                    Enumerable.SequenceEqual(e.Parameters.Select(p => (p.Type, p.RefKind)), (symbol.Parameters.Select(p => (p.Type, p.RefKind)))));
+
+                if (derivedMethod != null && derivedMethod != symbol)
+                {
+                    context.MarkSymbolReferenced(derivedMethod);
+                    
+                    createdInvocation = CreateBoundInvocation(context, node, derivedMethod, instanceExpression, parameterExpressions);
+                    return true;
+                }
             }
 
             createdInvocation = null;
@@ -396,10 +483,16 @@ namespace UdonSharp.Compiler.Binder
             
             if (TryCreateCompareToInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
                 return true;
+            
+            if (TryCreateForwardedTypeShimInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
+                return true;
+            
+            if (TryCreateInterfaceOrDerivedMethodSpecializedInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
+                return true;
 
             return false;
         }
-        
+
         public static BoundInvocationExpression CreateBoundInvocation(AbstractPhaseContext context, SyntaxNode node,
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions)
         {
@@ -417,11 +510,10 @@ namespace UdonSharp.Compiler.Binder
                     // Enum equality/inequality
                     if (symbol.ContainingType?.IsEnum ?? false)
                     {
-                        MethodSymbol objectEqualsMethod = context.GetTypeSymbol(SpecialType.System_Object)
-                            .GetMember<MethodSymbol>("Equals", context);
+                        MethodSymbol objectEqualsMethod = context.GetTypeSymbol(SpecialType.System_Object).GetMember<MethodSymbol>("Equals", context);
                         
-                        var boundEqualsInvocation = CreateBoundInvocation(context, node, objectEqualsMethod, parameterExpressions[0],
-                                new[] {parameterExpressions[1]});
+                        BoundInvocationExpression boundEqualsInvocation = CreateBoundInvocation(context, node, objectEqualsMethod, parameterExpressions[0], new[] { parameterExpressions[1] });
+                        
                         if (symbol.Name == "op_Equality")
                             return boundEqualsInvocation;
 
@@ -429,14 +521,13 @@ namespace UdonSharp.Compiler.Binder
                             BuiltinOperatorType.UnaryNegation, context.GetTypeSymbol(SpecialType.System_Boolean),
                             context);
 
-                        return new BoundExternInvocation(node, context, boolNotOperator, null, new BoundExpression[] {boundEqualsInvocation});
+                        return new BoundExternInvocation(node, context, boolNotOperator, null, new BoundExpression[] { boundEqualsInvocation });
                     }
                     
                     if (node is AssignmentExpressionSyntax)
                         return new BoundCompoundAssignmentExpression(context, node, (BoundAccessExpression) parameterExpressions[0], symbol, parameterExpressions[1]);
 
-                    if (symbol is ExternBuiltinOperatorSymbol externBuiltinOperatorSymbol &&
-                        externBuiltinOperatorSymbol.OperatorType == BuiltinOperatorType.BitwiseNot)
+                    if (symbol is ExternBuiltinOperatorSymbol externBuiltinOperatorSymbol && externBuiltinOperatorSymbol.OperatorType == BuiltinOperatorType.BitwiseNot)
                         return new BoundBitwiseNotExpression(node, parameterExpressions[0]);
                     
                     if (parameterExpressions.Length == 2 || symbol.Name == "op_UnaryNegation" || symbol.Name == "op_LogicalNot")
@@ -450,19 +541,27 @@ namespace UdonSharp.Compiler.Binder
                 return new BoundExternInvocation(node, context, symbol, instanceExpression, parameterExpressions);
             }
 
-            if (symbol.IsStatic)
-                return new BoundStaticUserMethodInvocation(node, symbol, parameterExpressions);
-
-            if (symbol is UdonSharpBehaviourMethodSymbol udonSharpBehaviourMethodSymbol)
+            switch (symbol)
             {
-                if (instanceExpression != null && !instanceExpression.IsThis)
-                    udonSharpBehaviourMethodSymbol.MarkNeedsReferenceExport();
+                case ImportedUdonSharpMethodSymbol importedMethod when importedMethod.IsStatic:
+                    return new BoundStaticUserMethodInvocation(node, importedMethod, parameterExpressions);
+                case ImportedUdonSharpMethodSymbol importedMethod:
+                    return new BoundInstanceUserMethodInvocation(node, importedMethod, instanceExpression, parameterExpressions);
+                case UdonSharpBehaviourMethodSymbol staticMethod when staticMethod.IsStatic:
+                    return new BoundStaticUserMethodInvocation(node, staticMethod, parameterExpressions);
+                case UdonSharpBehaviourMethodSymbol udonSharpBehaviourMethodSymbol:
+                {
+                    if (instanceExpression != null && !instanceExpression.IsThis)
+                        udonSharpBehaviourMethodSymbol.MarkNeedsReferenceExport();
+                    
+                    if (instanceExpression == null)
+                        throw new InvalidOperationException("Instance expression must be provided for instance method invocation");
                 
-                return new BoundUdonSharpBehaviourInvocationExpression(node, symbol, instanceExpression,
-                    parameterExpressions);
+                    return new BoundUdonSharpBehaviourInvocationExpression(node, symbol, instanceExpression, parameterExpressions);
+                }
             }
-
-            throw new System.NotImplementedException();
+            
+            throw new NotImplementedException();
         }
 
         protected override void ReleaseCowValuesImpl(EmitContext context)
@@ -476,7 +575,7 @@ namespace UdonSharp.Compiler.Binder
             }
         }
 
-        protected Value[] GetParameterValues(EmitContext context)
+        protected Value[] EmitParameterValues(EmitContext context)
         {
             Value.CowValue[] parameterCows = context.GetExpressionCowValues(this, "parameters");
 
@@ -502,7 +601,7 @@ namespace UdonSharp.Compiler.Binder
             return parameterValues;
         }
 
-        protected Value.CowValue GetInstanceValue(EmitContext context)
+        protected Value.CowValue EmitInstanceValue(EmitContext context)
         {
             Value.CowValue[] instanceValue = context.GetExpressionCowValues(this, "instance");
 
@@ -678,8 +777,7 @@ namespace UdonSharp.Compiler.Binder
 
             public override Value EmitValue(EmitContext context)
             {
-                Value targetValue =
-                    context.EmitValueWithDeferredRelease(TargetExpression);
+                Value targetValue = context.EmitValueWithDeferredRelease(TargetExpression);
                 
                 var invocation = CreateBoundInvocation(context, null, OperatorMethod, null,
                     new[] {BoundAccessExpression.BindAccess(targetValue), AssignmentSource});
@@ -771,10 +869,10 @@ namespace UdonSharp.Compiler.Binder
                 context.EmitValueAssignment(returnValue, TargetExpression);
                 
                 Type targetType = TargetExpression.ValueType.UdonType.SystemType;
-                IConstantValue incrementValue = (IConstantValue) Activator.CreateInstance(
-                    typeof(ConstantValue<>).MakeGenericType(targetType), Convert.ChangeType(1, targetType));
+                IConstantValue incrementValue = (IConstantValue) Activator.CreateInstance(typeof(ConstantValue<>).MakeGenericType(targetType), Convert.ChangeType(1, targetType));
+                
                 BoundExpression expression = CreateBoundInvocation(context, null, InternalExpression.Method, null,
-                    new BoundExpression[] {BoundAccessExpression.BindAccess(returnValue), new BoundConstantExpression(incrementValue, TargetExpression.ValueType, SyntaxNode)});
+                    new BoundExpression[] { BoundAccessExpression.BindAccess(returnValue), new BoundConstantExpression(incrementValue, TargetExpression.ValueType, SyntaxNode) });
 
                 if (InternalExpression.Method.ReturnType != TargetExpression.ValueType)
                     expression = new BoundCastExpression(null, expression, ValueType, true);

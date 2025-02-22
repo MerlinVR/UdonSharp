@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
 using UdonSharp.Core;
+using NotSupportedException = UdonSharp.Core.NotSupportedException;
 
 namespace UdonSharp.Compiler.Binder
 {
@@ -15,21 +16,68 @@ namespace UdonSharp.Compiler.Binder
         {
         }
 
-        public static BoundAccessExpression BindFieldAccess(SyntaxNode node, FieldSymbol fieldSymbol, BoundExpression sourceExpression)
+        public static BoundAccessExpression BindFieldAccess(AbstractPhaseContext context, SyntaxNode node, FieldSymbol fieldSymbol, BoundExpression sourceExpression)
         {
             if (fieldSymbol.IsConst)
                 return new BoundConstantExpression(fieldSymbol.RoslynSymbol.ConstantValue, fieldSymbol.Type);
             
-            if (fieldSymbol is ExternFieldSymbol externField)
+            // if (TryCreateShimFieldAccess(context, node, fieldSymbol, sourceExpression, out BoundFieldAccessExpression createdFieldAccess))
+            //     return createdFieldAccess;
+
+            if (fieldSymbol.IsStatic && !fieldSymbol.IsExtern)
             {
-                return new BoundExternFieldAccessExpression(node, externField, sourceExpression);
+                throw new NotSupportedException("Static fields are not yet supported on user defined types");
             }
-
-            if (fieldSymbol is UdonSharpBehaviourFieldSymbol udonSharpBehaviourFieldSymbol)
-                return new BoundUdonSharpBehaviourFieldAccessExpression(node, udonSharpBehaviourFieldSymbol,
-                    sourceExpression);
-
+            
+            switch (fieldSymbol)
+            {
+                case ExternFieldSymbol externField:
+                    return new BoundExternFieldAccessExpression(node, externField, sourceExpression);
+                case UdonSharpBehaviourFieldSymbol udonSharpBehaviourFieldSymbol:
+                    return new BoundUdonSharpBehaviourFieldAccessExpression(node, udonSharpBehaviourFieldSymbol, sourceExpression);
+                case ImportedUdonSharpFieldSymbol importedUdonSharpFieldSymbol:
+                    return new BoundImportedTypeInstanceFieldAccessExpression(context, node, importedUdonSharpFieldSymbol, sourceExpression);
+            }
+            
             throw new NotImplementedException($"Field access for symbol {fieldSymbol.GetType()} is not implemented");
+        }
+
+        // private static bool TryCreateShimFieldAccess(AbstractPhaseContext context, SyntaxNode node, FieldSymbol symbol, BoundExpression instanceExpression, out BoundFieldAccessExpression createdFieldAccess)
+        // {
+        //     if (symbol.ContainingType.IsGenericType && symbol.ContainingType.ToString().StartsWith("System.Collections.Generic.KeyValuePair", StringComparison.Ordinal))
+        //     {
+        //         TypeSymbol.TryGetSystemType(symbol.ContainingType, out Type keyValueType);
+        //         Type[] genericTypes = keyValueType.GetGenericArguments();
+        //         TypeSymbol keyValueShim = context.GetTypeSymbol(typeof(Lib.Internal.Collections.DictionaryKeyValue<,>).MakeGenericType(genericTypes));
+        //
+        //         FieldSymbol field = keyValueShim.GetMember<FieldSymbol>(symbol.Name, context);
+        //
+        //         if (field != null)
+        //         {
+        //             createdFieldAccess = new BoundImportedTypeInstanceFieldAccessExpression(context, node, field, instanceExpression);
+        //             return true;
+        //         }
+        //     }
+        //     
+        //     createdFieldAccess = null;
+        //     return false;
+        // }
+
+        private Value.CowValue GetInstanceValue(EmitContext context)
+        {
+            Value.CowValue[] instanceValue = context.GetExpressionCowValues(this, "propertyInstance");
+
+            if (instanceValue != null)
+                return instanceValue[0];
+                
+            Value.CowValue instanceCowValue;
+                
+            using (context.InterruptAssignmentScope())
+                instanceCowValue = context.EmitValueWithDeferredRelease(SourceExpression).GetCowValue(context);
+                
+            context.RegisterCowValues(new []{instanceCowValue}, this, "propertyInstance");
+
+            return instanceCowValue;
         }
 
         private sealed class BoundExternFieldAccessExpression : BoundFieldAccessExpression
@@ -42,23 +90,6 @@ namespace UdonSharp.Compiler.Binder
                 : base(node, sourceExpression)
             {
                 Field = field;
-            }
-
-            private Value.CowValue GetInstanceValue(EmitContext context)
-            {
-                Value.CowValue[] instanceValue = context.GetExpressionCowValues(this, "propertyInstance");
-
-                if (instanceValue != null)
-                    return instanceValue[0];
-                
-                Value.CowValue instanceCowValue;
-                
-                using (context.InterruptAssignmentScope())
-                    instanceCowValue = context.EmitValueWithDeferredRelease(SourceExpression).GetCowValue(context);
-                
-                context.RegisterCowValues(new []{instanceCowValue}, this, "propertyInstance");
-
-                return instanceCowValue;
             }
 
             public override Value EmitSet(EmitContext context, BoundExpression valueExpression)
@@ -135,7 +166,7 @@ namespace UdonSharp.Compiler.Binder
                     new BoundExpression[]
                     {
                         BindAccess(context.GetConstantValue(stringType, Field.Name))
-                    })), Field.Type, true);
+                    })), Field.Type);
             }
 
             public override Value EmitSet(EmitContext context, BoundExpression valueExpression)
@@ -162,6 +193,101 @@ namespace UdonSharp.Compiler.Binder
                         BindAccess(value)
                     }));
 
+                return value;
+            }
+        }
+
+        private sealed class BoundImportedTypeInstanceFieldAccessExpression : BoundFieldAccessExpression
+        {
+            private ImportedUdonSharpFieldSymbol Field { get; }
+            public override TypeSymbol ValueType => Field.Type;
+
+            public BoundImportedTypeInstanceFieldAccessExpression(AbstractPhaseContext context, SyntaxNode node, FieldSymbol fieldSymbol, BoundExpression sourceExpression) 
+                : base(node, sourceExpression)
+            {
+                Field = (ImportedUdonSharpFieldSymbol)fieldSymbol;
+            }
+
+            private Value.CowValue GetFieldInstanceValue(EmitContext context)
+            {
+                Value.CowValue thisRef;
+
+                if (SourceExpression?.IsThis ?? true)
+                {
+                    Value.CowValue[] instanceValue = context.GetExpressionCowValues(this, "propertyInstance");
+
+                    if (instanceValue != null)
+                        return instanceValue[0];
+                    
+                    thisRef = context.GetInstanceValue().GetCowValue(context);
+                    
+                    context.RegisterCowValues(new []{thisRef}, this, "propertyInstance");
+                }
+                else
+                {
+                    thisRef = GetInstanceValue(context);
+                }
+                
+                return thisRef;
+            }
+            
+            public override Value EmitValue(EmitContext context)
+            {
+                Value.CowValue thisRef = GetFieldInstanceValue(context);
+                
+                BoundAccessExpression objectArrayAccess = BindElementAccess(context, SyntaxNode,
+                    BindAccess(thisRef),
+                    new BoundExpression[]
+                    {
+                        BindAccess(context.GetConstantValue(context.GetTypeSymbol(SpecialType.System_Int32), Field.FieldIndex))
+                    });
+
+                if (!UdonSharpUtils.IsStrongBoxedType(Field.Type.UdonType.SystemType))
+                {
+                    return context.CastValue(context.EmitValue(objectArrayAccess), ValueType);
+                }
+
+                Value convertedArrayValue = context.CastValue(context.EmitValue(objectArrayAccess), Field.Type.UdonType.MakeArrayType(context));
+                    
+                BoundAccessExpression strongBoxAccess = BindElementAccess(context, SyntaxNode,
+                    BindAccess(convertedArrayValue),
+                    new BoundExpression[]
+                    {
+                        BindAccess(context.GetConstantValue(context.GetTypeSymbol(SpecialType.System_Int32), 0))
+                    });
+                
+                return context.CastValue(context.EmitValue(strongBoxAccess), Field.Type);
+            }
+
+            public override Value EmitSet(EmitContext context, BoundExpression valueExpression)
+            {
+                Value.CowValue thisRef = GetFieldInstanceValue(context);
+                
+                BoundAccessExpression objectArrayAccess = BindElementAccess(context, SyntaxNode,
+                    BindAccess(thisRef),
+                    new BoundExpression[]
+                    {
+                        BindAccess(context.GetConstantValue(context.GetTypeSymbol(SpecialType.System_Int32), Field.FieldIndex)),
+                    });
+                
+                Value value = context.EmitValue(valueExpression);
+                
+                if (UdonSharpUtils.IsStrongBoxedType(Field.Type.UdonType.SystemType))
+                {
+                    BoundAccessExpression strongBoxAccess = BindElementAccess(context, SyntaxNode,
+                        BindAccess(context.CastValue(context.EmitValue(objectArrayAccess), Field.Type.UdonType.MakeArrayType(context))),
+                        new BoundExpression[]
+                        {
+                            BindAccess(context.GetConstantValue(context.GetTypeSymbol(SpecialType.System_Int32), 0))
+                        });
+                    
+                    context.EmitSet(strongBoxAccess, BindAccess(context.CastValue(value, Field.Type)));
+                    
+                    return value;
+                }
+                
+                context.EmitSet(objectArrayAccess, BindAccess(context.CastValue(value, ValueType)));
+                
                 return value;
             }
         }

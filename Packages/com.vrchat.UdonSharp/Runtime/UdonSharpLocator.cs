@@ -29,32 +29,8 @@ namespace UdonSharp.Updater
             #if UNITY_EDITOR
                 if (_cachedInstallLocation != null)
                     return _cachedInstallLocation;
-
-                string[] foundLocatorGuids = AssetDatabase.FindAssets($"t:{nameof(UdonSharpLocator)}");
-                List<UdonSharpLocator> foundLocators = new List<UdonSharpLocator>();
-
-                foreach (string locatorGuid in foundLocatorGuids)
-                {
-                    UdonSharpLocator locator =
-                        AssetDatabase.LoadAssetAtPath<UdonSharpLocator>(AssetDatabase.GUIDToAssetPath(locatorGuid));
-
-                    if (locator)
-                        foundLocators.Add(locator);
-                }
-
-                if (foundLocators.Count == 0)
-                {
-                    throw new System.Exception(
-                        "Could not find UdonSharp locator, make sure you have installed U# following the install instructions.");
-                }
-
-                if (foundLocators.Count > 1)
-                {
-                    throw new System.Exception(
-                        "Multiple UdonSharp locators found, make sure you do not have multiple installations of UdonSharp.");
-                }
-
-                _cachedInstallLocation = Path.GetDirectoryName(AssetDatabase.GetAssetPath(foundLocators[0]));
+                
+                _cachedInstallLocation = Path.GetDirectoryName("Packages/com.merlin.UdonSharp/UdonSharpLocator.asset");
                 return _cachedInstallLocation;
             #else
                 throw new System.PlatformNotSupportedException("Cannot get UdonSharp installation path outside of the Editor runtime");

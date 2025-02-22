@@ -37,7 +37,7 @@ namespace UdonSharp.Compiler.Binder
                 case ParameterSymbol parameterSymbol:
                     return new BoundParameterAccessExpression(node, parameterSymbol);
                 case FieldSymbol fieldSymbol:
-                    return BoundFieldAccessExpression.BindFieldAccess(node, fieldSymbol, symbolExpressionSource);
+                    return BoundFieldAccessExpression.BindFieldAccess(context, node, fieldSymbol, symbolExpressionSource);
                 case PropertySymbol propertySymbol:
                     return BoundPropertyAccessExpression.BindPropertyAccess(context, node, propertySymbol, symbolExpressionSource);
             }
@@ -58,6 +58,11 @@ namespace UdonSharp.Compiler.Binder
         public static BoundAccessExpression BindAccess(Value.CowValue value)
         {
             return new BoundCowValueAccessExpression(value);
+        }
+
+        public static BoundAccessExpression BindDiscardAccess( TypeSymbol typeSymbol, SyntaxNode node)
+        {
+            return new BoundDiscardAccessExpression(node, typeSymbol);
         }
 
         public static BoundAccessExpression BindElementAccess(AbstractPhaseContext context, SyntaxNode node,
@@ -160,8 +165,12 @@ namespace UdonSharp.Compiler.Binder
 
             public override Value EmitValue(EmitContext context)
             {
-                if (!((INamedTypeSymbol) ValueType.RoslynSymbol).IsUdonSharpBehaviour())
-                    throw new NotImplementedException("Non udonsharp behaviour `this` is not yet implemented");
+                if (!((INamedTypeSymbol)ValueType.RoslynSymbol).IsUdonSharpBehaviour())
+                {
+                    // throw new NotImplementedException("Non udonsharp behaviour `this` is not yet implemented");
+                    
+                    return context.GetInstanceValue();
+                }
 
                 return context.GetUdonThisValue(ValueType);
             }
@@ -216,6 +225,27 @@ namespace UdonSharp.Compiler.Binder
             public override Value EmitSet(EmitContext context, BoundExpression valueExpression)
             {
                 return context.EmitValueAssignment(AccessValue.Value, valueExpression);
+            }
+        }
+
+        private sealed class BoundDiscardAccessExpression : BoundAccessExpression
+        {
+            public override TypeSymbol ValueType { get; }
+
+            public BoundDiscardAccessExpression(SyntaxNode node, TypeSymbol valueType) 
+                : base(node, null)
+            {
+                ValueType = valueType;
+            }
+
+            public override Value EmitValue(EmitContext context)
+            {
+                return context.CreateInternalValue(ValueType);
+            }
+
+            public override Value EmitSet(EmitContext context, BoundExpression valueExpression)
+            {
+                return context.EmitValueAssignment(context.CreateInternalValue(ValueType), valueExpression);
             }
         }
     }

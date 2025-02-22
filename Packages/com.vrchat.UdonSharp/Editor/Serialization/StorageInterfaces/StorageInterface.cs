@@ -51,8 +51,6 @@ namespace UdonSharp.Serialization
                 }
             }
         }
-
-        public System.Type ValueType => typeof(T);
     }
 
     /// <summary>

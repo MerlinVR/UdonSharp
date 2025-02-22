@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Diagnostics;
 using UdonSharp.Compiler.Symbols;
 
 #if UDONSHARP_DEBUG
@@ -140,7 +141,7 @@ namespace UdonSharp.Compiler.Emit
         public override string ToString()
         {
             if ((Flags & ValueFlags.Constant) != 0)
-                return $"Constant {UserType} Value: {DefaultValue}" + ((DefaultValue is uint uintVal) ? $" (0x{uintVal:X8})" : "");
+                return $"{UniqueID}: Constant {UserType} Value: {DefaultValue}" + ((DefaultValue is uint uintVal) ? $" (0x{uintVal:X8})" : "");
             
             return $"{UniqueID}: {UserType} Value, flags {Flags}";
         }
@@ -245,18 +246,28 @@ namespace UdonSharp.Compiler.Emit
             private bool _disposed;
 
             public Value Value => _tracker.Value;
+            
+        #if UDONSHARP_DEBUG
+            private StackTrace _creationTrace;
+        #endif
 
             internal CowValue(CowValueInternalTracker tracker)
             {
                 _tracker = tracker;
                 _tracker.AddRef(this);
+                
+            #if UDONSHARP_DEBUG
+                _creationTrace = new StackTrace(0, true);
+            #endif
             }
 
         #if UDONSHARP_DEBUG
             ~CowValue()
             {
                 if (!_disposed)
-                    Debug.LogError("Did not dispose CowValue for " + Value.UniqueID);
+                {
+                    Debug.LogError($"Did not dispose CowValue for {Value.UniqueID}, created at:\n{_creationTrace}");
+                }
             }
         #endif
 

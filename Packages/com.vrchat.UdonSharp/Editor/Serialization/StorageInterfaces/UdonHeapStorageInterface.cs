@@ -19,7 +19,7 @@ namespace UdonSharp.Serialization
                 this.heap = heap;
                 
                 bool isValid = symbolTable.TryGetAddressFromSymbol(UdonSharpUtils.UnmanglePropertyFieldName(symbolKey), out symbolAddress) && 
-                               heap.GetHeapVariableType(symbolAddress) == typeof(T) &&
+                               heap.GetHeapVariableType(symbolAddress).IsAssignableFrom(typeof(T)) &&
                                heap.TryGetHeapVariable<T>(symbolAddress, out _);
 
                 if (!isValid)

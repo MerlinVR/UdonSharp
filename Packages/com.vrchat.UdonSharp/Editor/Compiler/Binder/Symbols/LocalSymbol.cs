@@ -29,7 +29,5 @@ namespace UdonSharp.Compiler.Symbols
         {
             throw new NotSupportedException("Local symbols cannot be bound");
         }
-
-        public override bool IsBound => true;
     }
 }

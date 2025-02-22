@@ -65,56 +65,78 @@ namespace UdonSharp.Compiler.Binder
 
         protected override Symbol RedirectTypeSymbol(Symbol symbol)
         {
-            if (_currentBindSymbol == null || !(symbol is TypeParameterSymbol)) 
+            if (_currentBindSymbol == null) 
                 return symbol;
 
-            TypeSymbol parameterSymbol = (TypeSymbol)symbol;
-
-            int typeIdx = -1;
+            TypeSymbol typeSymbol = symbol as TypeSymbol;
+                
+            if (typeSymbol == null)
+                return symbol;
+            
             int arrayDepth = 0;
 
-            while (parameterSymbol.IsArray)
+            while (typeSymbol.IsArray)
             {
                 arrayDepth++;
-                parameterSymbol = parameterSymbol.ElementType;
+                typeSymbol = typeSymbol.ElementType;
             }
 
             if (arrayDepth > 0)
-                return MakeArraySymbol((TypeSymbol)RedirectTypeSymbol(parameterSymbol), arrayDepth);
-            
-            if (_currentBindSymbol is MethodSymbol currentMethodSymbol)
-            {
-                if (currentMethodSymbol.TypeArguments.Length > 0 && currentMethodSymbol.OriginalSymbol != null)
-                {
-                    MethodSymbol originalMethod = (MethodSymbol)currentMethodSymbol.OriginalSymbol;
+                return MakeArraySymbol((TypeSymbol)RedirectTypeSymbol(typeSymbol), arrayDepth);
 
-                    for (int i = 0; i < originalMethod.TypeArguments.Length; ++i)
+            if (symbol is TypeParameterSymbol parameterSymbol)
+            {
+                int typeIdx = -1;
+
+                TypeSymbol containingType = _currentBindSymbol.ContainingType;
+
+                if (containingType.TypeArguments.Length > 0 && containingType.OriginalSymbol != null)
+                {
+                    TypeSymbol originalType = (TypeSymbol)containingType.OriginalSymbol;
+
+                    for (int i = 0; i < originalType.TypeArguments.Length; ++i)
                     {
-                        if (!parameterSymbol.Equals(originalMethod.TypeArguments[i])) continue;
-                        typeIdx = i;
-                        break;
+                        if (parameterSymbol.Equals(originalType.TypeArguments[i]))
+                        {
+                            typeIdx = i;
+                            break;
+                        }
                     }
 
                     if (typeIdx != -1)
-                        return currentMethodSymbol.TypeArguments[typeIdx];
+                    {
+                        return containingType.TypeArguments[typeIdx];
+                    }
+                }
+
+                if (_currentBindSymbol is MethodSymbol currentMethodSymbol)
+                {
+                    if (currentMethodSymbol.TypeArguments.Length > 0 && currentMethodSymbol.OriginalSymbol != null)
+                    {
+                        MethodSymbol originalMethod = (MethodSymbol)currentMethodSymbol.OriginalSymbol;
+
+                        for (int i = 0; i < originalMethod.TypeArguments.Length; ++i)
+                        {
+                            if (!parameterSymbol.Equals(originalMethod.TypeArguments[i])) continue;
+                            typeIdx = i;
+                            break;
+                        }
+
+                        if (typeIdx != -1)
+                        {
+                            return currentMethodSymbol.TypeArguments[typeIdx];
+                        }
+                    }
                 }
             }
-
-            TypeSymbol containingType = _currentBindSymbol.ContainingType;
-
-            if (containingType.TypeArguments.Length > 0 && containingType.OriginalSymbol != null)
+            else if (typeSymbol.IsGenericType && !typeSymbol.IsFullyConstructedGeneric)
             {
-                TypeSymbol originalType = (TypeSymbol)containingType.OriginalSymbol;
-                        
-                for (int i = 0; i < originalType.TypeArguments.Length; ++i)
+                TypeSymbol[] typeArguments = typeSymbol.TypeArguments.Select(e => (TypeSymbol)RedirectTypeSymbol(e)).ToArray();
+            
+                if (!typeArguments.Any(e => e is TypeParameterSymbol))
                 {
-                    if (!parameterSymbol.Equals(originalType.TypeArguments[i])) continue;
-                    typeIdx = i;
-                    break;
+                    return ((TypeSymbol)typeSymbol.OriginalSymbol).ConstructGenericType(this, typeArguments);
                 }
-                        
-                if (typeIdx != -1)
-                    return containingType.TypeArguments[typeIdx];
             }
 
             return symbol;
@@ -139,14 +161,65 @@ namespace UdonSharp.Compiler.Binder
 
         protected override Symbol RedirectMethodSymbol(Symbol symbol)
         {
-            if (symbol is MethodSymbol methodSymbol 
-                && methodSymbol.IsGenericMethod
-                && methodSymbol.IsUntypedGenericMethod)
+            if (symbol is MethodSymbol methodSymbol)
             {
-                TypeSymbol[] typeSymbols = methodSymbol.TypeArguments.Select(e => (TypeSymbol)RedirectTypeSymbol(e)).ToArray();
+                // If the containing type is a generic type, we need to redirect the method type to the current type
+                if (methodSymbol.ContainingType != null && methodSymbol.ContainingType.IsGenericType && _currentBindSymbol != null)
+                {
+                    TypeSymbol containingType = (TypeSymbol)RedirectTypeSymbol(methodSymbol.ContainingType);
+                    
+                    // Compare parameter types to see if we can find a matching method
+                    MethodSymbol foundSymbol = containingType.GetMembers<MethodSymbol>(methodSymbol.Name, this).FirstOrDefault(e => e.OriginalSymbol != null && (e.OriginalSymbol.Equals(methodSymbol) || e.OriginalSymbol.Equals(methodSymbol.OriginalSymbol)));
+                    
+                    if (foundSymbol != null)
+                    {
+                        methodSymbol = foundSymbol;
+                    }
+                }
                 
-                if (!typeSymbols.Any(e => e is TypeParameterSymbol))
-                    return methodSymbol.ConstructGenericMethod(this, typeSymbols);
+                if (methodSymbol.IsGenericMethod && methodSymbol.IsUntypedGenericMethod)
+                {
+                    TypeSymbol[] typeSymbols = methodSymbol.TypeArguments.Select(e => (TypeSymbol)RedirectTypeSymbol(e)).ToArray();
+                    
+                    if (!typeSymbols.Any(e => e is TypeParameterSymbol))
+                    {
+                        return methodSymbol.ConstructGenericMethod(this, typeSymbols);
+                    }
+                }
+
+                return methodSymbol;
+            }
+
+            return symbol;
+        }
+
+        protected override Symbol RedirectFieldSymbol(Symbol symbol)
+        {
+            if (_currentBindSymbol != null &&
+                symbol is FieldSymbol fieldSymbol &&
+                fieldSymbol.ContainingType.IsGenericType)
+            {
+                TypeSymbol containingType = (TypeSymbol)RedirectTypeSymbol(fieldSymbol.ContainingType);
+                FieldSymbol foundSymbol = containingType.GetMember<FieldSymbol>(fieldSymbol.Name, this);
+                
+                if (foundSymbol != null)
+                    return foundSymbol;
+            }
+
+            return symbol;
+        }
+        
+        protected override Symbol RedirectPropertySymbol(Symbol symbol)
+        {
+            if (_currentBindSymbol != null &&
+                symbol is PropertySymbol propertySymbol &&
+                propertySymbol.ContainingType.IsGenericType)
+            {
+                TypeSymbol containingType = (TypeSymbol)RedirectTypeSymbol(propertySymbol.ContainingType);
+                PropertySymbol foundSymbol = containingType.GetMember<PropertySymbol>(propertySymbol.Name, this);
+                
+                if (foundSymbol != null)
+                    return foundSymbol;
             }
 
             return symbol;

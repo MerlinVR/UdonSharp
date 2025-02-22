@@ -24,7 +24,8 @@ namespace UdonSharp.Compiler.Binder
                 externMethodSymbol = FindAlternateInvocation(context, method, instanceExpression, parameterExpressions);
                 if (externMethodSymbol == null)
                 {
-                    throw new NotExposedException(LocStr.CE_UdonMethodNotExposed, node, $"{method.RoslynSymbol?.ToDisplayString() ?? method.ToString()}, sig: {((ExternMethodSymbol)method).ExternSignature}");
+                    throw new NotExposedException(LocStr.CE_UdonMethodNotExposed, $"{method.RoslynSymbol?.ToDisplayString() ?? method.ToString()}");
+                    // throw new NotExposedException(LocStr.CE_UdonMethodNotExposed, $"{method.RoslynSymbol?.ToDisplayString() ?? method.ToString()}, {((ExternMethodSymbol)method).ExternSignature}");
                 }
             }
         }
@@ -74,7 +75,7 @@ namespace UdonSharp.Compiler.Binder
             {
                 if (!Method.IsStatic && !Method.IsConstructor)
                 {
-                    instanceValue = GetInstanceValue(context);
+                    instanceValue = EmitInstanceValue(context);
 
                     // Prevent mutating a value constant if you call a method on the constant for some reason
                     // todo: fix for use with the cowvalues
@@ -88,11 +89,11 @@ namespace UdonSharp.Compiler.Binder
                 }
             }
 
-            Value[] parameterValues = GetParameterValues(context);
+            Value[] parameterValues = EmitParameterValues(context);
 
             if (instanceValue != null)
                 module.AddPush(instanceValue.Value);
-
+            
             Value[] recursiveValues = null;
             
             string methodName = Method.Name;

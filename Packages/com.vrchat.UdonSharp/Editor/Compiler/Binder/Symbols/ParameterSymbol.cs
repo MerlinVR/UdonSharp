@@ -24,10 +24,10 @@ namespace UdonSharp.Compiler.Symbols
         public ParameterSymbol(IParameterSymbol sourceSymbol, AbstractPhaseContext context)
             :base(sourceSymbol, context)
         {
-            Type = context.GetTypeSymbol(RoslynSymbol.Type);
+            Type = context.GetTypeSymbolWithoutRedirect(RoslynSymbol.Type);
             
             if (RoslynSymbol.OriginalDefinition != RoslynSymbol)
-                OriginalSymbol = context.GetSymbol(RoslynSymbol.OriginalDefinition);
+                OriginalSymbol = context.GetSymbolNoRedirect(RoslynSymbol.OriginalDefinition);
 
             if (RoslynSymbol.HasExplicitDefaultValue)
             {
@@ -54,8 +54,8 @@ namespace UdonSharp.Compiler.Symbols
 
         public override void Bind(BindContext context)
         {
-            Type = context.GetTypeSymbol(RoslynSymbol.Type);
-            ContainingSymbol = (MethodSymbol)context.GetSymbol(RoslynSymbol.ContainingSymbol);
+            Type = context.GetTypeSymbolWithoutRedirect(RoslynSymbol.Type);
+            ContainingSymbol = (MethodSymbol)context.GetSymbolNoRedirect(RoslynSymbol.ContainingSymbol);
         }
     }
 }
