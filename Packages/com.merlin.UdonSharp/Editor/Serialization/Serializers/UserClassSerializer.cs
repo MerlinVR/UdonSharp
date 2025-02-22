@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
+using UdonSharp.Compiler;
 using UdonSharp.Compiler.Symbols;
 
 namespace UdonSharp.Serialization
