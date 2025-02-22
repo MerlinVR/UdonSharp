@@ -1,0 +1,31 @@
+{
+	"name" : "com.vrchat.udonsharp",
+	"displayName" : "UdonSharp",
+	"version" : "1.1.9",
+	"unity" : "2019.4",
+	"description" : "A compiler for compiling C# to Udon assembly",
+	"author" : {
+		"name" : "VRChat",
+		"email" : "developer@vrchat.com",
+		"url" : "https://github.com/vrchat/packages"
+	},
+	"vpmDependencies" : {
+		"com.vrchat.worlds" : "^3.1.x"
+	},
+	"samples" : [
+		{
+			"displayName" : "CustomInspectors",
+			"description" : "Custom Inspector Example",
+			"path" : "Samples~/CustomInspectors"
+		},
+		{
+			"displayName" : "Tutorials",
+			"description" : "Tutorials Example",
+			"path" : "Samples~/Tutorials"
+		}
+	],
+	"legacyFolders" : {
+		"Assets\\UdonSharp" : "b031f928e5c709b4887f6513084aaa51",
+		"Assets\\Gizmos\\UdonSharp" : "6e940dfc89ce4ca41b651e05bc21be6b"
+	}
+}

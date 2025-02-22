@@ -1,0 +1,10 @@
+﻿.unity-box {
+    margin:2px;
+    padding:10px;
+    border-width: 0px;
+}
+
+#manifest-header {
+    font-size: 20px;
+    margin-bottom: 10px;
+}

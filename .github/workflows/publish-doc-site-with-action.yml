@@ -1,0 +1,36 @@
+name: Publish Doc Site (With Doc Build Action)
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - master
+
+jobs:
+  publish:
+    name: Publish Doc Site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          lfs: 'true'
+
+      - name: Checkout Action Repo
+        uses: actions/checkout@v3
+        with:
+          repository: vrchat/creators-docs-builder
+          ssh-key: ${{ secrets.ACTION_REPO_KEY }}
+          path: action
+      
+      - name: Build Docs
+        uses: ./action
+        id: build-docs
+        with:
+          inputDir: 'Tools/Docusaurus'
+          outputDir: 'Tools/Published'
+        
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: Tools/Published/
+          cname: udonsharp.docs.vrchat.com

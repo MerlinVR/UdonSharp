@@ -66,15 +66,49 @@ Assets/VRChat Examples.meta
 Assets/UdonSharp/Scripts/Editor/
 Assets/VRCSDK.meta
 Assets/UdonSharp/Scripts/Editor.meta
-.idea/*
+**/.idea/*
 Assets/Udon.meta
 [Aa]ssets/SerializedUdonPrograms*
-Packages/
+Packages/*
 
 # UdonSharp stuff
+# Except UdonSharp folder from Packages/* rule
+!Packages/com.vrchat.UdonSharp/
 /Assets/UdonSharp/UdonSharpSettings.asset
 /Assets/UdonSharp/UdonSharpSettings.asset.meta
 Assets/Merlin.meta
 Assets/Merlin/Editor.meta
 Assets/Merlin/Editor/EasyEventEditor.cs
 Assets/Merlin/Editor/EasyEventEditor.cs.meta
+Assets/UdonSharp/Settings
+Assets/UdonSharp/Settings.meta
+Assets/UdonSharp/UtilityScripts
+Assets/UdonSharp/UtilityScripts.meta
+Assets/UdonSharp/UdonSharpDataLocator.asset
+Assets/UdonSharp/UdonSharpDataLocator.asset.meta
+Assets/UdonSharp/PrefabBuild
+Assets/UdonSharp/PrefabBuild.meta
+Assets/UdonSharp.meta
+
+# Package stuff
+Assets/Resources
+Assets/Resources.meta
+Assets/Samples
+
+Packages/com.vrchat.vrcsdk3
+
+# Nuke Artifacts
+!**/Tools/Nuke/UdonSharpBuild/UdonSharpBuild.csproj
+Tools/Nuke/UdonSharpBuild/obj/
+Tools/Nuke/UdonSharpBuild/bin/
+Tools/Nuke/.nuke/temp/
+
+
+# DocFx artifacts
+Packages/com.vrchat.UdonSharp/Editor/obj/
+Packages/com.vrchat.UdonSharp/Editor/obj.meta
+
+Tools/DocFx/obj/
+Docs/Published
+
+Packages/com.vrchat.UdonSharp/Editor/BuildUtilities/obj/

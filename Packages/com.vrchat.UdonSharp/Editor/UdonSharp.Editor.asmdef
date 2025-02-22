@@ -1,0 +1,37 @@
+{
+    "name": "UdonSharp.Editor",
+    "references": [
+        "VRC.Udon",
+        "VRC.Udon.Editor",
+        "VRC.Udon.Serialization.OdinSerializer",
+        "UdonSharp.Runtime",
+        "UdonSharp.Lib"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Microsoft.CodeAnalysis.dll",
+        "Microsoft.CodeAnalysis.CSharp.dll",
+        "VRC.Udon.Common.dll",
+        "VRC.Udon.EditorBindings.dll",
+        "VRC.Udon.Graph.dll",
+        "VRC.Udon.Security.dll",
+        "VRC.Udon.Compiler.dll",
+        "VRC.Udon.UAssembly.dll",
+        "VRC.Udon.ClientBindings.dll",
+        "VRCSDK3.dll",
+        "VRCSDKBase.dll",
+        "VRCSDKBase-Editor.dll",
+        "System.Collections.Immutable.dll",
+        "0Harmony.dll",
+        "Sirenix.OdinInspector.Editor.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
