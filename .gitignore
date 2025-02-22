@@ -112,3 +112,12 @@ Tools/DocFx/obj/
 Docs/Published
 
 Packages/com.vrchat.UdonSharp/Editor/BuildUtilities/obj/
+Assets/Scenes/VRCDefaultWorldScene
+Assets/Scenes/VRCDefaultWorldScene.unity.meta
+Assets/Scenes/VRCDefaultWorldScene.meta
+Assets/Scenes/VRCDefaultWorldScene.unity
+Assets/XR
+Assets/Scenes.meta
+Assets/XR.meta
+Packages/com.vrchat.core.vpm-resolver
+Packages/com.vrchat.core.vpm-resolver

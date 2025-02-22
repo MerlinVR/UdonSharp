@@ -8,4 +8,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/UdonSharp/Tests/IntegrationTestScene.unity
     guid: e67d621624f092b4bb4ee6743395a752
-  m_configObjects: {}
+  m_configObjects:
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: e944e02ede24fc54784d606bdd20f98d,
+      type: 2}
