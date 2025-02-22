@@ -107,6 +107,19 @@ namespace UdonSharp.Compiler.Binder
                 stackInstanceVal = context.CreateInternalValue(context.GetTypeSymbol(SpecialType.System_Object).MakeArrayType(context));
                 context.Module.AddCopy(context.GetInstanceValue(), stackInstanceVal); // Copy the current instance value to the stack
                 context.Module.AddCopy(instanceValue, context.GetInstanceValue()); // Set the instance value to the new instance
+                
+                // Make editor builds try to access element 0 of the instance array that we know exists in order to trigger a null reference exception earlier so it's more obvious what's going on
+                if (context.CompileContext.Options.IsEditorBuild)
+                {
+                    BoundArrayAccessExpression arrayAccess = new BoundArrayAccessExpression(
+                        SyntaxNode,
+                        context, 
+                        BoundAccessExpression.BindAccess(context.GetInstanceValue()),
+                        new BoundExpression[] { BoundAccessExpression.BindAccess(context.GetConstantValue(context.GetTypeSymbol(SpecialType.System_Int32), 0)) });
+                    
+                    context.Module.AddCommentTag("Editor-only null check");
+                    context.EmitValue(arrayAccess);
+                }
             }
 
             if (isRecursiveCall)
