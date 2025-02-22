@@ -143,7 +143,7 @@ namespace UdonSharpEditor
             }
         }
 
-        private const string MATCH_STR = "\\n\\n\\r\\n\\d{4}.\\d{2}.\\d{2} \\d{2}:\\d{2}:\\d{2} ";
+        private const string MATCH_STR = "\\r\\n\\d{4}.\\d{2}.\\d{2} \\d{2}:\\d{2}:\\d{2} ";
         private static Regex _lineMatch;
 
         private static void OnEditorUpdate()
