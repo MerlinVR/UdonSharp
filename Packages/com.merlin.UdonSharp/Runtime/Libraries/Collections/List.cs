@@ -10,6 +10,9 @@ using UnityEngine;
 namespace UdonSharp.Lib.Internal.Collections
 {
     internal class ListIterator<T> : IEnumerator
+    #if COMPILER_UDONSHARP
+        where T : IComparable
+    #endif
     {
         private List<T> _list;
         private int _index;
@@ -54,6 +57,11 @@ namespace UdonSharp.Lib.Internal.Collections
     }
     
     internal class List<T> : IEnumerable
+    // This is a hack to support the Sort method, it's not actually a hard constraint and is expected to error during compilation on the Sort method if the type doesn't implement IComparable
+    // We don't want this in actual C# land because it causes issues constructing the List with a type that doesn't implement IComparable which kills the compiler
+    #if COMPILER_UDONSHARP 
+        where T : IComparable
+    #endif
     {
         internal T[] _items = new T[8];
         internal int _size;
@@ -73,6 +81,108 @@ namespace UdonSharp.Lib.Internal.Collections
             
             itemArr[_size] = item;
             _size = size + 1;
+        }
+        
+        private int[] _sortStack;
+        
+        public void Sort()
+        {
+        #if COMPILER_UDONSHARP
+            T[] itemArr = _items;
+            int size = _size;
+
+            if (size < 16) // Insertion sort is faster for small collections
+            {
+                for (int i = 1; i < size; i++)
+                {
+                    T key = itemArr[i];
+                    int j = i - 1;
+            
+                    while (j >= 0 && itemArr[j].CompareTo(key) > 0)
+                    {
+                        itemArr[j + 1] = itemArr[j];
+                        j--;
+                    }
+            
+                    itemArr[j + 1] = key;
+                }
+            }
+            else // Iterative QuickSort for larger collections, iterative because recursion is very expensive in Udon
+            {
+                int[] stack = _sortStack;
+
+                if (stack == null)
+                {
+                    // 32 is the maximum stack depth for a collection of 2^32 elements, so 64 since we're using 2 ints per stack frame
+                    // Of course Udon will time out long before that
+                    _sortStack = stack = new int[64]; 
+                }
+
+                int stackSize = 0;
+
+                stack[stackSize++] = 0;
+                stack[stackSize++] = size - 1;
+
+                while (stackSize > 0)
+                {
+                    int end = stack[--stackSize];
+                    int start = stack[--stackSize];
+
+                    if (end - start < 16)
+                    {
+                        for (int i = start + 1; i <= end; i++)
+                        {
+                            T key = itemArr[i];
+                            int j = i - 1;
+                    
+                            while (j >= start && itemArr[j].CompareTo(key) > 0)
+                            {
+                                itemArr[j + 1] = itemArr[j];
+                                j--;
+                            }
+                    
+                            itemArr[j + 1] = key;
+                        }
+                    
+                        continue;
+                    }
+
+                    int pivotIndex = (start + end) / 2;
+                    T pivot = itemArr[pivotIndex];
+
+                    itemArr[pivotIndex] = itemArr[end];
+                    itemArr[end] = pivot;
+
+                    int storeIndex = start;
+
+                    for (int i = start; i < end; i++)
+                    {
+                        if (itemArr[i].CompareTo(pivot) <= 0)
+                        {
+                            T temp = itemArr[i];
+                            itemArr[i] = itemArr[storeIndex];
+                            itemArr[storeIndex] = temp;
+                            storeIndex++;
+                        }
+                    }
+
+                    itemArr[end] = itemArr[storeIndex];
+                    itemArr[storeIndex] = pivot;
+
+                    if (storeIndex - start > 1)
+                    {
+                        stack[stackSize++] = start;
+                        stack[stackSize++] = storeIndex - 1;
+                    }
+
+                    if (end - storeIndex > 1)
+                    {
+                        stack[stackSize++] = storeIndex + 1;
+                        stack[stackSize++] = end;
+                    }
+                }
+            }
+            #endif
         }
         
         public void Clear()
