@@ -23,7 +23,7 @@ namespace UdonSharp.Compiler.Binder
         /// for example a field access expression would have a source expression of the instance expression; with `a.b` the source expression would be `a`
         /// On the other hand an assignment expression `a = b` would have a source expression of `b`
         /// </summary>
-        protected BoundExpression SourceExpression { get; }
+        internal BoundExpression SourceExpression { get; }
 
         protected BoundExpression(SyntaxNode node, BoundExpression sourceExpression = null)
             : base(node)
