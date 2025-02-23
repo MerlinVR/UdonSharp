@@ -191,32 +191,73 @@ namespace UdonSharp.Compiler
                 Interlocked.Increment(ref _errorCount);
         }
 
-        public ModuleBinding[] LoadSyntaxTreesAndCreateModules(IEnumerable<string> sourcePaths, string[] scriptingDefines)
+        public ModuleBinding[] LoadSyntaxTreesAndCreateModules(IEnumerable<CompilationContext.ScriptAssembly> assemblies)
         {
             ConcurrentBag<ModuleBinding> syntaxTrees = new ConcurrentBag<ModuleBinding>();
 
-            Parallel.ForEach(sourcePaths, (currentSource) =>
+            foreach (ScriptAssembly scriptAssembly in assemblies)
             {
-                string programSource = UdonSharpUtils.ReadFileTextSync(currentSource);
+                Parallel.ForEach(scriptAssembly.SourceFiles, (currentSource) =>
+                {
+                    string programSource = UdonSharpUtils.ReadFileTextSync(currentSource);
 
-            #if UNITY_2022_3_OR_NEWER
-                const LanguageVersion version = LanguageVersion.CSharp9;
-            #else
-                const LanguageVersion version = LanguageVersion.CSharp7_3;
-            #endif
-                
-                SyntaxTree programSyntaxTree = CSharpSyntaxTree.ParseText(programSource, CSharpParseOptions.Default.WithDocumentationMode(DocumentationMode.None).WithPreprocessorSymbols(scriptingDefines).WithLanguageVersion(version));
+                #if UNITY_2022_3_OR_NEWER
+                    const LanguageVersion version = LanguageVersion.CSharp9;
+                #else
+                    const LanguageVersion version = LanguageVersion.CSharp7_3;
+                #endif
+                    
+                    SyntaxTree programSyntaxTree = CSharpSyntaxTree.ParseText(programSource, CSharpParseOptions.Default.WithDocumentationMode(DocumentationMode.None).WithPreprocessorSymbols(scriptAssembly.Defines).WithLanguageVersion(version));
 
-                syntaxTrees.Add(new ModuleBinding() { tree = programSyntaxTree, filePath = currentSource, sourceText = programSource });
-            });
+                    syntaxTrees.Add(new ModuleBinding() { tree = programSyntaxTree, filePath = currentSource, sourceText = programSource });
+                });
+            }
             
             ModuleBindings = syntaxTrees.ToArray();
             
             return ModuleBindings;
         }
         
-        private static Dictionary<bool, IEnumerable<string>> _scriptPathCache = new Dictionary<bool, IEnumerable<string>>();
+        internal class ScriptAssembly
+        {
+            public List<string> SourceFiles { get; } = new();
+            public List<string> Defines { get; } = new();
+        }
+        
+        private static Dictionary<bool, IEnumerable<ScriptAssembly>> _builtScriptCache = new Dictionary<bool, IEnumerable<ScriptAssembly>>();
 
+        public static IEnumerable<ScriptAssembly> GetBuildAssemblies(bool isEditorBuild)
+        {
+            if (_builtScriptCache.TryGetValue(isEditorBuild, out var cachedPaths))
+                return cachedPaths;
+            
+            List<ScriptAssembly> scriptAssemblies = new List<ScriptAssembly>();
+
+            foreach (UnityEditor.Compilation.Assembly asm in CompilationPipeline.GetAssemblies(isEditorBuild ? AssembliesType.Editor : AssembliesType.PlayerWithoutTestAssemblies))
+            {
+                if (asm.name == "Assembly-CSharp" || IsUdonSharpAssembly(asm.name))
+                {
+                    string[] assemblySourcePaths = UdonSharpSettings.FilterBlacklistedPaths(asm.sourceFiles).ToArray();
+                    
+                    if (assemblySourcePaths.Length == 0)
+                        continue;
+                    
+                    ScriptAssembly scriptAssembly = new();
+
+                    scriptAssembly.SourceFiles.AddRange(assemblySourcePaths);
+                    scriptAssembly.Defines.AddRange(UdonSharpUtils.GetProjectDefines(asm.defines, isEditorBuild));
+                    
+                    scriptAssemblies.Add(scriptAssembly);
+                }
+            }
+            
+            _builtScriptCache.Add(isEditorBuild, scriptAssemblies);
+
+            return scriptAssemblies;
+        }
+        
+        private static Dictionary<bool, IEnumerable<string>> _scriptPathCache = new Dictionary<bool, IEnumerable<string>>();
+        
         public static IEnumerable<string> GetAllFilteredSourcePaths(bool isEditorBuild)
         {
             if (_scriptPathCache.TryGetValue(isEditorBuild, out var cachedPaths))
@@ -229,9 +270,7 @@ namespace UdonSharp.Compiler
                 if (asm.name == "Assembly-CSharp" || IsUdonSharpAssembly(asm.name))
                     assemblySourcePaths.UnionWith(asm.sourceFiles);
             }
-
             IEnumerable<string> paths =  UdonSharpSettings.FilterBlacklistedPaths(assemblySourcePaths);
-            
             _scriptPathCache.Add(isEditorBuild, paths);
 
             return paths;
@@ -240,6 +279,7 @@ namespace UdonSharp.Compiler
         internal static void ResetAssemblyCaches()
         {
             _scriptPathCache.Clear();
+            _builtScriptCache.Clear();
             _udonSharpAssemblyNames = null;
             CompilerUdonInterface.ResetAssemblyCache(); 
         }
