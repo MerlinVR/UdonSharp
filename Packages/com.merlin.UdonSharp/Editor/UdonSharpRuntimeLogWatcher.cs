@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using JetBrains.Annotations;
 using UdonSharp;
 using UdonSharp.Compiler;
 using UnityEditor;
@@ -213,10 +214,7 @@ namespace UdonSharpEditor
                                             logState.playerName = username;
 
                                             // Use the log path as well since Build & Test can have multiple of the same display named users
-                                            Random random = new Random((username + logPath).GetHashCode());
-
-                                            Color randomUserColor = Color.HSVToRGB((float)random.NextDouble(),  EditorGUIUtility.isProSkin ? 0.6f : 1.00f, EditorGUIUtility.isProSkin ? 0.9f : 0.6f);
-                                            string colorStr = ColorUtility.ToHtmlStringRGB(randomUserColor);
+                                            string colorStr = GetRandomColorStrFromName(username + logPath);
 
                                             logState.nameColor = colorStr;
                                         }
@@ -263,46 +261,7 @@ namespace UdonSharpEditor
                 // Log forwarding
                 if (udonSharpSettings.watcherMode != UdonSharpSettings.LogWatcherMode.Disabled)
                 {
-                    Match match = null;
-
-                    do
-                    {
-                        int currentIdx = (match?.Index ?? -1);
-
-                        match = _lineMatch.Match(contents, currentIdx + 1);
-
-                        string logStr = null;
-
-                        if (currentIdx == -1)
-                        {
-                            if (match.Success)
-                            {
-                                Match nextMatch = _lineMatch.Match(contents, match.Index + 1);
-
-                                if (nextMatch.Success)
-                                    logStr = contents.Substring(0, nextMatch.Index);
-                                else
-                                    logStr = contents;
-
-                                match = nextMatch;
-                            }
-                        }
-                        else if (match.Success)
-                        {
-                            logStr = contents.Substring(currentIdx < 0 ? 0 : currentIdx, match.Index - currentIdx);
-                        }
-                        else if (currentIdx != -1)
-                        {
-                            logStr = contents.Substring(currentIdx < 0 ? 0 : currentIdx, contents.Length - currentIdx);
-                        }
-
-                        if (logStr != null)
-                        {
-                            logStr = logStr.Trim('\n', '\r');
-
-                            HandleForwardedLog(logStr, state, udonSharpSettings);
-                        }
-                    } while (match.Success);
+                    ParseLogText(contents, state, udonSharpSettings);
                 }
 
                 if (udonSharpSettings.listenForVRCExceptions)
@@ -319,6 +278,79 @@ namespace UdonSharpEditor
                     }
                 }
             }
+        }
+        
+        private static string GetRandomColorStrFromName(string name)
+        {
+
+            string username;
+            string logPath;
+            Random random = new Random((name).GetHashCode());
+
+            Color randomUserColor = Color.HSVToRGB((float)random.NextDouble(),  EditorGUIUtility.isProSkin ? 0.6f : 1.00f, EditorGUIUtility.isProSkin ? 0.9f : 0.6f);
+            string colorStr = ColorUtility.ToHtmlStringRGB(randomUserColor);
+            return colorStr;
+        }
+
+        [PublicAPI]
+        public static void ParseLogText(string contents, string name)
+        {
+            if (string.IsNullOrWhiteSpace(contents))
+                return;
+
+            LogFileState state = new LogFileState();
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                state.playerName = name;
+                state.nameColor = GetRandomColorStrFromName(name);
+            }
+            
+            ParseLogText(contents, state, UdonSharpSettings.GetSettings());
+        }
+        
+        private static void ParseLogText(string contents, LogFileState state, UdonSharpSettings settings)
+        {
+            Match match = null;
+
+            do
+            {
+                int currentIdx = (match?.Index ?? -1);
+
+                match = _lineMatch.Match(contents, currentIdx + 1);
+
+                string logStr = null;
+
+                if (currentIdx == -1)
+                {
+                    if (match.Success)
+                    {
+                        Match nextMatch = _lineMatch.Match(contents, match.Index + 1);
+
+                        if (nextMatch.Success)
+                            logStr = contents.Substring(0, nextMatch.Index);
+                        else
+                            logStr = contents;
+
+                        match = nextMatch;
+                    }
+                }
+                else if (match.Success)
+                {
+                    logStr = contents.Substring(currentIdx < 0 ? 0 : currentIdx, match.Index - currentIdx);
+                }
+                else if (currentIdx != -1)
+                {
+                    logStr = contents.Substring(currentIdx < 0 ? 0 : currentIdx, contents.Length - currentIdx);
+                }
+
+                if (logStr != null)
+                {
+                    logStr = logStr.Trim('\n', '\r');
+
+                    HandleForwardedLog(logStr, state, settings);
+                }
+            } while (match.Success);
         }
 
         // Common messages that can spam the log and have no use for debugging
