@@ -115,7 +115,7 @@ namespace UdonSharp
         {
         #if UNITY_EDITOR
             if (_udonSharpBackingUdonBehaviour != null && Application.isPlaying)
-                UdonManager.Instance.ScheduleDelayedEvent(_udonSharpBackingUdonBehaviour, eventName, delaySeconds, eventTiming);
+                VRC.Udon.UdonManager.Instance.ScheduleDelayedEvent(_udonSharpBackingUdonBehaviour, eventName, delaySeconds, eventTiming);
         #endif
         }
 
@@ -130,7 +130,7 @@ namespace UdonSharp
         {
         #if UNITY_EDITOR
             if (_udonSharpBackingUdonBehaviour != null && Application.isPlaying)
-                UdonManager.Instance.ScheduleDelayedEvent(_udonSharpBackingUdonBehaviour, eventName, delayFrames, eventTiming);
+                VRC.Udon.UdonManager.Instance.ScheduleDelayedEvent(_udonSharpBackingUdonBehaviour, eventName, delayFrames, eventTiming);
         #endif
         }
 
