@@ -111,7 +111,13 @@ namespace UdonSharp
         /// <param name="delaySeconds"></param>
         /// <param name="eventTiming"></param>
         [PublicAPI] 
-        public void SendCustomEventDelayedSeconds(string eventName, float delaySeconds, VRC.Udon.Common.Enums.EventTiming eventTiming = VRC.Udon.Common.Enums.EventTiming.Update) { }
+        public void SendCustomEventDelayedSeconds(string eventName, float delaySeconds, VRC.Udon.Common.Enums.EventTiming eventTiming = VRC.Udon.Common.Enums.EventTiming.Update)
+        {
+        #if UNITY_EDITOR
+            if (_udonSharpBackingUdonBehaviour != null && Application.isPlaying)
+                UdonManager.Instance.ScheduleDelayedEvent(_udonSharpBackingUdonBehaviour, eventName, delaySeconds, eventTiming);
+        #endif
+        }
 
         /// <summary>
         /// Executes target event after delayFrames have passed. If 0 frames is specified, will execute the following frame. In effect 0 frame delay and 1 fame delay are the same on this method.
@@ -120,7 +126,13 @@ namespace UdonSharp
         /// <param name="delayFrames"></param>
         /// <param name="eventTiming"></param>
         [PublicAPI] 
-        public void SendCustomEventDelayedFrames(string eventName, int delayFrames, VRC.Udon.Common.Enums.EventTiming eventTiming = VRC.Udon.Common.Enums.EventTiming.Update) { }
+        public void SendCustomEventDelayedFrames(string eventName, int delayFrames, VRC.Udon.Common.Enums.EventTiming eventTiming = VRC.Udon.Common.Enums.EventTiming.Update)
+        {
+        #if UNITY_EDITOR
+            if (_udonSharpBackingUdonBehaviour != null && Application.isPlaying)
+                UdonManager.Instance.ScheduleDelayedEvent(_udonSharpBackingUdonBehaviour, eventName, delayFrames, eventTiming);
+        #endif
+        }
 
         /// <summary>
         /// Disables Interact events on this UdonBehaviour and disables the interact outline on the object this is attached to
