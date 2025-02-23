@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using UdonSharp.Compiler.Symbols;
 using UdonSharp.Core;
@@ -345,6 +346,11 @@ namespace UdonSharp.Compiler.Binder
                 throw new NotSupportedException("Cannot use typeof on user-defined types", node.GetLocation());
 
             return new BoundConstantExpression(type.UdonType.SystemType, Context.GetTypeSymbol(typeof(Type)));
+        }
+        
+        public override BoundNode VisitSizeOfExpression(SizeOfExpressionSyntax node)
+        {
+            return new BoundConstantExpression(Marshal.SizeOf(GetTypeSymbol(node.Type).UdonType.SystemType), Context.GetTypeSymbol(SpecialType.System_Int32));
         }
         
         private BoundExpression HandleNameOfExpression(InvocationExpressionSyntax node)
