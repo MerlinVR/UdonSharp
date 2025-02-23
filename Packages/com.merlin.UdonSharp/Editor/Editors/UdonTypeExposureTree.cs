@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +15,23 @@ namespace UdonSharp.Editors
 {
     public class UdonTypeExposureTreeView : TreeView
     {
-        public bool showBaseTypeMembers;
+        public bool showBaseTypeMembers
+        {
+            get => EditorPrefs.HasKey("UdonTypeExposureTreeView.showBaseTypeMembers") ? EditorPrefs.GetBool("UdonTypeExposureTreeView.showBaseTypeMembers") : false;
+            set => EditorPrefs.SetBool("UdonTypeExposureTreeView.showBaseTypeMembers", value);
+        }
+
+        public bool showExposedSymbols
+        {
+            get => EditorPrefs.HasKey("UdonTypeExposureTreeView.showExposedSymbols") ? EditorPrefs.GetBool("UdonTypeExposureTreeView.showExposedSymbols") : true;
+            set => EditorPrefs.SetBool("UdonTypeExposureTreeView.showExposedSymbols", value);
+        }
+
+        public bool showUnexposedSymbols
+        {
+            get => EditorPrefs.HasKey("UdonTypeExposureTreeView.showUnexposedSymbols") ? EditorPrefs.GetBool("UdonTypeExposureTreeView.showUnexposedSymbols") : true;
+            set => EditorPrefs.SetBool("UdonTypeExposureTreeView.showUnexposedSymbols", value);
+        }
 
         private Dictionary<string, TreeViewItem> hiearchyItems = new Dictionary<string, TreeViewItem>();
 
@@ -26,6 +42,7 @@ namespace UdonSharp.Editors
             public MemberInfo member;
             public bool isNamespace;
             public bool isType;
+            public bool isResult;
             public string udonName = "";
             public string rowName = "";
             public string qualifiedRowName = "";
@@ -87,20 +104,20 @@ namespace UdonSharp.Editors
                 //SelectionClick(args.item, false);
                 SetSelection(new List<int>() { args.item.id });
                 
-                GenericMenu menu = new GenericMenu();
+                //GenericMenu menu = new GenericMenu();
 
-                if (itemMetadata.member != null)
-                    menu.AddItem(new GUIContent("Copy Udon name"), false, OnClickCopyUdonName, args.item);
+                //if (itemMetadata.member != null)
+                //    menu.AddItem(new GUIContent("Copy Udon name"), false, OnClickCopyUdonName, args.item);
 
-                if (itemMetadata.isType || itemMetadata.isNamespace)
-                {
-                    menu.AddItem(new GUIContent("Copy Exposed members"), false, OnClickCopyTypeItems, (args.item, ExposureLookupType.Exposed));
-                    menu.AddItem(new GUIContent("Copy Unexposed members"), false, OnClickCopyTypeItems, (args.item, ExposureLookupType.Unexposed));
-                    menu.AddItem(new GUIContent("Copy All members"), false, OnClickCopyTypeItems, (args.item, ExposureLookupType.All));
-                }
+                //if (itemMetadata.isType || itemMetadata.isNamespace)
+                //{
+                //    menu.AddItem(new GUIContent("Copy Exposed members"), false, OnClickCopyTypeItems, (args.item, ExposureLookupType.Exposed));
+                //    menu.AddItem(new GUIContent("Copy Unexposed members"), false, OnClickCopyTypeItems, (args.item, ExposureLookupType.Unexposed));
+                //    menu.AddItem(new GUIContent("Copy All members"), false, OnClickCopyTypeItems, (args.item, ExposureLookupType.All));
+                //}
 
-                if (menu.GetItemCount() > 0)
-                    menu.ShowAsContext();
+                //if (menu.GetItemCount() > 0)
+                //    menu.ShowAsContext();
 
                 Repaint();
             }
@@ -240,8 +257,6 @@ namespace UdonSharp.Editors
                 }
             }
 
-            TreeViewItem memberItem = new TreeViewItem(currentID++, parentItem.depth + 1, $"<{memberInfo.MemberType}>{staticStr} {memberInfo}");
-
             TypeItemMetadata itemMetadata = new TypeItemMetadata();
             itemMetadata.member = memberInfo;
             
@@ -273,7 +288,11 @@ namespace UdonSharp.Editors
                     itemMetadata.exposed = CompilerUdonInterface.IsExposedToUdon(getProperty);
                     break;
             }
-            
+
+            if (!showExposedSymbols && itemMetadata.exposed || !showUnexposedSymbols && !itemMetadata.exposed)
+                return;
+
+            TreeViewItem memberItem = new TreeViewItem(currentID++, parentItem.depth + 1, $"<{memberInfo.MemberType}>{staticStr} {memberInfo}");
             parentItem.AddChild(memberItem);
 
             itemMetadatas.Add(memberItem, itemMetadata);
@@ -303,7 +322,13 @@ namespace UdonSharp.Editors
 
             metadata.childExposure = countTotal.Item1 / (float)countTotal.Item2;
 
-            if (metadata.isNamespace)
+            if (metadata.isResult)
+            {
+                metadata.rowName = item.displayName;
+                metadata.qualifiedRowName = item.displayName;
+                metadata.rowColor = Color.gray;
+            }
+            else if (metadata.isNamespace)
             {
                 metadata.rowName = item.displayName;
                 metadata.qualifiedRowName = item.displayName;
@@ -336,8 +361,8 @@ namespace UdonSharp.Editors
                     }
 
                     metadata.rowColor = Color.HSVToRGB(h, s, v);
-
-                    metadata.rowName = metadata.qualifiedRowName = $"({metadata.childExposure * 100f:0.##}%) {item.displayName}";
+                    var displayChildExposure = showExposedSymbols && showUnexposedSymbols;
+                    metadata.rowName = metadata.qualifiedRowName = displayChildExposure ? $"({metadata.childExposure * 100f:0.##}%) {item.displayName}" : item.displayName;
                 }
                 else
                 {
@@ -366,11 +391,25 @@ namespace UdonSharp.Editors
         }
 
         private static int _assemblyCounter = 0;
+
+        public void RebuildCache()
+        {
+            UdonTypeExposureCache.Instance.ExposedTypes = null;
+            _exposedTypes = null;
+
+            Reload();
+        }
         
         private void BuildExposedTypeList()
         {
             if (_exposedTypes != null)
                 return;
+
+            if(UdonTypeExposureCache.Instance.ExposedTypes != null)
+            {
+                _exposedTypes = UdonTypeExposureCache.Instance.ExposedTypes;
+                return;
+            }
             
             // Stopwatch timer = Stopwatch.StartNew();
             
@@ -525,7 +564,8 @@ namespace UdonSharp.Editors
             }
 
             _exposedTypes.RemoveAll(e => e.Name == "T" || e.Name == "T[]");
-            
+
+            UdonTypeExposureCache.Instance.ExposedTypes = _exposedTypes;
             // Debug.Log($"Elapsed time {timer.Elapsed.TotalSeconds * 1000.0}ms");
         }
 
@@ -540,107 +580,129 @@ namespace UdonSharp.Editors
             itemMetadatas.Add(root, new TypeItemMetadata());
             int currentID = 1;
 
-            // Build the namespace sections first
-            foreach (Type type in _exposedTypes)
+            if(!showExposedSymbols && !showUnexposedSymbols)
             {
-                string typeNamespace = type.Namespace;
-                if (string.IsNullOrEmpty(typeNamespace))
-                {
-                    if (type.GetElementType() != null && type.GetElementType().Namespace != null)
-                        typeNamespace = type.GetElementType().Namespace;
-                }
-                TreeViewItem namespaceItem = GetNamespaceParent(typeNamespace, root, ref currentID);
+                var dummy = new TreeViewItem(currentID++, root.depth + 1, "No results");
+                root.AddChild(dummy);
+                itemMetadatas.Add(dummy, new TypeItemMetadata() { isResult = true });
             }
 
-            int currentTypeCount = 0;
-
-            foreach (Type type in _exposedTypes.OrderBy(e => e.Name))
+            if(showExposedSymbols || showUnexposedSymbols)
             {
-                if (currentTypeCount % 30 == 0)
-                    EditorUtility.DisplayProgressBar("Adding types...", $"Adding type {type}", currentTypeCount / (float)_exposedTypes.Count);
-
-                currentTypeCount++;
-                
-                // if (ShouldHideTypeTopLevel(type, true))
-                //     continue;
-
-                string typeNamespace = type.Namespace;
-                if (string.IsNullOrEmpty(typeNamespace))
+                // Build the namespace sections first
+                foreach (Type type in _exposedTypes)
                 {
-                    if (type.GetElementType() != null && type.GetElementType().Namespace != null)
-                        typeNamespace = type.GetElementType().Namespace;
-                }
-
-                TreeViewItem namespaceParent = GetNamespaceParent(typeNamespace, root, ref currentID);
-
-                string typeTypeName = "";
-
-                if (type.IsEnum)
-                    typeTypeName = " <enum>";
-                else if (type.IsValueType)
-                    typeTypeName = " <struct>";
-                else if (type.IsArray)
-                    typeTypeName = " <array>";
-                else
-                    typeTypeName = " <class>";
-
-                TreeViewItem typeParent = new TreeViewItem(currentID++, namespaceParent.depth + 1, type.Name + typeTypeName);
-                namespaceParent.AddChild(typeParent);
-                itemMetadatas.Add(typeParent, new TypeItemMetadata() { isType = true });
-
-                //if (!type.IsEnum)
-                //{
-                //    // Variable definition
-                //    TreeViewItem variableDef = new TreeViewItem(currentID++, typeParent.depth + 1, "<variable> " + type.Name);
-                //    typeParent.AddChild(variableDef);
-                //    itemMetadatas.Add(variableDef, new TypeItemMetadata() { exposed = resolver.ValidateUdonTypeName(resolver.GetUdonTypeName(type), UdonReferenceType.Variable) });
-                //}
-
-                // Type definition
-                //TreeViewItem typeDef = new TreeViewItem(currentID++, typeParent.depth + 1, "<type> " + type.Name);
-                //typeParent.AddChild(typeDef);
-                //itemMetadatas.Add(typeDef, new TypeItemMetadata() { exposed = resolver.ValidateUdonTypeName(resolver.GetUdonTypeName(type), UdonReferenceType.Type) });
-
-                // Internal type
-                TreeViewItem internalTypeDef = new TreeViewItem(currentID++, typeParent.depth + 1, "<Type> " + type.Name);
-                typeParent.AddChild(internalTypeDef);
-                itemMetadatas.Add(internalTypeDef, new TypeItemMetadata() { exposed = UdonEditorManager.Instance.GetTypeFromTypeString(CompilerUdonInterface.GetUdonTypeName(type)) != null });
-
-                // Const definition
-                //if (!type.IsArray && !type.IsEnum)
-                //{
-                //    TreeViewItem constDef = new TreeViewItem(currentID++, typeParent.depth + 1, "<const> " + type.Name);
-                //    typeParent.AddChild(constDef);
-                //    itemMetadatas.Add(constDef, new TypeItemMetadata() { exposed = resolver.ValidateUdonTypeName(resolver.GetUdonTypeName(type), UdonReferenceType.Const) });
-                //}
-
-                BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
-                if (!showBaseTypeMembers)
-                    bindingFlags |= BindingFlags.DeclaredOnly;
-
-                foreach (ConstructorInfo constructor in type.GetConstructors(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly))
-                {
-                    AddChildNode(typeParent, constructor, ref currentID);
-                }
-
-                foreach (FieldInfo field in type.GetFields(bindingFlags))
-                {
-                    AddChildNode(typeParent, field, ref currentID);
-                }
-
-                foreach (PropertyInfo property in type.GetProperties(bindingFlags))
-                {
-                    AddChildNode(typeParent, property, ref currentID);
-                }
-
-                if (!type.IsEnum)
-                {
-                    foreach (MethodInfo method in type.GetMethods(bindingFlags).Where(e => (!type.IsArray || e.Name != "Address")))
+                    string typeNamespace = type.Namespace;
+                    if (string.IsNullOrEmpty(typeNamespace))
                     {
-                        if (method.IsSpecialName && !method.Name.StartsWith("op_"))
-                            continue;
+                        if (type.GetElementType() != null && type.GetElementType().Namespace != null)
+                            typeNamespace = type.GetElementType().Namespace;
+                    }
+                    TreeViewItem namespaceItem = GetNamespaceParent(typeNamespace, root, ref currentID);
+                }
 
-                        AddChildNode(typeParent, method, ref currentID);
+                int currentTypeCount = 0;
+
+                foreach (Type type in _exposedTypes.OrderBy(e => e.Name))
+                {
+                    if (currentTypeCount % 30 == 0)
+                        EditorUtility.DisplayProgressBar("Adding types...", $"Adding type {type}", currentTypeCount / (float)_exposedTypes.Count);
+
+                    currentTypeCount++;
+                
+                    // if (ShouldHideTypeTopLevel(type, true))
+                    //     continue;
+
+                    string typeNamespace = type.Namespace;
+                    if (string.IsNullOrEmpty(typeNamespace))
+                    {
+                        if (type.GetElementType() != null && type.GetElementType().Namespace != null)
+                            typeNamespace = type.GetElementType().Namespace;
+                    }
+
+                    TreeViewItem namespaceParent = GetNamespaceParent(typeNamespace, root, ref currentID);
+
+                    string typeTypeName = "";
+
+                    if (type.IsEnum)
+                        typeTypeName = " <enum>";
+                    else if (type.IsValueType)
+                        typeTypeName = " <struct>";
+                    else if (type.IsArray)
+                        typeTypeName = " <array>";
+                    else
+                        typeTypeName = " <class>";
+
+                    var internalTypeExposed = UdonEditorManager.Instance.GetTypeFromTypeString(CompilerUdonInterface.GetUdonTypeName(type)) != null;
+                    if ((!showExposedSymbols && internalTypeExposed || !showUnexposedSymbols && !internalTypeExposed) && (type.IsEnum || type.IsArray)) continue;
+                    TreeViewItem typeParent = new TreeViewItem(currentID++, namespaceParent.depth + 1, type.Name + typeTypeName);
+                    namespaceParent.AddChild(typeParent);
+                    itemMetadatas.Add(typeParent, new TypeItemMetadata() { isType = true });
+
+                    //if (!type.IsEnum)
+                    //{
+                    //    // Variable definition
+                    //    TreeViewItem variableDef = new TreeViewItem(currentID++, typeParent.depth + 1, "<variable> " + type.Name);
+                    //    typeParent.AddChild(variableDef);
+                    //    itemMetadatas.Add(variableDef, new TypeItemMetadata() { exposed = resolver.ValidateUdonTypeName(resolver.GetUdonTypeName(type), UdonReferenceType.Variable) });
+                    //}
+
+                    // Type definition
+                    //TreeViewItem typeDef = new TreeViewItem(currentID++, typeParent.depth + 1, "<type> " + type.Name);
+                    //typeParent.AddChild(typeDef);
+                    //itemMetadatas.Add(typeDef, new TypeItemMetadata() { exposed = resolver.ValidateUdonTypeName(resolver.GetUdonTypeName(type), UdonReferenceType.Type) });
+
+                    // Internal type
+                    //var internalTypeExposed = UdonEditorManager.Instance.GetTypeFromTypeString(CompilerUdonInterface.GetUdonTypeName(type)) != null;
+                    if (showExposedSymbols && internalTypeExposed || showUnexposedSymbols && !internalTypeExposed)
+                    {
+                        TreeViewItem internalTypeDef = new TreeViewItem(currentID++, typeParent.depth + 1, "<Type> " + type.Name);
+                        typeParent.AddChild(internalTypeDef);
+                        itemMetadatas.Add(internalTypeDef, new TypeItemMetadata() { exposed = internalTypeExposed });
+                    }
+
+                    // Const definition
+                    //if (!type.IsArray && !type.IsEnum)
+                    //{
+                    //    TreeViewItem constDef = new TreeViewItem(currentID++, typeParent.depth + 1, "<const> " + type.Name);
+                    //    typeParent.AddChild(constDef);
+                    //    itemMetadatas.Add(constDef, new TypeItemMetadata() { exposed = resolver.ValidateUdonTypeName(resolver.GetUdonTypeName(type), UdonReferenceType.Const) });
+                    //}
+
+                    BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
+                    if (!showBaseTypeMembers)
+                        bindingFlags |= BindingFlags.DeclaredOnly;
+
+                    foreach (ConstructorInfo constructor in type.GetConstructors(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly))
+                    {
+                        AddChildNode(typeParent, constructor, ref currentID);
+                    }
+
+                    foreach (FieldInfo field in type.GetFields(bindingFlags))
+                    {
+                        AddChildNode(typeParent, field, ref currentID);
+                    }
+
+                    foreach (PropertyInfo property in type.GetProperties(bindingFlags))
+                    {
+                        AddChildNode(typeParent, property, ref currentID);
+                    }
+
+                    if (!type.IsEnum)
+                    {
+                        foreach (MethodInfo method in type.GetMethods(bindingFlags).Where(e => (!type.IsArray || e.Name != "Address")))
+                        {
+                            if (method.IsSpecialName && !method.Name.StartsWith("op_"))
+                                continue;
+
+                            AddChildNode(typeParent, method, ref currentID);
+                        }
+                    }
+
+                    if ((!showExposedSymbols && internalTypeExposed || !showUnexposedSymbols && !internalTypeExposed) && !typeParent.hasChildren)
+                    {
+                        typeParent.parent.children.Remove(typeParent);
+                        typeParent.parent = null;
                     }
                 }
             }
@@ -667,10 +729,10 @@ namespace UdonSharp.Editors
 
         private Vector2 _currentScrollPos = Vector2.zero;
 
-        [MenuItem("VRChat SDK/Udon Sharp/Class Exposure Tree")]
+        [MenuItem("VRChat SDK/Udon Sharp/Class Exposure Tree ^#u")]
         private static void Init()
         {
-            GetWindow<UdonTypeExposureTree>(false, "Udon Type Exposure Tree");
+            GetWindow<UdonTypeExposureTree>(false, "Udon Class Exposure Tree");
         }
 
         private void OnEnable()
@@ -681,25 +743,72 @@ namespace UdonSharp.Editors
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("Class Exposure Tree", EditorStyles.boldLabel);
-
             if (_treeView == null)
             {
                 _treeView = new UdonTypeExposureTreeView(treeViewState);
             }
+            
+            EditorGUILayout.Space(3f, false);
+
+            EditorGUILayout.BeginHorizontal(GUILayout.Height(25f), GUILayout.ExpandWidth(true));
+            EditorGUILayout.Space(5f, false);
+            EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
+            GUILayout.FlexibleSpace();
+
+            GUI.SetNextControlName("SearchField");
+            _treeView.searchString = EditorGUILayout.TextField(_treeView.searchString, EditorStyles.toolbarSearchField);
+
+            if (!_treeView.hasSearch && GUI.GetNameOfFocusedControl() != "SearchField")
+            {
+                var placeholderTextStyle = new GUIStyle()
+                {
+                    margin = EditorStyles.toolbarSearchField.margin,
+                    padding = EditorStyles.toolbarSearchField.padding,
+                    font = EditorStyles.toolbarSearchField.font,
+                    fontSize = EditorStyles.toolbarSearchField.fontSize,
+                    fontStyle = FontStyle.Italic
+                };
+
+                placeholderTextStyle.padding.top += 1;
+                placeholderTextStyle.normal.textColor = new Color(0.5f, 0.5f, 0.5f);
+
+                var placeholderTextRect = GUILayoutUtility.GetLastRect();
+                placeholderTextRect.x += 5f;
+
+                EditorGUI.LabelField(placeholderTextRect, "Search for types in Udon...", placeholderTextStyle);
+            }
+
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndVertical();
+
+            if(GUILayout.Button(EditorGUIUtility.IconContent("TreeEditor.Refresh", "Reload Cache"), GUILayout.ExpandWidth(false))) _treeView.RebuildCache();
+
+            EditorGUILayout.Space(5f, false);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal(GUILayout.Height(20f));
+            EditorGUILayout.Space(5f, false);
+            
+            GUILayout.Label("Filter:", EditorStyles.boldLabel, GUILayout.ExpandWidth(false), GUILayout.Height(23f));
+
+            EditorGUILayout.Space(3f, false);
 
             EditorGUI.BeginChangeCheck();
-            _treeView.showBaseTypeMembers = EditorGUILayout.Toggle("Show base members", _treeView.showBaseTypeMembers);
-            
+
+            _treeView.showExposedSymbols = GUILayout.Toggle(_treeView.showExposedSymbols, EditorGUIUtility.TrTextContentWithIcon("Exposed Symbols", "d_UnityEditor.SceneHierarchyWindow@2x"), "Button", GUILayout.ExpandWidth(false), GUILayout.Height(23f));
+            _treeView.showUnexposedSymbols = GUILayout.Toggle(_treeView.showUnexposedSymbols, EditorGUIUtility.TrTextContentWithIcon("Unexposed Symbols", "d_UnityEditor.SceneHierarchyWindow@2x"), "Button", GUILayout.ExpandWidth(false), GUILayout.Height(23f));
+            _treeView.showBaseTypeMembers = GUILayout.Toggle(_treeView.showBaseTypeMembers, EditorGUIUtility.TrTextContentWithIcon("Base Members", "d_UnityEditor.SceneHierarchyWindow@2x"), "Button", GUILayout.ExpandWidth(false), GUILayout.Height(23f));
+
             if (EditorGUI.EndChangeCheck())
                 _treeView.Reload();
 
-            _treeView.searchString = EditorGUILayout.TextField("Search: ", _treeView.searchString);
+            EditorGUILayout.Space(5f, false);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(5f, false);
 
             _currentScrollPos = EditorGUILayout.BeginScrollView(_currentScrollPos);
-
-            _treeView?.OnGUI(new Rect(0, 0, position.width, position.height - 80));
-
+            _treeView?.OnGUI(new Rect(3f, 3f, position.width - 3f, position.height - 60f));
             EditorGUILayout.EndScrollView();
         }
     }
