@@ -73,7 +73,7 @@ Packages/*
 
 # UdonSharp stuff
 # Except UdonSharp folder from Packages/* rule
-!Packages/com.vrchat.UdonSharp/
+!Packages/com.merlin.UdonSharp/
 /Assets/UdonSharp/UdonSharpSettings.asset
 /Assets/UdonSharp/UdonSharpSettings.asset.meta
 Assets/Merlin.meta
@@ -119,5 +119,4 @@ Assets/Scenes/VRCDefaultWorldScene.unity
 Assets/XR
 Assets/Scenes.meta
 Assets/XR.meta
-Packages/com.vrchat.core.vpm-resolver
 Packages/com.vrchat.core.vpm-resolver
