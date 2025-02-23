@@ -235,6 +235,7 @@ namespace UdonSharp.Compiler.Emit
                     {
                         TypeSymbol containingType = methodSymbol.ContainingType;
 
+                        // We need to make sure anything the field/property initializers depend on are emitted
                         foreach (FieldSymbol fieldSymbol in containingType.GetMembers<FieldSymbol>(this))
                         {
                             if (fieldSymbol.IsConst)
@@ -244,6 +245,14 @@ namespace UdonSharp.Compiler.Emit
                                 continue;
                             
                             newEmitSet.UnionWith(fieldSymbol.DirectDependencies.OfType<MethodSymbol>());
+                        }
+                        
+                        foreach (PropertySymbol propertySymbol in containingType.GetMembers<PropertySymbol>(this))
+                        {
+                            if (propertySymbol.DirectDependencies.IsDefaultOrEmpty)
+                                continue;
+                            
+                            newEmitSet.UnionWith(propertySymbol.DirectDependencies.OfType<MethodSymbol>());
                         }
                     }
                     

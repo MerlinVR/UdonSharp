@@ -86,7 +86,7 @@ namespace UdonSharpEditor
             
             CompilationContext compilationContext = new CompilationContext(new UdonSharpCompileOptions());
 
-            ModuleBinding[] bindings = compilationContext.LoadSyntaxTreesAndCreateModules(CompilationContext.GetAllFilteredSourcePaths(false), UdonSharpUtils.GetProjectDefines(false));
+            ModuleBinding[] bindings = compilationContext.LoadSyntaxTreesAndCreateModules(CompilationContext.GetBuildAssemblies(false));
             
             CSharpCompilation compilation = CSharpCompilation.Create(
                 $"UdonSharpRoslynUpgradeAssembly{_assemblyCounter++}",

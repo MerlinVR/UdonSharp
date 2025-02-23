@@ -571,11 +571,11 @@ namespace UdonSharp
             return false;
         }
 
-        internal static string[] GetProjectDefines(bool editorBuild)
+        internal static string[] GetProjectDefines(IEnumerable<string> defineList, bool editorBuild)
         {
             List<string> defines = new List<string>();
 
-            foreach (string define in UnityEditor.EditorUserBuildSettings.activeScriptCompilationDefines)
+            foreach (string define in defineList)
             {
                 if (!editorBuild)
                     if (define.StartsWith("UNITY_EDITOR"))

@@ -364,13 +364,14 @@ namespace UdonSharp.Compiler
                 return;
 
             CompilationContext compilationContext = new CompilationContext(options);
-            string[] defines = UdonSharpUtils.GetProjectDefines(options.IsEditorBuild);
 
             EditorApplication.LockReloadAssemblies();
             
             CompilerUdonInterface.AssemblyCacheInit();
 
-            Task compileTask = new Task(() => Compile(compilationContext, rootProgramLookup, allSourcePaths, defines));
+            IEnumerable<CompilationContext.ScriptAssembly> scriptAssemblies = CompilationContext.GetBuildAssemblies(options.IsEditorBuild);
+            
+            Task compileTask = new Task(() => Compile(compilationContext, rootProgramLookup, scriptAssemblies));
             CurrentJob = new CompileJob() { Context = compilationContext, Task = compileTask, CompileTimer = Stopwatch.StartNew(), CompileOptions = options };
             
             compileTask.Start();
@@ -436,14 +437,14 @@ namespace UdonSharp.Compiler
             return succeeded;
         }
 
-        private static void Compile(CompilationContext compilationContext, IReadOnlyDictionary<string, ProgramAssetInfo> rootProgramLookup, IEnumerable<string> allSourcePaths, string[] scriptingDefines)
+        private static void Compile(CompilationContext compilationContext, IReadOnlyDictionary<string, ProgramAssetInfo> rootProgramLookup, IEnumerable<CompilationContext.ScriptAssembly> allScriptAssemblies)
         {
             Stopwatch setupTimer = Stopwatch.StartNew();
             
             CompilerUdonInterface.CacheInit();
             
             compilationContext.CurrentPhase = CompilationContext.CompilePhase.Setup;
-            ModuleBinding[] syntaxTrees = compilationContext.LoadSyntaxTreesAndCreateModules(allSourcePaths, scriptingDefines);
+            ModuleBinding[] syntaxTrees = compilationContext.LoadSyntaxTreesAndCreateModules(allScriptAssemblies);
 
             foreach (ModuleBinding binding in syntaxTrees)
             {
