@@ -570,9 +570,10 @@ namespace UdonSharp.Compiler.Emit
                     return;
                 }
                 
-                // User enum -> integer
-                // Specifically to handle non-int types like byte, sbyte, etc.
-                if (sourceType.IsEnum && UdonSharpUtils.IsIntegerType(sourceType.UdonType.SystemType) && UdonSharpUtils.IsIntegerType(targetType.UdonType.SystemType) &&
+                // User enum -> integer/float/char
+                // Specifically to handle non-int types like byte, sbyte, etc. along with floating point types and char
+                if (sourceType.IsEnum && UdonSharpUtils.IsIntegerType(sourceType.UdonType.SystemType) && 
+                    (UdonSharpUtils.IsNumericType(targetType.UdonType.SystemType) || targetType.UdonType == GetTypeSymbol(SpecialType.System_Char)) &&
                     sourceType.UdonType.SystemType != targetType.UdonType.SystemType)
                 {
                     MethodSymbol conversionMethod = GetNumericConversionMethod(sourceType.UdonType, targetType);
