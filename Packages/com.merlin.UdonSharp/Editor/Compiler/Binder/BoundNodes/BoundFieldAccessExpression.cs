@@ -235,12 +235,13 @@ namespace UdonSharp.Compiler.Binder
             {
                 Value.CowValue thisRef = GetFieldInstanceValue(context);
                 
-                BoundAccessExpression objectArrayAccess = BindElementAccess(context, SyntaxNode,
+                BoundAccessExpression objectArrayAccess = new BoundArrayAccessExpression(SyntaxNode, context,
                     BindAccess(thisRef),
                     new BoundExpression[]
                     {
                         BindAccess(context.GetConstantValue(context.GetTypeSymbol(SpecialType.System_Int32), Field.FieldIndex))
-                    });
+                    },
+                    context.GetTypeSymbol(SpecialType.System_Object));
 
                 if (!UdonSharpUtils.IsStrongBoxedType(Field.Type.UdonType.SystemType))
                 {
@@ -263,12 +264,13 @@ namespace UdonSharp.Compiler.Binder
             {
                 Value.CowValue thisRef = GetFieldInstanceValue(context);
                 
-                BoundAccessExpression objectArrayAccess = BindElementAccess(context, SyntaxNode,
+                BoundAccessExpression objectArrayAccess = new BoundArrayAccessExpression(SyntaxNode, context,
                     BindAccess(thisRef),
                     new BoundExpression[]
                     {
                         BindAccess(context.GetConstantValue(context.GetTypeSymbol(SpecialType.System_Int32), Field.FieldIndex)),
-                    });
+                    },
+                    context.GetTypeSymbol(SpecialType.System_Object));
                 
                 Value value = context.EmitValue(valueExpression);
                 

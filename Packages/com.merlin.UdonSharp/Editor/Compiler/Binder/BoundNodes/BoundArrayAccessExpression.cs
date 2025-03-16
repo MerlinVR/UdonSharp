@@ -8,17 +8,17 @@ namespace UdonSharp.Compiler.Binder
 {
     internal sealed class BoundArrayAccessExpression : BoundPropertyAccessExpression
     {
-        public BoundArrayAccessExpression(SyntaxNode node, AbstractPhaseContext context, BoundExpression sourceExpression, BoundExpression[] indexerExpressions)
-            : base(context, node, BuildProperty(context, sourceExpression), sourceExpression, indexerExpressions)
+        public BoundArrayAccessExpression(SyntaxNode node, AbstractPhaseContext context, BoundExpression sourceExpression, BoundExpression[] indexerExpressions, TypeSymbol overrideElementType = null)
+            : base(context, node, BuildProperty(context, sourceExpression, overrideElementType), sourceExpression, indexerExpressions)
         {
         }
 
         public override TypeSymbol ValueType => SourceExpression.ValueType.ElementType;
 
-        private static PropertySymbol BuildProperty(AbstractPhaseContext context, BoundExpression sourceExpression)
+        private static PropertySymbol BuildProperty(AbstractPhaseContext context, BoundExpression sourceExpression, TypeSymbol overrideElementType)
         {
             TypeSymbol arrayType = sourceExpression.ValueType;
-            TypeSymbol elementType = arrayType is ImportedUdonSharpTypeSymbol ? context.GetTypeSymbol(SpecialType.System_Object) : arrayType.ElementType;
+            TypeSymbol elementType = overrideElementType ?? arrayType.ElementType; // Hack to allow user type fields to be accessed, see BoundImportedTypeInstanceFieldAccessExpression
             
             Type systemType = elementType.UdonType.SystemType;
             if (systemType == typeof(UnityEngine.Object) ||

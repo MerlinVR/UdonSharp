@@ -66,6 +66,7 @@ namespace UdonSharp.Tests
             TestDictionary();
             ExternalReferencedClass();
             ReferencedBehaviourWithNonBehaviourClass();
+            ArrayOfUserType();
         }
 
         private void TestBasicClass()
@@ -259,6 +260,28 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Imported Class Auto Property2", testBehaviour.referencedClass.AutoProp == "World");
 
             tester.TestAssertion("Imported Class Property", testBehaviour.referencedClass.Property == 10);
+        }
+
+        private void ArrayOfUserType()
+        {
+            MyNonBehaviourClass[] arr = new MyNonBehaviourClass[1];
+            
+            arr[0] = new MyNonBehaviourClass();
+            
+            tester.TestAssertion("Array of User Type Field", arr[0].Field == 5);
+            arr[0].Field = 10;
+            tester.TestAssertion("Array of User Type Field2", arr[0].Field == 10);
+            
+            tester.TestAssertion("Array of User Type Auto Property", arr[0].AutoProp == "Hello");
+            arr[0].AutoProp = "World";
+            tester.TestAssertion("Array of User Type Auto Property2", arr[0].AutoProp == "World");
+            
+            tester.TestAssertion("Array of User Type Property", arr[0].Property == 10);
+            arr[0].Property = 20;
+            tester.TestAssertion("Array of User Type Property2", arr[0].Property == 20);
+            
+            tester.TestAssertion("Array of User Type Method", arr[0].TestMethod(1, 1));
+            tester.TestAssertion("Array of User Type Method2", !arr[0].TestMethod(2, 1));
         }
     }
 }
