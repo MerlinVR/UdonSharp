@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UdonSharp.Internal;
 
 #if !COMPILER_UDONSHARP
 [assembly:System.Runtime.CompilerServices.InternalsVisibleTo("UdonSharp.Editor")]
@@ -187,27 +188,42 @@ namespace UdonSharp.Lib.Internal.Collections
         
         public void Clear()
         {
+            Array.Clear(_items, 0, _size);
             _size = 0;
-            _items = new T[4];
         }
         
         public T[] ToArray()
         {
-            T[] itemArr = new T[_size];
-            System.Array.Copy(_items, itemArr, _size);
+            int size = _size;
+            T[] itemArr = new T[size];
+            System.Array.Copy(_items, itemArr, size);
             return itemArr;
         }
         
         public bool Remove(T item)
         {
-            int size = _size;
-            T[] itemArr = _items;
-            
-            if (item == null)
+            if (UdonSharpInternalUtility.IsUserDefinedType<T>())
             {
+                int size = _size;
+                T[] itemArr = _items;
+
+                if (item == null)
+                {
+                    for (int i = 0; i < size; i++)
+                    {
+                        if (itemArr[i] == null)
+                        {
+                            RemoveAt(i);
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
                 for (int i = 0; i < size; i++)
                 {
-                    if (itemArr[i] == null)
+                    if (item.Equals(itemArr[i]))
                     {
                         RemoveAt(i);
                         return true;
@@ -216,17 +232,17 @@ namespace UdonSharp.Lib.Internal.Collections
 
                 return false;
             }
-
-            for (int i = 0; i < size; i++)
+            else
             {
-                if (item.Equals(itemArr[i]))
+                int index = Array.IndexOf(_items, (object)item, 0, _size);
+                if (index != -1)
                 {
-                    RemoveAt(i);
+                    RemoveAt(index);
                     return true;
                 }
+                
+                return false;
             }
-
-            return false;
         }
         
         public void RemoveAt(int index)
@@ -244,10 +260,8 @@ namespace UdonSharp.Lib.Internal.Collections
                 return;
             }
             
-            for (int i = index; i < size - 1; i++)
-            {
-                itemArr[i] = itemArr[i + 1];
-            }
+            // Use Array.Copy to shift the elements down, this is valid for Array.Copy to do.
+            Array.Copy(itemArr, index + 1, itemArr, index, size - index - 1);
             
             itemArr[size - 1] = default(T);
             
@@ -256,27 +270,36 @@ namespace UdonSharp.Lib.Internal.Collections
         
         public bool Contains(T item)
         {
-            int size = _size;
-            T[] itemArr = _items;
-            
-            if (item == null)
+            if (UdonSharpInternalUtility.IsUserDefinedType<T>()) // This will get statically optimized out by U#
             {
+                int size = _size;
+                T[] itemArr = _items;
+            
+                // We use loops here instead of Array.IndexOf because if user types override Equals IndexOf will not work as expected
+                if (item == null)
+                {
+                    for (int i = 0; i < size; i++)
+                    {
+                        if (itemArr[i] == null)
+                            return true;
+                    }
+
+                    return false;
+                }
+
                 for (int i = 0; i < size; i++)
                 {
-                    if (itemArr[i] == null)
+                    if (item.Equals(itemArr[i]))
                         return true;
                 }
 
                 return false;
             }
-
-            for (int i = 0; i < size; i++)
+            else
             {
-                if (item.Equals(itemArr[i]))
-                    return true;
+                // Cast to object is needed because Udon doesn't support generic externs
+                return Array.IndexOf(_items, (object)item, 0, _size) != -1;
             }
-
-            return false;
         }
         
         public void Insert(int index, T item)
@@ -301,10 +324,8 @@ namespace UdonSharp.Lib.Internal.Collections
                 itemArr = newItems;
             }
             
-            for (int i = size; i > index; i--)
-            {
-                itemArr[i] = itemArr[i - 1];
-            }
+            // Use Array.Copy to shift the elements up
+            Array.Copy(itemArr, index, itemArr, index + 1, size - index);
             
             itemArr[index] = item;
             _size = size + 1;
@@ -312,34 +333,36 @@ namespace UdonSharp.Lib.Internal.Collections
         
         public int IndexOf(T item)
         {
-            int size = _size;
-            T[] itemArr = _items;
-            
-            if (item == null)
+            if (UdonSharpInternalUtility.IsUserDefinedType<T>()) // This will get statically optimized out by U#
             {
+                // Cache these because they aren't trivial to access in Udon
+                int size = _size;
+                T[] itemArr = _items;
+
+                // We use loops here instead of Array.IndexOf because if user types override Equals IndexOf will not work as expected
+                if (item == null)
+                {
+                    for (int i = 0; i < size; i++)
+                    {
+                        if (itemArr[i] == null)
+                            return i;
+                    }
+
+                    return -1;
+                }
+
                 for (int i = 0; i < size; i++)
                 {
-                    if (itemArr[i] == null)
+                    if (item.Equals(itemArr[i]))
                         return i;
                 }
-            
+
                 return -1;
             }
-            
-            for (int i = 0; i < size; i++)
+            else
             {
-                if (item.Equals(itemArr[i]))
-                    return i;
+                return Array.IndexOf(_items, (object)item, 0, _size);
             }
-            
-            return -1;
-            
-            // return Array.IndexOf(_items, (object)item, 0, _size);
-        }
-        
-        public int IndexOfFast(T item)
-        {
-            return Array.IndexOf(_items, (object)item, 0, _size);
         }
         
         public void Reverse()

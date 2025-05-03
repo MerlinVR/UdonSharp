@@ -102,6 +102,20 @@ namespace UdonSharp.Compiler.Binder
                 }
             }
 
+            if (symbol.IsStatic && symbol.ContainingType != null && symbol.ContainingType.Name == nameof(UdonSharpInternalUtility) && symbol.Name == nameof(UdonSharpInternalUtility.IsUserDefinedType))
+            {
+                // Return constant value based on if generic type is a user defined type
+                if (symbol.TypeArguments.Length == 1)
+                {
+                    TypeSymbol typeArg = symbol.TypeArguments[0];
+                    bool isUserDefinedType = typeArg.IsUdonSharpBehaviour || typeArg is ImportedUdonSharpTypeSymbol;
+                    IConstantValue constantValue = new ConstantValue<bool>(isUserDefinedType);
+
+                    createdInvocation = new BoundConstantInvocationExpression(node, constantValue, context.GetTypeSymbol(SpecialType.System_Boolean));
+                    return true;
+                }
+            }
+
             createdInvocation = null;
             return false;
         }

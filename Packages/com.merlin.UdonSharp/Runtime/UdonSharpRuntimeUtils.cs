@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
+
+[assembly: InternalsVisibleTo("UdonSharp.Lib")]
 
 namespace UdonSharp
 {
@@ -23,6 +26,11 @@ namespace UdonSharp
             public static string GetTypeName(System.Type type)
             {
                 return type.Name;
+            }
+            
+            public static bool IsUserDefinedType<T>()
+            {
+                throw new InvalidOperationException("This method can only be called in the Udon runtime");
             }
         }
     }
