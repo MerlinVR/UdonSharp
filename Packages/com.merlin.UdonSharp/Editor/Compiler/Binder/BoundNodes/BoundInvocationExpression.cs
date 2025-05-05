@@ -528,6 +528,98 @@ namespace UdonSharp.Compiler.Binder
             createdInvocation = null;
             return false;
         }
+
+        private static bool TryCreateListEnumeratorConstructorShimInvocation(AbstractPhaseContext context, SyntaxNode node, MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions, out BoundInvocationExpression createdInvocation)
+        {
+            if (symbol.ContainingType != null && symbol.ContainingType.IsGenericType)
+            {
+                if (!TypeSymbol.TryGetSystemType(symbol.ContainingType, out Type sourceType) || sourceType.GetGenericTypeDefinition() != typeof(List<>))
+                {
+                    createdInvocation = null;
+                    return false;
+                }
+                
+                Type forwardedType = UdonSharpUtils.GetForwardedType(sourceType);
+                
+                if (forwardedType == null)
+                {
+                    createdInvocation = null;
+                    return false;
+                }
+                
+                TypeSymbol forwardedTypeSymbol = context.GetTypeSymbol(forwardedType);
+
+                // Fall back to specialized methods for List<T>, somewhat cursed unwrapping of the cast expression that would cast to IEnumerable<T> due to how stuff is setup, but it works
+                if (parameterExpressions.Length == 1 && parameterExpressions[0] is BoundCastExpression castExpression && castExpression.SourceExpression != null)
+                {
+                    TypeSymbol sourceValueType = castExpression.SourceExpression.ValueType;
+                    
+                    if (sourceValueType == symbol.ContainingType) // Handle straight List<T> parameters
+                    {
+                        MethodSymbol forwardedMethod = forwardedTypeSymbol.GetMembers<MethodSymbol>(symbol.Name, context).FirstOrDefault(e => e.Parameters.Length == 1 && e.Parameters[0].Type == forwardedTypeSymbol);
+                        
+                        if (forwardedMethod != null)
+                        {
+                            createdInvocation = new BoundInstanceUserMethodInvocation(node, forwardedMethod, instanceExpression, new [] { castExpression.SourceExpression });
+
+                            context.MarkSymbolReferenced(forwardedMethod);
+
+                            return true;
+                        }
+                    }
+                    else if (sourceValueType.IsArray && sourceValueType.ElementType == forwardedTypeSymbol.TypeArguments[0]) // T[] parameters
+                    {
+                        MethodSymbol forwardedMethod = forwardedTypeSymbol.GetMembers<MethodSymbol>(symbol.Name, context).FirstOrDefault(e => e.Parameters.Length == 1 && e.Parameters[0].Type == forwardedTypeSymbol);
+                        
+                        if (forwardedMethod != null)
+                        {
+                            MethodSymbol createFromArrayMethod = forwardedTypeSymbol.GetMember<MethodSymbol>(nameof(Lib.Internal.Collections.List<object>.CreateFromArray), context);
+
+                            if (createFromArrayMethod != null)
+                            {
+                                BoundInvocationExpression convertFromArrayInvocation = CreateBoundInvocation(context, node, createFromArrayMethod, null, new[] { castExpression.SourceExpression });
+
+                                createdInvocation = new BoundInstanceUserMethodInvocation(node, forwardedMethod, instanceExpression, new BoundExpression[] { convertFromArrayInvocation });
+
+                                context.MarkSymbolReferenced(createFromArrayMethod);
+                                context.MarkSymbolReferenced(forwardedMethod);
+
+                                return true;
+                            }
+                        }
+                    }
+                    else // HashSet<T>
+                    {
+                        TypeSymbol hashSetType = context.GetTypeSymbol(typeof(HashSet<>)).ConstructGenericType(context, forwardedTypeSymbol.TypeArguments[0]);
+                        
+                        if (sourceValueType == hashSetType)
+                        {
+                            MethodSymbol forwardedMethod = forwardedTypeSymbol.GetMembers<MethodSymbol>(symbol.Name, context).FirstOrDefault(e => e.Parameters.Length == 1 && e.Parameters[0].Type == forwardedTypeSymbol);
+                        
+                            if (forwardedMethod != null)
+                            {
+                                MethodSymbol createFromHashSetMethod = forwardedTypeSymbol.GetMember<MethodSymbol>(nameof(Lib.Internal.Collections.List<object>.CreateFromHashSet), context);
+
+                                if (createFromHashSetMethod != null)
+                                {
+                                    BoundInvocationExpression convertFromHashSetInvocation = CreateBoundInvocation(context, node, createFromHashSetMethod, null, new[] { castExpression.SourceExpression });
+
+                                    createdInvocation = new BoundInstanceUserMethodInvocation(node, forwardedMethod, instanceExpression, new BoundExpression[] { convertFromHashSetInvocation });
+
+                                    context.MarkSymbolReferenced(createFromHashSetMethod);
+                                    context.MarkSymbolReferenced(forwardedMethod);
+
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            createdInvocation = null;
+            return false;
+        }
         
         /// <summary>
         /// Allows for what I suppose might be called compile-time polymorphism on stuff like generics when T implements an interface or derives from a user class
@@ -592,6 +684,9 @@ namespace UdonSharp.Compiler.Binder
                 return true;
             
             if (TryCreateHashSetEnumeratorFunctionShimInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
+                return true;
+            
+            if (TryCreateListEnumeratorConstructorShimInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
                 return true;
             
             if (TryCreateInterfaceOrDerivedMethodSpecializedInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))

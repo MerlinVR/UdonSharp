@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UdonSharp.Internal;
 
@@ -64,8 +63,28 @@ namespace UdonSharp.Lib.Internal.Collections
         where T : IComparable
     #endif
     {
-        internal T[] _items = new T[8];
+        internal T[] _items;
         internal int _size;
+        
+        public List()
+        {
+            _items = new T[8];
+            _size = 0;
+        }
+        
+        public List(int capacity)
+        {
+            _items = new T[capacity];
+            _size = 0;
+        }
+        
+        public List(List<T> list)
+        {
+            _items = new T[list._items.Length];
+            _size = list._size;
+            
+            System.Array.Copy(list._items, _items, _size);
+        }
 
         public void Add(T item)
         {
@@ -404,6 +423,28 @@ namespace UdonSharp.Lib.Internal.Collections
         public IEnumerator GetEnumerator()
         {
             return new ListIterator<T>(this);
+        }
+
+        public static List<T> CreateFromArray(T[] items)
+        {
+            List<T> list = new List<T>(items.Length * 2);
+            
+            System.Array.Copy(items, list._items, items.Length);
+            list._size = items.Length;
+            
+            return list;
+        }
+
+        public static List<T> CreateFromHashSet(HashSet<T> hashSet)
+        {
+            List<T> list = new List<T>(hashSet.Count);
+
+            foreach (T item in hashSet)
+            {
+                list.Add(item);
+            }
+
+            return list;
         }
     }
 }

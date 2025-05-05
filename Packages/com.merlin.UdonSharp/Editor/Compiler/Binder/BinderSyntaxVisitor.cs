@@ -950,12 +950,22 @@ namespace UdonSharp.Compiler.Binder
 
         public override BoundNode VisitObjectCreationExpression(ObjectCreationExpressionSyntax node)
         {
+            return VisitBaseObjectCreationExpression(node);
+        }
+
+        public override BoundNode VisitImplicitObjectCreationExpression(ImplicitObjectCreationExpressionSyntax node)
+        {
+            return VisitBaseObjectCreationExpression(node);
+        }
+
+        private BoundNode VisitBaseObjectCreationExpression(BaseObjectCreationExpressionSyntax node)
+        {
             if (node.Initializer != null)
                 throw new NotSupportedException(LocStr.CE_InitializerListsNotSupported, node);
 
             MethodSymbol constructorSymbol = (MethodSymbol)GetSymbol(node);
 
-            BoundExpression[] boundArguments = new BoundExpression[node.ArgumentList.Arguments.Count];
+            BoundExpression[] boundArguments = new BoundExpression[node.ArgumentList!.Arguments.Count];
 
             bool isConstant = true;
 
