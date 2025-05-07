@@ -28,7 +28,10 @@ using UdonSharp.Lib.Internal;
 using UdonSharp.Serialization;
 using UdonSharpEditor;
 using UnityEditor;
+using VRC.SDK3.Network;
+using VRC.SDK3.UdonNetworkCalling;
 using VRC.Udon;
+using VRC.Udon.Common;
 using VRC.Udon.Common.Interfaces;
 using Debug = UnityEngine.Debug;
 
@@ -842,6 +845,14 @@ namespace UdonSharp.Compiler
                 }
 
                 moduleBinding.programAsset.fieldDefinitions = fieldDefinitions;
+                
+                // Validate network calls and setup metadata for them
+                List<NetworkCallingEntrypointMetadata> methodMetadata = BuildNetworkMetadata(compilationContext, moduleEmitContext);
+                
+                if (compilationContext.ErrorCount > 0)
+                {
+                    return;
+                }
 
                 Interlocked.Increment(ref progressCounter);
                 compilationContext.PhaseProgress = progressCounter / (float) bindingCount;
@@ -850,6 +861,7 @@ namespace UdonSharp.Compiler
                     UdonSharpEditorCache.Instance.SetDebugInfo(moduleBinding.programAsset, CurrentJob.CompileOptions.IsEditorBuild ? UdonSharpEditorCache.DebugInfoType.Editor : UdonSharpEditorCache.DebugInfoType.Client, moduleEmitContext.DebugInfo);
 
                 moduleBinding.programAsset.scriptID = typeID;
+                moduleBinding.networkMethodMetadata = methodMetadata.ToArray();
 
                 try
                 {
@@ -939,6 +951,88 @@ namespace UdonSharp.Compiler
             }
         }
 
+        private static List<NetworkCallingEntrypointMetadata> BuildNetworkMetadata(CompilationContext compilationContext, EmitContext moduleEmitContext)
+        {
+            HashSet<string> methodUniqueIds = new();
+            List<NetworkCallingEntrypointMetadata> methodMetadata = new();
+            
+            foreach (MethodSymbol method in moduleEmitContext.RootMethods)
+            {
+                CompilationContext.MethodExportLayout layout = compilationContext.GetUsbMethodLayout(method, moduleEmitContext);
+                    
+                if (!methodUniqueIds.Add(layout.ExportMethodName))
+                {
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, method.RoslynSymbol.Locations.First(), $"Network '{method}' overload overlaps with another method. Network callable methods cannot be overloaded");
+                }
+                    
+                if (layout.NetworkCallableAttribute == null)
+                    continue;
+                    
+                // Network callable method validation
+                
+                if (method.RoslynSymbol.IsVirtual ||
+                    method.RoslynSymbol.IsAbstract ||
+                    method.RoslynSymbol.IsOverride)
+                {
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, method.RoslynSymbol.Locations.First(), $"Network callable method '{method}' cannot be virtual or abstract");
+                }
+                    
+                if (method.RoslynSymbol.IsStatic)
+                {
+                    // This case shouldn't be hit technically since root methods are filtered to not include static methods
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, method.RoslynSymbol.Locations.First(), $"Network callable method '{method}' cannot be static");
+                }
+                    
+                // We'll omit this since U# allowed return parameters on network callable methods prior, and it's fine if they return something since we can just discard it
+                // if (method.ReturnType != null)
+                // {
+                //     compilationContext.AddDiagnostic(DiagnosticSeverity.Error, method.RoslynSymbol.Locations.First(), $"Network callable method '{method}' cannot have a return type");
+                // }
+
+                foreach (ParameterSymbol parameter in method.Parameters)
+                {
+                    if (parameter.IsByRef)
+                    {
+                        compilationContext.AddDiagnostic(DiagnosticSeverity.Error, parameter.RoslynSymbol.Locations.First(), $"Network callable method '{method}' cannot have ref or out parameters");
+                    }
+                        
+                    Type parameterType = parameter.Type.UdonType.SystemType;
+
+                    VRCUdonSyncType udonType = VRCUdonSyncTypeConverter.TypeToUdonType(parameterType);
+                        
+                    if (udonType == VRCUdonSyncType.NONE)
+                    {
+                        compilationContext.AddDiagnostic(DiagnosticSeverity.Error, parameter.RoslynSymbol.Locations.First(), $"Network callable method '{method}' parameter '{parameter.Name}' has unsupported type for network methods '{parameterType}'");
+                    }
+                }
+                    
+                List<NetworkCallingParameterMetadata> parameterMetadata = new();
+                    
+                for (int i = 0; i < method.Parameters.Length; ++i)
+                {
+                    ParameterSymbol parameter = method.Parameters[i];
+                    Type parameterType = parameter.Type.UdonType.SystemType;
+                        
+                    VRCUdonSyncType udonType = VRCUdonSyncTypeConverter.TypeToUdonType(parameterType);
+
+                    parameterMetadata.Add(new NetworkCallingParameterMetadata(layout.ParameterExportNames[i], udonType));
+                }
+
+                try
+                {
+                    NetworkCallingEntrypointMetadata metadata = new(layout.ExportMethodName, layout.NetworkCallableAttribute, parameterMetadata.ToArray());
+
+                    methodMetadata.Add(metadata);
+                }
+                catch (Exception e)
+                {
+                    compilationContext.AddDiagnostic(DiagnosticSeverity.Error, method.RoslynSymbol.Locations.First(), $"{method}: {e.Message}");
+                }
+            }
+            
+            return methodMetadata;
+        }
+
         private static readonly object _assembleLock = new object();
 
         private static void AssembleProgram((INamedTypeSymbol, ModuleBinding) binding, System.Reflection.Assembly assembly)
@@ -949,6 +1043,7 @@ namespace UdonSharp.Compiler
             string generatedUasm = rootBinding.assemblyModule.BuildUasmStr();
 
             rootBinding.programAsset.AssembleCsProgram(generatedUasm, rootBinding.assemblyModule.GetHeapSize());
+            rootBinding.programAsset.SetEntrypointMetadata(rootBinding.networkMethodMetadata);
             rootBinding.programAsset.SetUdonAssembly("");
 
             IUdonProgram program = rootBinding.programAsset.GetRealProgram();

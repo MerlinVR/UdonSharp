@@ -33,8 +33,7 @@ namespace UdonSharp.Compiler.Binder
                 return base.EmitValue(context);
 
             // Calls across UdonBehaviours
-            CompilationContext.MethodExportLayout layout =
-                context.CompileContext.GetUsbMethodLayout(Method, context);
+            CompilationContext.MethodExportLayout layout = context.CompileContext.GetUsbMethodLayout(Method, context);
 
             Value.CowValue instanceCowValue = EmitInstanceValue(context);
             Value instanceValue = instanceCowValue.Value;

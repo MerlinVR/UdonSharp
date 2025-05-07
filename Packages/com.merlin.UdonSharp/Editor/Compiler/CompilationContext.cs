@@ -17,6 +17,7 @@ using UdonSharpEditor;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
+using VRC.SDK3.UdonNetworkCalling;
 
 namespace UdonSharp.Compiler
 {
@@ -40,6 +41,7 @@ namespace UdonSharp.Compiler
         public Type programClass;
         public MonoScript programScript;
         public BindContext binding;
+        public NetworkCallingEntrypointMetadata[] networkMethodMetadata;
         public string assembly;
     }
     
@@ -371,13 +373,16 @@ namespace UdonSharp.Compiler
             public string ReturnExportName { get; }
             
             public string[] ParameterExportNames { get; }
+            
+            public NetworkCallableAttribute NetworkCallableAttribute { get; }
 
-            public MethodExportLayout(MethodSymbol method, string exportMethodName, string returnExportName, string[] parameterExportNames)
+            public MethodExportLayout(MethodSymbol method, string exportMethodName, string returnExportName, string[] parameterExportNames, NetworkCallableAttribute networkCallableAttribute)
             {
                 Method = method;
                 ExportMethodName = exportMethodName;
                 ReturnExportName = returnExportName;
                 ParameterExportNames = parameterExportNames;
+                NetworkCallableAttribute = networkCallableAttribute;
             }
         }
 
@@ -426,7 +431,15 @@ namespace UdonSharp.Compiler
                 throw new CompilerException($"Method with same name as built-in event '{methodSymbol}' cannot be declared with parameter types that do not match the event.", methodSymbol.RoslynSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()?.GetLocation());
             }
             
-            if (CompilerUdonInterface.IsUdonEvent(methodSymbol))
+            NetworkCallableAttribute networkCallableAttribute = methodSymbol.SymbolAttributes.IsDefaultOrEmpty ? null : methodSymbol.GetAttribute<NetworkCallableAttribute>();
+            bool isUdonEvent = CompilerUdonInterface.IsUdonEvent(methodSymbol);
+
+            if (isUdonEvent && networkCallableAttribute != null)
+            {
+                throw new CompilerException($"Built-in Udon event '{methodSymbol}' cannot be marked with NetworkCallable", methodSymbol.RoslynSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()?.GetLocation());
+            }
+            
+            if (isUdonEvent)
             {
                 ImmutableArray<(string, Type)> paramArgs = CompilerUdonInterface.GetUdonEventArgs(methodName);
                 methodName = CompilerUdonInterface.GetUdonEventName(methodName);
@@ -436,7 +449,7 @@ namespace UdonSharp.Compiler
             }
             else
             {
-                if (methodSymbol.Parameters.Length > 0) // Do not mangle 0 parameter methods as they may be called externally
+                if (methodSymbol.Parameters.Length > 0 && networkCallableAttribute == null) // Do not mangle 0 parameter methods as they may be called externally, explicitly specified network events also should not be mangled
                     methodName = GetUniqueID(idLookup, methodName);
 
                 for (int i = 0; i < paramNames.Length; ++i)
@@ -446,7 +459,7 @@ namespace UdonSharp.Compiler
             if (methodSymbol.ReturnType != null)
                 returnName = GetUniqueID(idLookup, methodName + "__ret");
 
-            MethodExportLayout exportLayout = new MethodExportLayout(methodSymbol, methodName, returnName, paramNames);
+            MethodExportLayout exportLayout = new MethodExportLayout(methodSymbol, methodName, returnName, paramNames, networkCallableAttribute);
             
             _layouts.Add(methodSymbol, exportLayout);
 

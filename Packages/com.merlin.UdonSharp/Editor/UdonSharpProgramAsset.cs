@@ -11,6 +11,7 @@ using UdonSharp.Compiler.Udon;
 using UdonSharp.Localization;
 using UdonSharpEditor;
 using UnityEngine;
+using VRC.SDK3.UdonNetworkCalling;
 using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 using VRC.Udon.Editor.ProgramSources;
@@ -85,6 +86,9 @@ namespace UdonSharp
 
         [NonSerialized, OdinSerialize]
         public Dictionary<string, FieldDefinition> fieldDefinitions;
+
+        [HideInInspector]
+        public NetworkCallingEntrypointMetadata[] networkEntrypointMetadata;
         
         [HideInInspector]
         public BehaviourSyncMode behaviourSyncMode = BehaviourSyncMode.Any;
@@ -546,13 +550,18 @@ namespace UdonSharp
 
         public void ApplyProgram()
         {
-            GetSerializedProgramAssetWithoutRefresh().StoreProgram(program);
+            GetSerializedProgramAssetWithoutRefresh().StoreProgram(program, networkEntrypointMetadata);
             EditorUtility.SetDirty(this);
         }
 
         public void SetUdonAssembly(string assembly)
         {
             udonAssembly = assembly;
+        }
+
+        public void SetEntrypointMetadata(NetworkCallingEntrypointMetadata[] metadata)
+        {
+            networkEntrypointMetadata = metadata;
         }
         
         public IUdonProgram GetRealProgram()

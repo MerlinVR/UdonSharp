@@ -11,6 +11,7 @@ using UdonSharp.Compiler.Symbols;
 using UdonSharp.Compiler.Udon;
 using UdonSharp.Core;
 using UnityEngine;
+using VRC.SDK3.UdonNetworkCalling;
 using NotSupportedException = UdonSharp.Core.NotSupportedException;
 
 #if UDONSHARP_DEBUG
@@ -45,6 +46,7 @@ namespace UdonSharp.Compiler.Emit
         internal MethodSymbol CurrentEmitMethod { get; private set; }
 
         public ImmutableArray<FieldSymbol> DeclaredFields { get; private set; }
+        public ImmutableArray<MethodSymbol> RootMethods { get; private set; }
         public AssemblyDebugInfo DebugInfo { get; }
 
         private Dictionary<BoundExpression, Dictionary<string, Value.CowValue[]>> _expressionCowValueTracker =
@@ -174,6 +176,7 @@ namespace UdonSharp.Compiler.Emit
             }
 
             DeclaredFields = userFields.ToImmutableArray();
+            RootMethods = rootMethods.ToImmutableArray();
             InitConstFields();
 
             HashSet<MethodSymbol> emittedSet = new HashSet<MethodSymbol>();
@@ -849,7 +852,7 @@ namespace UdonSharp.Compiler.Emit
             
             return methodSymbol.RoslynSymbol.DeclaredAccessibility == Accessibility.Public ||
                    CompilerUdonInterface.IsUdonEvent(methodSymbol) ||
-                   (methodSymbol is UdonSharpBehaviourMethodSymbol udonSharpBehaviourMethodSymbol && udonSharpBehaviourMethodSymbol.NeedsExportFromReference);
+                   (methodSymbol is UdonSharpBehaviourMethodSymbol udonSharpBehaviourMethodSymbol && (udonSharpBehaviourMethodSymbol.NeedsExportFromReference || methodSymbol.GetAttribute<NetworkCallableAttribute>() != null));
         }
 
         public class MethodLinkage
