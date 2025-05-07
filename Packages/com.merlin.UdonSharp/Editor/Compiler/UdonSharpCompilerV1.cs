@@ -1005,6 +1005,12 @@ namespace UdonSharp.Compiler
                         compilationContext.AddDiagnostic(DiagnosticSeverity.Error, parameter.RoslynSymbol.Locations.First(), $"Network callable method '{method}' parameter '{parameter.Name}' has unsupported type for network methods '{parameterType}'");
                     }
                 }
+                
+                // Early out to avoid double errors in some cases
+                if (compilationContext.ErrorCount > 0)
+                {
+                    return new List<NetworkCallingEntrypointMetadata>();
+                }
                     
                 List<NetworkCallingParameterMetadata> parameterMetadata = new();
                     
