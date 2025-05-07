@@ -85,8 +85,12 @@ namespace UdonSharp.Lib.Internal.Collections
             if (_serializedItems != null)
                 LoadSerializedData();
             
-            if (_size >= _threshold)
+            int size = _size;
+            if (size >= _threshold)
+            {
                 Resize();
+                size = _size;
+            }
 
             // ReSharper disable once PossibleNullReferenceException
             int hashCode = value.GetHashCode();
@@ -118,7 +122,7 @@ namespace UdonSharp.Lib.Internal.Collections
                 }
             }
 
-            _size++;
+            _size = size + 1;
             
             return true;
         }
