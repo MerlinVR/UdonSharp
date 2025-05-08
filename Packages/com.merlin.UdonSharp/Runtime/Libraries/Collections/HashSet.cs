@@ -89,7 +89,6 @@ namespace UdonSharp.Lib.Internal.Collections
             if (size >= _threshold)
             {
                 Resize();
-                size = _size;
             }
 
             // ReSharper disable once PossibleNullReferenceException

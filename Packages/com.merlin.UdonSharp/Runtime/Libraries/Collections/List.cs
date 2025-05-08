@@ -287,6 +287,43 @@ namespace UdonSharp.Lib.Internal.Collections
             _size = size - 1;
         }
         
+        public void RemoveRange(int index, int count)
+        {
+            // Cache these because they aren't trivial to access in Udon
+            int size = _size;
+            T[] itemArr = _items;
+            
+            if (index < 0 || index >= size)
+            {
+                Debug.LogError($"Index out of range: {index}");
+            #pragma warning disable CS0251
+                itemArr[-1] = itemArr[0]; // throw new System.IndexOutOfRangeException();
+            #pragma warning restore CS0251
+                return;
+            }
+            
+            if (count < 0 || size - index < count)
+            {
+                Debug.LogError($"Count out of range: {count}");
+            #pragma warning disable CS0251
+                itemArr[-1] = itemArr[0]; // throw new System.ArgumentOutOfRangeException();
+            #pragma warning restore CS0251
+                return;
+            }
+            
+            if (count == 0)
+                return;
+            
+            size -= count;
+            
+            if (index < size)
+                Array.Copy(itemArr, index + count, itemArr, index, size - index);
+            
+            Array.Clear(itemArr, size, count);
+            
+            _size = size;
+        }
+        
         public bool Contains(T item)
         {
             if (UdonSharpInternalUtility.IsUserDefinedType<T>()) // This will get statically optimized out by U#
