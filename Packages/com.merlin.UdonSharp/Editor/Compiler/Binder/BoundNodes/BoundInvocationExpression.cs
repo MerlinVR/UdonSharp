@@ -102,14 +102,51 @@ namespace UdonSharp.Compiler.Binder
                 }
             }
 
-            if (symbol.IsStatic && symbol.ContainingType != null && symbol.ContainingType.Name == nameof(UdonSharpInternalUtility) && symbol.Name == nameof(UdonSharpInternalUtility.IsUserDefinedType))
+            if (symbol.IsStatic && symbol.ContainingType != null && symbol.ContainingType.Name == nameof(UdonSharpInternalUtility) && symbol.TypeArguments.Length == 1)
             {
-                // Return constant value based on if generic type is a user defined type
-                if (symbol.TypeArguments.Length == 1)
+                if (symbol.Name == nameof(UdonSharpInternalUtility.IsUserDefinedType))
                 {
+                    // Return constant value based on if generic type is a user defined type
                     TypeSymbol typeArg = symbol.TypeArguments[0];
                     bool isUserDefinedType = typeArg.IsUdonSharpBehaviour || typeArg is ImportedUdonSharpTypeSymbol;
                     IConstantValue constantValue = new ConstantValue<bool>(isUserDefinedType);
+
+                    createdInvocation = new BoundConstantInvocationExpression(node, constantValue, context.GetTypeSymbol(SpecialType.System_Boolean));
+                    return true;
+                }
+                else if (symbol.Name == nameof(UdonSharpInternalUtility.IsUserDefinedTypeWithEquals))
+                {
+                    // Return constant value based on if generic type is a user defined type with Equals
+                    TypeSymbol typeArg = symbol.TypeArguments[0];
+                    bool isUserDefinedTypeWithEquals = typeArg.IsUdonSharpBehaviour || typeArg is ImportedUdonSharpTypeSymbol;
+                    if (isUserDefinedTypeWithEquals)
+                    {
+                        // Check if the type has an Equals method
+                        IEnumerable<MethodSymbol> equalsMethods = typeArg.GetMembers<MethodSymbol>("Equals", context);
+                        isUserDefinedTypeWithEquals = equalsMethods.Any(e => e.Parameters.Length == 1 && 
+                                                                                            e.ReturnType == context.GetTypeSymbol(SpecialType.System_Boolean) && 
+                                                                                            e.Parameters[0].Type == context.GetTypeSymbol(SpecialType.System_Object));
+
+                        TypeSymbol objectType = context.GetTypeSymbol(SpecialType.System_Object);
+                        
+                        if (typeArg.IsUdonSharpBehaviour)
+                        {
+                            while (!isUserDefinedTypeWithEquals && typeArg != null && typeArg.IsUdonSharpBehaviour)
+                            {
+                                if (typeArg.BaseType == objectType)
+                                    break;
+
+                                equalsMethods = typeArg.BaseType.GetMembers<MethodSymbol>("Equals", context);
+                                isUserDefinedTypeWithEquals = equalsMethods.Any(e => e.Parameters.Length == 1 && 
+                                                                                            e.ReturnType == context.GetTypeSymbol(SpecialType.System_Boolean) && 
+                                                                                            e.Parameters[0].Type == context.GetTypeSymbol(SpecialType.System_Object));
+                                
+                                typeArg = typeArg.BaseType;
+                            }
+                        }
+                    }
+                    
+                    IConstantValue constantValue = new ConstantValue<bool>(isUserDefinedTypeWithEquals);
 
                     createdInvocation = new BoundConstantInvocationExpression(node, constantValue, context.GetTypeSymbol(SpecialType.System_Boolean));
                     return true;

@@ -221,7 +221,7 @@ namespace UdonSharp.Lib.Internal.Collections
         
         public bool Remove(T item)
         {
-            if (UdonSharpInternalUtility.IsUserDefinedType<T>())
+            if (UdonSharpInternalUtility.IsUserDefinedTypeWithEquals<T>())
             {
                 int size = _size;
                 T[] itemArr = _items;
@@ -326,7 +326,7 @@ namespace UdonSharp.Lib.Internal.Collections
         
         public bool Contains(T item)
         {
-            if (UdonSharpInternalUtility.IsUserDefinedType<T>()) // This will get statically optimized out by U#
+            if (UdonSharpInternalUtility.IsUserDefinedTypeWithEquals<T>()) // This will get statically optimized out by U#
             {
                 int size = _size;
                 T[] itemArr = _items;
@@ -353,8 +353,7 @@ namespace UdonSharp.Lib.Internal.Collections
             }
             else
             {
-                // Cast to object is needed because Udon doesn't support generic externs
-                return Array.IndexOf(_items, (object)item, 0, _size) != -1;
+                return Array.IndexOf(_items, item, 0, _size) != -1;
             }
         }
         
@@ -389,7 +388,7 @@ namespace UdonSharp.Lib.Internal.Collections
         
         public int IndexOf(T item)
         {
-            if (UdonSharpInternalUtility.IsUserDefinedType<T>()) // This will get statically optimized out by U#
+            if (UdonSharpInternalUtility.IsUserDefinedTypeWithEquals<T>()) // This will get statically optimized out by U#
             {
                 // Cache these because they aren't trivial to access in Udon
                 int size = _size;

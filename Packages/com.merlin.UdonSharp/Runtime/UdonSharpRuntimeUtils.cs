@@ -32,6 +32,14 @@ namespace UdonSharp
             {
                 throw new InvalidOperationException("This method can only be called in the Udon runtime");
             }
+            
+            /// <summary>
+            /// Checks if the type T is a user-defined type with an overridden Equals method.
+            /// </summary>
+            public static bool IsUserDefinedTypeWithEquals<T>()
+            {
+                throw new InvalidOperationException("This method can only be called in the Udon runtime");
+            }
         }
     }
 
