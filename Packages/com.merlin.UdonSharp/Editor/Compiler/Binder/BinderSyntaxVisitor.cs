@@ -350,7 +350,14 @@ namespace UdonSharp.Compiler.Binder
         
         public override BoundNode VisitSizeOfExpression(SizeOfExpressionSyntax node)
         {
-            return new BoundConstantExpression(Marshal.SizeOf(GetTypeSymbol(node.Type).UdonType.SystemType), Context.GetTypeSymbol(SpecialType.System_Int32));
+            Type type = GetTypeSymbol(node.Type).UdonType.SystemType;
+            
+            int size = Marshal.SizeOf(type);
+            
+            if (type == typeof(bool))
+                size = 1; // C# sizeof(bool) is 1 byte but Marshal.SizeOf is 4 bytes for bool :(
+            
+            return new BoundConstantExpression(size, Context.GetTypeSymbol(SpecialType.System_Int32));
         }
         
         private BoundExpression HandleNameOfExpression(InvocationExpressionSyntax node)
