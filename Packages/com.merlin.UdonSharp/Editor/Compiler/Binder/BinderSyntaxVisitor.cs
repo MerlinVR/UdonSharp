@@ -244,6 +244,16 @@ namespace UdonSharp.Compiler.Binder
             throw new NotSupportedException("UdonSharp does not support throwing exceptions since Udon does not have support for exception throwing at the moment", node);
         }
 
+        public override BoundNode VisitConstructorDeclaration(ConstructorDeclarationSyntax node)
+        {
+            if (node.ExpressionBody is ArrowExpressionClauseSyntax arrowExpressionClause)
+            {
+                return VisitArrowExpressionClause(arrowExpressionClause);
+            }
+        
+            return VisitBlock(node.Body);
+        }
+        
         public override BoundNode VisitArrowExpressionClause(ArrowExpressionClauseSyntax node)
         {
             return VisitExpression(node.Expression);

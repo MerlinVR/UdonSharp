@@ -204,7 +204,7 @@ namespace UdonSharp.Compiler.Symbols
             }
             else if (declaringSyntax is ConstructorDeclarationSyntax constructorDeclaration)
             {
-                MethodBody = bodyVisitor.Visit(constructorDeclaration.Body);
+                MethodBody = bodyVisitor.VisitConstructorDeclaration(constructorDeclaration);
             }
             else
             {
