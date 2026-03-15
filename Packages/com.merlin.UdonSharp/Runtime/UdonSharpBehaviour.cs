@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Linq;
 using System.Reflection;
@@ -8,6 +8,7 @@ using VRC.Udon.Common.Interfaces;
 
 using System.Diagnostics;
 using UnityEngine.Serialization;
+using VRC.Dynamics;
 using VRC.Udon.Serialization.OdinSerializer;
 
 namespace UdonSharp
@@ -465,6 +466,7 @@ namespace UdonSharp
         #region Creator Economy
     #if UNITY_2022_3_OR_NEWER
         [PublicAPI] public virtual void OnPurchaseConfirmed(VRC.Economy.IProduct product, VRC.SDKBase.VRCPlayerApi player, bool purchasedNow) { }
+        [PublicAPI] public virtual void OnPurchaseConfirmedMultiple(VRC.Economy.IProduct product, VRC.SDKBase.VRCPlayerApi player, bool purchasedNow, int quantity) { }
         [PublicAPI] public virtual void OnPurchaseExpired(VRC.Economy.IProduct product, VRC.SDKBase.VRCPlayerApi player) { }
         [PublicAPI] public virtual void OnPurchasesLoaded(VRC.Economy.IProduct[] products, VRC.SDKBase.VRCPlayerApi player) { }
         [PublicAPI] public virtual void OnProductEvent(VRC.Economy.IProduct product, VRC.SDKBase.VRCPlayerApi player) { }
@@ -491,6 +493,9 @@ namespace UdonSharp
         [PublicAPI] public virtual void OnAsyncGpuReadbackComplete(VRC.SDK3.Rendering.VRCAsyncGPUReadbackRequest request) { }
     #if UNITY_2022_3_OR_NEWER
         [PublicAPI] public virtual void OnScreenUpdate(VRC.SDK3.Platform.ScreenUpdateData data) {}
+        [PublicAPI] public virtual void OnVRCPlusMassGift(VRC.SDKBase.VRCPlayerApi gifter, int numGifts) { }
+        [PublicAPI] public virtual void OnContactEnter(ContactEnterInfo contactInfo) { }
+        [PublicAPI] public virtual void OnContactExit(ContactExitInfo contactInfo) { }
     #endif
 
         [Obsolete("The OnStationEntered() event is deprecated use the OnStationEntered(VRCPlayerApi player) event instead", true)]
