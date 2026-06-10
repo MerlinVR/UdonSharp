@@ -293,7 +293,7 @@ namespace UdonSharp.Lib.Internal.Collections
             int size = _size;
             T[] itemArr = _items;
             
-            if (index < 0 || index >= size)
+            if (index < 0 || index > size)
             {
                 Debug.LogError($"Index out of range: {index}");
             #pragma warning disable CS0251
